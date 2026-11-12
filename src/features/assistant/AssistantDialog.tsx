@@ -117,9 +117,6 @@ export function AssistantDialog() {
     const runtimeStatus = useAssistantRuntimeStatus();
     const endpoints = useLlmEndpointsStore((state) => state.endpoints);
     const loadEndpoints = useLlmEndpointsStore((state) => state.load);
-    const detectEndpointModels = useLlmEndpointsStore(
-        (state) => state.detectModels
-    );
     const [runtimeSelection, setRuntimeSelection] =
         useState<AssistantRuntimeSelection>(DEFAULT_RUNTIME_SELECTION);
     const [assistantReasoningEffort, setAssistantReasoningEffort] =
@@ -253,15 +250,7 @@ export function AssistantDialog() {
     }
 
     function refreshSelectableModels() {
-        const stale = endpoints.filter((endpoint) => !endpoint.models.length);
-        for (const endpoint of stale) {
-            detectEndpointModels({
-                id: endpoint.id,
-                baseUrl: null,
-                apiKey: null,
-                persist: true
-            }).catch(() => {});
-        }
+        loadEndpoints().catch(() => {});
     }
 
     async function updateReasoningEffort(effort: string) {

@@ -12,7 +12,8 @@ import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    t: (key: string) => key,
+    t: (key: string, options?: { model?: string }) =>
+        options?.model ? `${key} ${options.model}` : key,
     endpoints: [] as {
         id: string;
         name: string;
@@ -31,8 +32,7 @@ const mocks = vi.hoisted(() => ({
     upsert: vi.fn(),
     deleteEndpoint: vi.fn(),
     detectModels: vi.fn(),
-    toastAdd: vi.fn(),
-    setModelQuery: null as ((value: string) => void) | null
+    toastAdd: vi.fn()
 }));
 
 vi.mock('react-i18next', () => ({
@@ -87,31 +87,6 @@ vi.mock('@/ui/shadcn/button', () => ({
     }: PropsWithChildren<
         ComponentProps<'button'> & { variant?: string; size?: string }
     >) => <button {...props}>{children}</button>
-}));
-
-vi.mock('@/ui/shadcn/combobox', () => ({
-    Combobox: ({
-        children,
-        onInputValueChange
-    }: PropsWithChildren<{ onInputValueChange: (value: string) => void }>) => {
-        mocks.setModelQuery = onInputValueChange;
-        return <div>{children}</div>;
-    },
-    ComboboxChip: ({ children }: PropsWithChildren) => <span>{children}</span>,
-    ComboboxChips: ({ children }: PropsWithChildren) => <div>{children}</div>,
-    ComboboxChipsInput: (props: ComponentProps<'input'>) => (
-        <input {...props} />
-    ),
-    ComboboxContent: ({ children }: PropsWithChildren) => <div>{children}</div>,
-    ComboboxEmpty: ({ children }: PropsWithChildren) => <div>{children}</div>,
-    ComboboxItem: ({ children }: PropsWithChildren) => <div>{children}</div>,
-    ComboboxList: () => <div />,
-    ComboboxValue: ({
-        children
-    }: {
-        children: (models: string[]) => ReactNode;
-    }) => <>{children([])}</>,
-    useComboboxAnchor: () => null
 }));
 
 vi.mock('@/ui/shadcn/dialog', () => ({
@@ -190,7 +165,7 @@ describe('LlmEndpointsDialog', () => {
 
     afterEach(() => cleanup());
 
-    it('saves automatically detected reasoning metadata for a new endpoint', async () => {
+    it('detects candidates without selecting or persisting them, then saves a selected model with reasoning', async () => {
         render(<LlmEndpointsDialog open onOpenChange={vi.fn()} />);
 
         await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
@@ -203,6 +178,20 @@ describe('LlmEndpointsDialog', () => {
             await screen.findByLabelText('view.tools.llm_endpoints.api_key'),
             { target: { value: 'sk-test' } }
         );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.detect_models'
+            })
+        );
+        const model = await screen.findByRole('checkbox', {
+            name: 'openai/o3'
+        });
+        expect(model.getAttribute('aria-checked')).toBe('false');
+        expect(mocks.detectModels).toHaveBeenCalledWith(
+            expect.objectContaining({ persist: false })
+        );
+        expect(mocks.upsert).not.toHaveBeenCalled();
+        fireEvent.click(model);
         fireEvent.click(
             screen.getByRole('button', { name: 'common.actions.save' })
         );
@@ -318,7 +307,7 @@ describe('LlmEndpointsDialog', () => {
         expect(mocks.detectModels).not.toHaveBeenCalled();
     });
 
-    it('saves a typed model name that was not committed as a chip', async () => {
+    it('saves comma-separated manual IDs without requiring the Add button', async () => {
         render(<LlmEndpointsDialog open onOpenChange={vi.fn()} />);
 
         await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
@@ -331,14 +320,23 @@ describe('LlmEndpointsDialog', () => {
             await screen.findByLabelText('view.tools.llm_endpoints.base_url'),
             { target: { value: 'https://llm.example/v1' } }
         );
-        act(() => mocks.setModelQuery?.('manual-model'));
+        fireEvent.change(
+            screen.getByLabelText('view.tools.llm_endpoints.models_manual'),
+            {
+                target: {
+                    value: ' manual-model, another-model, manual-model, '
+                }
+            }
+        );
         fireEvent.click(
             screen.getByRole('button', { name: 'common.actions.save' })
         );
 
         await waitFor(() =>
             expect(mocks.upsert).toHaveBeenCalledWith(
-                expect.objectContaining({ models: ['manual-model'] })
+                expect.objectContaining({
+                    models: ['manual-model', 'another-model']
+                })
             )
         );
         expect(mocks.detectModels).not.toHaveBeenCalled();
@@ -374,7 +372,9 @@ describe('LlmEndpointsDialog', () => {
         const apiKeyInput = inputByLabel('view.tools.llm_endpoints.api_key');
         expect(apiKeyInput.value).toBe('');
         fireEvent.click(
-            screen.getByRole('button', { name: 'common.actions.save' })
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.detect_models'
+            })
         );
 
         await waitFor(() => expect(mocks.detectModels).toHaveBeenCalled());
@@ -384,5 +384,256 @@ describe('LlmEndpointsDialog', () => {
                 apiKey: null
             })
         );
+    });
+
+    it('filters candidates and selects search results without losing hidden selections', async () => {
+        mocks.detectModels.mockResolvedValue({
+            models: ['gpt-one', 'gpt-two', 'other-model'],
+            modelReasoning: []
+        });
+        render(<LlmEndpointsDialog open onOpenChange={vi.fn()} />);
+        fireEvent.click(
+            screen.getByRole('button', { name: 'view.tools.llm_endpoints.add' })
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.detect_models'
+            })
+        );
+        fireEvent.click(
+            await screen.findByRole('checkbox', { name: 'other-model' })
+        );
+        fireEvent.change(
+            screen.getByLabelText('view.tools.llm_endpoints.models_search'),
+            {
+                target: { value: 'GPT' }
+            }
+        );
+        expect(
+            screen.queryByRole('checkbox', { name: 'other-model' })
+        ).toBeNull();
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.models_select_visible'
+            })
+        );
+        fireEvent.click(screen.getByRole('checkbox', { name: 'gpt-two' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.save' })
+        );
+        await waitFor(() =>
+            expect(mocks.upsert).toHaveBeenCalledWith(
+                expect.objectContaining({ models: ['other-model', 'gpt-one'] })
+            )
+        );
+    });
+
+    it('keeps candidates after clearing selection and saves an empty selection without detecting again', async () => {
+        render(<LlmEndpointsDialog open onOpenChange={vi.fn()} />);
+        fireEvent.click(
+            screen.getByRole('button', { name: 'view.tools.llm_endpoints.add' })
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.detect_models'
+            })
+        );
+        fireEvent.click(
+            await screen.findByRole('checkbox', { name: 'openai/o3' })
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.models_clear'
+            })
+        );
+        expect(
+            screen
+                .getByRole('checkbox', { name: 'openai/o3' })
+                .getAttribute('aria-checked')
+        ).toBe('false');
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.save' })
+        );
+        await waitFor(() =>
+            expect(mocks.upsert).toHaveBeenCalledWith(
+                expect.objectContaining({ models: [] })
+            )
+        );
+        expect(mocks.detectModels).toHaveBeenCalledOnce();
+    });
+
+    it('removes a manually added ID from both candidates and selection', async () => {
+        render(<LlmEndpointsDialog open onOpenChange={vi.fn()} />);
+        fireEvent.click(
+            screen.getByRole('button', { name: 'view.tools.llm_endpoints.add' })
+        );
+        const input = screen.getByLabelText(
+            'view.tools.llm_endpoints.models_manual'
+        );
+        fireEvent.change(input, {
+            target: { value: 'keep-model, remove-model' }
+        });
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.models_add'
+            })
+        );
+        // Removing an unchecked ID must remove it from bulk-selection candidates too.
+        fireEvent.click(screen.getByRole('checkbox', { name: 'remove-model' }));
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.models_remove remove-model'
+            })
+        );
+        expect(
+            screen.queryByRole('checkbox', { name: 'remove-model' })
+        ).toBeNull();
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.models_select_visible'
+            })
+        );
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.save' })
+        );
+        await waitFor(() =>
+            expect(mocks.upsert).toHaveBeenCalledWith(
+                expect.objectContaining({ models: ['keep-model'] })
+            )
+        );
+    });
+
+    it('deletes the last saved manual ID and keeps it removed when reopening the editor', async () => {
+        mocks.endpoints = [
+            {
+                id: 'endpoint-1',
+                name: 'Manual',
+                baseUrl: 'https://example.test/v1',
+                apiKey: '',
+                hasKey: false,
+                models: ['custom-model'],
+                modelReasoning: [],
+                lastDetectedAt: null
+            }
+        ];
+        mocks.upsert.mockImplementation(async (input) => {
+            mocks.endpoints[0] = {
+                ...mocks.endpoints[0],
+                models: input.models
+            };
+            return mocks.endpoints[0];
+        });
+        render(<LlmEndpointsDialog open onOpenChange={vi.fn()} />);
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.edit'
+            })
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.models_remove custom-model'
+            })
+        );
+        expect(
+            screen.queryByRole('checkbox', { name: 'custom-model' })
+        ).toBeNull();
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.save' })
+        );
+        await waitFor(() =>
+            expect(mocks.upsert).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 'endpoint-1', models: [] })
+            )
+        );
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'view.tools.llm_endpoints.edit'
+            })
+        );
+        expect(
+            screen.queryByRole('checkbox', { name: 'custom-model' })
+        ).toBeNull();
+        expect(mocks.detectModels).not.toHaveBeenCalled();
+    });
+
+    it('allows manual models after detection fails and ignores Enter during IME composition', async () => {
+        mocks.detectModels.mockRejectedValue(new Error('catalog unavailable'));
+        render(<LlmEndpointsDialog open onOpenChange={vi.fn()} />);
+        fireEvent.click(
+            screen.getByRole('button', { name: 'view.tools.llm_endpoints.add' })
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.detect_models'
+            })
+        );
+        await waitFor(() =>
+            expect(mocks.toastAdd).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'error',
+                    title: 'catalog unavailable'
+                })
+            )
+        );
+        const input = screen.getByLabelText(
+            'view.tools.llm_endpoints.models_manual'
+        );
+        fireEvent.change(input, { target: { value: 'custom-model' } });
+        fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+        expect(
+            screen.queryByRole('checkbox', { name: 'custom-model' })
+        ).toBeNull();
+        fireEvent.keyDown(input, { key: 'Enter' });
+        expect(
+            screen
+                .getByRole('checkbox', { name: 'custom-model' })
+                .getAttribute('aria-checked')
+        ).toBe('true');
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.save' })
+        );
+        await waitFor(() =>
+            expect(mocks.upsert).toHaveBeenCalledWith(
+                expect.objectContaining({ models: ['custom-model'] })
+            )
+        );
+    });
+
+    it('opens row detection in the editor and leaves stored settings untouched on cancel', async () => {
+        mocks.endpoints = [
+            {
+                id: 'endpoint-1',
+                name: 'OpenAI',
+                baseUrl: 'https://api.openai.com/v1',
+                apiKey: '',
+                hasKey: true,
+                models: ['saved-model'],
+                modelReasoning: [],
+                lastDetectedAt: null
+            }
+        ];
+        render(<LlmEndpointsDialog open onOpenChange={vi.fn()} />);
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.llm_endpoints.detect_models'
+            })
+        );
+        await screen.findByRole('checkbox', { name: 'openai/o3' });
+        expect(
+            screen
+                .getByRole('checkbox', { name: 'saved-model' })
+                .getAttribute('aria-checked')
+        ).toBe('true');
+        expect(mocks.detectModels).toHaveBeenCalledWith({
+            id: 'endpoint-1',
+            baseUrl: null,
+            apiKey: null,
+            persist: false
+        });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.cancel' })
+        );
+        expect(mocks.upsert).not.toHaveBeenCalled();
+        expect(mocks.endpoints[0].models).toEqual(['saved-model']);
     });
 });
