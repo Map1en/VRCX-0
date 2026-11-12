@@ -532,7 +532,7 @@ async fn dispatch_gated_call<'a>(ctx: &TurnContext, call: PreparedCall<'a>) -> D
         .approval_policy
         .approved_arguments(&tool_call.function.name, call.arguments);
     match ask_user_approval(ctx, tool_call, &arguments).await {
-        Approval::Approved => {
+        Approval::Approved if turn_still_current(ctx) => {
             dispatch_call(
                 ctx,
                 PreparedCall {
@@ -547,14 +547,35 @@ async fn dispatch_gated_call<'a>(ctx: &TurnContext, call: PreparedCall<'a>) -> D
             tool_call,
             Some(denied_tool_result(&tool_call.function.name)),
         ),
-        Approval::Cancelled => (tool_call, None),
+        Approval::Approved | Approval::Cancelled => (tool_call, None),
     }
+}
+
+fn turn_still_current(ctx: &TurnContext) -> bool {
+    !ctx.cancel.is_cancelled() && ctx.sessions.is_current_turn(&ctx.session_id, &ctx.turn_id)
 }
 
 enum Approval {
     Approved,
     Denied,
     Cancelled,
+}
+
+// A cancel that lands together with a late approval must win, so a dropped
+// turn never runs the change it was waiting on.
+async fn wait_for_approval(
+    receiver: tokio::sync::oneshot::Receiver<bool>,
+    cancel: &CancellationToken,
+) -> Approval {
+    tokio::select! {
+        biased;
+        _ = cancel.cancelled() => Approval::Cancelled,
+        answer = receiver => match answer {
+            Ok(true) => Approval::Approved,
+            Ok(false) => Approval::Denied,
+            Err(_) => Approval::Cancelled,
+        },
+    }
 }
 
 async fn ask_user_approval(
@@ -577,17 +598,10 @@ async fn ask_user_approval(
     ctx.sessions
         .set_pending_approval(&ctx.session_id, approval.clone());
     ctx.emitter.approval_request(&approval);
-    let answer = tokio::select! {
-        answer = receiver => match answer {
-            Ok(true) => Approval::Approved,
-            Ok(false) => Approval::Denied,
-            Err(_) => Approval::Cancelled,
-        },
-        _ = ctx.cancel.cancelled() => {
-            ctx.approvals.remove(&approval.id);
-            Approval::Cancelled
-        }
-    };
+    let answer = wait_for_approval(receiver, &ctx.cancel).await;
+    if matches!(answer, Approval::Cancelled) {
+        ctx.approvals.remove(&approval.id);
+    }
     ctx.sessions
         .clear_pending_approval(&ctx.session_id, &approval.id);
     answer
