@@ -184,6 +184,15 @@
             "approve": "許可",
             "deny": "拒否",
             "declined": "拒否しました：{action}",
+            "backup_hint": "移動では、いったん今のグループから削除してから新しいグループに追加します。先にお気に入りの ID リストをバックアップしておくことを強くおすすめします。",
+            "backup_open": "先にバックアップ",
+            "approve_all": "すべて許可",
+            "favorite_move": {
+                "summary": "「{target}」へ移動するお気に入り：{count} 件",
+                "source": "移動元：{group}",
+                "already_in_target": "すでにこのグループにあります",
+                "not_favorited": "VRChat のお気に入りにないためスキップします"
+            },
             "fields": {
                 "userId": "ユーザー",
                 "note": "ノート",
@@ -192,6 +201,7 @@
                 "group": "グループ",
                 "action": "操作",
                 "tags": "お気に入りグループ",
+                "targetGroup": "移動先",
                 "text": "テキスト",
                 "afk": "AFK",
                 "config": "設定"
@@ -228,6 +238,7 @@
         },
         "tools": {
             "favorite_local": "ローカルのお気に入りを更新",
+            "favorite_move": "VRChat のお気に入りを移動",
             "favorite_vrchat": "VRChat のお気に入りに追加",
             "find_user": "ユーザーを検索",
             "get_activity_streaks": "連続アクティブ記録を確認",

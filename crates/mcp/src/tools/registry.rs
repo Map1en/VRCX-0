@@ -42,6 +42,7 @@ mod router_tests {
             names,
             vec![
                 "favorite_local",
+                "favorite_move",
                 "favorite_vrchat",
                 "find_user",
                 "get_activity_streaks",
@@ -63,6 +64,7 @@ mod router_tests {
                 "get_online_friends",
                 "get_social_graph",
                 "get_visit_timeline",
+                "get_vrchat_favorites",
                 "get_world_profile",
                 "recall_encounter",
                 "refresh_mutual_graph",
@@ -98,6 +100,7 @@ mod router_tests {
             side_effecting,
             vec![
                 "favorite_local",
+                "favorite_move",
                 "favorite_vrchat",
                 "send_chatbox_message",
                 "set_chatbox_afk",

@@ -185,6 +185,15 @@
             "approve": "Aprovar",
             "deny": "Recusar",
             "declined": "Recusado: {action}",
+            "backup_hint": "Ao mover, o favorito é removido do grupo atual antes de ser adicionado ao novo. Recomendamos muito fazer antes um backup da sua lista de IDs de favoritos.",
+            "backup_open": "Fazer backup antes",
+            "approve_all": "Aprovar tudo",
+            "favorite_move": {
+                "summary": "Favoritos que vão para “{target}”: {count}",
+                "source": "de {group}",
+                "already_in_target": "Já está neste grupo",
+                "not_favorited": "Não está nos seus favoritos do VRChat; será ignorado"
+            },
             "fields": {
                 "userId": "Usuário",
                 "note": "Nota",
@@ -193,6 +202,7 @@
                 "group": "Grupo",
                 "action": "Ação",
                 "tags": "Grupo de favoritos",
+                "targetGroup": "Mover para",
                 "text": "Texto",
                 "afk": "AFK",
                 "config": "Configurações"
@@ -229,6 +239,7 @@
         },
         "tools": {
             "favorite_local": "Atualizar favoritos locais",
+            "favorite_move": "Mover um favorito do VRChat",
             "favorite_vrchat": "Adicionar favorito do VRChat",
             "find_user": "Procurar usuário",
             "get_activity_streaks": "Ver sequências de atividade",

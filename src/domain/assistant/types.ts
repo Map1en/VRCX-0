@@ -90,11 +90,35 @@ export type AssistantApprovalField = {
     value: string;
 };
 
+export type AssistantFavoriteGroup = {
+    name: string;
+    displayName: string;
+};
+
+export type AssistantFavoriteMoveStatus =
+    | 'wouldMove'
+    | 'alreadyInTarget'
+    | 'notFavorited';
+
+export type AssistantFavoriteMoveItem = {
+    entityId: string;
+    name: string | null;
+    source: AssistantFavoriteGroup | null;
+    status: AssistantFavoriteMoveStatus;
+};
+
+export type AssistantFavoriteMovePreview = {
+    kind: 'world' | 'friend' | 'avatar';
+    target: AssistantFavoriteGroup;
+    items: AssistantFavoriteMoveItem[];
+};
+
 export type AssistantApproval = {
     id: string;
     toolCallId: string;
     tool: string;
     fields: AssistantApprovalField[];
+    favoriteMove: AssistantFavoriteMovePreview | null;
 };
 
 export type AssistantApprovalRequestEvent = {
@@ -145,6 +169,7 @@ export interface UIApproval {
     id: string;
     sessionId: string;
     fields: AssistantApprovalField[];
+    favoriteMove: AssistantFavoriteMovePreview | null;
     status: ApprovalStatus;
 }
 

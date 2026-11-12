@@ -143,6 +143,7 @@ function attachRunningTurn(folded: UIMessage[], session: Session): UIMessage[] {
                           id: approval.id,
                           sessionId: session.id,
                           fields: approval.fields,
+                          favoriteMove: approval.favoriteMove,
                           status: 'pending'
                       }
                   }
@@ -577,6 +578,7 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
                                       id: event.approval.id,
                                       sessionId: event.sessionId,
                                       fields: event.approval.fields,
+                                      favoriteMove: event.approval.favoriteMove,
                                       status: 'pending'
                                   }
                               }

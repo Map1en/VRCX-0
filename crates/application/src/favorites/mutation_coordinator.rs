@@ -20,6 +20,10 @@ use super::remote_favorites::{
     add_remote_favorite, clear_remote_favorite_group, delete_remote_favorite,
     save_remote_favorite_group, FavoriteRemoteMutationDeps,
 };
+use super::remote_move::{
+    list_remote_favorites, move_remote_favorites, FavoriteRemoteListInput, FavoriteRemoteListing,
+    FavoriteRemoteMoveInput, FavoriteRemoteMoveOutput,
+};
 use super::{
     FavoriteBulkRemoveInput, FavoriteBulkRemoveResult, FavoriteImportLocation,
     FavoriteImportOperation, FavoriteImportStatus, FavoriteRemoteAddInput,
@@ -271,6 +275,43 @@ impl FavoriteMutationCoordinator {
     ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let deps = self.remote_deps(label)?;
         clear_remote_favorite_group(&deps, input).await
+    }
+
+    pub async fn move_remote(
+        &self,
+        input: FavoriteRemoteMoveInput,
+    ) -> Result<FavoriteRemoteMoveOutput> {
+        let kind = input.kind;
+        let mutation = self.capture("Favorite move")?;
+        let event_scope = mutation.scope().clone();
+        let outcome = move_remote_favorites(&self.transfer_deps(mutation), input).await?;
+        self.notify_invalidated(
+            &event_scope,
+            kind.into(),
+            outcome.local_changed,
+            outcome.remote_changed,
+        );
+        Ok(outcome.output)
+    }
+
+    pub async fn list_remote(
+        &self,
+        input: FavoriteRemoteListInput,
+    ) -> Result<FavoriteRemoteListing> {
+        let mutation = self.capture("Favorite listing")?;
+        list_remote_favorites(&self.transfer_deps(mutation), input).await
+    }
+
+    fn transfer_deps<'a>(
+        &'a self,
+        mutation: AuthenticatedMutationContext<'a>,
+    ) -> FavoriteTransferDeps<'a> {
+        FavoriteTransferDeps {
+            store: self.store.as_ref(),
+            remote: self.remote.as_ref(),
+            world_cache: self.world_cache.as_ref(),
+            mutation,
+        }
     }
 
     pub async fn transfer_selection(

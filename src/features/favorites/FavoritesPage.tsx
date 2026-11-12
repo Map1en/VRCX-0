@@ -24,6 +24,7 @@ import {
     buildShareCollectionWorldIds,
     SHARE_COLLECTION_CLIENT_WORLD_CAP
 } from './shareCollectionDialogModel';
+import { useFavoriteExportDeepLink } from './useFavoriteExportDeepLink';
 import { useFavoritesPageController } from './useFavoritesPageController';
 import { useStableEvent } from './useStableEvent';
 
@@ -60,6 +61,7 @@ function FavoritesPage({
         viewData,
         instanceActionGatesByItemKey
     } = state;
+    useFavoriteExportDeepLink({ embedded, kind, setExportDialogOpen });
     const handleToggleOrderEditing = useStableEvent(() =>
         order.editing ? order.stop() : order.start()
     );

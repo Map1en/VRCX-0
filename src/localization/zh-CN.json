@@ -184,6 +184,15 @@
             "approve": "批准",
             "deny": "拒绝",
             "declined": "已拒绝：{action}",
+            "backup_hint": "移动会先把它从原分组删除，再加入新分组。强烈建议先备份收藏 ID 列表。",
+            "backup_open": "先去备份",
+            "approve_all": "全部批准",
+            "favorite_move": {
+                "summary": "要移到“{target}”的收藏：{count} 个",
+                "source": "原分组：{group}",
+                "already_in_target": "已在该分组",
+                "not_favorited": "不在 VRChat 收藏里，会跳过"
+            },
             "fields": {
                 "userId": "玩家",
                 "note": "备注",
@@ -192,6 +201,7 @@
                 "group": "分组",
                 "action": "操作",
                 "tags": "收藏分组",
+                "targetGroup": "移到",
                 "text": "文字",
                 "afk": "AFK",
                 "config": "设置"
@@ -228,6 +238,7 @@
         },
         "tools": {
             "favorite_local": "更新本地收藏",
+            "favorite_move": "移动 VRChat 收藏",
             "favorite_vrchat": "添加 VRChat 收藏",
             "find_user": "查找用户",
             "get_activity_streaks": "查看连续活跃记录",

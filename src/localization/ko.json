@@ -184,6 +184,15 @@
             "approve": "허용",
             "deny": "거부",
             "declined": "거부됨: {action}",
+            "backup_hint": "이동하면 현재 그룹에서 먼저 삭제한 뒤 새 그룹에 추가합니다. 먼저 즐겨찾기 ID 목록을 백업해 두는 것을 강력히 권장합니다.",
+            "backup_open": "먼저 백업하기",
+            "approve_all": "모두 허용",
+            "favorite_move": {
+                "summary": "“{target}”(으)로 옮길 즐겨찾기: {count}개",
+                "source": "기존 그룹: {group}",
+                "already_in_target": "이미 이 그룹에 있음",
+                "not_favorited": "VRChat 즐겨찾기에 없어 건너뜀"
+            },
             "fields": {
                 "userId": "유저",
                 "note": "메모",
@@ -192,6 +201,7 @@
                 "group": "그룹",
                 "action": "작업",
                 "tags": "즐겨찾기 그룹",
+                "targetGroup": "이동할 그룹",
                 "text": "텍스트",
                 "afk": "AFK",
                 "config": "설정"
@@ -228,6 +238,7 @@
         },
         "tools": {
             "favorite_local": "로컬 즐겨찾기 업데이트",
+            "favorite_move": "VRChat 즐겨찾기 이동",
             "favorite_vrchat": "VRChat 즐겨찾기 추가",
             "find_user": "사용자 찾기",
             "get_activity_streaks": "연속 활동 기록 확인",

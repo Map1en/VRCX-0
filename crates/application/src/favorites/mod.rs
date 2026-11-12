@@ -8,6 +8,7 @@ mod local_favorites;
 mod local_world_details;
 mod mutation_coordinator;
 mod remote_favorites;
+mod remote_move;
 #[cfg(test)]
 mod test_support;
 
@@ -49,4 +50,9 @@ pub use mutation_coordinator::{FavoriteMutationCoordinator, FavoriteMutationRunt
 pub use remote_favorites::{
     FavoriteRemote, FavoriteRemoteAddInput, FavoriteRemoteCommand, FavoriteRemoteDeleteInput,
     FavoriteRemoteFuture, FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput,
+};
+pub use remote_move::{
+    FavoriteRemoteEntry, FavoriteRemoteGroup, FavoriteRemoteGroupSummary, FavoriteRemoteListInput,
+    FavoriteRemoteListing, FavoriteRemoteMoveInput, FavoriteRemoteMoveItem,
+    FavoriteRemoteMoveOutput, FavoriteRemoteMoveStatus, FAVORITE_REMOTE_MOVE_MAX_ITEMS,
 };

@@ -11,7 +11,10 @@ use vrcx_0_mcp::{
     apply_user_choice, InProcessMcpTools, McpError, ToolCallOutcome, UserChoiceRequest,
 };
 
-use crate::approvals::{approval_fields, AssistantApproval, PendingApprovals, ToolApprovalPolicy};
+use crate::approvals::{
+    approval_fields, favorite_move_preview, AssistantApproval, AssistantFavoriteMovePreview,
+    AssistantFavoriteMoveStatus, PendingApprovals, ToolApprovalPolicy,
+};
 use crate::charts::{tool_charts, AssistantChart};
 use crate::choices::{choice_candidates, PendingChoices};
 use crate::entities::{extract_entities, surfaced_entities, Entity};
@@ -528,10 +531,42 @@ async fn dispatch_round<'a>(
 
 async fn dispatch_gated_call<'a>(ctx: &TurnContext, call: PreparedCall<'a>) -> DispatchOutcome<'a> {
     let tool_call = call.call;
+    let name = tool_call.function.name.clone();
     let arguments = ctx
         .approval_policy
-        .approved_arguments(&tool_call.function.name, call.arguments);
-    match ask_user_approval(ctx, tool_call, &arguments).await {
+        .approved_arguments(&name, call.arguments);
+    let mut favorite_move = None;
+    if let Some(preview_arguments) = ctx.approval_policy.preview_arguments(&name, &arguments) {
+        let preview = match await_tool_call(
+            ctx.tools.call_tool(name.clone(), Some(preview_arguments)),
+            &ctx.cancel,
+            TOOL_CALL_TIMEOUT,
+        )
+        .await
+        {
+            AwaitToolCall::Completed(preview) => preview,
+            AwaitToolCall::Cancelled => return (tool_call, None),
+            AwaitToolCall::TimedOut => Err(McpError::Custom(format!(
+                "tool `{name}` timed out after {} seconds",
+                TOOL_CALL_TIMEOUT.as_secs()
+            ))),
+        };
+        match preview {
+            Ok(preview) if !preview.is_error => {
+                favorite_move = favorite_move_preview(&name, preview.structured.as_ref());
+                if favorite_move.as_ref().is_some_and(|preview| {
+                    preview
+                        .items
+                        .iter()
+                        .all(|item| item.status != AssistantFavoriteMoveStatus::WouldMove)
+                }) {
+                    return (tool_call, Some(resolve_tool_outcome(&name, Ok(preview))));
+                }
+            }
+            failed => return (tool_call, Some(resolve_tool_outcome(&name, failed))),
+        }
+    }
+    match ask_user_approval(ctx, tool_call, &arguments, favorite_move).await {
         Approval::Approved if turn_still_current(ctx) => {
             dispatch_call(
                 ctx,
@@ -582,6 +617,7 @@ async fn ask_user_approval(
     ctx: &TurnContext,
     call: &ToolCall,
     arguments: &serde_json::Map<String, Value>,
+    favorite_move: Option<AssistantFavoriteMovePreview>,
 ) -> Approval {
     if !ctx.sessions.is_current_turn(&ctx.session_id, &ctx.turn_id) {
         return Approval::Cancelled;
@@ -591,6 +627,7 @@ async fn ask_user_approval(
         tool_call_id: call.id.clone(),
         tool: call.function.name.clone(),
         fields: approval_fields(arguments),
+        favorite_move,
     };
     let receiver = ctx
         .approvals

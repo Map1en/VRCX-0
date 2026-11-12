@@ -184,6 +184,15 @@
             "approve": "批准",
             "deny": "拒絕",
             "declined": "已拒絕：{action}",
+            "backup_hint": "移動時會先從原本的分組刪除，再加入新分組。強烈建議先備份收藏 ID 清單。",
+            "backup_open": "先去備份",
+            "approve_all": "全部批准",
+            "favorite_move": {
+                "summary": "要移到「{target}」的收藏：{count} 個",
+                "source": "原分組：{group}",
+                "already_in_target": "已在這個分組",
+                "not_favorited": "不在 VRChat 收藏中，會略過"
+            },
             "fields": {
                 "userId": "用戶",
                 "note": "備註",
@@ -192,6 +201,7 @@
                 "group": "分組",
                 "action": "操作",
                 "tags": "收藏分組",
+                "targetGroup": "移到",
                 "text": "文字",
                 "afk": "AFK",
                 "config": "設定"
@@ -228,6 +238,7 @@
         },
         "tools": {
             "favorite_local": "更新本機收藏",
+            "favorite_move": "移動 VRChat 收藏",
             "favorite_vrchat": "加入 VRChat 收藏",
             "find_user": "尋找使用者",
             "get_activity_streaks": "查看連續活躍紀錄",

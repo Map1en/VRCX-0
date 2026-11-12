@@ -16,7 +16,10 @@ mod session;
 #[cfg(test)]
 mod test_support;
 
-pub use approvals::{AssistantApproval, AssistantApprovalField};
+pub use approvals::{
+    AssistantApproval, AssistantApprovalField, AssistantFavoriteGroup, AssistantFavoriteMoveItem,
+    AssistantFavoriteMovePreview, AssistantFavoriteMoveStatus,
+};
 pub use choices::AssistantChoiceCandidate;
 pub use config::PlaybookMode;
 pub use endpoints::{

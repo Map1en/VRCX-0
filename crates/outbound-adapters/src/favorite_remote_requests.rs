@@ -10,8 +10,8 @@ use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
 use vrcx_0_vrchat_protocol::avatars::avatar_get_input;
 use vrcx_0_vrchat_protocol::favorites::{
     favorite_add_input, favorite_avatars_get_input, favorite_delete_input,
-    favorite_group_clear_input, favorite_group_save_input, favorite_limits_get_input,
-    favorite_worlds_get_input, favorites_get_input,
+    favorite_group_clear_input, favorite_group_save_input, favorite_groups_get_input,
+    favorite_limits_get_input, favorite_worlds_get_input, favorites_get_input,
 };
 use vrcx_0_vrchat_protocol::users::user_get_input;
 
@@ -81,6 +81,23 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         Box::pin(async move {
             self.execute(favorite_limits_get_input(endpoint), command)
                 .await
+        })
+    }
+
+    fn groups<'a>(
+        &'a self,
+        endpoint: String,
+        n: i32,
+        offset: i32,
+        owner_id: String,
+        command: Option<FavoriteRemoteCommand>,
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
+        Box::pin(async move {
+            self.execute(
+                favorite_groups_get_input(endpoint, n, offset, owner_id),
+                command,
+            )
+            .await
         })
     }
 

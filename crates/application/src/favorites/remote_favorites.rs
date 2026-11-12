@@ -41,6 +41,14 @@ pub trait FavoriteRemote: Send + Sync {
         endpoint: String,
         command: Option<FavoriteRemoteCommand>,
     ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
+    fn groups<'a>(
+        &'a self,
+        endpoint: String,
+        n: i32,
+        offset: i32,
+        owner_id: String,
+        command: Option<FavoriteRemoteCommand>,
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
     fn favorite_worlds<'a>(
         &'a self,
         endpoint: String,

@@ -203,7 +203,8 @@ describe('useAssistantEvents auth scope', () => {
                     id: 'approval-1',
                     toolCallId: 'call-1',
                     tool: 'favorite_vrchat',
-                    fields: [{ name: 'entityId', value: 'wrld_a' }]
+                    fields: [{ name: 'entityId', value: 'wrld_a' }],
+                    favoriteMove: null
                 }
             });
         });

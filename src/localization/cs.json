@@ -187,6 +187,15 @@
             "approve": "Povolit",
             "deny": "Zamítnout",
             "declined": "Zamítnuto: {action}",
+            "backup_hint": "Při přesunu se položka nejdřív odebere z aktuální skupiny a teprve potom přidá do nové. Důrazně doporučujeme si předtím zálohovat seznam ID oblíbených.",
+            "backup_open": "Nejdřív zálohovat",
+            "approve_all": "Povolit vše",
+            "favorite_move": {
+                "summary": "Oblíbené, které se přesunou do „{target}“: {count}",
+                "source": "z {group}",
+                "already_in_target": "Už je v této skupině",
+                "not_favorited": "Není v oblíbených VRChatu, přeskočí se"
+            },
             "fields": {
                 "userId": "Uživatel",
                 "note": "Poznámka",
@@ -195,6 +204,7 @@
                 "group": "Skupina",
                 "action": "Akce",
                 "tags": "Skupina oblíbených",
+                "targetGroup": "Přesunout do",
                 "text": "Text",
                 "afk": "AFK",
                 "config": "Nastavení"
@@ -231,6 +241,7 @@
         },
         "tools": {
             "favorite_local": "Aktualizovat místní oblíbené",
+            "favorite_move": "Přesunout oblíbené ve VRChatu",
             "favorite_vrchat": "Přidat oblíbené ve VRChatu",
             "find_user": "Najít uživatele",
             "get_activity_streaks": "Zobrazit série aktivity",

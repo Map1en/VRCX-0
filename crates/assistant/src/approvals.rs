@@ -1,9 +1,10 @@
 use std::collections::HashSet;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use specta::Type;
 use vrcx_0_contracts::llm::ToolDefinition;
+use vrcx_0_core::FavoriteEntityKind;
 use vrcx_0_mcp::ToolDescriptor;
 
 use crate::pending::PendingReplies;
@@ -19,6 +20,58 @@ pub struct AssistantApproval {
     pub tool_call_id: String,
     pub tool: String,
     pub fields: Vec<AssistantApprovalField>,
+    pub favorite_move: Option<AssistantFavoriteMovePreview>,
+}
+
+/// What a `favorite_move` call would do, from its dry run, so the user approves
+/// the whole batch knowing each favorite's name and current group.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AssistantFavoriteMovePreview {
+    pub kind: FavoriteEntityKind,
+    pub target: AssistantFavoriteGroup,
+    pub items: Vec<AssistantFavoriteMoveItem>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AssistantFavoriteGroup {
+    pub name: String,
+    pub display_name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AssistantFavoriteMoveItem {
+    pub entity_id: String,
+    pub name: Option<String>,
+    pub source: Option<AssistantFavoriteGroup>,
+    pub status: AssistantFavoriteMoveStatus,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum AssistantFavoriteMoveStatus {
+    WouldMove,
+    AlreadyInTarget,
+    NotFavorited,
+}
+
+#[derive(Deserialize)]
+struct FavoriteMoveDryRun {
+    favorite: AssistantFavoriteMovePreview,
+}
+
+pub(crate) fn favorite_move_preview(
+    tool: &str,
+    structured: Option<&Value>,
+) -> Option<AssistantFavoriteMovePreview> {
+    if tool != "favorite_move" {
+        return None;
+    }
+    serde_json::from_value::<FavoriteMoveDryRun>(structured?.clone())
+        .ok()
+        .map(|dry_run| dry_run.favorite)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -41,6 +94,20 @@ pub(crate) struct ToolApprovalPolicy {
 impl ToolApprovalPolicy {
     pub(crate) fn requires_approval(&self, tool: &str) -> bool {
         self.gated.contains(tool)
+    }
+
+    /// Tools with a dry run preview the change before the card is shown, so a
+    /// call that cannot run never asks the user.
+    pub(crate) fn preview_arguments(
+        &self,
+        tool: &str,
+        arguments: &Map<String, Value>,
+    ) -> Option<Map<String, Value>> {
+        self.dry_run.contains(tool).then(|| {
+            let mut arguments = arguments.clone();
+            arguments.insert(DRY_RUN_ARGUMENT.into(), Value::Bool(true));
+            arguments
+        })
     }
 
     /// The approval card is the confirmation, so the model cannot turn an
@@ -172,6 +239,64 @@ mod tests {
             json!({ "userId": "usr_a", "dryRun": false })
         );
         assert_eq!(Value::Object(chatbox), json!({ "userId": "usr_a" }));
+    }
+
+    #[test]
+    fn only_dry_run_tools_preview_before_asking() {
+        let (_, policy) = tool_definitions(vec![
+            descriptor("set_friend_note", false, write_schema()),
+            descriptor("send_chatbox_message", false, json!({ "type": "object" })),
+        ]);
+        let arguments = json!({ "userId": "usr_a", "dryRun": false });
+        let arguments = arguments.as_object().unwrap();
+
+        assert_eq!(
+            policy
+                .preview_arguments("set_friend_note", arguments)
+                .map(Value::Object),
+            Some(json!({ "userId": "usr_a", "dryRun": true }))
+        );
+        assert!(policy
+            .preview_arguments("send_chatbox_message", arguments)
+            .is_none());
+    }
+
+    #[test]
+    fn favorite_move_dry_run_becomes_the_approval_preview() {
+        let structured = json!({
+            "summary": "Dry run",
+            "favorite": {
+                "kind": "world",
+                "dryRun": true,
+                "target": { "name": "worlds2", "displayName": "Sleep", "favoriteType": "world" },
+                "items": [
+                    {
+                        "entityId": "wrld_a",
+                        "name": "Night Lake",
+                        "source": { "name": "worlds1", "displayName": "Chill", "favoriteType": "world" },
+                        "status": "wouldMove"
+                    },
+                    { "entityId": "wrld_b", "name": null, "source": null, "status": "notFavorited" }
+                ]
+            }
+        });
+
+        let preview = favorite_move_preview("favorite_move", Some(&structured)).expect("preview");
+
+        assert_eq!(preview.target.display_name, "Sleep");
+        assert_eq!(preview.items[0].name.as_deref(), Some("Night Lake"));
+        assert_eq!(
+            preview.items[0]
+                .source
+                .as_ref()
+                .map(|group| group.name.as_str()),
+            Some("worlds1")
+        );
+        assert_eq!(
+            preview.items[1].status,
+            AssistantFavoriteMoveStatus::NotFavorited
+        );
+        assert!(favorite_move_preview("favorite_vrchat", Some(&structured)).is_none());
     }
 
     #[test]

@@ -2993,6 +2993,7 @@ export type AssistantApproval = {
     toolCallId: string;
     tool: string;
     fields: AssistantApprovalField[];
+    favoriteMove: AssistantFavoriteMovePreview | null;
 };
 
 export type AssistantApprovalField = {
@@ -3068,6 +3069,33 @@ export type AssistantErrorEvent = {
     code: string;
     message: string;
 };
+
+export type AssistantFavoriteGroup = {
+    name: string;
+    displayName: string;
+};
+
+export type AssistantFavoriteMoveItem = {
+    entityId: string;
+    name: string | null;
+    source: AssistantFavoriteGroup | null;
+    status: AssistantFavoriteMoveStatus;
+};
+
+/**
+ *  What a `favorite_move` call would do, from its dry run, so the user approves
+ *  the whole batch knowing each favorite's name and current group.
+ */
+export type AssistantFavoriteMovePreview = {
+    kind: FavoriteEntityKind;
+    target: AssistantFavoriteGroup;
+    items: AssistantFavoriteMoveItem[];
+};
+
+export type AssistantFavoriteMoveStatus =
+    | 'wouldMove'
+    | 'alreadyInTarget'
+    | 'notFavorited';
 
 export type AssistantRuntimeSelection = {
     endpointId: string | null;

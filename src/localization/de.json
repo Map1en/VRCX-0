@@ -185,6 +185,15 @@
             "approve": "Erlauben",
             "deny": "Ablehnen",
             "declined": "Abgelehnt: {action}",
+            "backup_hint": "Beim Verschieben wird der Favorit zuerst aus seiner aktuellen Gruppe entfernt und dann der neuen hinzugefügt. Wir empfehlen dringend, vorher deine Favoriten-ID-Liste zu sichern.",
+            "backup_open": "Erst sichern",
+            "approve_all": "Alle erlauben",
+            "favorite_move": {
+                "summary": "Favoriten, die nach „{target}“ verschoben werden: {count}",
+                "source": "aus {group}",
+                "already_in_target": "Bereits in dieser Gruppe",
+                "not_favorited": "Kein VRChat-Favorit, wird übersprungen"
+            },
             "fields": {
                 "userId": "Benutzer",
                 "note": "Notiz",
@@ -193,6 +202,7 @@
                 "group": "Gruppe",
                 "action": "Aktion",
                 "tags": "Favoritengruppe",
+                "targetGroup": "Verschieben nach",
                 "text": "Text",
                 "afk": "AFK",
                 "config": "Einstellungen"
@@ -229,6 +239,7 @@
         },
         "tools": {
             "favorite_local": "Lokale Favoriten aktualisieren",
+            "favorite_move": "VRChat-Favorit verschieben",
             "favorite_vrchat": "VRChat-Favorit hinzufügen",
             "find_user": "Nutzer suchen",
             "get_activity_streaks": "Aktivitätsserien ansehen",

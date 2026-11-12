@@ -338,7 +338,8 @@ describe('assistantChatStore', () => {
                 id: 'approval_1',
                 toolCallId: 'call_1',
                 tool: 'set_friend_note',
-                fields: [{ name: 'note', value: 'met' }]
+                fields: [{ name: 'note', value: 'met' }],
+                favoriteMove: null
             },
             endpointId: null,
             model: null,
@@ -361,7 +362,8 @@ describe('assistantChatStore', () => {
                         id: 'approval_1',
                         sessionId: 'session-1',
                         status: 'pending',
-                        fields: [{ name: 'note', value: 'met' }]
+                        fields: [{ name: 'note', value: 'met' }],
+                        favoriteMove: null
                     }
                 }
             ]
@@ -409,7 +411,8 @@ describe('assistantChatStore', () => {
                 id: 'approval_1',
                 toolCallId: 'call_1',
                 tool: 'send_chatbox_message',
-                fields: [{ name: 'text', value: 'hi' }]
+                fields: [{ name: 'text', value: 'hi' }],
+                favoriteMove: null
             }
         });
         expect(

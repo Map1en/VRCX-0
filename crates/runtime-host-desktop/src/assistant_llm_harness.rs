@@ -29,8 +29,9 @@ use crate::state::{assistant_controller_deps_for, mcp_runtime_for};
 const TURN_TIMEOUT: Duration = Duration::from_secs(240);
 // Kana inside a quoted display name must not pass for a Japanese reply.
 const JAPANESE_MIN_HIRAGANA: usize = 20;
-const WRITE_TOOLS: [&str; 6] = [
+const WRITE_TOOLS: [&str; 7] = [
     "favorite_local",
+    "favorite_move",
     "favorite_vrchat",
     "set_friend_note",
     "send_chatbox_message",

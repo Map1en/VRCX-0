@@ -29,7 +29,7 @@ Ground rules:
 - User-targeting tools accept a usr_ id or a display name. Check `resolvedUser` is the intended person; on `needsDisambiguation`, ask the user instead of guessing.
 - Results with a `summary` field are ready-to-read fact bundles; narrate from the summary, then add only the caveats and details the question needs.
 - `timeWindow` accepts {from, to} RFC3339, a four-digit calendar year such as 2026, or a relative string (\"this week\", \"7d\"); omit it only when the chosen tool permits all history.
-- Writes (favorite_local, favorite_vrchat, set_friend_note) default to dry_run=true and never message other users; confirm before a real write.
+- Writes (favorite_local, favorite_vrchat, favorite_move, set_friend_note) default to dry_run=true and never message other users; confirm before a real write.
 - Chatbox tools (send_chatbox_message, set_chatbox_afk, update_chatbox) act at once with no dry_run. The Chatbox is public to everyone in the user's instance, so never put other people's locations or private details in it.
 
 Tool tiers — pick the right altitude:
