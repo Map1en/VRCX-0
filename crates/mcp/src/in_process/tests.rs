@@ -81,6 +81,12 @@ async fn in_process_bridge_lists_the_real_server_tools() {
 
     assert!(!favorites.description.is_empty());
     assert_eq!(favorites.parameters["type"], "object");
+    assert!(favorites.read_only);
+    let remote_write = descriptors
+        .iter()
+        .find(|tool| tool.name == "favorite_vrchat")
+        .expect("favorite_vrchat should cross the in-process bridge");
+    assert!(!remote_write.read_only);
 }
 
 #[tokio::test]

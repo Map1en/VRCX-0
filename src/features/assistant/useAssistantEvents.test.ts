@@ -179,6 +179,59 @@ describe('useAssistantEvents auth scope', () => {
         ]);
     });
 
+    it('shows an approval card on its tool call and does not report a declined call as a tool error', async () => {
+        renderHook(() => useAssistantEvents());
+        await waitFor(() => {
+            expect(mocks.handlers.has('assistantApprovalRequest')).toBe(true);
+        });
+        const turn = {
+            ownerUserId: 'usr_current',
+            sessionId: 'session-1',
+            turnId: 'turn-1'
+        };
+
+        act(() => {
+            mocks.handlers.get('assistantToolCall')?.({
+                ...turn,
+                toolCallId: 'call-1',
+                name: 'favorite_vrchat',
+                args: '{"entityId":"wrld_a"}'
+            });
+            mocks.handlers.get('assistantApprovalRequest')?.({
+                ...turn,
+                approval: {
+                    id: 'approval-1',
+                    toolCallId: 'call-1',
+                    tool: 'favorite_vrchat',
+                    fields: [{ name: 'entityId', value: 'wrld_a' }]
+                }
+            });
+        });
+        expect(
+            useAssistantChatStore.getState().messagesBySession['session-1'][0]
+                .toolCalls[0].approval
+        ).toMatchObject({ id: 'approval-1', status: 'pending' });
+
+        act(() => {
+            mocks.handlers.get('assistantToolResult')?.({
+                ...turn,
+                toolCallId: 'call-1',
+                ok: false,
+                summary: 'Declined by the user; nothing was changed.',
+                entities: [],
+                charts: [],
+                screenshots: null,
+                denied: true
+            });
+        });
+
+        expect(mocks.recordToolError).not.toHaveBeenCalled();
+        expect(
+            useAssistantChatStore.getState().messagesBySession['session-1'][0]
+                .toolCalls[0].status
+        ).toBe('denied');
+    });
+
     it('evicts a retained busy transcript after it finishes while closed', async () => {
         renderHook(() => useAssistantEvents());
         await waitFor(() => {

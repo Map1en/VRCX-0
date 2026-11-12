@@ -93,6 +93,7 @@ fn reopened_session_restores_tool_rows_with_full_content_for_the_model() {
                             value: 120,
                         }],
                     }],
+                    denied: false,
                     screenshots: Some(crate::screenshots::AssistantScreenshots {
                         total: 3,
                         ids: vec!["VRChat_a.png".into()],

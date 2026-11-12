@@ -448,6 +448,16 @@ export const commands = {
             choiceId,
             userId
         }),
+    appAssistantAnswerApproval: (
+        sessionId: string,
+        approvalId: string,
+        approved: boolean
+    ) =>
+        __TAURI_INVOKE<null>('app__assistant_answer_approval', {
+            sessionId,
+            approvalId,
+            approved
+        }),
     appAssistantListSessions: () =>
         __TAURI_INVOKE<SessionSummary[]>('app__assistant_list_sessions'),
     appAssistantGetSession: (sessionId: string) =>
@@ -2977,6 +2987,29 @@ export type AppUpdateStatusSnapshot = {
     shouldNotify: boolean;
 };
 
+/**
+ *  A side-effecting tool call waiting for the user. `fields` are the exact
+ *  arguments the call runs with once approved.
+ */
+export type AssistantApproval = {
+    id: string;
+    toolCallId: string;
+    tool: string;
+    fields: AssistantApprovalField[];
+};
+
+export type AssistantApprovalField = {
+    name: string;
+    value: string;
+};
+
+export type AssistantApprovalRequestEvent = {
+    ownerUserId: OwnerId;
+    sessionId: string;
+    turnId: string;
+    approval: AssistantApproval;
+};
+
 export type AssistantChart = {
     kind: AssistantChartKind;
     axis: AssistantChartAxis;
@@ -3076,6 +3109,7 @@ export type AssistantToolResultEvent = {
     entities: Entity[];
     charts: AssistantChart[];
     screenshots: AssistantScreenshots | null;
+    denied: boolean;
 };
 
 export type AssistantTurnEntitiesEvent = {
@@ -7397,6 +7431,7 @@ export type Session = {
     title: string;
     messages: Message[];
     activeTurn: ActiveTurn | null;
+    pendingApproval: AssistantApproval | null;
     endpointId: string | null;
     model: string | null;
     allowWrites: boolean;
@@ -7619,6 +7654,8 @@ export type ToolResultRecord = {
     summary: string;
     entities: Entity[];
     charts?: AssistantChart[];
+    /**  The user declined the approval card, so the call never ran. */
+    denied?: boolean;
     screenshots?: AssistantScreenshots | null;
 };
 

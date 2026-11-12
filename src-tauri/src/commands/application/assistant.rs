@@ -51,6 +51,21 @@ pub async fn app__assistant_answer_choice(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn app__assistant_answer_approval(
+    state: State<'_, AppState>,
+    sessionId: String,
+    approvalId: String,
+    approved: bool,
+) -> Result<(), AppError> {
+    state
+        .assistant()
+        .await?
+        .answer_approval(&sessionId, &approvalId, approved);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn app__assistant_list_sessions(
     state: State<'_, AppState>,
 ) -> Result<Vec<SessionSummary>, AppError> {

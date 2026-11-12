@@ -20,7 +20,8 @@ const WORLD_MATCH_LIMIT: i64 = 500;
 #[tool_router(router = screenshots_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L1·query] Find the signed-in user's VRChat screenshots in the local library by who was in them (people: usr_ ids or names; together=true means all of them in the same shot, false means any), the world (wrld_ id or name) and a time window. Returns the total and the newest screenshots with screenshotId, capturedAt, worldName and the people in each. The app shows the matching screenshots under your answer, so describe them instead of listing ids. Only screenshots taken while VRCX-0 was running record who was there; withoutPeople counts the rest. For rankings (who appears most, which worlds, which months) use summarize_screenshots."
+        description = "[L1·query] Find the signed-in user's VRChat screenshots in the local library by who was in them (people: usr_ ids or names; together=true means all of them in the same shot, false means any), the world (wrld_ id or name) and a time window. Returns the total and the newest screenshots with screenshotId, capturedAt, worldName and the people in each. The app shows the matching screenshots under your answer, so describe them instead of listing ids. Only screenshots taken while VRCX-0 was running record who was there; withoutPeople counts the rest. For rankings (who appears most, which worlds, which months) use summarize_screenshots.",
+        annotations(read_only_hint = true)
     )]
     async fn search_screenshots(
         &self,
@@ -81,7 +82,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] Rank the signed-in user's screenshots: groupBy person (who appears in the most screenshots with you, excluding yourself), world (where you took the most), or month. Accepts the same people/together/world/timeWindow filters as search_screenshots. Use for \"who do I take the most photos with\", \"which worlds did I photograph most this year\", or \"how many screenshots per month\"."
+        description = "[L2·analyze] Rank the signed-in user's screenshots: groupBy person (who appears in the most screenshots with you, excluding yourself), world (where you took the most), or month. Accepts the same people/together/world/timeWindow filters as search_screenshots. Use for \"who do I take the most photos with\", \"which worlds did I photograph most this year\", or \"how many screenshots per month\".",
+        annotations(read_only_hint = true)
     )]
     async fn summarize_screenshots(
         &self,

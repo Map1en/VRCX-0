@@ -16,6 +16,7 @@ pub struct ToolDescriptor {
     pub name: String,
     pub description: String,
     pub parameters: Value,
+    pub read_only: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +52,11 @@ impl InProcessMcpTools {
                     .map(|value| value.to_string())
                     .unwrap_or_default(),
                 parameters: Value::Object((*tool.input_schema).clone()),
+                read_only: tool
+                    .annotations
+                    .as_ref()
+                    .and_then(|annotations| annotations.read_only_hint)
+                    == Some(true),
             })
             .collect())
     }

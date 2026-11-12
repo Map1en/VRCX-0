@@ -18,7 +18,8 @@ use super::common::{map_application_query_error, require_current_user_id, struct
 #[tool_router(router = favorites_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[write·local] Add or remove a VRCX-0 LOCAL favorite for a world, friend, or avatar — local label only, no VRChat account change, no message to anyone; dry_run defaults to true. Use get_favorites to check duplicates first."
+        description = "[write·local] Add or remove a VRCX-0 LOCAL favorite for a world, friend, or avatar — local label only, no VRChat account change, no message to anyone; dry_run defaults to true. Use get_favorites to check duplicates first.",
+        annotations(read_only_hint = false)
     )]
     async fn favorite_local(
         &self,
@@ -28,7 +29,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[write·account] Add a world, friend, or avatar favorite to the signed-in VRChat ACCOUNT (tags like worlds1, group_0, or avatars1 required). Changes the real account; subject to group capacity limits; gated by a setting and dry_run defaults to true. Confirm before a real write. Never invites or messages anyone."
+        description = "[write·account] Add a world, friend, or avatar favorite to the signed-in VRChat ACCOUNT (tags like worlds1, group_0, or avatars1 required). Changes the real account; subject to group capacity limits; gated by a setting and dry_run defaults to true. Confirm before a real write. Never invites or messages anyone.",
+        annotations(read_only_hint = false)
     )]
     async fn favorite_vrchat(
         &self,
@@ -38,7 +40,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] List VRCX-0 local favorites, newest first, with per-group counts for every favorite. Omit kind or use all to list worlds, friends, and avatars; otherwise filter by world, friend, or avatar. Before a favorite write, pass entityId to check that exact entity for duplicates."
+        description = "[L1·query] List VRCX-0 local favorites, newest first, with per-group counts for every favorite. Omit kind or use all to list worlds, friends, and avatars; otherwise filter by world, friend, or avatar. Before a favorite write, pass entityId to check that exact entity for duplicates.",
+        annotations(read_only_hint = true)
     )]
     async fn get_favorites(
         &self,

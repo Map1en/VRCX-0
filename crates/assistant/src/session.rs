@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
 
+use crate::approvals::AssistantApproval;
 use crate::charts::AssistantChart;
 use crate::config::PlaybookMode;
 use crate::endpoints::AssistantRuntimeSelection;
@@ -48,6 +49,9 @@ pub struct ToolResultRecord {
     pub entities: Vec<Entity>,
     #[serde(default)]
     pub charts: Vec<AssistantChart>,
+    /// The user declined the approval card, so the call never ran.
+    #[serde(default)]
+    pub denied: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub screenshots: Option<AssistantScreenshots>,
 }
@@ -152,6 +156,7 @@ pub struct Session {
     pub title: String,
     pub messages: Vec<Message>,
     pub active_turn: Option<ActiveTurn>,
+    pub pending_approval: Option<AssistantApproval>,
     pub endpoint_id: Option<String>,
     pub model: Option<String>,
     pub allow_writes: bool,
@@ -178,6 +183,7 @@ struct StoredSession {
     title: String,
     pinned: bool,
     active_turn: Option<ActiveTurn>,
+    pending_approval: Option<AssistantApproval>,
     endpoint_id: Option<String>,
     model: Option<String>,
     allow_writes: bool,
@@ -195,6 +201,7 @@ impl StoredSession {
             title: self.title.clone(),
             messages,
             active_turn: self.active_turn.clone(),
+            pending_approval: self.pending_approval.clone(),
             endpoint_id: self.endpoint_id.clone(),
             model: self.model.clone(),
             allow_writes: self.allow_writes,
@@ -320,6 +327,7 @@ impl SessionStore {
                             title: entry.title,
                             pinned: entry.pinned,
                             active_turn: None,
+                            pending_approval: None,
                             endpoint_id: optional_string(entry.endpoint_id),
                             model: optional_string(entry.model),
                             allow_writes: entry.allow_writes,
@@ -500,6 +508,7 @@ impl SessionStore {
             title: String::new(),
             pinned: false,
             active_turn: None,
+            pending_approval: None,
             endpoint_id: normalize_optional(runtime.endpoint_id),
             model: normalize_optional(runtime.model),
             allow_writes: runtime.allow_writes,
@@ -707,6 +716,26 @@ impl SessionStore {
             .get(session_id)
             .and_then(|session| session.active_turn.as_ref())
             .is_some_and(|turn| turn.turn_id == turn_id)
+    }
+
+    /// Records the approval card a running turn is waiting on, so a reloaded
+    /// window can show it again.
+    pub(crate) fn set_pending_approval(&self, session_id: &str, approval: AssistantApproval) {
+        if let Some(session) = self.state.lock().unwrap().sessions.get_mut(session_id) {
+            session.pending_approval = Some(approval);
+        }
+    }
+
+    pub(crate) fn clear_pending_approval(&self, session_id: &str, approval_id: &str) {
+        if let Some(session) = self.state.lock().unwrap().sessions.get_mut(session_id) {
+            if session
+                .pending_approval
+                .as_ref()
+                .is_some_and(|approval| approval.id == approval_id)
+            {
+                session.pending_approval = None;
+            }
+        }
     }
 
     pub fn push_message(

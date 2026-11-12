@@ -178,6 +178,25 @@
             "picked": "已選擇 {name}",
             "skipped": "沒有為「{query}」選擇任何人"
         },
+        "approval": {
+            "title": "要允許「{action}」嗎？",
+            "description": "助手想進行這項變更，只有你批准後才會執行。",
+            "approve": "批准",
+            "deny": "拒絕",
+            "declined": "已拒絕：{action}",
+            "fields": {
+                "userId": "用戶",
+                "note": "備註",
+                "kind": "類型",
+                "entityId": "對象",
+                "group": "分組",
+                "action": "操作",
+                "tags": "收藏分組",
+                "text": "文字",
+                "afk": "AFK",
+                "config": "設定"
+            }
+        },
         "scroll_to_latest": "捲動到底部",
         "connection": {
             "checking": "檢查連線",

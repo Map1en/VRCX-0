@@ -234,6 +234,7 @@ describe('assistantChatStore', () => {
                 }
             ],
             activeTurn: null,
+            pendingApproval: null,
             endpointId: null,
             model: null,
             allowWrites: false,
@@ -302,6 +303,132 @@ describe('assistantChatStore', () => {
                 ]
             }
         ]);
+    });
+
+    it('reloads a running turn with its waiting approval card and keeps following that turn', () => {
+        const store = useAssistantChatStore.getState();
+        store.hydrateSession({
+            id: 'session-1',
+            title: 'Note',
+            messages: [
+                {
+                    id: 'm1',
+                    seq: 1,
+                    role: 'user',
+                    content: 'note that I met Alice',
+                    createdAt: '2026-11-12T00:00:00Z',
+                    toolCall: null,
+                    toolResult: null
+                },
+                {
+                    id: 'm2',
+                    seq: 2,
+                    role: 'tool_call',
+                    content: '',
+                    createdAt: '2026-11-12T00:00:01Z',
+                    toolCall: {
+                        id: 'call_1',
+                        name: 'set_friend_note',
+                        arguments: '{"userId":"usr_alice","note":"met"}'
+                    },
+                    toolResult: null
+                }
+            ],
+            activeTurn: { turnId: 'turn_1', status: 'running' },
+            pendingApproval: {
+                id: 'approval_1',
+                toolCallId: 'call_1',
+                tool: 'set_friend_note',
+                fields: [{ name: 'note', value: 'met' }]
+            },
+            endpointId: null,
+            model: null,
+            allowWrites: true,
+            playbookMode: 'auto',
+            entityPanelOpen: false,
+            surfacedEntities: [],
+            createdAt: '2026-11-12T00:00:00Z',
+            updatedAt: '2026-11-12T00:00:01Z'
+        });
+
+        const reloaded =
+            useAssistantChatStore.getState().messagesBySession['session-1'];
+        expect(reloaded[1]).toMatchObject({
+            turnId: 'turn_1',
+            toolCalls: [
+                {
+                    id: 'call_1',
+                    status: 'pending',
+                    approval: {
+                        id: 'approval_1',
+                        sessionId: 'session-1',
+                        status: 'pending',
+                        fields: [{ name: 'note', value: 'met' }]
+                    }
+                }
+            ]
+        });
+
+        store.resolveApproval('session-1', 'approval_1', false);
+        store.applyToolResult({
+            ownerUserId: 'usr_self',
+            sessionId: 'session-1',
+            turnId: 'turn_1',
+            toolCallId: 'call_1',
+            ok: false,
+            summary: 'Declined by the user; nothing was changed.',
+            entities: [],
+            charts: [],
+            screenshots: null,
+            denied: true
+        });
+
+        const messages =
+            useAssistantChatStore.getState().messagesBySession['session-1'];
+        expect(messages).toHaveLength(2);
+        expect(messages[1].toolCalls[0]).toMatchObject({
+            status: 'denied',
+            approval: { status: 'denied' }
+        });
+    });
+
+    it('drops a waiting approval card when its turn ends without an answer', () => {
+        const store = useAssistantChatStore.getState();
+        const turn = {
+            ownerUserId: 'usr_self',
+            sessionId: 'session-1',
+            turnId: 'turn_1'
+        };
+        store.applyToolCall({
+            ...turn,
+            toolCallId: 'call_1',
+            name: 'send_chatbox_message',
+            args: '{"text":"hi"}'
+        });
+        store.applyApprovalRequest({
+            ...turn,
+            approval: {
+                id: 'approval_1',
+                toolCallId: 'call_1',
+                tool: 'send_chatbox_message',
+                fields: [{ name: 'text', value: 'hi' }]
+            }
+        });
+        expect(
+            useAssistantChatStore.getState().messagesBySession['session-1'][0]
+                .toolCalls[0].approval?.status
+        ).toBe('pending');
+
+        store.applyError({
+            ...turn,
+            code: 'cancelled',
+            message: 'Turn cancelled.'
+        });
+
+        expect(
+            useAssistantChatStore.getState().messagesBySession['session-1'][0]
+                .toolCalls[0].approval
+        ).toBeUndefined();
     });
 
     it('resets all account-scoped assistant state', () => {

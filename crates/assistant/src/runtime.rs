@@ -10,6 +10,7 @@ use vrcx_0_contracts::llm::{LlmEndpointDetectModelsResult, LlmRequestOptions, To
 use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpRuntime};
 
 use crate::agent::{run_turn, TurnContext};
+use crate::approvals::{tool_definitions, PendingApprovals, ToolApprovalPolicy};
 use crate::choices::PendingChoices;
 use crate::config::{should_apply_playbook, PlaybookMode};
 use crate::endpoints::{
@@ -35,8 +36,10 @@ pub struct AssistantController {
     tasks: TaskSupervisor,
     tools: Arc<InProcessMcpTools>,
     tool_defs: Arc<Vec<ToolDefinition>>,
+    approval_policy: Arc<ToolApprovalPolicy>,
     sessions: Arc<SessionStore>,
     choices: PendingChoices,
+    approvals: PendingApprovals,
     auth_scope: RuntimeAuthScope,
     cancels: Arc<Mutex<HashMap<String, (String, CancellationToken)>>>,
 }
@@ -63,15 +66,17 @@ impl AssistantController {
     pub async fn new(deps: AssistantControllerDeps) -> Result<Self, AssistantError> {
         let endpoints = EndpointStore::new(deps.config, deps.llm_factory, deps.proxy_url);
         let tools = Arc::new(spawn_in_process_tools(deps.mcp_runtime).await?);
-        let tool_defs = Arc::new(load_tool_defs(&tools).await?);
+        let (tool_defs, approval_policy) = tool_definitions(tools.list_tools().await?);
         Ok(Self {
             endpoints,
             bus: deps.bus,
             tasks: deps.tasks,
             tools,
-            tool_defs,
+            tool_defs: Arc::new(tool_defs),
+            approval_policy: Arc::new(approval_policy),
             sessions: Arc::new(SessionStore::with_persistence(deps.session_persistence)),
             choices: PendingChoices::default(),
+            approvals: PendingApprovals::default(),
             auth_scope: deps.auth_scope,
             cancels: Arc::new(Mutex::new(HashMap::new())),
         })
@@ -219,6 +224,15 @@ impl AssistantController {
         }
     }
 
+    pub fn answer_approval(&self, session_id: &str, approval_id: &str, approved: bool) {
+        if self
+            .sessions
+            .is_visible_to(session_id, &self.owner_user_id())
+        {
+            self.approvals.answer(session_id, approval_id, approved);
+        }
+    }
+
     fn cancel_visible(&self, session_id: &str) {
         if let Some((_, token)) = self.cancels.lock().unwrap().remove(session_id) {
             token.cancel();
@@ -307,6 +321,8 @@ impl AssistantController {
             tools: Arc::clone(&self.tools),
             sessions: Arc::clone(&self.sessions),
             choices: self.choices.clone(),
+            approvals: self.approvals.clone(),
+            approval_policy: Arc::clone(&self.approval_policy),
             emitter: AssistantEmitter::new(
                 self.bus.clone(),
                 owner_user_id,
@@ -358,19 +374,6 @@ fn visible_tool_defs(
             .cloned()
             .collect(),
     )
-}
-
-async fn load_tool_defs(tools: &InProcessMcpTools) -> Result<Vec<ToolDefinition>, AssistantError> {
-    Ok(tools
-        .list_tools()
-        .await?
-        .into_iter()
-        .map(|tool| ToolDefinition {
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.parameters,
-        })
-        .collect())
 }
 
 /// Removes the per-session cancel token when a turn task finishes, but only if

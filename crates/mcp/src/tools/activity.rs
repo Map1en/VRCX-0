@@ -29,7 +29,8 @@ const PLAY_TIME_CAVEAT: &str =
 #[tool_router(router = activity_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L2·analyze] Ranked time-spent-together facts per person, aggregated from the local game log (reliable even inside private instances because you were there). THE tool for \"who I play/spend the most time with\". Defaults to current friends (friendsOnly=true). groupBy=friend ranks total minutes per person; groupBy=friend_world ranks (person, world) pairs. For all-time/\"ever\"/\"so far\" questions OMIT timeWindow entirely — never pass a narrow window for an all-time question. Rows are pre-ranked and limited with isFriend; read the top rows, don't loop."
+        description = "[L2·analyze] Ranked time-spent-together facts per person, aggregated from the local game log (reliable even inside private instances because you were there). THE tool for \"who I play/spend the most time with\". Defaults to current friends (friendsOnly=true). groupBy=friend ranks total minutes per person; groupBy=friend_world ranks (person, world) pairs. For all-time/\"ever\"/\"so far\" questions OMIT timeWindow entirely — never pass a narrow window for an all-time question. Rows are pre-ranked and limited with isFriend; read the top rows, don't loop.",
+        annotations(read_only_hint = true)
     )]
     async fn get_copresence_summary(
         &self,
@@ -72,7 +73,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] One friend's online activity bucketed by hour-of-day or weekday, from the online/offline log; without `user`, the most active friends (by online events, capped by `limit`). Use for \"when is X usually online\". Weekday bucket keys run 0=Monday through 6=Sunday. Buckets are UTC unless you pass utcOffsetMinutes (the user's offset, e.g. 540 for UTC+9) for the user's local time. For \"best time to catch the MOST people\" prefer get_best_time_to_play."
+        description = "[L2·analyze] One friend's online activity bucketed by hour-of-day or weekday, from the online/offline log; without `user`, the most active friends (by online events, capped by `limit`). Use for \"when is X usually online\". Weekday bucket keys run 0=Monday through 6=Sunday. Buckets are UTC unless you pass utcOffsetMinutes (the user's offset, e.g. 540 for UTC+9) for the user's local time. For \"best time to catch the MOST people\" prefer get_best_time_to_play.",
+        annotations(read_only_hint = true)
     )]
     async fn get_friend_activity_pattern(
         &self,
@@ -123,7 +125,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] List worlds the signed-in user recently visited, newest first, from the local game log (worldId, worldName, accessType, visitedAt, leftAt, stayMinutes; leftAt is null for the visit still in progress or when the leave was not recorded). Leaf lookup. Drill into one row with get_visit_timeline (pass its visitedAt as `at`) to see who came and went. For \"which worlds did I play most\" use the aggregated summarize_social_period instead of counting these rows yourself."
+        description = "[L1·query] List worlds the signed-in user recently visited, newest first, from the local game log (worldId, worldName, accessType, visitedAt, leftAt, stayMinutes; leftAt is null for the visit still in progress or when the leave was not recorded). Leaf lookup. Drill into one row with get_visit_timeline (pass its visitedAt as `at`) to see who came and went. For \"which worlds did I play most\" use the aggregated summarize_social_period instead of counting these rows yourself.",
+        annotations(read_only_hint = true)
     )]
     async fn search_worlds_visited(
         &self,
@@ -140,7 +143,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] Reconstruct one instance visit from the local game log: the world/instance, your exact joinedAt and leftAt (UTC, millisecond precision), and everyone observed while you were there — per person, ordered by time shared, with each stay's joinedAt/leftAt (a person who leaves and comes back has several stints). Select the visit with `at`: any UTC timestamp inside it, or the visitedAt of a search_worlds_visited row; add `location` only to disambiguate. Use for \"who was in that room with me\", \"when did X join or leave\", or exact timestamps for a recording. Caveats: the visit you are still in has no leftAt (inProgress=true); a crash or truncated log drops leave events, so a missing leftAt never means the person stayed; a missing joinedAt means the person was already inside before you arrived or before VRCX-0 started watching; old rows may lack userId and are keyed by display name; the roster is capped (truncated=true, peopleObserved keeps the real count) and the summary still covers the whole visit. Pairs with search_worlds_visited to find visits in a period."
+        description = "[L1·query] Reconstruct one instance visit from the local game log: the world/instance, your exact joinedAt and leftAt (UTC, millisecond precision), and everyone observed while you were there — per person, ordered by time shared, with each stay's joinedAt/leftAt (a person who leaves and comes back has several stints). Select the visit with `at`: any UTC timestamp inside it, or the visitedAt of a search_worlds_visited row; add `location` only to disambiguate. Use for \"who was in that room with me\", \"when did X join or leave\", or exact timestamps for a recording. Caveats: the visit you are still in has no leftAt (inProgress=true); a crash or truncated log drops leave events, so a missing leftAt never means the person stayed; a missing joinedAt means the person was already inside before you arrived or before VRCX-0 started watching; old rows may lack userId and are keyed by display name; the roster is capped (truncated=true, peopleObserved keeps the real count) and the summary still covers the whole visit. Pairs with search_worlds_visited to find visits in a period.",
+        annotations(read_only_hint = true)
     )]
     async fn get_visit_timeline(
         &self,
@@ -157,7 +161,8 @@ impl VrcxMcpServer {
         ))
     }
     #[tool(
-        description = "[L2·analyze] Your own aggregated playtime for a window: total minutes, sessions, average/longest session, weekday breakdown. Use for \"how much did I play\". For trends over time prefer get_activity_timeline; for streaks/breaks prefer get_activity_streaks."
+        description = "[L2·analyze] Your own aggregated playtime for a window: total minutes, sessions, average/longest session, weekday breakdown. Use for \"how much did I play\". For trends over time prefer get_activity_timeline; for streaks/breaks prefer get_activity_streaks.",
+        annotations(read_only_hint = true)
     )]
     async fn get_my_activity(
         &self,
@@ -168,7 +173,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] The signed-in user's own playtime bucketed over time: year, month, week, dayOfWeek, or hourOfDay, with a ready-to-read summary. Use this for \"which months/days did I play most\", activity trends, and personal schedule / when I log on. Pass utcOffsetMinutes (e.g. 540 for UTC+9) so month/day/hour buckets are local. Omit timeWindow for all history. Rows carry minutes and sessionCount."
+        description = "[L2·analyze] The signed-in user's own playtime bucketed over time: year, month, week, dayOfWeek, or hourOfDay, with a ready-to-read summary. Use this for \"which months/days did I play most\", activity trends, and personal schedule / when I log on. Pass utcOffsetMinutes (e.g. 540 for UTC+9) so month/day/hour buckets are local. Omit timeWindow for all history. Rows carry minutes and sessionCount.",
+        annotations(read_only_hint = true)
     )]
     async fn get_activity_timeline(
         &self,
@@ -195,7 +201,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] The signed-in user's play-streak facts: longest break without playing, current break, longest daily play streak, total active days, first/last session, total minutes, and session count, with a ready-to-read summary. Use this for \"longest I went without playing\" or \"how many days have I played\". Pass utcOffsetMinutes so day boundaries are local."
+        description = "[L2·analyze] The signed-in user's play-streak facts: longest break without playing, current break, longest daily play streak, total active days, first/last session, total minutes, and session count, with a ready-to-read summary. Use this for \"longest I went without playing\" or \"how many days have I played\". Pass utcOffsetMinutes so day boundaries are local.",
+        annotations(read_only_hint = true)
     )]
     async fn get_activity_streaks(
         &self,
@@ -209,7 +216,8 @@ impl VrcxMcpServer {
         structured_result(activity_streaks_output(offset_minutes, streaks))
     }
     #[tool(
-        description = "[L2·analyze] Friends whose observed co-presence dropped sharply versus the prior equal-length window (fading relationships), ranked by drop; defaults to the last 30 days versus the prior 30 days. Report as an observation (overlap fell — could be schedule, status, or sample size), never as the other person's intent or feelings."
+        description = "[L2·analyze] Friends whose observed co-presence dropped sharply versus the prior equal-length window (fading relationships), ranked by drop; defaults to the last 30 days versus the prior 30 days. Report as an observation (overlap fell — could be schedule, status, or sample size), never as the other person's intent or feelings.",
+        annotations(read_only_hint = true)
     )]
     async fn get_fading_friends(
         &self,
@@ -224,7 +232,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] The hour-of-day or weekday buckets where the most distinct friends are observed coming online (best time to catch people), across all friends, ranked with each bucket's top friends by name. Use for \"when should I log on to find people\". Buckets are UTC unless you pass utcOffsetMinutes (e.g. 540 for UTC+9) for the user's local time. For a single named friend prefer get_friend_activity_pattern."
+        description = "[L2·analyze] The hour-of-day or weekday buckets where the most distinct friends are observed coming online (best time to catch people), across all friends, ranked with each bucket's top friends by name. Use for \"when should I log on to find people\". Buckets are UTC unless you pass utcOffsetMinutes (e.g. 540 for UTC+9) for the user's local time. For a single named friend prefer get_friend_activity_pattern.",
+        annotations(read_only_hint = true)
     )]
     async fn get_best_time_to_play(
         &self,
@@ -248,7 +257,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] Fuzzy-recall people from the local game log by name fragment, time window, world, or who they shared an instance with; INCLUDES non-friends/strangers (each row flags isFriend and names up to two worlds you saw them in). Use for \"who was that person I met at ...\". Recall only, not prediction."
+        description = "[L1·query] Fuzzy-recall people from the local game log by name fragment, time window, world, or who they shared an instance with; INCLUDES non-friends/strangers (each row flags isFriend and names up to two worlds you saw them in). Use for \"who was that person I met at ...\". Recall only, not prediction.",
+        annotations(read_only_hint = true)
     )]
     async fn recall_encounter(
         &self,
@@ -283,7 +293,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L3·bundle] One call composing several L2 analyses for a period (your activity, top companions, new friends, fading friends, top worlds, best times) into a structured bundle for you to narrate. Use for \"recap my week/month\" or \"how was my social activity\". Do NOT separately call the parts it already includes; drill into a specific L2 tool only for extra detail."
+        description = "[L3·bundle] One call composing several L2 analyses for a period (your activity, top companions, new friends, fading friends, top worlds, best times) into a structured bundle for you to narrate. Use for \"recap my week/month\" or \"how was my social activity\". Do NOT separately call the parts it already includes; drill into a specific L2 tool only for extra detail.",
+        annotations(read_only_hint = true)
     )]
     async fn summarize_social_period(
         &self,

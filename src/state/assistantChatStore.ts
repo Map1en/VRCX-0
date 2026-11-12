@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import type {
+    AssistantApprovalRequestEvent,
     AssistantChoiceRequestEvent,
     AssistantDeltaEvent,
     AssistantDoneEvent,
@@ -11,6 +12,7 @@ import type {
     AssistantDraft,
     Entity,
     SessionSummary,
+    ToolCallStatus,
     UIMessage
 } from '@/domain/assistant/types';
 import type { Message, Session } from '@/platform/tauri/bindings';
@@ -45,6 +47,12 @@ interface AssistantChatState {
         sessionId: string,
         choiceId: string,
         userId: string | null
+    ) => void;
+    applyApprovalRequest: (event: AssistantApprovalRequestEvent) => void;
+    resolveApproval: (
+        sessionId: string,
+        approvalId: string,
+        approved: boolean
     ) => void;
     applyTurnEntities: (event: AssistantTurnEntitiesEvent) => void;
     applyDone: (event: AssistantDoneEvent) => void;
@@ -87,6 +95,61 @@ function markSessionIdle(
 
 function randomId(prefix: string): string {
     return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function toolCallStatus(
+    ok: boolean,
+    denied: boolean | undefined
+): ToolCallStatus {
+    if (denied) {
+        return 'denied';
+    }
+    return ok ? 'done' : 'error';
+}
+
+function withoutPendingApprovals(messages: UIMessage[]): UIMessage[] {
+    return messages.map((message) =>
+        message.toolCalls.some((call) => call.approval?.status === 'pending')
+            ? {
+                  ...message,
+                  toolCalls: message.toolCalls.map((call) =>
+                      call.approval?.status === 'pending'
+                          ? { ...call, approval: undefined }
+                          : call
+                  )
+              }
+            : message
+    );
+}
+
+// Tool rows after the last user message belong to the running turn, so the
+// reloaded transcript keeps receiving that turn's events and its waiting card.
+function attachRunningTurn(folded: UIMessage[], session: Session): UIMessage[] {
+    const turn = session.activeTurn;
+    const last = folded[folded.length - 1];
+    if (turn?.status !== 'running' || last?.role !== 'assistant') {
+        return folded;
+    }
+    const approval = session.pendingApproval;
+    folded[folded.length - 1] = {
+        ...last,
+        turnId: turn.turnId,
+        streaming: true,
+        toolCalls: last.toolCalls.map((call) =>
+            approval && call.id === approval.toolCallId
+                ? {
+                      ...call,
+                      approval: {
+                          id: approval.id,
+                          sessionId: session.id,
+                          fields: approval.fields,
+                          status: 'pending'
+                      }
+                  }
+                : call
+        )
+    };
+    return folded;
 }
 
 // Persisted tool rows belong to the assistant reply that follows them; a run
@@ -159,7 +222,7 @@ function foldTranscript(messages: Message[], running: boolean): UIMessage[] {
                     call.id === result.toolCallId
                         ? {
                               ...call,
-                              status: result.ok ? 'done' : 'error',
+                              status: toolCallStatus(result.ok, result.denied),
                               summary: result.summary,
                               entities: result.entities,
                               charts: result.charts ?? [],
@@ -352,9 +415,12 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
         set((state) => ({
             messagesBySession: {
                 ...state.messagesBySession,
-                [session.id]: foldTranscript(
-                    session.messages,
-                    session.activeTurn?.status === 'running'
+                [session.id]: attachRunningTurn(
+                    foldTranscript(
+                        session.messages,
+                        session.activeTurn?.status === 'running'
+                    ),
+                    session
                 )
             },
             // Restore the persisted right-panel state for this session.
@@ -370,7 +436,8 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
 
     appendUserMessage: (sessionId, text) =>
         set((state) =>
-            updateMessages(state, sessionId, (messages) => {
+            updateMessages(state, sessionId, (current) => {
+                const messages = withoutPendingApprovals(current);
                 messages.push({
                     id: randomId('user'),
                     role: 'user',
@@ -439,7 +506,10 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
                         call.id === event.toolCallId
                             ? {
                                   ...call,
-                                  status: event.ok ? 'done' : 'error',
+                                  status: toolCallStatus(
+                                      event.ok,
+                                      event.denied
+                                  ),
                                   summary: event.summary,
                                   entities: event.entities,
                                   charts: event.charts,
@@ -495,6 +565,56 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
             )
         ),
 
+    applyApprovalRequest: (event) =>
+        set((state) =>
+            updateMessages(state, event.sessionId, (messages) =>
+                withAssistantMessage(messages, event.turnId, (message) => {
+                    message.toolCalls = message.toolCalls.map((call) =>
+                        call.id === event.approval.toolCallId
+                            ? {
+                                  ...call,
+                                  approval: {
+                                      id: event.approval.id,
+                                      sessionId: event.sessionId,
+                                      fields: event.approval.fields,
+                                      status: 'pending'
+                                  }
+                              }
+                            : call
+                    );
+                    return message;
+                })
+            )
+        ),
+
+    resolveApproval: (sessionId, approvalId, approved) =>
+        set((state) =>
+            updateMessages(state, sessionId, (messages) =>
+                messages.map((message) =>
+                    message.toolCalls.some(
+                        (call) => call.approval?.id === approvalId
+                    )
+                        ? {
+                              ...message,
+                              toolCalls: message.toolCalls.map((call) =>
+                                  call.approval?.id === approvalId
+                                      ? {
+                                            ...call,
+                                            approval: {
+                                                ...call.approval,
+                                                status: approved
+                                                    ? 'approved'
+                                                    : 'denied'
+                                            }
+                                        }
+                                      : call
+                              )
+                          }
+                        : message
+                )
+            )
+        ),
+
     applyTurnEntities: (event) =>
         set((state) => ({
             surfacedEntitiesBySession: {
@@ -515,10 +635,14 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
     applyDone: (event) =>
         set((state) => ({
             ...updateMessages(state, event.sessionId, (messages) =>
-                withAssistantMessage(messages, event.turnId, (message) => {
-                    message.streaming = false;
-                    return message;
-                })
+                withAssistantMessage(
+                    withoutPendingApprovals(messages),
+                    event.turnId,
+                    (message) => {
+                        message.streaming = false;
+                        return message;
+                    }
+                )
             ),
             busySessions: { ...state.busySessions, [event.sessionId]: false },
             sessions: markSessionIdle(state.sessions, event.sessionId)
@@ -527,11 +651,15 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
     applyError: (event) =>
         set((state) => ({
             ...updateMessages(state, event.sessionId, (messages) =>
-                withAssistantMessage(messages, event.turnId, (message) => {
-                    message.streaming = false;
-                    message.error = event.message;
-                    return message;
-                })
+                withAssistantMessage(
+                    withoutPendingApprovals(messages),
+                    event.turnId,
+                    (message) => {
+                        message.streaming = false;
+                        message.error = event.message;
+                        return message;
+                    }
+                )
             ),
             busySessions: { ...state.busySessions, [event.sessionId]: false },
             sessions: markSessionIdle(state.sessions, event.sessionId)

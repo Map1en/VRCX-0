@@ -181,6 +181,25 @@
             "picked": "Vybráno: {name}",
             "skipped": "Pro „{query}“ nebyl nikdo vybrán"
         },
+        "approval": {
+            "title": "Povolit „{action}“?",
+            "description": "Asistent chce provést tuto změnu. Bez vašeho souhlasu se nic nestane.",
+            "approve": "Povolit",
+            "deny": "Zamítnout",
+            "declined": "Zamítnuto: {action}",
+            "fields": {
+                "userId": "Uživatel",
+                "note": "Poznámka",
+                "kind": "Typ",
+                "entityId": "Položka",
+                "group": "Skupina",
+                "action": "Akce",
+                "tags": "Skupina oblíbených",
+                "text": "Text",
+                "afk": "AFK",
+                "config": "Nastavení"
+            }
+        },
         "scroll_to_latest": "Posunout na konec",
         "connection": {
             "checking": "Kontrola připojení",

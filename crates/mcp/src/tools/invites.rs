@@ -11,7 +11,8 @@ use super::common::{application_query_result, require_current_user_id, TimeWindo
 #[tool_router(router = invites_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L1·query] List invite and request-invite counts aggregated per user (received, sent, or both) over a window — a \"wants to play together\" signal beyond co-presence."
+        description = "[L1·query] List invite and request-invite counts aggregated per user (received, sent, or both) over a window — a \"wants to play together\" signal beyond co-presence.",
+        annotations(read_only_hint = true)
     )]
     async fn get_invite_history(
         &self,

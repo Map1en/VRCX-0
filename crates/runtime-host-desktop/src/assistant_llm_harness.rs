@@ -217,6 +217,7 @@ struct TurnLog {
     tool_arguments: Vec<String>,
     failed_tools: Vec<String>,
     choices: usize,
+    approvals: Vec<String>,
     answer: String,
     error: Option<String>,
     metrics: TurnMetrics,
@@ -250,6 +251,9 @@ impl TurnLog {
         if self.choices > 0 {
             println!("choice cards answered: {}", self.choices);
         }
+        if !self.approvals.is_empty() {
+            println!("approval cards answered: {:?}", self.approvals);
+        }
         match &self.error {
             Some(error) => println!("ERROR: {error}"),
             None => println!("A: {}", self.answer),
@@ -277,6 +281,7 @@ struct Harness {
     meter: Arc<LlmMeter>,
     runs: Vec<NodeRun>,
     round: usize,
+    approve_writes: bool,
 }
 
 impl Harness {
@@ -331,6 +336,16 @@ impl Harness {
                         &sent.session_id,
                         payload["choiceId"].as_str().unwrap_or_default(),
                         picked,
+                    );
+                }
+                "assistantApprovalRequest" => {
+                    let approval = &payload["approval"];
+                    log.approvals
+                        .push(approval["tool"].as_str().unwrap_or_default().to_string());
+                    self.controller.answer_approval(
+                        &sent.session_id,
+                        approval["id"].as_str().unwrap_or_default(),
+                        self.approve_writes,
                     );
                 }
                 "assistantDelta" => {
@@ -580,6 +595,7 @@ impl Rig {
                 meter,
                 runs: Vec::new(),
                 round: 0,
+                approve_writes: false,
             },
         }
     }
@@ -1608,7 +1624,7 @@ impl ScriptedRun {
             .set_default_runtime(
                 Some(endpoint.id),
                 Some(SCRIPTED_MODEL.into()),
-                false,
+                true,
                 PlaybookMode::Open,
             )
             .expect("select runtime");
@@ -1706,6 +1722,113 @@ async fn scripted_broken_and_truncated_calls_come_back_as_tool_errors() {
         .contains("not a valid JSON object"));
     assert!(run.llm.last_tool_message(2).contains("output token limit"));
     assert_eq!(log.answer, "I could not look that up.");
+    run.finish().await;
+}
+
+async fn wait_for_event(events: &mut UnboundedReceiver<(String, Value)>, event: &str) {
+    loop {
+        let (name, _) = tokio::time::timeout(Duration::from_secs(10), events.recv())
+            .await
+            .expect("event in time")
+            .expect("event stream open");
+        if name == event {
+            return;
+        }
+    }
+}
+
+fn note_write_turn() -> AssistantTurn {
+    tool_turn(
+        vec![call(
+            "call_1",
+            "set_friend_note",
+            r#"{"userId":"usr_alice","note":"met at the club","dryRun":true}"#,
+        )],
+        "tool_calls",
+    )
+}
+
+#[tokio::test]
+async fn scripted_approved_write_runs_for_real_even_when_the_model_asked_for_a_dry_run() {
+    let mut run = ScriptedRun::start(vec![note_write_turn(), answer("Saved the note.")]).await;
+    run.rig.harness.approve_writes = true;
+
+    let log = run.ask("Note that I met Alice at the club.").await;
+
+    assert_eq!(log.approvals, ["set_friend_note"]);
+    assert!(log.failed_tools.is_empty(), "{:?}", log.failed_tools);
+    let fed_back = run.llm.last_tool_message(1);
+    assert!(fed_back.contains(r#""dryRun":false"#), "{fed_back}");
+    let session = run
+        .rig
+        .harness
+        .controller
+        .get_session(&log.session_id)
+        .unwrap()
+        .unwrap();
+    assert!(session.pending_approval.is_none());
+    run.finish().await;
+}
+
+#[tokio::test]
+async fn scripted_declined_write_never_runs_and_tells_the_model() {
+    let mut run =
+        ScriptedRun::start(vec![note_write_turn(), answer("Okay, I left it alone.")]).await;
+
+    let log = run.ask("Note that I met Alice at the club.").await;
+
+    assert_eq!(log.approvals, ["set_friend_note"]);
+    assert!(run.llm.last_tool_message(1).contains("declined"));
+    let session = run
+        .rig
+        .harness
+        .controller
+        .get_session(&log.session_id)
+        .unwrap()
+        .unwrap();
+    let result = session
+        .messages
+        .iter()
+        .find_map(|message| message.tool_result.as_ref())
+        .expect("declined call still records a result");
+    assert!(result.denied);
+    assert!(!result.ok);
+    assert!(session.pending_approval.is_none());
+    run.finish().await;
+}
+
+#[tokio::test]
+async fn scripted_pending_approval_reloads_and_a_cancel_drops_it_without_running() {
+    let mut run = ScriptedRun::start(vec![note_write_turn(), answer("unused")]).await;
+    let sent = run
+        .rig
+        .harness
+        .controller
+        .send_message(None, "Note that I met Alice.".into(), Some("en".into()))
+        .await
+        .expect("send_message");
+    wait_for_event(&mut run.rig.harness.events, "assistantApprovalRequest").await;
+
+    let controller = &run.rig.harness.controller;
+    let pending = controller
+        .get_session(&sent.session_id)
+        .unwrap()
+        .unwrap()
+        .pending_approval
+        .expect("a reloaded session still shows the waiting card");
+    assert_eq!(pending.tool, "set_friend_note");
+    assert!(pending.fields.iter().all(|field| field.name != "dryRun"));
+
+    controller.cancel(&sent.session_id);
+    wait_for_event(&mut run.rig.harness.events, "assistantError").await;
+    let controller = &run.rig.harness.controller;
+    controller.answer_approval(&sent.session_id, &pending.id, true);
+    let session = controller.get_session(&sent.session_id).unwrap().unwrap();
+    assert!(session.pending_approval.is_none());
+    assert!(session
+        .messages
+        .iter()
+        .all(|message| message.tool_result.is_none()));
     run.finish().await;
 }
 

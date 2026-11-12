@@ -492,6 +492,7 @@ mod tests {
                 summary: summary.into(),
                 entities: Vec::new(),
                 charts: Vec::new(),
+                denied: false,
                 screenshots: None,
             }),
             tool_content: Some(content.into()),

@@ -179,6 +179,25 @@
             "picked": "Escolhido: {name}",
             "skipped": "Ninguém escolhido para “{query}”"
         },
+        "approval": {
+            "title": "Permitir “{action}”?",
+            "description": "O assistente quer fazer esta alteração. Nada acontece sem a sua aprovação.",
+            "approve": "Aprovar",
+            "deny": "Recusar",
+            "declined": "Recusado: {action}",
+            "fields": {
+                "userId": "Usuário",
+                "note": "Nota",
+                "kind": "Tipo",
+                "entityId": "Item",
+                "group": "Grupo",
+                "action": "Ação",
+                "tags": "Grupo de favoritos",
+                "text": "Texto",
+                "afk": "AFK",
+                "config": "Configurações"
+            }
+        },
         "scroll_to_latest": "Rolar até o fim",
         "connection": {
             "checking": "Verificando conexão",

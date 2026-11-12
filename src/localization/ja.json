@@ -178,6 +178,25 @@
             "picked": "{name} を選びました",
             "skipped": "「{query}」の人は選ばれませんでした"
         },
+        "approval": {
+            "title": "「{action}」を許可しますか？",
+            "description": "アシスタントがこの変更を行おうとしています。許可するまで実行されません。",
+            "approve": "許可",
+            "deny": "拒否",
+            "declined": "拒否しました：{action}",
+            "fields": {
+                "userId": "ユーザー",
+                "note": "ノート",
+                "kind": "種類",
+                "entityId": "対象",
+                "group": "グループ",
+                "action": "操作",
+                "tags": "お気に入りグループ",
+                "text": "テキスト",
+                "afk": "AFK",
+                "config": "設定"
+            }
+        },
         "scroll_to_latest": "一番下までスクロール",
         "connection": {
             "checking": "接続を確認中",

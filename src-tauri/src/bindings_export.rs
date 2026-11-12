@@ -29,8 +29,9 @@ use vrcx_0_application_realtime::{
     RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeUserProjection,
 };
 use vrcx_0_assistant::{
-    AssistantChoiceRequestEvent, AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent,
-    AssistantToolCallEvent, AssistantToolResultEvent, AssistantTurnEntitiesEvent,
+    AssistantApprovalRequestEvent, AssistantChoiceRequestEvent, AssistantDeltaEvent,
+    AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent, AssistantToolResultEvent,
+    AssistantTurnEntitiesEvent,
 };
 use vrcx_0_core::realtime::RealtimeWsStatusPayload;
 use vrcx_0_core::screenshots::{ScreenshotExportProgress, ScreenshotLibraryScanStatus};
@@ -112,6 +113,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<AssistantToolCallEvent>()
         .typ::<AssistantToolResultEvent>()
         .typ::<AssistantChoiceRequestEvent>()
+        .typ::<AssistantApprovalRequestEvent>()
         .typ::<AssistantTurnEntitiesEvent>()
         .typ::<AssistantDoneEvent>()
         .typ::<AssistantErrorEvent>()
@@ -262,6 +264,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::assistant::app__assistant_send_message,
             commands::application::assistant::app__assistant_cancel,
             commands::application::assistant::app__assistant_answer_choice,
+            commands::application::assistant::app__assistant_answer_approval,
             commands::application::assistant::app__assistant_list_sessions,
             commands::application::assistant::app__assistant_get_session,
             commands::application::assistant::app__assistant_new_session,

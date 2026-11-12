@@ -179,6 +179,25 @@
             "picked": "Picked {name}",
             "skipped": "No one picked for “{query}”"
         },
+        "approval": {
+            "title": "Allow “{action}”?",
+            "description": "The assistant wants to make this change. Nothing happens unless you approve.",
+            "approve": "Approve",
+            "deny": "Deny",
+            "declined": "Declined: {action}",
+            "fields": {
+                "userId": "User",
+                "note": "Note",
+                "kind": "Type",
+                "entityId": "Item",
+                "group": "Group",
+                "action": "Action",
+                "tags": "Favorites group",
+                "text": "Text",
+                "afk": "AFK",
+                "config": "Settings"
+            }
+        },
         "scroll_to_latest": "Scroll to bottom",
         "connection": {
             "checking": "Checking connection",

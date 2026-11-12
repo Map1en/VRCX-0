@@ -80,6 +80,34 @@ mod router_tests {
     }
 
     #[test]
+    fn every_tool_declares_whether_it_changes_anything() {
+        let router = VrcxMcpServer::tool_router();
+        let mut side_effecting = Vec::new();
+        for tool in router.list_all() {
+            let read_only = tool
+                .annotations
+                .as_ref()
+                .and_then(|annotations| annotations.read_only_hint)
+                .unwrap_or_else(|| panic!("{} must declare read_only_hint", tool.name));
+            if !read_only {
+                side_effecting.push(tool.name.to_string());
+            }
+        }
+
+        assert_eq!(
+            side_effecting,
+            vec![
+                "favorite_local",
+                "favorite_vrchat",
+                "send_chatbox_message",
+                "set_chatbox_afk",
+                "set_friend_note",
+                "update_chatbox",
+            ]
+        );
+    }
+
+    #[test]
     fn hour_bucketing_tools_expose_top_level_utc_offset_minutes() {
         let router = VrcxMcpServer::tool_router();
         let tools = router.list_all();

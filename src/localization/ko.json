@@ -178,6 +178,25 @@
             "picked": "{name} 님을 선택했어요",
             "skipped": "‘{query}’에 해당하는 사람을 고르지 않았어요"
         },
+        "approval": {
+            "title": "‘{action}’을(를) 허용할까요?",
+            "description": "어시스턴트가 이 변경을 하려고 해요. 허용해야만 실행돼요.",
+            "approve": "허용",
+            "deny": "거부",
+            "declined": "거부됨: {action}",
+            "fields": {
+                "userId": "유저",
+                "note": "메모",
+                "kind": "유형",
+                "entityId": "대상",
+                "group": "그룹",
+                "action": "작업",
+                "tags": "즐겨찾기 그룹",
+                "text": "텍스트",
+                "afk": "AFK",
+                "config": "설정"
+            }
+        },
         "scroll_to_latest": "맨 아래로 스크롤",
         "connection": {
             "checking": "연결 확인 중",

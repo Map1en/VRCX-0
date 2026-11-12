@@ -82,6 +82,26 @@ export type AssistantToolResultEvent = {
     entities: Entity[];
     charts: AssistantChart[];
     screenshots?: AssistantScreenshots | null;
+    denied: boolean;
+};
+
+export type AssistantApprovalField = {
+    name: string;
+    value: string;
+};
+
+export type AssistantApproval = {
+    id: string;
+    toolCallId: string;
+    tool: string;
+    fields: AssistantApprovalField[];
+};
+
+export type AssistantApprovalRequestEvent = {
+    ownerUserId: string;
+    sessionId: string;
+    turnId: string;
+    approval: AssistantApproval;
 };
 
 export type AssistantChoiceCandidate = {
@@ -117,7 +137,16 @@ export type SessionSummary = {
     updatedAt: string;
 };
 
-export type ToolCallStatus = 'pending' | 'done' | 'error';
+export type ToolCallStatus = 'pending' | 'done' | 'error' | 'denied';
+
+export type ApprovalStatus = 'pending' | 'approved' | 'denied';
+
+export interface UIApproval {
+    id: string;
+    sessionId: string;
+    fields: AssistantApprovalField[];
+    status: ApprovalStatus;
+}
 
 export interface UIToolCall {
     id: string;
@@ -128,6 +157,7 @@ export interface UIToolCall {
     entities: Entity[];
     charts: AssistantChart[];
     screenshots?: AssistantScreenshots | null;
+    approval?: UIApproval;
 }
 
 export type UserChoiceStatus = 'pending' | 'picked' | 'skipped';

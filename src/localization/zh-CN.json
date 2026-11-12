@@ -178,6 +178,25 @@
             "picked": "已选择 {name}",
             "skipped": "没有为“{query}”选择任何人"
         },
+        "approval": {
+            "title": "要允许“{action}”吗？",
+            "description": "助手想做这项更改，只有你批准后才会执行。",
+            "approve": "批准",
+            "deny": "拒绝",
+            "declined": "已拒绝：{action}",
+            "fields": {
+                "userId": "玩家",
+                "note": "备注",
+                "kind": "类型",
+                "entityId": "对象",
+                "group": "分组",
+                "action": "操作",
+                "tags": "收藏分组",
+                "text": "文字",
+                "afk": "AFK",
+                "config": "设置"
+            }
+        },
         "scroll_to_latest": "滚动到底部",
         "connection": {
             "checking": "正在检查连接",

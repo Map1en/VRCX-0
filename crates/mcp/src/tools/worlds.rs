@@ -18,7 +18,8 @@ const TAG_LIMIT: usize = 10;
 #[tool_router(router = worlds_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L2·analyze] One world's overview: your own visits there (count, total minutes, first/last visit, latest visits), the people you spent the most time with there, and its live VRChat stats (favorites, total visits, popularity, heat, players now, capacity, publication dates). Accepts a wrld_ id or the name of a world you visited. Each recentVisits row already lists the people seen during that visit (an empty people list means nobody else was observed), so answer \"when did I go and who was there\" from it; call get_visit_timeline only for exact join/leave times of one visit, never once per visit."
+        description = "[L2·analyze] One world's overview: your own visits there (count, total minutes, first/last visit, latest visits), the people you spent the most time with there, and its live VRChat stats (favorites, total visits, popularity, heat, players now, capacity, publication dates). Accepts a wrld_ id or the name of a world you visited. Each recentVisits row already lists the people seen during that visit (an empty people list means nobody else was observed), so answer \"when did I go and who was there\" from it; call get_visit_timeline only for exact join/leave times of one visit, never once per visit.",
+        annotations(read_only_hint = true)
     )]
     async fn get_world_profile(
         &self,

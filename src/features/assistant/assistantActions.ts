@@ -212,6 +212,17 @@ export async function answerChoice(
     await commands.appAssistantAnswerChoice(sessionId, choiceId, userId);
 }
 
+export async function answerApproval(
+    sessionId: string,
+    approvalId: string,
+    approved: boolean
+): Promise<void> {
+    useAssistantChatStore
+        .getState()
+        .resolveApproval(sessionId, approvalId, approved);
+    await commands.appAssistantAnswerApproval(sessionId, approvalId, approved);
+}
+
 export function setEntityPanelOpen(open: boolean): void {
     const store = useAssistantChatStore.getState();
     const sessionId = store.activeSessionId;

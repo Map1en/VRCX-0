@@ -1,4 +1,4 @@
-import { CheckIcon, SparklesIcon, XIcon } from 'lucide-react';
+import { BanIcon, CheckIcon, SparklesIcon, XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { UIToolCall } from '@/domain/assistant/types';
@@ -16,7 +16,8 @@ import {
 const STEP_DISPLAY = {
     pending: { Icon: Spinner, status: 'running' },
     done: { Icon: CheckIcon, status: undefined },
-    error: { Icon: XIcon, status: 'error' }
+    error: { Icon: XIcon, status: 'error' },
+    denied: { Icon: BanIcon, status: undefined }
 } as const satisfies Record<
     UIToolCall['status'],
     {
@@ -69,6 +70,9 @@ export function AssistantTrace({
                     <Trace className="gap-1.5">
                         {toolCalls.map((call) => {
                             const { Icon, status } = STEP_DISPLAY[call.status];
+                            const action = t(`assistant.tools.${call.name}`, {
+                                defaultValue: call.name
+                            });
                             return (
                                 <TraceLine
                                     key={call.id}
@@ -79,9 +83,11 @@ export function AssistantTrace({
                                         <Icon />
                                     </TraceIcon>
                                     <TraceTitle className="text-xs">
-                                        {t(`assistant.tools.${call.name}`, {
-                                            defaultValue: call.name
-                                        })}
+                                        {call.status === 'denied'
+                                            ? t('assistant.approval.declined', {
+                                                  action
+                                              })
+                                            : action}
                                     </TraceTitle>
                                 </TraceLine>
                             );

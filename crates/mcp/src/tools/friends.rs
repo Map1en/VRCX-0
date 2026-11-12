@@ -23,7 +23,8 @@ const SHARED_WORLD_LIMIT: i64 = 5;
 #[tool_router(router = friends_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L1·query] List observed friend relationship events (friend added/removed, friend requests, display-name and trust-level changes), optionally filtered to one user (usr_ id or name) and type, with cursor paging. Leaf event log. For one friend's overview prefer get_friend_profile, which folds this in."
+        description = "[L1·query] List observed friend relationship events (friend added/removed, friend requests, display-name and trust-level changes), optionally filtered to one user (usr_ id or name) and type, with cursor paging. Leaf event log. For one friend's overview prefer get_friend_profile, which folds this in.",
+        annotations(read_only_hint = true)
     )]
     async fn get_friend_log(
         &self,
@@ -55,7 +56,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·resolve] Resolve a VRChat display name (or fragment) to ranked candidate user id(s) for manual disambiguation or explicit lookup. User-targeting tools generally accept either a usr_ id or display name directly and return resolvedUser or needsDisambiguation; call find_user only when you need the candidate list. Never invent or guess a usr_ id. Returns userId, displayName, matchedName, isFriend, encounterCount, lastSeen."
+        description = "[L1·resolve] Resolve a VRChat display name (or fragment) to ranked candidate user id(s) for manual disambiguation or explicit lookup. User-targeting tools generally accept either a usr_ id or display name directly and return resolvedUser or needsDisambiguation; call find_user only when you need the candidate list. Never invent or guess a usr_ id. Returns userId, displayName, matchedName, isFriend, encounterCount, lastSeen.",
+        annotations(read_only_hint = true)
     )]
     async fn find_user(
         &self,
@@ -80,7 +82,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] Read your private local friend notes; note text is returned to the AI. Leaf lookup over local memos; one user or a paged list."
+        description = "[L1·query] Read your private local friend notes; note text is returned to the AI. Leaf lookup over local memos; one user or a paged list.",
+        annotations(read_only_hint = true)
     )]
     async fn get_friend_note(
         &self,
@@ -106,7 +109,8 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[write·local] Save a private local friend note (usr_ id required). Local only, no VRChat change, no message to anyone; dry_run defaults to true."
+        description = "[write·local] Save a private local friend note (usr_ id required). Local only, no VRChat change, no message to anyone; dry_run defaults to true.",
+        annotations(read_only_hint = false)
     )]
     async fn set_friend_note(
         &self,
@@ -115,7 +119,8 @@ impl VrcxMcpServer {
         structured_result(self.set_friend_note_output(input)?)
     }
     #[tool(
-        description = "[L3·bundle] One call composing everything local about ONE person, friend or not: current realtime state, relationship/trust history, your note, read-only moderation flags, your co-presence, when you first and last met with the worlds you shared, their activity pattern, recent changes, favorite groups. Use for \"tell me about X\" or \"how are X and I doing lately\". Supersedes calling get_friend_log, get_friend_note, or get_friend_changes separately for that person."
+        description = "[L3·bundle] One call composing everything local about ONE person, friend or not: current realtime state, relationship/trust history, your note, read-only moderation flags, your co-presence, when you first and last met with the worlds you shared, their activity pattern, recent changes, favorite groups. Use for \"tell me about X\" or \"how are X and I doing lately\". Supersedes calling get_friend_log, get_friend_note, or get_friend_changes separately for that person.",
+        annotations(read_only_hint = true)
     )]
     async fn get_friend_profile(
         &self,
@@ -140,7 +145,8 @@ impl VrcxMcpServer {
         })
     }
     #[tool(
-        description = "[L2·analyze] Per-friend counts of observed status, avatar, or bio changes over a window (who keeps changing status, who got a new avatar). Pick one kind per call."
+        description = "[L2·analyze] Per-friend counts of observed status, avatar, or bio changes over a window (who keeps changing status, who got a new avatar). Pick one kind per call.",
+        annotations(read_only_hint = true)
     )]
     async fn get_friend_changes(
         &self,

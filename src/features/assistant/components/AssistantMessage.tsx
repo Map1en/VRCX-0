@@ -4,6 +4,7 @@ import type { UIMessage } from '@/domain/assistant/types';
 import { Bubble, BubbleContent } from '@/ui/shadcn/bubble';
 import { Message, MessageContent } from '@/ui/shadcn/message';
 
+import { AssistantApprovalCard } from './AssistantApprovalCard';
 import { AssistantCharts } from './AssistantCharts';
 import { AssistantChoiceCard } from './AssistantChoiceCard';
 import { AssistantMarkdown } from './AssistantMarkdown';
@@ -41,6 +42,17 @@ function AssistantMessageImpl({
                         running={traceRunning}
                         thinkingLabel={thinkingLabel}
                     />
+                )}
+
+                {message.toolCalls.map(
+                    (call) =>
+                        call.approval?.status === 'pending' && (
+                            <AssistantApprovalCard
+                                key={call.approval.id}
+                                tool={call.name}
+                                approval={call.approval}
+                            />
+                        )
                 )}
 
                 {message.choices?.map((choice) => (

@@ -1,4 +1,5 @@
 mod agent;
+mod approvals;
 mod charts;
 mod choices;
 mod config;
@@ -6,6 +7,7 @@ mod endpoints;
 mod entities;
 mod error;
 mod events;
+mod pending;
 mod playbook;
 mod ports;
 mod runtime;
@@ -14,6 +16,7 @@ mod session;
 #[cfg(test)]
 mod test_support;
 
+pub use approvals::{AssistantApproval, AssistantApprovalField};
 pub use choices::AssistantChoiceCandidate;
 pub use config::PlaybookMode;
 pub use endpoints::{
@@ -23,8 +26,9 @@ pub use endpoints::{
 pub use entities::{Entity, EntityKind};
 pub use error::AssistantError;
 pub use events::{
-    AssistantChoiceRequestEvent, AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent,
-    AssistantToolCallEvent, AssistantToolResultEvent, AssistantTurnEntitiesEvent,
+    AssistantApprovalRequestEvent, AssistantChoiceRequestEvent, AssistantDeltaEvent,
+    AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent, AssistantToolResultEvent,
+    AssistantTurnEntitiesEvent,
 };
 pub use ports::{
     AssistantConfig, AssistantConfigPort, AssistantLlmClient, AssistantLlmClientFactory,

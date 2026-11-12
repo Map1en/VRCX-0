@@ -36,7 +36,8 @@ static FRIEND_FEED_SEARCH_PERMIT: Semaphore = Semaphore::const_new(1);
 #[tool_router(router = feed_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L1·query] Search observed persisted friend Feed events (GPS, online/offline, status, bio, avatar), newest first. Use for exact event evidence, not current state or aggregate counts. Pass target when known and narrow with eventTypes/timeWindow. A search with neither target nor a lower time bound requires allHistory=true. Returns at most 50 rows plus nextCursor; request another page only when needed. History is incomplete and private locations may be redacted."
+        description = "[L1·query] Search observed persisted friend Feed events (GPS, online/offline, status, bio, avatar), newest first. Use for exact event evidence, not current state or aggregate counts. Pass target when known and narrow with eventTypes/timeWindow. A search with neither target nor a lower time bound requires allHistory=true. Returns at most 50 rows plus nextCursor; request another page only when needed. History is incomplete and private locations may be redacted.",
+        annotations(read_only_hint = true)
     )]
     async fn search_friend_feed(
         &self,
