@@ -437,9 +437,11 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                 return;
             }
             const currentModel = currentDraft.translationAPIModel.trim();
-            const nextModel = endpoint.models.includes(currentModel)
-                ? currentModel
-                : (endpoint.models[0] ?? '');
+            const nextModel =
+                endpoint.models.length > 0 &&
+                !endpoint.models.includes(currentModel)
+                    ? endpoint.models[0]
+                    : currentModel;
             if (nextModel !== currentModel) {
                 setTranslationDraftValue('translationAPIModel', nextModel);
             }

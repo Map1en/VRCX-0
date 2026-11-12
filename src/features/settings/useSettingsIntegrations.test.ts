@@ -3,6 +3,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setTranslationApiConfigPreference } from '@/services/preferencesService';
+
 const mocks = vi.hoisted(() => ({
     endpoints: [] as { id: string; models: string[] }[],
     load: vi.fn(),
@@ -21,7 +23,9 @@ vi.mock('@/repositories/configRepository', () => ({
 
 vi.mock('@/services/preferencesService', () => ({
     setDiscordBoolPreference: vi.fn(),
-    setTranslationApiConfigPreference: vi.fn(),
+    setTranslationApiConfigPreference: vi
+        .fn()
+        .mockResolvedValue({ translationAPIKey: '' }),
     setYoutubeApiKeyPreference: vi.fn()
 }));
 
@@ -54,6 +58,7 @@ function renderIntegrations() {
 
 describe('useSettingsIntegrations translation models', () => {
     beforeEach(() => {
+        vi.mocked(setTranslationApiConfigPreference).mockClear();
         mocks.load.mockReset();
         mocks.load.mockImplementation(async () => mocks.endpoints);
         mocks.detectModels.mockReset();
@@ -73,25 +78,41 @@ describe('useSettingsIntegrations translation models', () => {
         expect(mocks.load).toHaveBeenCalledOnce();
     });
 
-    it('does not detect or repopulate an endpoint after its last model is removed', async () => {
+    it('preserves a manual translation model when refreshing and saving an empty endpoint', async () => {
         mocks.endpoints = [{ id: 'endpoint-1', models: [] }];
         const { result } = renderIntegrations();
 
         act(() => {
+            result.current.setTranslationDraftValue(
+                'translationAPIType',
+                'openai'
+            );
             result.current.setTranslationDraftValue(
                 'translationEndpointId',
                 'endpoint-1'
             );
             result.current.setTranslationDraftValue(
                 'translationAPIModel',
-                'removed-model'
+                'manual-model'
             );
         });
         await act(() => result.current.fetchTranslationModels('endpoint-1'));
 
         expect(mocks.load).toHaveBeenCalledOnce();
         expect(mocks.detectModels).not.toHaveBeenCalled();
-        expect(result.current.translationDraft.translationAPIModel).toBe('');
+        expect(result.current.translationDraft.translationAPIModel).toBe(
+            'manual-model'
+        );
+        expect(mocks.endpoints[0].models).toEqual([]);
+
+        await act(() => result.current.saveTranslationApiConfig());
+
+        expect(setTranslationApiConfigPreference).toHaveBeenCalledWith(
+            expect.objectContaining({
+                translationEndpointId: 'endpoint-1',
+                translationAPIModel: 'manual-model'
+            })
+        );
     });
 
     it('replaces a removed translation model with a remaining saved selection', async () => {
