@@ -421,54 +421,36 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         if (!endpointId || fetchingModelsRef.current.has(endpointId)) {
             return;
         }
-        const endpoint = useLlmEndpointsStore
-            .getState()
-            .endpoints.find((item) => item.id === endpointId);
-        if (!endpoint || endpoint.models.length) {
-            return;
-        }
-
         fetchingModelsRef.current.add(endpointId);
         setIntegrationStatus((current) => ({
             ...current,
             models: 'running'
         }));
         try {
-            const result = await useLlmEndpointsStore.getState().detectModels({
-                id: endpointId,
-                baseUrl: null,
-                apiKey: null,
-                persist: true
-            });
+            const endpoints = await useLlmEndpointsStore.getState().load();
+            const endpoint = endpoints.find((item) => item.id === endpointId);
+            if (!endpoint) {
+                return;
+            }
             const currentDraft = translationDraftRef.current;
             if (currentDraft.translationEndpointId.trim() !== endpointId) {
                 return;
             }
             const currentModel = currentDraft.translationAPIModel.trim();
-            const nextModel =
-                result.models.length > 0 &&
-                !result.models.includes(currentModel)
-                    ? result.models[0]
-                    : currentModel;
+            const nextModel = endpoint.models.includes(currentModel)
+                ? currentModel
+                : (endpoint.models[0] ?? '');
             if (nextModel !== currentModel) {
                 setTranslationDraftValue('translationAPIModel', nextModel);
             }
-            const detectedEndpoint = useLlmEndpointsStore
-                .getState()
-                .endpoints.find((endpoint) => endpoint.id === endpointId);
-            if (detectedEndpoint) {
-                const currentEffort =
-                    translationDraftRef.current.translationAPIReasoningEffort;
-                const effective = getEffectiveReasoningEffort(
-                    currentEffort,
-                    getModelReasoning(detectedEndpoint, nextModel)
-                );
-                if (currentEffort && effective === null) {
-                    setTranslationDraftValue(
-                        'translationAPIReasoningEffort',
-                        ''
-                    );
-                }
+            const currentEffort =
+                translationDraftRef.current.translationAPIReasoningEffort;
+            const effective = getEffectiveReasoningEffort(
+                currentEffort,
+                getModelReasoning(endpoint, nextModel)
+            );
+            if (currentEffort && effective === null) {
+                setTranslationDraftValue('translationAPIReasoningEffort', '');
             }
         } catch (error) {
             toast.add({
