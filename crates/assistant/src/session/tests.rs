@@ -290,7 +290,6 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
                 AssistantRuntimeSelection {
                     endpoint_id: Some("ep_1".into()),
                     model: Some("model-a".into()),
-                    allow_writes: true,
                     playbook_mode: PlaybookMode::Guided,
                 },
             )
@@ -305,7 +304,6 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
         .unwrap();
     assert_eq!(reopened.endpoint_id.as_deref(), Some("ep_1"));
     assert_eq!(reopened.model.as_deref(), Some("model-a"));
-    assert!(reopened.allow_writes);
     assert_eq!(reopened.playbook_mode, PlaybookMode::Guided);
 
     let old_session_id = {
@@ -320,7 +318,6 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
             AssistantRuntimeSelection {
                 endpoint_id: Some("ep_seed".into()),
                 model: Some("seed-model".into()),
-                allow_writes: false,
                 playbook_mode: PlaybookMode::Open,
             },
         )

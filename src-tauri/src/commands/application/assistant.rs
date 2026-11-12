@@ -162,7 +162,6 @@ pub async fn app__assistant_set_session_runtime(
     sessionId: String,
     endpointId: Option<String>,
     model: Option<String>,
-    allowWrites: bool,
     playbookMode: PlaybookMode,
 ) -> Result<Session, AppError> {
     state
@@ -176,7 +175,6 @@ pub async fn app__assistant_set_session_runtime(
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
                 .map(str::to_string),
-            allowWrites,
             playbookMode,
         )
         .map_err(AppError::from)
@@ -188,7 +186,6 @@ pub async fn app__assistant_set_default_runtime(
     state: State<'_, AppState>,
     endpointId: Option<String>,
     model: Option<String>,
-    allowWrites: bool,
     playbookMode: PlaybookMode,
 ) -> Result<AssistantRuntimeSelection, AppError> {
     state
@@ -201,7 +198,6 @@ pub async fn app__assistant_set_default_runtime(
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
                 .map(str::to_string),
-            allowWrites,
             playbookMode,
         )
         .map_err(AppError::from)

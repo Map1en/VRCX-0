@@ -159,7 +159,6 @@ pub struct Session {
     pub pending_approval: Option<AssistantApproval>,
     pub endpoint_id: Option<String>,
     pub model: Option<String>,
-    pub allow_writes: bool,
     pub playbook_mode: PlaybookMode,
     pub entity_panel_open: bool,
     pub surfaced_entities: Vec<Entity>,
@@ -186,7 +185,6 @@ struct StoredSession {
     pending_approval: Option<AssistantApproval>,
     endpoint_id: Option<String>,
     model: Option<String>,
-    allow_writes: bool,
     playbook_mode: PlaybookMode,
     entity_panel_open: bool,
     surfaced_entities: Vec<Entity>,
@@ -204,7 +202,6 @@ impl StoredSession {
             pending_approval: self.pending_approval.clone(),
             endpoint_id: self.endpoint_id.clone(),
             model: self.model.clone(),
-            allow_writes: self.allow_writes,
             playbook_mode: self.playbook_mode,
             entity_panel_open: self.entity_panel_open,
             surfaced_entities: self.surfaced_entities.clone(),
@@ -330,7 +327,6 @@ impl SessionStore {
                             pending_approval: None,
                             endpoint_id: optional_string(entry.endpoint_id),
                             model: optional_string(entry.model),
-                            allow_writes: entry.allow_writes,
                             playbook_mode: PlaybookMode::parse(&entry.playbook_mode),
                             entity_panel_open: entry.entity_panel_open,
                             surfaced_entities: serde_json::from_str(&entry.surfaced_entities)
@@ -511,7 +507,6 @@ impl SessionStore {
             pending_approval: None,
             endpoint_id: normalize_optional(runtime.endpoint_id),
             model: normalize_optional(runtime.model),
-            allow_writes: runtime.allow_writes,
             playbook_mode: runtime.playbook_mode,
             entity_panel_open: false,
             surfaced_entities: Vec::new(),
@@ -951,7 +946,6 @@ fn persist_runtime(
         id: session_id,
         endpoint_id: session.endpoint_id.as_deref(),
         model: session.model.as_deref(),
-        allow_writes: session.allow_writes,
         playbook_mode: session.playbook_mode.as_config_str(),
     }) {
         tracing::warn!(%error, "assistant: failed to persist runtime selection");
@@ -961,7 +955,6 @@ fn persist_runtime(
 fn apply_runtime(session: &mut StoredSession, runtime: AssistantRuntimeSelection) {
     session.endpoint_id = normalize_optional(runtime.endpoint_id);
     session.model = normalize_optional(runtime.model);
-    session.allow_writes = runtime.allow_writes;
     session.playbook_mode = runtime.playbook_mode;
 }
 

@@ -54,7 +54,6 @@ function session(id: string): Session {
         pendingApproval: null,
         endpointId: null,
         model: null,
-        allowWrites: false,
         playbookMode: 'auto',
         entityPanelOpen: false,
         surfacedEntities: [],

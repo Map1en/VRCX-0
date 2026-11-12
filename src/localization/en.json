@@ -218,7 +218,6 @@
             "model_unset": "No model available",
             "search_models": "Search models",
             "playbook_mode": "Analysis mode",
-            "allow_writes": "Allow write actions",
             "manage_endpoints": "Manage LLM Endpoints",
             "reasoning_effort": "Reasoning effort",
             "reasoning_effort_provider_default": "Provider default",

@@ -146,7 +146,6 @@ impl AssistantSessionPersistencePort for DesktopAssistantSessionPersistenceAdapt
                         surfaced_entities: session.surfaced_entities,
                         endpoint_id: session.endpoint_id,
                         model: session.model,
-                        allow_writes: session.allow_writes,
                         playbook_mode: session.playbook_mode,
                         pinned: session.pinned,
                     })
@@ -209,7 +208,6 @@ impl AssistantSessionPersistencePort for DesktopAssistantSessionPersistenceAdapt
             input.id,
             input.endpoint_id,
             input.model,
-            input.allow_writes,
             input.playbook_mode,
         )
         .map_err(port_error)

@@ -217,7 +217,6 @@
             "model_unset": "사용할 수 있는 모델 없음",
             "search_models": "모델 검색",
             "playbook_mode": "분석 모드",
-            "allow_writes": "쓰기 작업 허용",
             "manage_endpoints": "LLM 엔드포인트 관리",
             "reasoning_effort": "추론 강도",
             "reasoning_effort_provider_default": "제공업체 기본값",

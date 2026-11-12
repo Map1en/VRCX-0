@@ -17,12 +17,6 @@ use crate::endpoints::{
     resolve_reasoning_effort, AssistantRuntimeSelection, AssistantRuntimeStatus, EndpointStore,
     LlmEndpointDetectModelsInput, LlmEndpointDto, LlmEndpointUpsertInput, LlmTranslateInput,
 };
-
-/// Tools that mutate state (local DB or the VRChat account). They are hidden
-/// from the model unless the user has explicitly armed writes, so a prompt
-/// injection in attacker-controlled data (e.g. a friend's bio) cannot drive an
-/// autonomous write.
-const WRITE_TOOLS: &[&str] = &["favorite_local", "favorite_vrchat", "set_friend_note"];
 use crate::error::AssistantError;
 use crate::events::AssistantEmitter;
 use crate::ports::{AssistantConfig, AssistantLlmClientFactory, AssistantSessionPersistence};
@@ -129,11 +123,9 @@ impl AssistantController {
         session_id: &str,
         endpoint_id: Option<String>,
         model: Option<String>,
-        allow_writes: bool,
         playbook_mode: PlaybookMode,
     ) -> Result<Session, AssistantError> {
-        let selection =
-            self.set_default_runtime(endpoint_id, model, allow_writes, playbook_mode)?;
+        let selection = self.set_default_runtime(endpoint_id, model, playbook_mode)?;
         self.sessions
             .set_runtime(&self.owner_user_id(), session_id, selection)
             .map_err(AssistantError::from)?
@@ -144,13 +136,11 @@ impl AssistantController {
         &self,
         endpoint_id: Option<String>,
         model: Option<String>,
-        allow_writes: bool,
         playbook_mode: PlaybookMode,
     ) -> Result<AssistantRuntimeSelection, AssistantError> {
         let selection = AssistantRuntimeSelection {
             endpoint_id,
             model,
-            allow_writes,
             playbook_mode,
         };
         self.endpoints.set_last_selection(&selection)?;
@@ -281,8 +271,6 @@ impl AssistantController {
             forbid_tool_calls: false,
         };
 
-        let tool_defs = visible_tool_defs(&self.tool_defs, session.allow_writes);
-
         let session_id = session.id.clone();
         let turn_id = format!("turn_{}", random_hex());
 
@@ -330,7 +318,7 @@ impl AssistantController {
                 turn_id.clone(),
             ),
             client,
-            tool_defs,
+            tool_defs: Arc::clone(&self.tool_defs),
             session_id: session_id.clone(),
             turn_id: turn_id.clone(),
             locale,
@@ -360,22 +348,6 @@ impl AssistantController {
     }
 }
 
-fn visible_tool_defs(
-    tool_defs: &Arc<Vec<ToolDefinition>>,
-    allow_writes: bool,
-) -> Arc<Vec<ToolDefinition>> {
-    if allow_writes {
-        return Arc::clone(tool_defs);
-    }
-    Arc::new(
-        tool_defs
-            .iter()
-            .filter(|tool| !WRITE_TOOLS.contains(&tool.name.as_str()))
-            .cloned()
-            .collect(),
-    )
-}
-
 /// Removes the per-session cancel token when a turn task finishes, but only if
 /// it still owns the slot — a turn superseded by a newer one must not evict the
 /// newer turn's token (which would leave the new turn uncancellable).
@@ -401,27 +373,6 @@ impl Drop for CancelCleanup {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn write_tools_stay_hidden_unless_writes_are_armed() {
-        let tool_defs = Arc::new(
-            [
-                "get_copresence_summary",
-                "favorite_local",
-                "favorite_vrchat",
-                "set_friend_note",
-            ]
-            .map(|name| crate::test_support::tool_def(name, serde_json::Value::Null))
-            .to_vec(),
-        );
-
-        let hidden = visible_tool_defs(&tool_defs, false);
-        let names: Vec<&str> = hidden.iter().map(|tool| tool.name.as_str()).collect();
-        assert_eq!(names, vec!["get_copresence_summary"]);
-
-        let armed = visible_tool_defs(&tool_defs, true);
-        assert_eq!(armed.len(), tool_defs.len());
-    }
 
     #[test]
     fn superseded_turn_cleanup_keeps_newer_cancel_token() {

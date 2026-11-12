@@ -218,7 +218,6 @@
             "model_unset": "Kein Modell verfügbar",
             "search_models": "Modelle suchen",
             "playbook_mode": "Analysemodus",
-            "allow_writes": "Schreibaktionen erlauben",
             "manage_endpoints": "LLM-Endpunkte verwalten",
             "reasoning_effort": "Reasoning-Aufwand",
             "reasoning_effort_provider_default": "Standard des Anbieters",

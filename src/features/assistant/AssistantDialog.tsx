@@ -39,7 +39,6 @@ import {
 } from '@/ui/shadcn/dialog';
 import {
     DropdownMenu,
-    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -91,7 +90,6 @@ const HEALTH_DOT_CLASS: Record<AssistantHealth, string> = {
 const DEFAULT_RUNTIME_SELECTION: AssistantRuntimeSelection = {
     endpointId: null,
     model: null,
-    allowWrites: false,
     playbookMode: 'auto'
 };
 
@@ -101,7 +99,6 @@ function selectionFromSession(session: Session): AssistantRuntimeSelection {
     return {
         endpointId: session.endpointId,
         model: session.model,
-        allowWrites: session.allowWrites,
         playbookMode: session.playbookMode
     };
 }
@@ -238,7 +235,6 @@ export function AssistantDialog() {
                 const selection = await commands.appAssistantSetDefaultRuntime(
                     next.endpointId,
                     next.model,
-                    next.allowWrites,
                     next.playbookMode
                 );
                 setRuntimeSelection(selection);
@@ -248,7 +244,6 @@ export function AssistantDialog() {
                 activeSessionId,
                 next.endpointId,
                 next.model,
-                next.allowWrites,
                 next.playbookMode
             );
             setRuntimeSelection(selectionFromSession(session));
@@ -679,15 +674,6 @@ function RuntimeToolbar({
                             </p>
                         )}
                     </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuCheckboxItem
-                        checked={selection.allowWrites}
-                        onCheckedChange={(allowWrites) =>
-                            onSelectionChange({ allowWrites })
-                        }
-                    >
-                        {t('assistant.runtime.allow_writes')}
-                    </DropdownMenuCheckboxItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onOpenSettings}>
                         {t('assistant.runtime.more_settings')}

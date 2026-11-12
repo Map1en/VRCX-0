@@ -220,7 +220,6 @@
             "model_unset": "Нет доступных моделей",
             "search_models": "Поиск моделей",
             "playbook_mode": "Режим анализа",
-            "allow_writes": "Разрешить действия записи",
             "manage_endpoints": "Управление LLM-эндпоинтами",
             "reasoning_effort": "Уровень рассуждений",
             "reasoning_effort_provider_default": "По умолчанию провайдера",

@@ -204,7 +204,6 @@ impl AssistantSessionPersistencePort for TestAssistantSessionPersistence {
                     surfaced_entities: "[]".into(),
                     endpoint_id: String::new(),
                     model: String::new(),
-                    allow_writes: false,
                     playbook_mode: "open".into(),
                     pinned: false,
                 },
@@ -249,7 +248,6 @@ impl AssistantSessionPersistencePort for TestAssistantSessionPersistence {
         if let Some(session) = state.sessions.get_mut(input.id) {
             session.endpoint_id = input.endpoint_id.unwrap_or_default().to_string();
             session.model = input.model.unwrap_or_default().to_string();
-            session.allow_writes = input.allow_writes;
             session.playbook_mode = input.playbook_mode.to_string();
         }
         Ok(())

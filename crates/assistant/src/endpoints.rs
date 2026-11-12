@@ -38,7 +38,7 @@ pub(crate) fn translation_system_prompt(custom: Option<&str>, target_lang: &str)
         .replace("{targetLang}", target_lang)
 }
 
-type LegacyAssistantSeed = (String, Option<String>, bool, PlaybookMode);
+type LegacyAssistantSeed = (String, Option<String>, PlaybookMode);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -100,7 +100,6 @@ pub struct LlmEndpointDetectModelsInput {
 pub struct AssistantRuntimeSelection {
     pub endpoint_id: Option<String>,
     pub model: Option<String>,
-    pub allow_writes: bool,
     pub playbook_mode: PlaybookMode,
 }
 
@@ -127,7 +126,6 @@ impl Default for AssistantRuntimeSelection {
         Self {
             endpoint_id: None,
             model: None,
-            allow_writes: false,
             playbook_mode: PlaybookMode::Auto,
         }
     }

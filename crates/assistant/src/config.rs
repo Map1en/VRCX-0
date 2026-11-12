@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 pub(crate) const ASSISTANT_BASE_URL_CONFIG_KEY: &str = "assistant.baseUrl";
 pub(crate) const ASSISTANT_API_KEY_CONFIG_KEY: &str = "assistant.apiKey";
 pub(crate) const ASSISTANT_MODEL_CONFIG_KEY: &str = "assistant.model";
-pub(crate) const ASSISTANT_ALLOW_WRITES_CONFIG_KEY: &str = "assistant.allowWrites";
 pub(crate) const ASSISTANT_PLAYBOOK_MODE_CONFIG_KEY: &str = "assistant.playbookMode";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]

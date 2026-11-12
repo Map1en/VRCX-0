@@ -35,7 +35,6 @@ type AssistantSettingsGroupProps = {
 const EMPTY_SELECTION: AssistantRuntimeSelection = {
     endpointId: null,
     model: null,
-    allowWrites: false,
     playbookMode: 'auto'
 };
 
@@ -100,7 +99,6 @@ export function AssistantSettingsGroup({
                 await commands.appAssistantSetDefaultRuntime(
                     next.endpointId,
                     next.model,
-                    next.allowWrites,
                     next.playbookMode
                 )
             );

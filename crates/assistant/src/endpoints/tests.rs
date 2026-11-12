@@ -418,7 +418,6 @@ fn delete_clears_last_selection_and_falls_back_translation_endpoint() {
         .set_last_selection(&AssistantRuntimeSelection {
             endpoint_id: Some(first.id.clone()),
             model: Some("first-model".into()),
-            allow_writes: true,
             playbook_mode: PlaybookMode::Guided,
         })
         .unwrap();

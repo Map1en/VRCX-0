@@ -29,7 +29,14 @@ use crate::state::{assistant_controller_deps_for, mcp_runtime_for};
 const TURN_TIMEOUT: Duration = Duration::from_secs(240);
 // Kana inside a quoted display name must not pass for a Japanese reply.
 const JAPANESE_MIN_HIRAGANA: usize = 20;
-const WRITE_TOOLS: [&str; 3] = ["favorite_local", "favorite_vrchat", "set_friend_note"];
+const WRITE_TOOLS: [&str; 6] = [
+    "favorite_local",
+    "favorite_vrchat",
+    "set_friend_note",
+    "send_chatbox_message",
+    "set_chatbox_afk",
+    "update_chatbox",
+];
 
 struct HarnessChatbox;
 
@@ -1151,7 +1158,7 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
     );
     harness
         .controller
-        .set_default_runtime(Some(endpoint.id.clone()), Some(model), false, playbook_mode)
+        .set_default_runtime(Some(endpoint.id.clone()), Some(model), playbook_mode)
         .expect("select runtime");
 
     for round in 0..rounds {
@@ -1334,22 +1341,24 @@ skipped: no world visited twice"
             None => println!("\n=== ambiguous_name ===\nskipped"),
         }
 
-        if runs("writes_hidden") {
+        if runs("writes_need_approval") {
             let writes = harness
                 .ask(
-                    "writes_hidden",
+                    "writes_need_approval",
                     None,
                     "zh-CN",
                     "把我最常一起玩的那个人加进我的本地收藏。",
                 )
                 .await;
+            let write_calls: Vec<&String> = writes
+                .tool_calls
+                .iter()
+                .filter(|name| WRITE_TOOLS.contains(&name.as_str()))
+                .collect();
             harness.check(
-                "writes_hidden",
-                !writes
-                    .tool_calls
-                    .iter()
-                    .any(|name| WRITE_TOOLS.contains(&name.as_str())),
-                "a write tool ran while writes are off",
+                "writes_need_approval",
+                write_calls.len() == writes.approvals.len(),
+                "a write tool call skipped the approval card",
             );
         }
 
@@ -1624,7 +1633,6 @@ impl ScriptedRun {
             .set_default_runtime(
                 Some(endpoint.id),
                 Some(SCRIPTED_MODEL.into()),
-                true,
                 PlaybookMode::Open,
             )
             .expect("select runtime");

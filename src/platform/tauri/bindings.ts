@@ -489,25 +489,22 @@ export const commands = {
         sessionId: string,
         endpointId: string | null,
         model: string | null,
-        allowWrites: boolean,
         playbookMode: PlaybookMode
     ) =>
         __TAURI_INVOKE<Session>('app__assistant_set_session_runtime', {
             sessionId,
             endpointId,
             model,
-            allowWrites,
             playbookMode
         }),
     appAssistantSetDefaultRuntime: (
         endpointId: string | null,
         model: string | null,
-        allowWrites: boolean,
         playbookMode: PlaybookMode
     ) =>
         __TAURI_INVOKE<AssistantRuntimeSelection>(
             'app__assistant_set_default_runtime',
-            { endpointId, model, allowWrites, playbookMode }
+            { endpointId, model, playbookMode }
         ),
     appLlmEndpointFollowCustomProxy: () =>
         __TAURI_INVOKE<boolean>('app__llm_endpoint_follow_custom_proxy'),
@@ -3075,7 +3072,6 @@ export type AssistantErrorEvent = {
 export type AssistantRuntimeSelection = {
     endpointId: string | null;
     model: string | null;
-    allowWrites: boolean;
     playbookMode: PlaybookMode;
 };
 
@@ -7434,7 +7430,6 @@ export type Session = {
     pendingApproval: AssistantApproval | null;
     endpointId: string | null;
     model: string | null;
-    allowWrites: boolean;
     playbookMode: PlaybookMode;
     entityPanelOpen: boolean;
     surfacedEntities: Entity[];

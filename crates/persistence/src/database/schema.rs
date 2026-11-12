@@ -187,12 +187,7 @@ pub(crate) fn ensure_assistant_tables(db: &DatabaseService) -> Result<(), Error>
         )?;
         add_column_if_missing(db, "assistant_session", "endpoint_id", "TEXT")?;
         add_column_if_missing(db, "assistant_session", "model", "TEXT")?;
-        add_column_if_missing(
-            db,
-            "assistant_session",
-            "allow_writes",
-            "INTEGER NOT NULL DEFAULT 0",
-        )?;
+        drop_column_if_exists(db, "assistant_session", "allow_writes")?;
         add_column_if_missing(
             db,
             "assistant_session",

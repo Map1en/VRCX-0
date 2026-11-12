@@ -1,9 +1,8 @@
 use std::sync::atomic::Ordering;
 
 use crate::config::{
-    deobfuscate_api_key, normalize_llm_base_url, PlaybookMode, ASSISTANT_ALLOW_WRITES_CONFIG_KEY,
-    ASSISTANT_API_KEY_CONFIG_KEY, ASSISTANT_BASE_URL_CONFIG_KEY, ASSISTANT_MODEL_CONFIG_KEY,
-    ASSISTANT_PLAYBOOK_MODE_CONFIG_KEY,
+    deobfuscate_api_key, normalize_llm_base_url, PlaybookMode, ASSISTANT_API_KEY_CONFIG_KEY,
+    ASSISTANT_BASE_URL_CONFIG_KEY, ASSISTANT_MODEL_CONFIG_KEY, ASSISTANT_PLAYBOOK_MODE_CONFIG_KEY,
 };
 use crate::error::AssistantError;
 
@@ -38,13 +37,12 @@ impl EndpointStore {
         let needs_assistant_seed =
             current_selection.endpoint_id.is_none() && current_selection.model.is_none();
         if needs_assistant_seed {
-            if let Some((endpoint_id, model, allow_writes, playbook_mode)) =
+            if let Some((endpoint_id, model, playbook_mode)) =
                 self.migrate_legacy_assistant_endpoint(&mut endpoints)?
             {
                 let selection = AssistantRuntimeSelection {
                     endpoint_id: Some(endpoint_id),
                     model,
-                    allow_writes,
                     playbook_mode,
                 };
                 self.set_last_selection(&selection)?;
@@ -89,8 +87,6 @@ impl EndpointStore {
         Ok(Some((
             endpoint_id,
             Some(model),
-            self.config
-                .get_bool(ASSISTANT_ALLOW_WRITES_CONFIG_KEY, false)?,
             PlaybookMode::parse(
                 &self
                     .config
