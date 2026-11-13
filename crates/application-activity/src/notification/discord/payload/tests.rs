@@ -412,6 +412,37 @@ fn every_activity_type_renders_text_and_both_webhook_payloads_in_every_locale() 
                 &DiscordEnrichment::default(),
             );
             let embed = &discord["embeds"][0];
+            if matches!(
+                kind,
+                ActivityKind::OnPlayerJoining
+                    | ActivityKind::OnPlayerJoined
+                    | ActivityKind::OnPlayerLeft
+                    | ActivityKind::LobbyAvatarChange
+                    | ActivityKind::Bio
+                    | ActivityKind::Friend
+                    | ActivityKind::Unfriend
+                    | ActivityKind::DisplayName
+                    | ActivityKind::TrustLevel
+                    | ActivityKind::FriendRequest
+                    | ActivityKind::Boop
+                    | ActivityKind::GroupChange
+                    | ActivityKind::BlockedOnPlayerJoined
+                    | ActivityKind::BlockedOnPlayerLeft
+                    | ActivityKind::MutedOnPlayerJoined
+                    | ActivityKind::MutedOnPlayerLeft
+            ) {
+                let name = if kind == ActivityKind::DisplayName {
+                    "Old Actor"
+                } else {
+                    "Actor"
+                };
+                assert!(
+                    embed["title"]
+                        .as_str()
+                        .is_some_and(|title| title.contains(name)),
+                    "{label}: discord title includes the user name"
+                );
+            }
             assert!(
                 ["title", "description"].iter().any(|field| embed[*field]
                     .as_str()

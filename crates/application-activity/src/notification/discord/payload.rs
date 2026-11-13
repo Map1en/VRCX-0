@@ -1,5 +1,6 @@
 use crate::{ActivityDelivery, ActivityEntry};
 use serde_json::{json, Value};
+use vrcx_0_contracts::activity::ActivityKind;
 use vrcx_0_core::location::{launch_url, parse_location, region_label};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_SITE_ORIGIN;
 
@@ -211,10 +212,13 @@ fn discord_legacy_embed(
         json!({ "url": render.image_url })
     };
     let author = build_discord_author(entry, &enrichment.actor_icon_url);
-    let title = if author.is_empty() || render.body.trim().is_empty() {
-        render.text.clone()
+    let title = if entry.kind == ActivityKind::Boop
+        && !entry.actor_display_name.trim().is_empty()
+        && !render.body.trim().is_empty()
+    {
+        format!("{}: {}", entry.actor_display_name.trim(), render.text)
     } else {
-        render.body.clone()
+        render.text.clone()
     };
     let mut embed = serde_json::Map::new();
     if !author.is_empty() {
