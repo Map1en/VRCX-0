@@ -260,10 +260,10 @@ fn create_startup_main_window(
 }
 
 fn is_webview_data_folder_in_use(error: &dyn std::fmt::Display) -> bool {
-    error
-        .to_string()
-        .to_ascii_lowercase()
-        .contains("hresult(0x80070020)")
+    let message = error.to_string().to_ascii_lowercase();
+    ["hresult(0x80070020)", "hresult(0x800700aa)"]
+        .iter()
+        .any(|code| message.contains(code))
 }
 
 fn exit_with_main_window_error(app: &tauri::App, error: &dyn std::error::Error) -> ! {
@@ -474,6 +474,9 @@ mod tests {
     fn webview_sharing_violation_is_retried_but_other_webview_errors_are_not() {
         assert!(is_webview_data_folder_in_use(
             &"runtime error: failed to create webview: WebView2 error: WindowsError(Error { code: HRESULT(0x80070020), message: \"in use\" })"
+        ));
+        assert!(is_webview_data_folder_in_use(
+            &"runtime error: failed to create webview: WebView2 error: WindowsError(Error { code: HRESULT(0x800700AA), message: \"La ressource demandée est en cours d’utilisation.\" })"
         ));
         assert!(!is_webview_data_folder_in_use(
             &"runtime error: failed to create webview: WebView2 error: WindowsError(Error { code: HRESULT(0x80070002), message: \"missing\" })"
