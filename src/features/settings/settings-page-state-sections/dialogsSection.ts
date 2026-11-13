@@ -20,7 +20,7 @@ type DialogsSectionInput = SettingsSectionInput<
     | 'translationDraft'
     | 'setTranslationDraftValue'
     | 'llmEndpoints'
-    | 'fetchTranslationModels'
+    | 'translationDefaultModel'
     | 'testTranslationApiConfig'
     | 'saveTranslationApiConfig'
     | 'tablePageSizesDialogOpen'
@@ -90,7 +90,7 @@ export function buildDialogsSection({
     translationDraft,
     setTranslationDraftValue,
     llmEndpoints,
-    fetchTranslationModels,
+    translationDefaultModel,
     testTranslationApiConfig,
     saveTranslationApiConfig,
     tablePageSizesDialogOpen,
@@ -160,7 +160,7 @@ export function buildDialogsSection({
         setTranslationDraftValue,
         translationProviderOptions,
         llmEndpoints,
-        fetchTranslationModels,
+        translationDefaultModel,
         testTranslationApiConfig,
         saveTranslationApiConfig,
         tablePageSizesDialogOpen,

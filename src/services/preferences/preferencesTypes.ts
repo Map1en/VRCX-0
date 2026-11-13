@@ -38,7 +38,6 @@ export type TranslationApiConfigPreferenceInput = {
     translationAPIType?: TranslationApiType;
     translationAPIKey?: string;
     translationEndpointId?: string;
-    translationAPIEndpoint?: string;
     translationAPIModel?: string;
     translationAPIPrompt?: string | null;
     translationAPIReasoningEffort?: string;

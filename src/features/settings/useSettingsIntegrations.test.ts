@@ -4,18 +4,21 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { setTranslationApiConfigPreference } from '@/services/preferencesService';
+import { toast } from '@/services/toastService';
 
 const mocks = vi.hoisted(() => ({
-    endpoints: [] as { id: string; models: string[] }[],
+    endpoints: [] as { id: string; name: string; models: string[] }[],
     load: vi.fn(),
-    detectModels: vi.fn()
+    runtimeStatus: vi.fn()
 }));
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
-vi.mock('@/platform/tauri/bindings', () => ({ commands: {} }));
+vi.mock('@/platform/tauri/bindings', () => ({
+    commands: { appAssistantRuntimeStatus: mocks.runtimeStatus }
+}));
 
 vi.mock('@/repositories/configRepository', () => ({
     default: { getString: vi.fn().mockResolvedValue('') }
@@ -36,8 +39,7 @@ vi.mock('@/services/toastService', () => ({
 vi.mock('@/state/llmEndpointsStore', () => {
     const getState = () => ({
         endpoints: mocks.endpoints,
-        load: mocks.load,
-        detectModels: mocks.detectModels
+        load: mocks.load
     });
     return {
         useLlmEndpointsStore: Object.assign(
@@ -56,82 +58,94 @@ function renderIntegrations() {
     );
 }
 
-describe('useSettingsIntegrations translation models', () => {
+function runtimeStatus(endpointId: string | null, model: string | null) {
+    return {
+        hasAnyEndpoint: Boolean(endpointId),
+        lastSelection: { endpointId, model, playbookMode: 'auto' }
+    };
+}
+
+function draftLlmTranslation(
+    result: ReturnType<typeof renderIntegrations>['result'],
+    endpointId: string,
+    model: string
+) {
+    act(() => {
+        result.current.setTranslationDraftValue('translationAPIType', 'openai');
+        result.current.setTranslationDraftValue(
+            'translationEndpointId',
+            endpointId
+        );
+        result.current.setTranslationDraftValue('translationAPIModel', model);
+    });
+}
+
+describe('useSettingsIntegrations translation model', () => {
     beforeEach(() => {
         vi.mocked(setTranslationApiConfigPreference).mockClear();
+        vi.mocked(toast.add).mockClear();
+        mocks.endpoints = [
+            { id: 'endpoint-1', name: 'Endpoint', models: ['default-model'] }
+        ];
         mocks.load.mockReset();
         mocks.load.mockImplementation(async () => mocks.endpoints);
-        mocks.detectModels.mockReset();
-        mocks.detectModels.mockResolvedValue({
-            models: ['detected-model'],
-            modelReasoning: []
-        });
-    });
-
-    it('keeps the configured model list of an endpoint', async () => {
-        mocks.endpoints = [{ id: 'endpoint-1', models: ['manual-model'] }];
-        const { result } = renderIntegrations();
-
-        await act(() => result.current.fetchTranslationModels('endpoint-1'));
-
-        expect(mocks.detectModels).not.toHaveBeenCalled();
-        expect(mocks.load).toHaveBeenCalledOnce();
-    });
-
-    it('preserves a manual translation model when refreshing and saving an empty endpoint', async () => {
-        mocks.endpoints = [{ id: 'endpoint-1', models: [] }];
-        const { result } = renderIntegrations();
-
-        act(() => {
-            result.current.setTranslationDraftValue(
-                'translationAPIType',
-                'openai'
-            );
-            result.current.setTranslationDraftValue(
-                'translationEndpointId',
-                'endpoint-1'
-            );
-            result.current.setTranslationDraftValue(
-                'translationAPIModel',
-                'manual-model'
-            );
-        });
-        await act(() => result.current.fetchTranslationModels('endpoint-1'));
-
-        expect(mocks.load).toHaveBeenCalledOnce();
-        expect(mocks.detectModels).not.toHaveBeenCalled();
-        expect(result.current.translationDraft.translationAPIModel).toBe(
-            'manual-model'
+        mocks.runtimeStatus.mockReset();
+        mocks.runtimeStatus.mockResolvedValue(
+            runtimeStatus('endpoint-1', 'default-model')
         );
-        expect(mocks.endpoints[0].models).toEqual([]);
+    });
+
+    it('saves an unassigned model as following the default model', async () => {
+        const { result } = renderIntegrations();
+        draftLlmTranslation(result, '', '');
 
         await act(() => result.current.saveTranslationApiConfig());
 
         expect(setTranslationApiConfigPreference).toHaveBeenCalledWith(
             expect.objectContaining({
-                translationEndpointId: 'endpoint-1',
-                translationAPIModel: 'manual-model'
+                translationEndpointId: '',
+                translationAPIModel: ''
             })
         );
+        expect(result.current.translationDefaultModel).toEqual({
+            endpointId: 'endpoint-1',
+            model: 'default-model'
+        });
     });
 
-    it('replaces a removed translation model with a remaining saved selection', async () => {
-        mocks.endpoints = [{ id: 'endpoint-1', models: ['kept-model'] }];
+    it('refuses to follow the default model when none is set', async () => {
+        mocks.runtimeStatus.mockResolvedValue(runtimeStatus(null, null));
         const { result } = renderIntegrations();
-        act(() => {
-            result.current.setTranslationDraftValue(
-                'translationEndpointId',
-                'endpoint-1'
-            );
-            result.current.setTranslationDraftValue(
-                'translationAPIModel',
-                'removed-model'
-            );
+        draftLlmTranslation(result, '', '');
+
+        await act(() => result.current.saveTranslationApiConfig());
+
+        expect(setTranslationApiConfigPreference).not.toHaveBeenCalled();
+        expect(toast.add).toHaveBeenCalledWith({
+            type: 'warning',
+            title: 'dialog.translation_api.msg_no_default_model'
         });
-        await act(() => result.current.fetchTranslationModels('endpoint-1'));
-        expect(result.current.translationDraft.translationAPIModel).toBe(
-            'kept-model'
-        );
-        expect(mocks.detectModels).not.toHaveBeenCalled();
     });
+
+    it.each([
+        ['is no longer selected on its endpoint', ['kept-model']],
+        ['belongs to an endpoint without selected models', []]
+    ])(
+        'keeps an assigned model that %s',
+        async (_case: string, models: string[]) => {
+            mocks.endpoints = [{ id: 'endpoint-1', name: 'Endpoint', models }];
+            const { result } = renderIntegrations();
+            draftLlmTranslation(result, 'endpoint-1', 'manual-model');
+
+            await act(() => result.current.saveTranslationApiConfig());
+
+            expect(mocks.runtimeStatus).not.toHaveBeenCalled();
+            expect(setTranslationApiConfigPreference).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    translationEndpointId: 'endpoint-1',
+                    translationAPIModel: 'manual-model'
+                })
+            );
+        }
+    );
 });

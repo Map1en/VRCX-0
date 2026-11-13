@@ -390,7 +390,7 @@ fn deleting_migrated_endpoint_does_not_resurrect_it() {
 }
 
 #[test]
-fn delete_clears_last_selection_and_falls_back_translation_endpoint() {
+fn delete_clears_last_selection_and_keeps_the_translation_assignment() {
     let config = test_config();
     let store = test_endpoint_store(config.clone(), None);
     let first = store
@@ -434,6 +434,7 @@ fn delete_clears_last_selection_and_falls_back_translation_endpoint() {
         config
             .get_string(TRANSLATION_ENDPOINT_ID_CONFIG_KEY, "")
             .unwrap(),
-        second.id
+        first.id
     );
+    assert_eq!(store.list().unwrap()[0].id, second.id);
 }

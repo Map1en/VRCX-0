@@ -288,7 +288,6 @@ describe('preferencesStore normalizers', () => {
                 known: 'bad'
             },
             translationAPIType: 'openai',
-            translationAPIEndpoint: '',
             translationAPIModel: '',
             translationAPIPrompt: null
         });
@@ -323,8 +322,7 @@ describe('preferencesStore normalizers', () => {
             hmdNotificationPosition: 'bottom',
             hmdNotificationStyle: 'compact',
             translationAPIType: 'openai',
-            translationAPIEndpoint: DEFAULT_PREFERENCES.translationAPIEndpoint,
-            translationAPIModel: DEFAULT_PREFERENCES.translationAPIModel,
+            translationAPIModel: '',
             translationAPIPrompt: ''
         });
         expect(snapshot.trustColor.basic).toBe('#ABCDEF');

@@ -14,8 +14,6 @@ const KEY_MODEL: &str = "translationAPIModel";
 const KEY_PROMPT: &str = "translationAPIPrompt";
 const KEY_REASONING_EFFORT: &str = "translationAPIReasoningEffort";
 
-pub const DEFAULT_TRANSLATION_MODEL: &str = "gpt-4o-mini";
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StandardTranslationOutcome {
     pub text: String,
@@ -83,12 +81,20 @@ pub enum TranslationDispatch {
     OpenAi(OpenAiTranslationRequest),
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TranslationModelRef {
+    pub endpoint_id: String,
+    pub model: String,
+}
+
 pub type OpenAiTranslationFuture<'a, E> = BoxFuture<'a, std::result::Result<String, E>>;
+pub type DefaultTranslationModelFuture<'a, E> =
+    BoxFuture<'a, std::result::Result<Option<TranslationModelRef>, E>>;
 
 pub trait OpenAiTranslationPort: Send + Sync {
     type Error;
 
-    fn resolve_default_endpoint_id(&self) -> OpenAiTranslationFuture<'_, Self::Error>;
+    fn resolve_default_model(&self) -> DefaultTranslationModelFuture<'_, Self::Error>;
 
     fn translate(
         &self,
@@ -110,16 +116,18 @@ pub async fn complete_translation<E>(
         TranslationDispatch::Completed(result) => return Ok(result),
         TranslationDispatch::OpenAi(request) => request,
     };
-    if request.endpoint_id.is_empty() {
-        request.endpoint_id = port
-            .resolve_default_endpoint_id()
-            .await
-            .map_err(TranslationCompletionError::Port)?;
-    }
     if request.endpoint_id.is_empty() || request.model.is_empty() {
-        return Err(TranslationCompletionError::Application(Error::Custom(
-            "Translation endpoint/model missing.".into(),
-        )));
+        let Some(default_model) = port
+            .resolve_default_model()
+            .await
+            .map_err(TranslationCompletionError::Port)?
+        else {
+            return Err(TranslationCompletionError::Application(Error::Custom(
+                "Translation endpoint/model missing.".into(),
+            )));
+        };
+        request.endpoint_id = default_model.endpoint_id;
+        request.model = default_model.model;
     }
     let text = port
         .translate(request)
@@ -130,10 +138,6 @@ pub async fn complete_translation<E>(
         detected_source_language: None,
         provider: TranslationProvider::OpenAi,
     })
-}
-
-pub fn resolved_openai_translation_endpoint_id(config: &dyn ConfigStore) -> Result<String> {
-    Ok(config.get_string(KEY_ENDPOINT_ID, "")?.trim().to_string())
 }
 
 fn override_or_config(
@@ -178,24 +182,17 @@ pub async fn translate_text(
 
     match provider {
         TranslationProvider::OpenAi => {
-            let endpoint_id = match overrides.endpoint_id {
-                Some(endpoint_id) => endpoint_id.trim().to_string(),
-                None => resolved_openai_translation_endpoint_id(deps.config)?,
-            };
-            let model = {
-                let model = override_or_config(
-                    deps.config,
-                    overrides.model.as_ref(),
-                    KEY_MODEL,
-                    DEFAULT_TRANSLATION_MODEL,
-                )?;
-                let model = model.trim().to_string();
-                if model.is_empty() {
-                    DEFAULT_TRANSLATION_MODEL.to_string()
-                } else {
-                    model
-                }
-            };
+            let endpoint_id = override_or_config(
+                deps.config,
+                overrides.endpoint_id.as_ref(),
+                KEY_ENDPOINT_ID,
+                "",
+            )?
+            .trim()
+            .to_string();
+            let model = override_or_config(deps.config, overrides.model.as_ref(), KEY_MODEL, "")?
+                .trim()
+                .to_string();
             let prompt =
                 override_or_config(deps.config, overrides.prompt.as_ref(), KEY_PROMPT, "")?;
             let reasoning_effort = override_or_config(
@@ -245,20 +242,22 @@ fn parse_translation_provider(value: &str) -> TranslationProvider {
 mod completion_tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
+    use vrcx_0_application_core::MemoryConfigStore;
+
     use super::*;
 
     struct FakeOpenAiTranslationPort {
         resolves: AtomicUsize,
         translations: AtomicUsize,
-        endpoint_id: String,
+        default_model: Option<TranslationModelRef>,
     }
 
     impl OpenAiTranslationPort for FakeOpenAiTranslationPort {
         type Error = String;
 
-        fn resolve_default_endpoint_id(&self) -> OpenAiTranslationFuture<'_, Self::Error> {
+        fn resolve_default_model(&self) -> DefaultTranslationModelFuture<'_, Self::Error> {
             self.resolves.fetch_add(1, Ordering::AcqRel);
-            Box::pin(async { Ok(self.endpoint_id.clone()) })
+            Box::pin(async { Ok(self.default_model.clone()) })
         }
 
         fn translate(
@@ -266,21 +265,54 @@ mod completion_tests {
             request: OpenAiTranslationRequest,
         ) -> OpenAiTranslationFuture<'_, Self::Error> {
             self.translations.fetch_add(1, Ordering::AcqRel);
-            Box::pin(async move { Ok(format!("{}:{}", request.endpoint_id, request.text)) })
+            Box::pin(async move {
+                Ok(format!(
+                    "{}/{}:{}",
+                    request.endpoint_id, request.model, request.text
+                ))
+            })
         }
     }
 
-    fn fake_port(endpoint_id: &str) -> FakeOpenAiTranslationPort {
+    struct UnusedStandardTranslation;
+
+    impl StandardTranslationPort for UnusedStandardTranslation {
+        fn translate(
+            &self,
+            _provider: TranslationProvider,
+            _key: String,
+            _text: String,
+            _target_language: String,
+        ) -> StandardTranslationFuture<'_> {
+            Box::pin(async { unreachable!("LLM translation must not use the standard port") })
+        }
+    }
+
+    fn fake_port(default_model: Option<(&str, &str)>) -> FakeOpenAiTranslationPort {
         FakeOpenAiTranslationPort {
             resolves: AtomicUsize::new(0),
             translations: AtomicUsize::new(0),
-            endpoint_id: endpoint_id.into(),
+            default_model: default_model.map(|(endpoint_id, model)| TranslationModelRef {
+                endpoint_id: endpoint_id.into(),
+                model: model.into(),
+            }),
         }
+    }
+
+    fn openai_request(endpoint_id: &str, model: &str) -> TranslationDispatch {
+        TranslationDispatch::OpenAi(OpenAiTranslationRequest {
+            endpoint_id: endpoint_id.into(),
+            model: model.into(),
+            prompt: None,
+            reasoning_effort: None,
+            target_language: "en".into(),
+            text: "hello".into(),
+        })
     }
 
     #[tokio::test]
     async fn completed_translation_does_not_touch_the_openai_port() {
-        let port = fake_port("endpoint");
+        let port = fake_port(Some(("endpoint", "model")));
         let result = complete_translation(
             TranslationDispatch::Completed(TranslationResult {
                 text: "done".into(),
@@ -299,45 +331,37 @@ mod completion_tests {
     }
 
     #[tokio::test]
-    async fn openai_translation_resolves_the_default_endpoint_before_dispatch() {
-        let port = fake_port("endpoint");
-        let result = complete_translation(
-            TranslationDispatch::OpenAi(OpenAiTranslationRequest {
-                endpoint_id: String::new(),
-                model: "model".into(),
-                prompt: None,
-                reasoning_effort: None,
-                target_language: "en".into(),
-                text: "hello".into(),
-            }),
-            &port,
-        )
-        .await
-        .unwrap();
+    async fn unassigned_translation_model_follows_the_default_model() {
+        for (endpoint_id, model) in [("", ""), ("", "stale-model"), ("stale-endpoint", "")] {
+            let port = fake_port(Some(("default-endpoint", "default-model")));
+            let result = complete_translation(openai_request(endpoint_id, model), &port)
+                .await
+                .unwrap();
 
-        assert_eq!(result.text, "endpoint:hello");
-        assert_eq!(result.detected_source_language, None);
-        assert_eq!(result.provider, TranslationProvider::OpenAi);
-        assert_eq!(port.resolves.load(Ordering::Acquire), 1);
-        assert_eq!(port.translations.load(Ordering::Acquire), 1);
+            assert_eq!(result.text, "default-endpoint/default-model:hello");
+            assert_eq!(result.detected_source_language, None);
+            assert_eq!(result.provider, TranslationProvider::OpenAi);
+            assert_eq!(port.resolves.load(Ordering::Acquire), 1);
+        }
+    }
+
+    #[tokio::test]
+    async fn assigned_translation_model_is_used_without_consulting_the_default() {
+        let port = fake_port(Some(("default-endpoint", "default-model")));
+        let result = complete_translation(openai_request("chosen", "chosen-model"), &port)
+            .await
+            .unwrap();
+
+        assert_eq!(result.text, "chosen/chosen-model:hello");
+        assert_eq!(port.resolves.load(Ordering::Acquire), 0);
     }
 
     #[tokio::test]
     async fn openai_translation_keeps_the_missing_endpoint_error_contract() {
-        let port = fake_port("");
-        let error = complete_translation(
-            TranslationDispatch::OpenAi(OpenAiTranslationRequest {
-                endpoint_id: String::new(),
-                model: "model".into(),
-                prompt: None,
-                reasoning_effort: None,
-                target_language: "en".into(),
-                text: "hello".into(),
-            }),
-            &port,
-        )
-        .await
-        .unwrap_err();
+        let port = fake_port(None);
+        let error = complete_translation(openai_request("", ""), &port)
+            .await
+            .unwrap_err();
 
         assert!(matches!(
             error,
@@ -345,5 +369,33 @@ mod completion_tests {
                 if message == "Translation endpoint/model missing."
         ));
         assert_eq!(port.translations.load(Ordering::Acquire), 0);
+    }
+
+    #[tokio::test]
+    async fn translate_text_leaves_an_unset_model_for_default_resolution() {
+        let config = MemoryConfigStore::default();
+        config.set_bool(KEY_ENABLED, true).unwrap();
+        config.set_string(KEY_API_TYPE, "openai").unwrap();
+        config.set_string(KEY_ENDPOINT_ID, "endpoint").unwrap();
+
+        let dispatch = translate_text(
+            TranslationDeps {
+                config: &config,
+                standard_translation: &UnusedStandardTranslation,
+            },
+            TranslationTranslateInput {
+                text: "hello".into(),
+                target_language: None,
+                overrides: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let TranslationDispatch::OpenAi(request) = dispatch else {
+            panic!("expected an LLM translation request");
+        };
+        assert_eq!(request.endpoint_id, "endpoint");
+        assert!(request.model.is_empty());
     }
 }

@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
+import type { RuntimeModelRef } from '@/features/assistant/components/RuntimeModelSelect';
 import { languageCodes } from '@/localization/index';
-import { commands, type LlmEndpointDto } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type AssistantRuntimeStatus,
+    type LlmEndpointDto
+} from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import {
     setDiscordBoolPreference,
@@ -25,11 +30,7 @@ import {
     getModelReasoning,
     isOpenRouterBaseUrl
 } from '../llm/reasoning';
-import {
-    DEFAULT_TRANSLATION_ENDPOINT,
-    DEFAULT_TRANSLATION_MODEL,
-    parseWebJson
-} from './settingsValues';
+import { parseWebJson } from './settingsValues';
 
 export type SettingsIntegrationPrefs = {
     youtubeAPI: boolean;
@@ -39,7 +40,6 @@ export type SettingsIntegrationPrefs = {
     translationAPIType: TranslationApiType;
     translationAPIKey: string;
     translationEndpointId: string;
-    translationAPIEndpoint: string;
     translationAPIModel: string;
     translationAPIPrompt: string;
     translationAPIReasoningEffort: string;
@@ -54,7 +54,6 @@ type SettingsIntegrationValueKey =
     | 'bioLanguage'
     | 'translationAPIType'
     | 'translationEndpointId'
-    | 'translationAPIEndpoint'
     | 'translationAPIModel'
     | 'translationAPIPrompt'
     | 'translationAPIReasoningEffort';
@@ -74,7 +73,6 @@ export type SettingsDiscordPrefs = {
 type SettingsIntegrationStatus = {
     youtube: string;
     translation: string;
-    models: string;
     [key: string]: unknown;
 };
 
@@ -83,7 +81,6 @@ type SettingsTranslationDraft = {
     translationAPIType: TranslationApiType;
     translationAPIKey: string;
     translationEndpointId: string;
-    translationAPIEndpoint: string;
     translationAPIModel: string;
     translationAPIPrompt: string;
     translationAPIReasoningEffort: string;
@@ -109,7 +106,6 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             bioLanguage: state.bioLanguage,
             translationAPIType: state.translationAPIType,
             translationEndpointId: state.translationEndpointId,
-            translationAPIEndpoint: state.translationAPIEndpoint,
             translationAPIModel: state.translationAPIModel,
             translationAPIPrompt: state.translationAPIPrompt,
             translationAPIReasoningEffort: state.translationAPIReasoningEffort
@@ -139,12 +135,10 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         }),
         [integrationApiKeys, integrationPreferenceValues]
     );
-    const fetchingModelsRef = useRef(new Set<string>());
     const [integrationStatus, setIntegrationStatus] =
         useState<SettingsIntegrationStatus>({
             youtube: 'idle',
-            translation: 'idle',
-            models: 'idle'
+            translation: 'idle'
         });
     const [youtubeApiDialogOpen, setYoutubeApiDialogOpen] = useState(false);
     const [youtubeApiKeyDraft, setYoutubeApiKeyDraft] = useState('');
@@ -156,12 +150,13 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             translationAPIType: 'google',
             translationAPIKey: '',
             translationEndpointId: '',
-            translationAPIEndpoint: DEFAULT_TRANSLATION_ENDPOINT,
-            translationAPIModel: DEFAULT_TRANSLATION_MODEL,
+            translationAPIModel: '',
             translationAPIPrompt: '',
             translationAPIReasoningEffort: ''
         });
-    const translationDraftRef = useRef(translationDraft);
+    const [translationDefaultModel, setTranslationDefaultModel] = useState<
+        RuntimeModelRef | null | undefined
+    >(undefined);
 
     useEffect(() => {
         let active = true;
@@ -211,10 +206,6 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         key: keyof SettingsTranslationDraft,
         value: string
     ) {
-        translationDraftRef.current = {
-            ...translationDraftRef.current,
-            [key]: value
-        };
         setTranslationDraft((current) => ({ ...current, [key]: value }));
     }
 
@@ -223,47 +214,58 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         setYoutubeApiDialogOpen(true);
     }
 
+    async function loadTranslationDefaultModel() {
+        const status = await commands.appAssistantRuntimeStatus();
+        const defaultModel = defaultModelFromStatus(status);
+        setTranslationDefaultModel(defaultModel);
+        return defaultModel;
+    }
+
     function openTranslationApiDialog() {
         useLlmEndpointsStore
             .getState()
             .load()
-            .then((endpoints) => {
-                const selected =
-                    integrationPrefs.translationEndpointId ||
-                    endpoints[0]?.id ||
-                    '';
-                if (selected) {
-                    setTranslationDraftValue('translationEndpointId', selected);
-                    if (
-                        normalizeTranslationApiType(
-                            integrationPrefs.translationAPIType
-                        ) === 'openai'
-                    ) {
-                        fetchTranslationModels(selected);
-                    }
-                }
-            })
             .catch(() => {});
+        setTranslationDefaultModel(undefined);
+        loadTranslationDefaultModel().catch(() => {});
+        const assignment = translationAssignment({
+            translationEndpointId: integrationPrefs.translationEndpointId || '',
+            translationAPIModel: integrationPrefs.translationAPIModel || ''
+        });
         const nextDraft = {
             bioLanguage: integrationPrefs.bioLanguage || 'en',
             translationAPIType: normalizeTranslationApiType(
                 integrationPrefs.translationAPIType
             ),
             translationAPIKey: integrationPrefs.translationAPIKey || '',
-            translationEndpointId: integrationPrefs.translationEndpointId || '',
-            translationAPIEndpoint:
-                integrationPrefs.translationAPIEndpoint ||
-                DEFAULT_TRANSLATION_ENDPOINT,
-            translationAPIModel:
-                integrationPrefs.translationAPIModel ||
-                DEFAULT_TRANSLATION_MODEL,
+            translationEndpointId: assignment?.endpointId ?? '',
+            translationAPIModel: assignment?.model ?? '',
             translationAPIPrompt: integrationPrefs.translationAPIPrompt || '',
             translationAPIReasoningEffort:
                 integrationPrefs.translationAPIReasoningEffort || ''
         };
-        translationDraftRef.current = nextDraft;
         setTranslationDraft(nextDraft);
         setTranslationApiDialogOpen(true);
+    }
+
+    async function resolveTranslationModel(
+        provider: TranslationApiType,
+        assignment: RuntimeModelRef | null
+    ): Promise<RuntimeModelRef | null | undefined> {
+        if (provider !== 'openai' || assignment) {
+            return assignment;
+        }
+        const defaultModel = await loadTranslationDefaultModel().catch(
+            () => null
+        );
+        if (!defaultModel) {
+            toast.add({
+                type: 'warning',
+                title: t('dialog.translation_api.msg_no_default_model')
+            });
+            return undefined;
+        }
+        return defaultModel;
     }
 
     function setDiscordValue(key: DiscordPreferenceKey, value: boolean) {
@@ -343,24 +345,18 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         const nextType = normalizeTranslationApiType(
             translationDraft.translationAPIType
         );
-        const nextEndpoint =
-            translationDraft.translationAPIEndpoint.trim() ||
-            DEFAULT_TRANSLATION_ENDPOINT;
-        const nextModel =
-            translationDraft.translationAPIModel.trim() ||
-            DEFAULT_TRANSLATION_MODEL;
-        const nextEndpointId = translationDraft.translationEndpointId.trim();
+        const assignment = translationAssignment(translationDraft);
         const nextKey = translationDraft.translationAPIKey.trim();
         const nextBioLanguage = languageCodes.includes(
             translationDraft.bioLanguage
         )
             ? translationDraft.bioLanguage
             : 'en';
-        if (nextType === 'openai' && (!nextEndpointId || !nextModel)) {
-            toast.add({
-                type: 'warning',
-                title: t('dialog.translation_api.msg_fill_endpoint_model')
-            });
+        const resolvedModel = await resolveTranslationModel(
+            nextType,
+            assignment
+        );
+        if (resolvedModel === undefined) {
             return;
         }
 
@@ -368,8 +364,7 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             translationDraft.translationAPIReasoningEffort,
             nextType,
             llmEndpoints,
-            nextEndpointId,
-            nextModel
+            resolvedModel
         );
 
         setIntegrationStatus((current) => ({
@@ -381,9 +376,8 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                 bioLanguage: nextBioLanguage,
                 translationAPIType: nextType,
                 translationAPIKey: nextKey,
-                translationEndpointId: nextEndpointId,
-                translationAPIEndpoint: nextEndpoint,
-                translationAPIModel: nextModel,
+                translationEndpointId: assignment?.endpointId ?? '',
+                translationAPIModel: assignment?.model ?? '',
                 translationAPIPrompt: translationDraft.translationAPIPrompt,
                 translationAPIReasoningEffort: nextReasoningEffort
             });
@@ -414,67 +408,6 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         }
     }
 
-    async function fetchTranslationModels(endpointIdOverride?: string) {
-        const endpointId = (
-            endpointIdOverride ?? translationDraft.translationEndpointId
-        ).trim();
-        if (!endpointId || fetchingModelsRef.current.has(endpointId)) {
-            return;
-        }
-        fetchingModelsRef.current.add(endpointId);
-        setIntegrationStatus((current) => ({
-            ...current,
-            models: 'running'
-        }));
-        try {
-            const endpoints = await useLlmEndpointsStore.getState().load();
-            const endpoint = endpoints.find((item) => item.id === endpointId);
-            if (!endpoint) {
-                return;
-            }
-            const currentDraft = translationDraftRef.current;
-            if (currentDraft.translationEndpointId.trim() !== endpointId) {
-                return;
-            }
-            const currentModel = currentDraft.translationAPIModel.trim();
-            const nextModel =
-                endpoint.models.length > 0 &&
-                !endpoint.models.includes(currentModel)
-                    ? endpoint.models[0]
-                    : currentModel;
-            if (nextModel !== currentModel) {
-                setTranslationDraftValue('translationAPIModel', nextModel);
-            }
-            const currentEffort =
-                translationDraftRef.current.translationAPIReasoningEffort;
-            const effective = getEffectiveReasoningEffort(
-                currentEffort,
-                getModelReasoning(endpoint, nextModel)
-            );
-            if (currentEffort && effective === null) {
-                setTranslationDraftValue('translationAPIReasoningEffort', '');
-            }
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title:
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.settings.toast.failed_to_fetch_translation_models'
-                          )
-            });
-        } finally {
-            fetchingModelsRef.current.delete(endpointId);
-            if (fetchingModelsRef.current.size === 0) {
-                setIntegrationStatus((current) => ({
-                    ...current,
-                    models: 'idle'
-                }));
-            }
-        }
-    }
-
     async function testTranslationApiConfig() {
         const provider = normalizeTranslationApiType(
             translationDraft.translationAPIType
@@ -494,25 +427,19 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             });
             return;
         }
-        const endpointId = translationDraft.translationEndpointId.trim();
-        const model =
-            translationDraft.translationAPIModel.trim() ||
-            DEFAULT_TRANSLATION_MODEL;
-        if (provider === 'openai') {
-            if (!endpointId || !model) {
-                toast.add({
-                    type: 'warning',
-                    title: t('dialog.translation_api.msg_fill_endpoint_model')
-                });
-                return;
-            }
+        const assignment = translationAssignment(translationDraft);
+        const resolvedModel = await resolveTranslationModel(
+            provider,
+            assignment
+        );
+        if (resolvedModel === undefined) {
+            return;
         }
         const reasoningEffort = normalizeTranslationReasoningEffort(
             translationDraft.translationAPIReasoningEffort,
             provider,
             llmEndpoints,
-            endpointId,
-            model
+            resolvedModel
         );
         setIntegrationStatus((current) => ({
             ...current,
@@ -526,8 +453,8 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                     enabled: true,
                     apiType: provider,
                     key: apiKey,
-                    endpointId,
-                    model,
+                    endpointId: assignment?.endpointId ?? '',
+                    model: assignment?.model ?? '',
                     prompt: translationDraft.translationAPIPrompt || null,
                     reasoningEffort: reasoningEffort || null
                 }
@@ -557,7 +484,6 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
 
     return {
         discordPrefs,
-        fetchTranslationModels,
         integrationPrefs,
         integrationStatus,
         llmEndpoints,
@@ -573,26 +499,42 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         setYoutubeApiKeyDraft,
         testTranslationApiConfig,
         translationApiDialogOpen,
+        translationDefaultModel,
         translationDraft,
         youtubeApiDialogOpen,
         youtubeApiKeyDraft
     };
 }
 
+function translationAssignment(draft: {
+    translationEndpointId: string;
+    translationAPIModel: string;
+}): RuntimeModelRef | null {
+    const endpointId = draft.translationEndpointId.trim();
+    const model = draft.translationAPIModel.trim();
+    return endpointId && model ? { endpointId, model } : null;
+}
+
+function defaultModelFromStatus(
+    status: AssistantRuntimeStatus
+): RuntimeModelRef | null {
+    const { endpointId, model } = status.lastSelection;
+    return endpointId && model ? { endpointId, model } : null;
+}
+
 function normalizeTranslationReasoningEffort(
     effort: string,
     apiType: string,
     endpoints: LlmEndpointDto[],
-    endpointId: string,
-    model: string
+    resolvedModel: RuntimeModelRef | null
 ): string {
-    if (apiType !== 'openai' || !effort) {
+    if (apiType !== 'openai' || !effort || !resolvedModel) {
         return '';
     }
-    const endpoint = endpoints.find((ep) => ep.id === endpointId);
+    const endpoint = endpoints.find((ep) => ep.id === resolvedModel.endpointId);
     if (!endpoint || !isOpenRouterBaseUrl(endpoint.baseUrl)) {
         return '';
     }
-    const reasoning = getModelReasoning(endpoint, model);
+    const reasoning = getModelReasoning(endpoint, resolvedModel.model);
     return getEffectiveReasoningEffort(effort, reasoning) ?? '';
 }

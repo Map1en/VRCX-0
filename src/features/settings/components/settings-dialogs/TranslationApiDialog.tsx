@@ -1,6 +1,10 @@
 import { useTranslation } from 'react-i18next';
 
 import {
+    RuntimeModelSelect,
+    type RuntimeModelRef
+} from '@/features/assistant/components/RuntimeModelSelect';
+import {
     getEffectiveReasoningEffort,
     getModelReasoning,
     getValidReasoningEfforts,
@@ -28,13 +32,11 @@ import {
     SelectContent,
     SelectGroup,
     SelectItem,
-    SelectLabel,
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-import { DEFAULT_TRANSLATION_MODEL } from '../../settingsValues';
 import { Field, FieldGroup } from '../SettingsField';
 
 type TranslationDraft = {
@@ -42,7 +44,6 @@ type TranslationDraft = {
     translationAPIType: TranslationProvider;
     translationAPIKey: string;
     translationEndpointId: string;
-    translationAPIEndpoint: string;
     translationAPIModel: string;
     translationAPIPrompt: string;
     translationAPIReasoningEffort: string;
@@ -63,9 +64,8 @@ type TranslationApiDialogProps = {
     llmEndpoints: LlmEndpointDto[];
     integrationStatus: {
         translation: string;
-        models: string;
     };
-    onFetchModels: (endpointId?: string) => void | Promise<void>;
+    defaultModel: RuntimeModelRef | null | undefined;
     onTest: () => void | Promise<void>;
     onSave: () => void | Promise<void>;
 };
@@ -78,18 +78,50 @@ export function TranslationApiDialog({
     providerOptions: translationProviderOptions,
     llmEndpoints,
     integrationStatus,
-    onFetchModels: fetchTranslationModels,
+    defaultModel,
     onTest: testTranslationApiConfig,
     onSave: saveTranslationApiConfig
 }: TranslationApiDialogProps) {
     const { t } = useTranslation();
     const translationProvider = translationDraft.translationAPIType;
     const endpoints = llmEndpoints;
-    const selectedEndpoint = endpoints.find(
-        (endpoint) => endpoint.id === translationDraft.translationEndpointId
-    );
-    const modelOptions = selectedEndpoint?.models ?? [];
-    const selectedModel = translationDraft.translationAPIModel;
+    const assignedEndpointId = translationDraft.translationEndpointId.trim();
+    const assignedModel = translationDraft.translationAPIModel.trim();
+    const assignment =
+        assignedEndpointId && assignedModel
+            ? { endpointId: assignedEndpointId, model: assignedModel }
+            : null;
+    const assignedEndpoint = assignment
+        ? endpoints.find((endpoint) => endpoint.id === assignment.endpointId)
+        : undefined;
+    const resolvedModel = assignment ?? defaultModel;
+    const selectedEndpoint = resolvedModel
+        ? endpoints.find((endpoint) => endpoint.id === resolvedModel.endpointId)
+        : undefined;
+    const selectedModel = resolvedModel?.model ?? '';
+    const assignmentNotice = !assignment
+        ? null
+        : !assignedEndpoint
+          ? {
+                failing: true,
+                text: t('dialog.translation_api.openai.model_endpoint_removed')
+            }
+          : !assignedEndpoint.models.includes(assignment.model)
+            ? {
+                  failing: false,
+                  text: t('dialog.translation_api.openai.model_not_selected', {
+                      model: assignment.model,
+                      endpoint: assignedEndpoint.name
+                  })
+              }
+            : null;
+    const followDefaultLabel = defaultModel
+        ? t('dialog.translation_api.openai.model_follow_default', {
+              model: defaultModel.model
+          })
+        : defaultModel === null
+          ? t('dialog.translation_api.openai.model_follow_default_unset')
+          : t('dialog.translation_api.openai.model_follow_default_pending');
     const showReasoningEffort = shouldShowReasoningEffortSelector(
         selectedEndpoint ?? null,
         selectedModel || null
@@ -179,20 +211,12 @@ export function TranslationApiDialog({
                                     option.label ||
                                     (option.labelKey ? t(option.labelKey) : '')
                             }))}
-                            onValueChange={(value) => {
+                            onValueChange={(value) =>
                                 setTranslationDraftValue(
                                     'translationAPIType',
                                     value ?? ''
-                                );
-                                if (
-                                    value === 'openai' &&
-                                    translationDraft.translationEndpointId
-                                ) {
-                                    fetchTranslationModels(
-                                        translationDraft.translationEndpointId
-                                    );
-                                }
-                            }}
+                                )
+                            }
                         >
                             <SelectTrigger
                                 id="settings-translation-mode"
@@ -222,167 +246,81 @@ export function TranslationApiDialog({
                     {translationDraft.translationAPIType === 'openai' ? (
                         <>
                             <Field
-                                label={t(
-                                    'dialog.translation_api.openai.connection'
-                                )}
-                                description={t(
-                                    'dialog.translation_api.openai.connection_description'
-                                )}
-                                controlId="settings-translation-endpoint-id"
-                            >
-                                <Select
-                                    value={
-                                        translationDraft.translationEndpointId ||
-                                        undefined
-                                    }
-                                    items={endpoints.map((endpoint) => ({
-                                        value: endpoint.id,
-                                        label: endpoint.name
-                                    }))}
-                                    disabled={!endpoints.length}
-                                    onValueChange={(value) => {
-                                        const endpointId = value ?? '';
-                                        setTranslationDraftValue(
-                                            'translationEndpointId',
-                                            endpointId
-                                        );
-                                        const endpoint = endpoints.find(
-                                            (item) => item.id === endpointId
-                                        );
-                                        if (endpoint) {
-                                            const currentModel =
-                                                translationDraft.translationAPIModel;
-                                            const nextModel =
-                                                endpoint.models.length > 0 &&
-                                                !endpoint.models.includes(
-                                                    currentModel
-                                                )
-                                                    ? endpoint.models[0]
-                                                    : currentModel;
-                                            if (nextModel !== currentModel) {
-                                                setTranslationDraftValue(
-                                                    'translationAPIModel',
-                                                    nextModel
-                                                );
-                                            }
-                                            normalizeReasoningEffortForModel(
-                                                endpoint,
-                                                nextModel,
-                                                translationDraft.translationAPIReasoningEffort,
-                                                setTranslationDraftValue
-                                            );
-                                        }
-                                        fetchTranslationModels(endpointId);
-                                    }}
-                                >
-                                    <SelectTrigger
-                                        id="settings-translation-endpoint-id"
-                                        className="w-96 max-w-full"
-                                    >
-                                        <SelectValue
-                                            placeholder={t(
-                                                'dialog.translation_api.openai.connection_placeholder'
-                                            )}
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {endpoints.map((endpoint) => (
-                                                <SelectItem
-                                                    key={endpoint.id}
-                                                    value={endpoint.id}
-                                                >
-                                                    {endpoint.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field
                                 label={t('dialog.translation_api.openai.model')}
+                                description={t(
+                                    'dialog.translation_api.openai.model_description'
+                                )}
                                 controlId="settings-translation-model"
                             >
-                                {modelOptions.length ? (
-                                    <Select
-                                        value={
-                                            translationDraft.translationAPIModel ||
-                                            modelOptions[0]
+                                <div className="flex w-96 max-w-full flex-col gap-1.5">
+                                    <RuntimeModelSelect
+                                        id="settings-translation-model"
+                                        endpointId={
+                                            assignment?.endpointId ?? null
                                         }
-                                        items={modelOptions.map((model) => ({
-                                            value: model,
-                                            label: model
-                                        }))}
-                                        onValueChange={(value) => {
-                                            setTranslationDraftValue(
-                                                'translationAPIModel',
-                                                value ?? ''
-                                            );
-                                            if (selectedEndpoint) {
+                                        model={assignment?.model ?? null}
+                                        placeholder={t(
+                                            'assistant.runtime.search_models'
+                                        )}
+                                        emptyLabel={t(
+                                            'assistant.runtime.model_unset'
+                                        )}
+                                        followDefault={{
+                                            label: followDefaultLabel,
+                                            onSelect: () => {
+                                                setTranslationDraftValue(
+                                                    'translationEndpointId',
+                                                    ''
+                                                );
+                                                setTranslationDraftValue(
+                                                    'translationAPIModel',
+                                                    ''
+                                                );
                                                 normalizeReasoningEffortForModel(
-                                                    selectedEndpoint,
-                                                    value ?? '',
+                                                    endpoints.find(
+                                                        (endpoint) =>
+                                                            endpoint.id ===
+                                                            defaultModel?.endpointId
+                                                    ) ?? null,
+                                                    defaultModel?.model ?? '',
                                                     translationDraft.translationAPIReasoningEffort,
                                                     setTranslationDraftValue
                                                 );
                                             }
                                         }}
-                                        onOpenChange={(open) => {
-                                            if (
-                                                open &&
-                                                selectedEndpoint &&
-                                                integrationStatus.models !==
-                                                    'running'
-                                            ) {
-                                                fetchTranslationModels(
-                                                    selectedEndpoint.id
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger
-                                            id="settings-translation-model"
-                                            className="w-96 max-w-full"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {selectedEndpoint?.name ? (
-                                                    <SelectLabel>
-                                                        {selectedEndpoint.name}
-                                                    </SelectLabel>
-                                                ) : null}
-                                                {modelOptions.map(
-                                                    (model: string) => (
-                                                        <SelectItem
-                                                            key={model}
-                                                            value={model}
-                                                        >
-                                                            {model}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <Input
-                                        id="settings-translation-model"
-                                        name="translationApiModel"
-                                        value={
-                                            translationDraft.translationAPIModel
-                                        }
-                                        placeholder={DEFAULT_TRANSLATION_MODEL}
-                                        className="w-96 max-w-full"
-                                        onChange={(event) =>
+                                        onSelect={(ref) => {
+                                            setTranslationDraftValue(
+                                                'translationEndpointId',
+                                                ref.endpointId
+                                            );
                                             setTranslationDraftValue(
                                                 'translationAPIModel',
-                                                event.target.value
-                                            )
-                                        }
+                                                ref.model
+                                            );
+                                            normalizeReasoningEffortForModel(
+                                                endpoints.find(
+                                                    (endpoint) =>
+                                                        endpoint.id ===
+                                                        ref.endpointId
+                                                ) ?? null,
+                                                ref.model,
+                                                translationDraft.translationAPIReasoningEffort,
+                                                setTranslationDraftValue
+                                            );
+                                        }}
                                     />
-                                )}
+                                    {assignmentNotice ? (
+                                        <p
+                                            className={
+                                                assignmentNotice.failing
+                                                    ? 'text-destructive text-xs'
+                                                    : 'text-muted-foreground text-xs'
+                                            }
+                                        >
+                                            {assignmentNotice.text}
+                                        </p>
+                                    ) : null}
+                                </div>
                             </Field>
                             {showReasoningEffort ? (
                                 <Field
@@ -560,7 +498,7 @@ export function TranslationApiDialog({
 }
 
 function normalizeReasoningEffortForModel(
-    endpoint: LlmEndpointDto,
+    endpoint: LlmEndpointDto | null,
     modelId: string,
     currentEffort: string,
     setDraftValue: (key: 'translationAPIReasoningEffort', value: string) => void

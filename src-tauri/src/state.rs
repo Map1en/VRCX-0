@@ -5,8 +5,9 @@ use std::time::{Duration, Instant};
 use crate::desktop_notification_activation::PendingDesktopNotificationActivations;
 use crate::error::AppError;
 use vrcx_0_application::discovery::{
-    complete_translation, OpenAiTranslationFuture, OpenAiTranslationPort, OpenAiTranslationRequest,
-    TranslationCompletionError, TranslationResult, TranslationTranslateInput,
+    complete_translation, DefaultTranslationModelFuture, OpenAiTranslationFuture,
+    OpenAiTranslationPort, OpenAiTranslationRequest, TranslationCompletionError,
+    TranslationModelRef, TranslationResult, TranslationTranslateInput,
 };
 use vrcx_0_application_core::UpdaterPort;
 use vrcx_0_assistant::{AssistantController, LlmTranslateInput};
@@ -165,17 +166,22 @@ struct TauriOpenAiTranslationPort<'a> {
 impl OpenAiTranslationPort for TauriOpenAiTranslationPort<'_> {
     type Error = AppError;
 
-    fn resolve_default_endpoint_id(&self) -> OpenAiTranslationFuture<'_, Self::Error> {
+    fn resolve_default_model(&self) -> DefaultTranslationModelFuture<'_, Self::Error> {
         Box::pin(async {
-            self.state
+            let selection = self
+                .state
                 .assistant()
                 .await?
-                .endpoint_list()
-                .map_err(AppError::from)?;
-            self.state
-                .runtime
-                .resolved_openai_translation_endpoint_id()
-                .map_err(AppError::from)
+                .runtime_status()
+                .map_err(AppError::from)?
+                .last_selection;
+            Ok(selection
+                .endpoint_id
+                .zip(selection.model)
+                .filter(|(endpoint_id, model)| {
+                    !endpoint_id.trim().is_empty() && !model.trim().is_empty()
+                })
+                .map(|(endpoint_id, model)| TranslationModelRef { endpoint_id, model }))
         })
     }
 

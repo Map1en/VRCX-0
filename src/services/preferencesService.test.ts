@@ -521,13 +521,12 @@ describe('preferencesService characterization', () => {
         );
     });
 
-    it('falls back translation API config fields before writing them together', async () => {
+    it('normalizes translation API config fields before writing them together', async () => {
         await expect(
             setTranslationApiConfigPreference({
                 bioLanguage: 'ja-JP',
                 translationAPIType: 'openai',
                 translationAPIKey: '  key  ',
-                translationAPIEndpoint: '',
                 translationAPIModel: '',
                 translationAPIPrompt: null,
                 translationAPIReasoningEffort: ''
@@ -537,9 +536,7 @@ describe('preferencesService characterization', () => {
             translationAPIType: 'openai',
             translationAPIKey: 'key',
             translationEndpointId: '',
-            translationAPIEndpoint:
-                'https://api.openai.com/v1/chat/completions',
-            translationAPIModel: 'gpt-4o-mini',
+            translationAPIModel: '',
             translationAPIPrompt: '',
             translationAPIReasoningEffort: ''
         });
@@ -549,11 +546,7 @@ describe('preferencesService characterization', () => {
             ['translationAPIType', 'openai'],
             ['translationAPIKey', 'key'],
             ['translationEndpointId', ''],
-            [
-                'translationAPIEndpoint',
-                'https://api.openai.com/v1/chat/completions'
-            ],
-            ['translationAPIModel', 'gpt-4o-mini'],
+            ['translationAPIModel', ''],
             ['translationAPIPrompt', ''],
             ['translationAPIReasoningEffort', '']
         ]);

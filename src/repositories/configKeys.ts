@@ -1,8 +1,4 @@
-import {
-    DEFAULT_TABLE_PAGE_SIZE,
-    DEFAULT_TRANSLATION_ENDPOINT,
-    DEFAULT_TRANSLATION_MODEL
-} from '@/shared/constants/settings';
+import { DEFAULT_TABLE_PAGE_SIZE } from '@/shared/constants/settings';
 import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 
 type ConfigValueType = 'string' | 'int' | 'bool' | 'float';
@@ -163,11 +159,7 @@ export const ConfigKeys = defineConfigKeys({
     translationEndpointId: { type: 'string', default: '' },
     chatboxTranslateTarget: { type: 'string', default: 'en' },
     chatboxTranslateEnabled: { type: 'bool', default: false },
-    translationAPIEndpoint: {
-        type: 'string',
-        default: DEFAULT_TRANSLATION_ENDPOINT
-    },
-    translationAPIModel: { type: 'string', default: DEFAULT_TRANSLATION_MODEL },
+    translationAPIModel: { type: 'string', default: '' },
     translationAPIPrompt: { type: 'string', default: '' },
     translationAPIReasoningEffort: { type: 'string', default: '' },
 

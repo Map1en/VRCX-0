@@ -133,7 +133,7 @@ export const translationProviderOptions = [
     },
     {
         value: 'openai',
-        label: 'OpenAI'
+        labelKey: 'dialog.translation_api.mode_llm'
     },
     {
         value: 'deepl',

@@ -43,7 +43,7 @@ export function SettingsDialogs() {
         providerOptions: dialogs.translationProviderOptions,
         llmEndpoints: dialogs.llmEndpoints,
         integrationStatus: dialogs.integrationStatus,
-        onFetchModels: dialogs.fetchTranslationModels,
+        defaultModel: dialogs.translationDefaultModel,
         onTest: dialogs.testTranslationApiConfig,
         onSave: dialogs.saveTranslationApiConfig
     };
@@ -149,7 +149,7 @@ export function SettingsDialogs() {
                 providerOptions={translationApi.providerOptions}
                 llmEndpoints={translationApi.llmEndpoints}
                 integrationStatus={translationApi.integrationStatus}
-                onFetchModels={translationApi.onFetchModels}
+                defaultModel={translationApi.defaultModel}
                 onTest={translationApi.onTest}
                 onSave={translationApi.onSave}
             />

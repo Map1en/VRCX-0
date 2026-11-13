@@ -234,11 +234,6 @@ impl EndpointStore {
         self.ensure_migrated()?;
         let _guard = self.write_lock.lock().unwrap();
         let mut endpoints = self.load_endpoints()?;
-        let fallback_endpoint_id = endpoints
-            .iter()
-            .find(|endpoint| endpoint.id != id)
-            .map(|endpoint| endpoint.id.clone())
-            .unwrap_or_default();
         endpoints.retain(|endpoint| endpoint.id != id);
         self.save_endpoints(&endpoints)?;
 
@@ -247,15 +242,6 @@ impl EndpointStore {
             selection.endpoint_id = None;
             selection.model = None;
             self.set_last_selection(&selection)?;
-        }
-        if self
-            .config
-            .get_string(TRANSLATION_ENDPOINT_ID_CONFIG_KEY, "")?
-            .trim()
-            == id
-        {
-            self.config
-                .set_string(TRANSLATION_ENDPOINT_ID_CONFIG_KEY, &fallback_endpoint_id)?;
         }
         Ok(())
     }

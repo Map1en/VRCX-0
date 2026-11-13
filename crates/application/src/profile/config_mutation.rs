@@ -34,10 +34,6 @@ fn validate_config_mutation(key: &str, value: Option<&str>) -> Result<()> {
         )),
         "config:vrcx_avatarautocleanup" => validate_avatar_auto_cleanup(value),
         "config:vrcx_usergeneratedcontentpath" => validate_ugc_path(value.unwrap_or_default()),
-        "config:vrcx_translationapiendpoint" => validate_optional_provider_url(
-            value.unwrap_or_default(),
-            "translationAPIEndpoint must be an HTTP or HTTPS endpoint.",
-        ),
         "config:vrcx_avatarremotedatabaseprovider" => validate_optional_provider_url(
             value.unwrap_or_default(),
             "VRCX_avatarRemoteDatabaseProvider must be an HTTP or HTTPS endpoint.",
@@ -125,8 +121,8 @@ mod tests {
             vec![
                 entry("SomeRegularSetting", "anything"),
                 entry(
-                    "translationAPIEndpoint",
-                    "http://localhost:8123/v1/chat/completions",
+                    "VRCX_avatarRemoteDatabaseProvider",
+                    "http://localhost:8123/api",
                 ),
                 entry(
                     "VRCX_avatarRemoteDatabaseProviderList",
@@ -143,7 +139,10 @@ mod tests {
 
         assert!(set_config_values(
             &db,
-            vec![entry("translationAPIEndpoint", "ftp://example.com/api")]
+            vec![entry(
+                "VRCX_avatarRemoteDatabaseProvider",
+                "ftp://example.com/api"
+            )]
         )
         .is_err());
         assert!(set_config_values(

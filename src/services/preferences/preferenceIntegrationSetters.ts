@@ -2,10 +2,6 @@ import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import {
-    DEFAULT_TRANSLATION_ENDPOINT,
-    DEFAULT_TRANSLATION_MODEL
-} from '@/shared/constants/settings';
-import {
     normalizeTranslationApiType,
     type DiscordPreferenceKey
 } from '@/state/preferencesStore';
@@ -40,7 +36,6 @@ export async function setTranslationApiConfigPreference({
     translationAPIType,
     translationAPIKey,
     translationEndpointId,
-    translationAPIEndpoint,
     translationAPIModel,
     translationAPIPrompt,
     translationAPIReasoningEffort
@@ -49,12 +44,7 @@ export async function setTranslationApiConfigPreference({
     const nextType = normalizeTranslationApiType(translationAPIType);
     const nextKey = String(translationAPIKey ?? '').trim();
     const nextEndpointId = String(translationEndpointId ?? '').trim();
-    const nextEndpoint =
-        String(translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT).trim() ||
-        DEFAULT_TRANSLATION_ENDPOINT;
-    const nextModel =
-        String(translationAPIModel || DEFAULT_TRANSLATION_MODEL).trim() ||
-        DEFAULT_TRANSLATION_MODEL;
+    const nextModel = String(translationAPIModel ?? '').trim();
     const nextPrompt = String(translationAPIPrompt ?? '');
     const nextReasoningEffort = String(translationAPIReasoningEffort ?? '');
     await configRepository.setMany([
@@ -62,7 +52,6 @@ export async function setTranslationApiConfigPreference({
         ['translationAPIType', nextType],
         ['translationAPIKey', nextKey],
         ['translationEndpointId', nextEndpointId],
-        ['translationAPIEndpoint', nextEndpoint],
         ['translationAPIModel', nextModel],
         ['translationAPIPrompt', nextPrompt],
         ['translationAPIReasoningEffort', nextReasoningEffort]
@@ -71,7 +60,6 @@ export async function setTranslationApiConfigPreference({
         bioLanguage: nextBioLanguage,
         translationAPIType: nextType,
         translationEndpointId: nextEndpointId,
-        translationAPIEndpoint: nextEndpoint,
         translationAPIModel: nextModel,
         translationAPIPrompt: nextPrompt,
         translationAPIReasoningEffort: nextReasoningEffort
@@ -80,7 +68,6 @@ export async function setTranslationApiConfigPreference({
     publishPreferenceChanged('translationAPIType', nextType);
     publishPreferenceChanged('translationAPIKey', nextKey);
     publishPreferenceChanged('translationEndpointId', nextEndpointId);
-    publishPreferenceChanged('translationAPIEndpoint', nextEndpoint);
     publishPreferenceChanged('translationAPIModel', nextModel);
     publishPreferenceChanged('translationAPIPrompt', nextPrompt);
     publishPreferenceChanged(
@@ -92,7 +79,6 @@ export async function setTranslationApiConfigPreference({
         translationAPIType: nextType,
         translationAPIKey: nextKey,
         translationEndpointId: nextEndpointId,
-        translationAPIEndpoint: nextEndpoint,
         translationAPIModel: nextModel,
         translationAPIPrompt: nextPrompt,
         translationAPIReasoningEffort: nextReasoningEffort
