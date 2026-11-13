@@ -29,8 +29,7 @@ Agreement](CLA.md) before their pull requests can be merged.
 
 The CLA does not transfer copyright ownership. You keep the copyright to your own
 contributions. It grants the project maintainer broad rights to use, modify,
-distribute, and relicense your contributions, including for possible closed-source
-or mobile distributions.
+distribute, and relicense your contributions.
 
 It's a one-click process: when you open a PR, the CLA bot comments with
 instructions and you sign by posting a single comment. You only need to sign
