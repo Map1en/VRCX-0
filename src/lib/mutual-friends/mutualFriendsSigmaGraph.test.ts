@@ -192,7 +192,9 @@ describe('mutual friends graph lifecycle', () => {
         ['initialize', 'unmount'],
         ['initialize', 'retry'],
         ['refresh', 'unmount'],
-        ['refresh', 'retry']
+        ['refresh', 'retry'],
+        ['kill', 'unmount'],
+        ['kill', 'retry']
     ] as const)(
         'handles %s failure during rebuild followed by %s',
         async (stage, next) => {
@@ -248,7 +250,7 @@ describe('mutual friends graph lifecycle', () => {
                 );
                 await waitFor(() =>
                     expect(sigmaMock.options).toHaveLength(
-                        stage === 'initialize' ? 2 : 3
+                        stage === 'refresh' ? 3 : 2
                     )
                 );
                 expect(view.container.querySelectorAll('canvas')).toHaveLength(

@@ -414,10 +414,12 @@ export function destroySigmaInstance(
     instanceRef: { current: SigmaInstance | null },
     resizeObserverRef: { current: ResizeObserver | null }
 ) {
-    resizeObserverRef.current?.disconnect();
-    instanceRef.current?.kill();
+    const resizeObserver = resizeObserverRef.current;
+    const instance = instanceRef.current;
     resizeObserverRef.current = null;
     instanceRef.current = null;
+    resizeObserver?.disconnect();
+    instance?.kill();
 }
 
 export function renderSigmaGraph({

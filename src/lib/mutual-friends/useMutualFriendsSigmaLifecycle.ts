@@ -91,10 +91,11 @@ export function useMutualFriendsSigmaLifecycle({
     layoutSettingsRef.current = layoutSettings;
 
     const teardownGraph = useCallback(() => {
-        controllerRef.current?.dispose();
-        destroySigmaInstance(instanceRef, resizeObserverRef);
+        const controller = controllerRef.current;
         controllerRef.current = null;
         graphologyRef.current = null;
+        controller?.dispose();
+        destroySigmaInstance(instanceRef, resizeObserverRef);
     }, []);
 
     const setGraphElementRef = useCallback(
