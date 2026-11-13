@@ -4411,7 +4411,7 @@
             }
         },
         "about": {
-            "tagline": "The fast, lightweight VRCX built with Tauri and Rust.",
+            "tagline": "Faster. Better. Works with AI.",
             "contributors": "Contributors",
             "contributors_error": "Couldn't load the contributor list.",
             "thanks": "Every translation, test, bug report, and idea comes from the community. Thank you.",

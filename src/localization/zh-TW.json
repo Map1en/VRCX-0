@@ -4400,7 +4400,7 @@
             }
         },
         "about": {
-            "tagline": "這款採用 Tauri 和 Rust 開發的 VRCX，具備快速且輕量化的特點。",
+            "tagline": "更快、更好用，支援 AI。",
             "contributors": "貢獻者",
             "contributors_error": "無法載入貢獻者清單。",
             "thanks": "每一則翻譯、每一次測試、每一份錯誤回報，以及每一個點子，都來自社群。謝謝你。",

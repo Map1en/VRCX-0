@@ -4439,7 +4439,7 @@
             }
         },
         "about": {
-            "tagline": "Rychlý a lehký VRCX postavený na Tauri a Rustu.",
+            "tagline": "Rychlejší. Lepší. S podporou AI.",
             "contributors": "Přispěvatelé",
             "contributors_error": "Seznam přispěvatelů se nepodařilo načíst.",
             "thanks": "Každý překlad, test, hlášení chyby i nápad pochází od komunity. Děkujeme.",

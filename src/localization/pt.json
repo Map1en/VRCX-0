@@ -4407,7 +4407,7 @@
             }
         },
         "about": {
-            "tagline": "VRCX rápido e leve, criado com Tauri e Rust.",
+            "tagline": "Mais rápido. Melhor. Compatível com IA.",
             "contributors": "Contribuidores",
             "contributors_error": "Não foi possível carregar a lista de contribuidores.",
             "thanks": "Cada tradução, teste, relato de bug e ideia vem da comunidade. Agradecemos.",

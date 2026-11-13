@@ -4400,7 +4400,7 @@
             }
         },
         "about": {
-            "tagline": "由 Tauri 和 Rust 打造的快速、轻量 VRCX。",
+            "tagline": "更快、更好用，支持 AI。",
             "contributors": "贡献者",
             "contributors_error": "贡献者列表加载失败。",
             "thanks": "每一份翻译、每一次测试、每条反馈和每个想法，都来自社区。谢谢你们。",

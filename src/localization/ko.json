@@ -4337,7 +4337,7 @@
             }
         },
         "about": {
-            "tagline": "Tauri와 Rust로 만든 빠르고 가벼운 VRCX입니다.",
+            "tagline": "더 빠르고, 더 편하게. AI 지원.",
             "contributors": "기여자",
             "contributors_error": "기여자 목록을 불러오지 못했습니다.",
             "thanks": "번역, 테스트, 버그 제보와 아이디어 하나하나가 커뮤니티에서 나옵니다. 감사합니다.",

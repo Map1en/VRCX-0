@@ -4407,7 +4407,7 @@
             }
         },
         "about": {
-            "tagline": "Das schnelle, schlanke VRCX, entwickelt mit Tauri und Rust.",
+            "tagline": "Schneller. Besser. Mit KI-Unterstützung.",
             "contributors": "Mitwirkende",
             "contributors_error": "Die Liste der Mitwirkenden konnte nicht geladen werden.",
             "thanks": "Jede Übersetzung, jeder Test, jeder Fehlerbericht und jede Idee kommt aus der Community. Vielen Dank.",
