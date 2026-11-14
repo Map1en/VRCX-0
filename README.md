@@ -60,6 +60,9 @@ VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt 
   instances
 - **Game Log import** — fill in the Game Log from VRChat's own logs for times
   VRCX-0 wasn't running
+- **Chatbox** — built-in chatbox features like those in [VRCOSC](https://github.com/VolcanicArts/VRCOSC), with no extra
+  app to run: rotate your status and the song that's playing, and translate the
+  messages you send automatically
 
 ### For advanced users
 
@@ -77,7 +80,7 @@ VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt 
 | **Social automation** | Switch status when alone or with others; auto-reply to invite requests | + Schedules, multiple context rules with priorities, previous status restored             |
 | **Notifications**     | Desktop, TTS, XSOverlay, OVR Toolkit, wrist overlay                    | + Desktop Overlay, Discord webhooks, Do Not Disturb; per-event filtering on every channel |
 | **VR overlay**        | Browser-rendered (100 MB+); OpenVR                                     | + Native rendering (tens of MB); OpenXR (**tested with WiVRn**)                           |
-| Screenshots           | View and search metadata                                               | + Grid view, favorites, batch management, ZIP export                                      |
+| Screenshots           | View and search metadata                                               | + Grid view, favorites, batch management, ZIP export, frames, send to Discord             |
 | Avatar details        | Performance rank and file size                                         | + Full performance stats against each platform's limits                                   |
 | Backup                | VRChat registry settings                                               | + Scheduled database backups, one-click restore                                           |
 | Friend locations      | Group friends by instance                                              | + Worlds view                                                                             |
