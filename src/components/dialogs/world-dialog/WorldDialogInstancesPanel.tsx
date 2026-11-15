@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
+import { useLanguageNames } from '@/components/language/useLanguageNames';
 import { ToolbarFilterMenu } from '@/components/layout/ToolbarControls';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import type { WorldProfileRecord } from '@/domain/entities/world';
@@ -15,7 +16,6 @@ import type {
 } from '@/platform/tauri/bindings';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { isRecord } from '@/shared/utils/record';
-import { languageOptionLabel } from '@/shared/utils/userLanguage';
 import {
     DropdownMenuCheckboxItem,
     DropdownMenuGroup,
@@ -26,7 +26,6 @@ import {
     DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
 
-import { useSpokenLanguageSelection } from '../useSpokenLanguageSelection';
 import {
     InstanceUserTiles,
     WorldInstancesEmptyState,
@@ -44,8 +43,6 @@ import {
 } from './worldInstanceFilters';
 import { WorldInstanceRowTitle } from './WorldInstanceRowTitle';
 import { WorldSidebarPinButton } from './WorldSidebarPinButton';
-
-const NO_LANGUAGE_KEYS: string[] = [];
 
 function record(value: unknown): Record<string, unknown> {
     return isRecord(value) ? value : {};
@@ -88,7 +85,7 @@ export function WorldDialogInstancesPanel({
     const [filter, setFilter] = useState<WorldInstanceFilter>(
         EMPTY_WORLD_INSTANCE_FILTER
     );
-    const { languageOptionsMap } = useSpokenLanguageSelection(NO_LANGUAGE_KEYS);
+    const { languageName } = useLanguageNames();
 
     useEffect(() => {
         let cancelled = false;
@@ -123,10 +120,6 @@ export function WorldDialogInstancesPanel({
         return kind === 'category'
             ? option.name
             : instanceCreateOptionLabel(option, kind, t);
-    };
-    const languageLabel = (key: string) => {
-        const option = languageOptionsMap.get(key);
-        return option ? languageOptionLabel(option) : key.toUpperCase();
     };
 
     const filterOptions = worldInstanceFilterOptions(rows);
@@ -284,7 +277,7 @@ export function WorldDialogInstancesPanel({
                                             })
                                         }
                                     >
-                                        {languageLabel(key)}
+                                        {languageName(key)}
                                     </DropdownMenuCheckboxItem>
                                 ))}
                             </DropdownMenuGroup>

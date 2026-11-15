@@ -2,7 +2,7 @@ import { UsersRoundIcon, XCircleIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useSpokenLanguageSelection } from '@/components/dialogs/useSpokenLanguageSelection';
+import { useLanguageNames } from '@/components/language/useLanguageNames';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { useNowMs } from '@/lib/useNowMs';
 import { cn } from '@/lib/utils';
@@ -17,8 +17,6 @@ import {
     instanceLanguageRowText
 } from './instanceLanguages';
 import type { InstanceActionRecord } from './useInstanceActionBarController';
-
-const NO_LANGUAGE_KEYS: string[] = [];
 
 function text(value: unknown) {
     return typeof value === 'string' ? value.trim() : '';
@@ -63,11 +61,8 @@ function InstanceInfoTooltip({
 }) {
     const { t } = useTranslation();
     const disabledContent = disabledContentSettings(instance);
-    const { languageOptionsMap } = useSpokenLanguageSelection(NO_LANGUAGE_KEYS);
-    const languages = instanceLanguageRows(
-        instance,
-        (key) => languageOptionsMap.get(key)?.value
-    );
+    const { languageName } = useLanguageNames();
+    const languages = instanceLanguageRows(instance, languageName);
 
     if (disableTooltip) {
         return children;

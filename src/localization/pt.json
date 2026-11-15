@@ -784,6 +784,19 @@
         "filter": {
             "label": "Filtro",
             "label_count": "Filtros ({count})"
+        },
+        "spoken_language": {
+            "ase": "Língua de sinais americana",
+            "asf": "Auslan (língua de sinais australiana)",
+            "bfi": "Língua de sinais britânica",
+            "cmn": "Mandarim",
+            "dse": "Língua de sinais holandesa",
+            "fsl": "Língua de sinais francesa",
+            "gsg": "Língua de sinais alemã",
+            "jsl": "Língua de sinais japonesa",
+            "kvk": "Língua de sinais coreana",
+            "nzs": "Língua de sinais neozelandesa",
+            "tws": "Teochew"
         }
     },
     "economy": {

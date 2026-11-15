@@ -784,6 +784,19 @@
         "filter": {
             "label": "Filter",
             "label_count": "Filter ({count})"
+        },
+        "spoken_language": {
+            "ase": "Amerikanische Gebärdensprache",
+            "asf": "Auslan (Australische Gebärdensprache)",
+            "bfi": "Britische Gebärdensprache",
+            "cmn": "Mandarin",
+            "dse": "Niederländische Gebärdensprache",
+            "fsl": "Französische Gebärdensprache",
+            "gsg": "Deutsche Gebärdensprache",
+            "jsl": "Japanische Gebärdensprache",
+            "kvk": "Koreanische Gebärdensprache",
+            "nzs": "Neuseeländische Gebärdensprache",
+            "tws": "Teochew"
         }
     },
     "economy": {

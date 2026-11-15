@@ -1,11 +1,9 @@
+import { useLanguageNames } from '@/components/language/useLanguageNames';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import { Badge } from '@/ui/shadcn/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import {
-    languageOptionLabel,
-    normalizeProfileLanguageRows
-} from '../user-dialog/userProfileFields';
+import { normalizeProfileLanguageRows } from '../user-dialog/userProfileFields';
 
 export function normalizeGroupLanguages(
     group: GroupProfileRecord,
@@ -25,6 +23,7 @@ export function GroupTitleLanguages({
     languages: LanguageRow[];
     limit?: number;
 }) {
+    const { languageName, languageDetail } = useLanguageNames();
     if (!languages.length) {
         return null;
     }
@@ -35,13 +34,15 @@ export function GroupTitleLanguages({
     const hiddenLanguages = Number.isFinite(limit)
         ? languages.slice(limit)
         : [];
-    const hiddenLabel = hiddenLanguages.map(languageOptionLabel).join(', ');
+    const hiddenLabel = hiddenLanguages
+        .map((language) => languageDetail(language.key, language.value))
+        .join(', ');
 
     return (
         <span className="inline-flex max-w-full min-w-0 flex-wrap items-center gap-1">
             {visibleLanguages.map((language) => {
                 const key = language.key || language.value;
-                const label = languageOptionLabel(language);
+                const label = languageName(key);
                 return (
                     <Tooltip key={`${key}:${language.value}`}>
                         <TooltipTrigger
@@ -54,7 +55,9 @@ export function GroupTitleLanguages({
                                 </Badge>
                             }
                         />
-                        <TooltipContent>{label}</TooltipContent>
+                        <TooltipContent>
+                            {languageDetail(key, language.value)}
+                        </TooltipContent>
                     </Tooltip>
                 );
             })}

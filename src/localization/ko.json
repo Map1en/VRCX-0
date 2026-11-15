@@ -783,6 +783,19 @@
         "filter": {
             "label": "필터",
             "label_count": "필터 ({count})"
+        },
+        "spoken_language": {
+            "ase": "미국 수어",
+            "asf": "호주 수어",
+            "bfi": "영국 수어",
+            "cmn": "표준 중국어",
+            "dse": "네덜란드 수어",
+            "fsl": "프랑스 수어",
+            "gsg": "독일 수어",
+            "jsl": "일본 수어",
+            "kvk": "한국 수어",
+            "nzs": "뉴질랜드 수어",
+            "tws": "조주어"
         }
     },
     "economy": {

@@ -112,11 +112,6 @@ export function resolvePlatformMode(
     return '';
 }
 
-export function languageCodeLabel(languageKey: string) {
-    const key = languageKey.toLowerCase().replace(/^language_/, '');
-    return key ? key.toUpperCase() : '';
-}
-
 export function getHomeWorldId(homeLocation: unknown) {
     if (!homeLocation) {
         return '';

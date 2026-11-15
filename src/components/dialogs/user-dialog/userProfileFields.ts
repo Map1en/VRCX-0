@@ -16,7 +16,6 @@ export const selfStatusBaseOptions = [
 
 export {
     fallbackLanguageOptions,
-    languageDisplayName,
     languageOptionLabel,
     normalizeLanguageOptionsFromConfig,
     normalizeProfileLanguageRows

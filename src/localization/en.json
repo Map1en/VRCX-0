@@ -784,6 +784,19 @@
         "filter": {
             "label": "Filter",
             "label_count": "Filter ({count})"
+        },
+        "spoken_language": {
+            "ase": "American Sign Language",
+            "asf": "Auslan (Australian Sign Language)",
+            "bfi": "British Sign Language",
+            "cmn": "Mandarin",
+            "dse": "Dutch Sign Language",
+            "fsl": "French Sign Language",
+            "gsg": "German Sign Language",
+            "jsl": "Japanese Sign Language",
+            "kvk": "Korean Sign Language",
+            "nzs": "New Zealand Sign Language",
+            "tws": "Teochew"
         }
     },
     "economy": {

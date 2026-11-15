@@ -786,6 +786,19 @@
         "filter": {
             "label": "Filtr",
             "label_count": "Filtry ({count})"
+        },
+        "spoken_language": {
+            "ase": "Americký znakový jazyk",
+            "asf": "Auslan (australský znakový jazyk)",
+            "bfi": "Britský znakový jazyk",
+            "cmn": "Mandarínština",
+            "dse": "Nizozemský znakový jazyk",
+            "fsl": "Francouzský znakový jazyk",
+            "gsg": "Německý znakový jazyk",
+            "jsl": "Japonský znakový jazyk",
+            "kvk": "Korejský znakový jazyk",
+            "nzs": "Novozélandský znakový jazyk",
+            "tws": "Teochew"
         }
     },
     "economy": {

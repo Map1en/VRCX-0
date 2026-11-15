@@ -5,14 +5,12 @@ import {
     instanceLanguageBadges,
     instanceLanguageRows
 } from '@/components/instances/instanceLanguages';
+import { useLanguageNames } from '@/components/language/useLanguageNames';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { LocationWorld } from '@/components/LocationWorld';
 import { parseLocation } from '@/shared/utils/location';
 import { HintTooltip } from '@/ui/hint-tooltip';
 
-import { useSpokenLanguageSelection } from '../useSpokenLanguageSelection';
-
-const NO_LANGUAGE_KEYS: string[] = [];
 const VISIBLE_LANGUAGE_BADGES = 3;
 
 export function WorldInstanceRowTitle({
@@ -31,12 +29,9 @@ export function WorldInstanceRowTitle({
     locationWorldProps: ComponentProps<typeof LocationWorld>;
 }) {
     const { t } = useTranslation();
-    const { languageOptionsMap } = useSpokenLanguageSelection(NO_LANGUAGE_KEYS);
+    const { languageName } = useLanguageNames();
     const languageBadges = instanceLanguageBadges(
-        instanceLanguageRows(
-            languageSource,
-            (key) => languageOptionsMap.get(key)?.value
-        ),
+        instanceLanguageRows(languageSource, languageName),
         {
             declared: (languages) =>
                 t('dialog.world.instances.languages_declared', { languages }),
@@ -47,7 +42,7 @@ export function WorldInstanceRowTitle({
     const languageText = [
         ...languageBadges
             .slice(0, VISIBLE_LANGUAGE_BADGES)
-            .map((badge) => badge.code),
+            .map((badge) => languageName(badge.code)),
         ...(languageBadges.length > VISIBLE_LANGUAGE_BADGES
             ? [`+${languageBadges.length - VISIBLE_LANGUAGE_BADGES}`]
             : [])

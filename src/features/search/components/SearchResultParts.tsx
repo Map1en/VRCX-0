@@ -10,6 +10,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { GroupCard } from '@/components/groups/GroupCard';
+import { useLanguageNames } from '@/components/language/useLanguageNames';
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type { AvatarProfileRecord } from '@/domain/entities/avatar';
@@ -28,7 +29,6 @@ import { getNameColour, userImage } from '@/services/entityMediaService';
 import type { UserNameColourStyle } from '@/shared/utils/entityMedia';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import {
-    languageOptionLabel,
     type LanguageOption,
     normalizeProfileLanguageRows
 } from '@/shared/utils/userLanguage';
@@ -352,20 +352,22 @@ function UserLanguageBadges({
     user: UserProfileRecord;
     languages: LanguageOption[];
 }) {
+    const { languageName, languageDetail } = useLanguageNames();
     const visibleLanguages = languages.slice(0, 2);
     const hiddenLanguages = languages.slice(visibleLanguages.length);
-    const hiddenLabel = hiddenLanguages.map(languageOptionLabel).join(', ');
+    const hiddenLabel = hiddenLanguages
+        .map((language) => languageDetail(language.key, language.value))
+        .join(', ');
 
     return (
         <>
             {visibleLanguages.map((language) => {
-                const label = languageOptionLabel(language);
                 return (
                     <TruncatedBadge
                         key={`${user.id}:${language.key}:${language.value}`}
-                        tooltip={label}
+                        tooltip={languageDetail(language.key, language.value)}
                     >
-                        {label}
+                        {languageName(language.key)}
                     </TruncatedBadge>
                 );
             })}

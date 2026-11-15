@@ -81,8 +81,68 @@ const fallbackLanguageDisplayNames: Readonly<Record<string, string>> =
         zxx: 'No linguistic content'
     });
 
+const translatedLanguageNameKeys: ReadonlySet<string> = new Set([
+    'ase',
+    'asf',
+    'bfi',
+    'cmn',
+    'dse',
+    'fsl',
+    'gsg',
+    'jsl',
+    'kvk',
+    'nzs',
+    'tws'
+]);
+
 function fallbackLanguageDisplayName(key: string): string {
     return fallbackLanguageDisplayNames[key] ?? key.toUpperCase();
+}
+
+export function nativeLanguageName(key: unknown): string {
+    const normalized = normalizeLanguageKey(key);
+    return normalized ? fallbackLanguageDisplayName(normalized) : '';
+}
+
+export function languageShortCode(key: unknown): string {
+    const normalized = normalizeLanguageKey(key);
+    if (!normalized || translatedLanguageNameKeys.has(normalized)) {
+        return normalized.toUpperCase();
+    }
+    let canonical = '';
+    try {
+        canonical = Intl.getCanonicalLocales(normalized)[0] ?? '';
+    } catch {
+        canonical = '';
+    }
+    return (canonical.length === 2 ? canonical : normalized).toUpperCase();
+}
+
+export function createLanguageNamer(
+    locale: string,
+    translatedName: (key: string) => string
+): (key: unknown) => string {
+    const displayNames = new Intl.DisplayNames([locale], {
+        type: 'language',
+        fallback: 'none'
+    });
+    return (key) => {
+        const normalized = normalizeLanguageKey(key);
+        if (!normalized) {
+            return '';
+        }
+        let name = '';
+        if (translatedLanguageNameKeys.has(normalized)) {
+            name = translatedName(normalized);
+        } else {
+            try {
+                name = displayNames.of(normalized) ?? '';
+            } catch {
+                name = '';
+            }
+        }
+        return name || fallbackLanguageDisplayName(normalized);
+    };
 }
 
 function normalizeLanguageText(value: unknown): string {
@@ -114,7 +174,7 @@ export function normalizeProfileLanguageKeys(values: unknown): string[] {
     return keys;
 }
 
-export function languageDisplayName(option: LanguageOption): string {
+function languageDisplayName(option: LanguageOption): string {
     const key = normalizeLanguageKey(option?.key || option?.value);
     return normalizeLanguageText(
         option?.value ||

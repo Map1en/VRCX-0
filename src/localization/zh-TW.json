@@ -783,6 +783,19 @@
         "filter": {
             "label": "篩選",
             "label_count": "篩選 ({count})"
+        },
+        "spoken_language": {
+            "ase": "美國手語",
+            "asf": "澳洲手語",
+            "bfi": "英國手語",
+            "cmn": "華語",
+            "dse": "荷蘭手語",
+            "fsl": "法國手語",
+            "gsg": "德國手語",
+            "jsl": "日本手語",
+            "kvk": "韓國手語",
+            "nzs": "紐西蘭手語",
+            "tws": "潮州話"
         }
     },
     "economy": {

@@ -783,6 +783,19 @@
         "filter": {
             "label": "筛选",
             "label_count": "筛选 ({count})"
+        },
+        "spoken_language": {
+            "ase": "美国手语",
+            "asf": "澳大利亚手语",
+            "bfi": "英国手语",
+            "cmn": "普通话",
+            "dse": "荷兰手语",
+            "fsl": "法国手语",
+            "gsg": "德国手语",
+            "jsl": "日本手语",
+            "kvk": "韩国手语",
+            "nzs": "新西兰手语",
+            "tws": "潮州话"
         }
     },
     "economy": {

@@ -784,6 +784,19 @@
         "filter": {
             "label": "Filtro",
             "label_count": "Filtros ({count})"
+        },
+        "spoken_language": {
+            "ase": "Lengua de señas americana",
+            "asf": "Auslan (lengua de señas australiana)",
+            "bfi": "Lengua de señas británica",
+            "cmn": "Mandarín",
+            "dse": "Lengua de señas neerlandesa",
+            "fsl": "Lengua de señas francesa",
+            "gsg": "Lengua de señas alemana",
+            "jsl": "Lengua de señas japonesa",
+            "kvk": "Lengua de señas coreana",
+            "nzs": "Lengua de señas neozelandesa",
+            "tws": "Teochew"
         }
     },
     "economy": {

@@ -27,6 +27,7 @@ import {
     DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
+import { LanguageCodeBadge } from '@/components/language/LanguageCodeBadge';
 import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { MutualFriendAvatars } from '@/components/mutual-friends/MutualFriendAvatars';
@@ -42,13 +43,9 @@ import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import {
-    languageCodeLabel,
-    resolvePlatformMode,
-    resolveStatusMeta
-} from '../playerListDisplay';
+import { resolvePlatformMode, resolveStatusMeta } from '../playerListDisplay';
 import { playerGroupRoleOrder } from '../playerListGroupRoles';
-import type { PlayerListLanguageRow, PlayerListRow } from '../playerListTypes';
+import type { PlayerListRow } from '../playerListTypes';
 import { SortButton } from './PlayerListViewParts';
 
 const PLAYER_AVATAR_CLASS_NAME =
@@ -348,36 +345,18 @@ function PlatformCell({ row }: { row: AppRow<PlayerListRow> }) {
     );
 }
 
-function languageTooltipLabel(
-    entry: PlayerListLanguageRow | null | undefined,
-    code: string
-) {
-    const original = entry?.value?.trim() || '';
-    return original || code;
-}
-
 function LanguageCell({ row }: { row: AppRow<PlayerListRow> }) {
     return (
         <div className="flex flex-wrap items-center gap-1">
             {row.original.languages.length
                 ? row.original.languages.map((entry) => {
                       const key = entry?.key || entry?.value || '';
-                      const code = languageCodeLabel(key);
-                      const tooltip = languageTooltipLabel(entry, code);
-                      if (!code) {
-                          return null;
-                      }
                       return (
-                          <Tooltip key={`${key}:${entry?.value || ''}`}>
-                              <TooltipTrigger
-                                  render={
-                                      <span className="border-border/70 bg-muted/70 text-muted-foreground inline-flex h-5 min-w-8 items-center justify-center rounded border px-1 font-mono text-[10px] leading-none font-semibold">
-                                          {code}
-                                      </span>
-                                  }
-                              />
-                              <TooltipContent>{tooltip}</TooltipContent>
-                          </Tooltip>
+                          <LanguageCodeBadge
+                              key={`${key}:${entry?.value || ''}`}
+                              languageKey={key}
+                              nativeName={entry?.value}
+                          />
                       );
                   })
                 : null}

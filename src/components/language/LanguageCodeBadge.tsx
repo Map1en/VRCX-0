@@ -1,12 +1,21 @@
+import { languageShortCode } from '@/shared/utils/userLanguage';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { useLanguageNames } from './useLanguageNames';
+
 export function LanguageCodeBadge({
-    code,
-    tooltip
+    languageKey,
+    nativeName
 }: {
-    code: string;
-    tooltip: string;
+    languageKey: string;
+    nativeName?: string;
 }) {
+    const { languageDetail } = useLanguageNames();
+    const code = languageShortCode(languageKey);
+    if (!code) {
+        return null;
+    }
+    const tooltip = languageDetail(languageKey, nativeName);
     return (
         <Tooltip>
             <TooltipTrigger

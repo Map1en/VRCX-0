@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { EconomyStoreListings } from '@/components/economy/EconomyStoreListings';
+import { useLanguageNames } from '@/components/language/useLanguageNames';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TranslatableText } from '@/components/translation/TranslatableText';
 import type {
@@ -206,6 +207,7 @@ export function GroupDialogTabPanels({
     tabCommands: GroupDialogTabCommands;
 }) {
     const { t } = useTranslation();
+    const { languageName } = useLanguageNames();
 
     const {
         activeInstances,
@@ -445,7 +447,9 @@ export function GroupDialogTabPanels({
                         />
                         <EntityInfoBlock
                             label={t('dialog.group.label.languages')}
-                            value={languages.join(', ') || '—'}
+                            value={
+                                languages.map(languageName).join(', ') || '—'
+                            }
                         />
                         <EntityInfoBlock
                             label={t('dialog.group.label.privacy')}
