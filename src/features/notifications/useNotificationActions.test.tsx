@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
     acceptFriendRequest: vi.fn(),
     confirm: vi.fn(),
     deleteNotification: vi.fn(),
-    expireLocally: vi.fn(),
     hideRemote: vi.fn(),
     markSeen: vi.fn(),
     openImagePreview: vi.fn(),
@@ -57,11 +56,11 @@ vi.mock('@/state/modalStore', () => ({
 vi.mock('@/state/vrcNotificationStore', () => ({
     useVrcNotificationStore: (
         selector: (state: {
-            markNotificationSeen: typeof mocks.markSeen;
+            markNotificationRead: typeof mocks.markSeen;
         }) => unknown
     ) =>
         selector({
-            markNotificationSeen: mocks.markSeen
+            markNotificationRead: mocks.markSeen
         })
 }));
 
@@ -78,7 +77,6 @@ vi.mock('@/services/friendLogMutationService', () => ({
 vi.mock('@/services/notificationActionService', () => ({
     acceptFriendRequestNotification: mocks.acceptFriendRequest,
     acceptRequestInviteNotification: vi.fn(),
-    expireNotificationLocally: mocks.expireLocally,
     hideRemoteAndExpireNotification: mocks.hideRemote,
     sendBoopReplyNotification: vi.fn(),
     sendInviteResponseNotification: mocks.sendInviteResponse,
@@ -158,30 +156,51 @@ describe('useNotificationActions', () => {
         );
     });
 
-    it('ignores an invite locally without touching VRChat', async () => {
-        mocks.expireLocally.mockResolvedValue(undefined);
-        const invite: NotificationRow = {
-            id: 'not_invite',
-            type: 'invite',
-            senderUserId: 'usr_sender',
-            version: 1
-        };
+    it('warns that a read stayed local when VRChat could not be updated', async () => {
+        mocks.markSeen.mockResolvedValue({
+            remoteFailed: true,
+            message: 'HTTP 500'
+        });
         const { result } = renderActions();
 
-        await act(async () => result.current.ignoreNotificationLocally(invite));
+        await act(async () => result.current.markSeen(notification));
 
-        expect(mocks.expireLocally).toHaveBeenCalledWith({
-            currentUserId: 'usr_self',
-            notification: invite
-        });
-        expect(mocks.hideRemote).not.toHaveBeenCalled();
-        expect(mocks.confirm).not.toHaveBeenCalled();
-        expect(mocks.expireLocally.mock.invocationCallOrder[0]).toBeLessThan(
-            mocks.reload.mock.invocationCallOrder[0]
+        expect(mocks.markSeen).toHaveBeenCalledWith(notification);
+        expect(mocks.toastWarning).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'view.notifications.toast.marked_read_locally_only',
+                description: 'HTTP 500'
+            })
         );
+    });
+
+    it('stays quiet when a read reaches VRChat', async () => {
+        mocks.markSeen.mockResolvedValue({ remoteFailed: false, message: '' });
+        const { result } = renderActions();
+
+        await act(async () => result.current.markSeen(notification));
+
+        expect(mocks.toastWarning).not.toHaveBeenCalled();
+        expect(mocks.toastError).not.toHaveBeenCalled();
+    });
+
+    it('asks to ignore rather than decline when hiding a friend request', async () => {
+        mocks.confirm.mockResolvedValue({ ok: true, value: undefined });
+        mocks.hideRemote.mockResolvedValue(undefined);
+        const { result } = renderActions();
+
+        await act(async () => result.current.hideNotification(notification));
+
+        expect(mocks.confirm).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'view.notifications.modal.ignore_friend_request',
+                confirmText: 'view.notifications.modal.ignore'
+            })
+        );
+        expect(mocks.hideRemote).toHaveBeenCalledOnce();
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
             expect.objectContaining({
-                title: 'view.notification.success.notification_ignored_locally'
+                title: 'view.notification.success.friend_request_ignored'
             })
         );
     });

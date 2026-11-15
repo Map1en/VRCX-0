@@ -1375,7 +1375,7 @@
             "view_more": "Zobrazit více",
             "mark_all_read": "Označit vše jako přečtené",
             "marking_all_read": "Označování jako přečtené…",
-            "mark_read_failed": "Nepodařilo se označit jako přečtené",
+            "mark_read_failed": "Nesynchronizováno s VRChatem",
             "mark_as_read": "Označit jako přečtené",
             "more_actions": "Další akce",
             "join_now": "Připojit se nyní",
@@ -2121,9 +2121,9 @@
                 "accept": "Přijmout",
                 "invite": "Pozvat",
                 "decline": "Odmítnout",
+                "ignore": "Ignorovat",
                 "delete_log": "Smazat upozornění",
-                "decline_with_message": "Odmítnout se zprávou",
-                "ignore_locally": "Ignorovat lokálně"
+                "decline_with_message": "Odmítnout se zprávou"
             },
             "filters": {
                 "requestInvite": "Žádost o pozvánku",
@@ -2203,14 +2203,18 @@
                 "search_emoji": "Hledat emoji",
                 "send": "Odeslat"
             },
+            "action_scope": {
+                "vrchat": "Provede se ve VRChatu",
+                "local": "Mění jen místní data VRCX-0"
+            },
             "success": {
                 "friend_request_accepted": "Žádost o přátelství přijata",
                 "notification_declined": "Oznámení odmítnuto",
+                "friend_request_ignored": "Žádost o přátelství ignorována",
                 "invite_response_sent": "Odpověď odeslána",
                 "boop_sent": "Boop odeslán",
                 "notification_response_sent": "Hotovo",
-                "notification_log_entry_deleted": "Oznámení bylo odstraněno z historie",
-                "notification_ignored_locally": "Lokálně ignorováno"
+                "notification_log_entry_deleted": "Oznámení bylo odstraněno z historie"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "Nelze pozvat: aktuální lokace ve VRChat není k dispozici",
@@ -4246,21 +4250,24 @@
                 "failed_to_delete_notification": "Nepodařilo se odstranit upozornění",
                 "failed_to_accept_friend_request": "Nepodařilo se přijmout žádost o přátelství",
                 "failed_to_decline_notification": "Nepodařilo se odmítnout upozornění",
-                "failed_to_ignore_notification": "Oznámení se nepodařilo ignorovat",
                 "failed_to_send_invite": "Nepodařilo se odeslat pozvánku",
                 "invite_response_photo_sent": "Odpověď s fotografií odeslána",
                 "invite_response_sent": "Odpověď odeslána",
-                "failed_to_send_notification_response": "Akci se nepodařilo dokončit"
+                "failed_to_send_notification_response": "Akci se nepodařilo dokončit",
+                "marked_read_locally_only": "Označeno jako přečtené zde, ale nepodařilo se synchronizovat s VRChatem"
             },
             "modal": {
                 "delete_notification_log_entry": "Odstranit oznámení?",
                 "delete_the_local_value_log_entry": "Odstranit toto oznámení typu {value} z historie?",
                 "accept_friend_request": "Přijmout žádost o přátelství",
                 "decline_notification": "Odmítnout upozornění",
+                "ignore_friend_request": "Ignorovat žádost o přátelství",
                 "decline": "Odmítnout",
+                "ignore": "Ignorovat",
                 "send_invite": "Odeslat pozvánku",
                 "accept_friend_request_consequence": "Uživatel bude přidán do seznamu přátel.",
                 "decline_notification_consequence": "Oznámení bude na VRChatu odstraněno.",
+                "ignore_friend_request_consequence": "Ve VRChatu se přesune mezi ignorované žádosti o přátelství.",
                 "send_invite_consequence": "Pozvánka půjde do instance, ve které právě jste."
             },
             "dynamic": {
@@ -7684,7 +7691,7 @@
         "vrc_notification_center": {
             "toast": {
                 "failed_to_mark_notifications_as_seen": "Nepodařilo se označit oznámení jako přečtená",
-                "mark_all_seen_partially_failed": "Některá oznámení se nepodařilo označit jako přečtená",
+                "mark_all_seen_partially_failed": "Vše označeno jako přečtené, ale část se nepodařilo synchronizovat s VRChatem",
                 "failed_to_accept_friend_request": "Nepodařilo se přijmout žádost o přátelství",
                 "failed_to_decline_notification": "Nepodařilo se odmítnout oznámení",
                 "failed_to_send_invite": "Nepodařilo se odeslat pozvánku",

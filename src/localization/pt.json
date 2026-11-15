@@ -1361,7 +1361,7 @@
             "view_more": "Ver Mais",
             "mark_all_read": "Marcar tudo como lido",
             "marking_all_read": "Marcando como lidas…",
-            "mark_read_failed": "Não foi possível marcar como lida",
+            "mark_read_failed": "Não sincronizou com o VRChat",
             "mark_as_read": "Marcar como lido",
             "more_actions": "Mais ações",
             "join_now": "Entrar agora",
@@ -2095,9 +2095,9 @@
                 "accept": "Aceitar",
                 "invite": "Convidar",
                 "decline": "Recusar",
+                "ignore": "Ignorar",
                 "delete_log": "Excluir notificação",
-                "decline_with_message": "Recusar com mensagem",
-                "ignore_locally": "Ignorar localmente"
+                "decline_with_message": "Recusar com mensagem"
             },
             "filters": {
                 "requestInvite": "Solicitar Convite",
@@ -2177,14 +2177,18 @@
                 "search_emoji": "Buscar emoji",
                 "send": "Enviar"
             },
+            "action_scope": {
+                "vrchat": "Aplicado no VRChat",
+                "local": "Altera apenas os dados locais do VRCX-0"
+            },
             "success": {
                 "friend_request_accepted": "Pedido de amizade aceito",
                 "notification_declined": "Notificação recusada",
+                "friend_request_ignored": "Pedido de amizade ignorado",
                 "invite_response_sent": "Resposta enviada",
                 "boop_sent": "Boop enviado",
                 "notification_response_sent": "Concluído",
-                "notification_log_entry_deleted": "Notificação removida do histórico",
-                "notification_ignored_locally": "Ignorada localmente"
+                "notification_log_entry_deleted": "Notificação removida do histórico"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "Não é possível convidar: nenhuma localização atual do VRChat está disponível",
@@ -4214,21 +4218,24 @@
                 "failed_to_delete_notification": "Falha ao excluir a notificação",
                 "failed_to_accept_friend_request": "Falha ao aceitar a solicitação de amizade",
                 "failed_to_decline_notification": "Falha ao recusar a notificação",
-                "failed_to_ignore_notification": "Falha ao ignorar a notificação",
                 "failed_to_send_invite": "Falha ao enviar o convite",
                 "invite_response_photo_sent": "Resposta com foto enviada",
                 "invite_response_sent": "Resposta enviada",
-                "failed_to_send_notification_response": "Não foi possível concluir essa ação"
+                "failed_to_send_notification_response": "Não foi possível concluir essa ação",
+                "marked_read_locally_only": "Marcada como lida aqui, mas não foi possível sincronizar com o VRChat"
             },
             "modal": {
                 "delete_notification_log_entry": "Remover notificação?",
                 "delete_the_local_value_log_entry": "Remover do histórico a notificação do tipo “{value}”?",
                 "accept_friend_request": "Aceitar pedido de amizade",
                 "decline_notification": "Recusar notificação",
+                "ignore_friend_request": "Ignorar pedido de amizade",
                 "decline": "Recusar",
+                "ignore": "Ignorar",
                 "send_invite": "Enviar convite",
                 "accept_friend_request_consequence": "A pessoa será adicionada à sua lista de amigos.",
                 "decline_notification_consequence": "A notificação será removida no VRChat.",
+                "ignore_friend_request_consequence": "Ele irá para os pedidos de amizade ignorados no VRChat.",
                 "send_invite_consequence": "O convite vai para a instância em que você está."
             },
             "dynamic": {
@@ -7646,7 +7653,7 @@
         "vrc_notification_center": {
             "toast": {
                 "failed_to_mark_notifications_as_seen": "Falha ao marcar as notificações como vistas",
-                "mark_all_seen_partially_failed": "Não foi possível marcar algumas notificações como lidas",
+                "mark_all_seen_partially_failed": "Tudo marcado como lido aqui, mas algumas não sincronizaram com o VRChat",
                 "failed_to_accept_friend_request": "Falha ao aceitar a solicitação de amizade",
                 "failed_to_decline_notification": "Falha ao recusar a notificação",
                 "failed_to_send_invite": "Falha ao enviar convite",

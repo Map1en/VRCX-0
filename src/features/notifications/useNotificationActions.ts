@@ -20,7 +20,6 @@ import { signalFriendLogChanged } from '@/services/friendLogMutationService';
 import {
     acceptFriendRequestNotification,
     acceptRequestInviteNotification,
-    expireNotificationLocally,
     hideRemoteAndExpireNotification,
     sendBoopReplyNotification,
     sendInviteResponseNotification,
@@ -69,8 +68,8 @@ export function useNotificationActions({
     setInviteResponseRequest: (request: NotificationDialogRequest) => void;
 }) {
     const { t } = useTranslation();
-    const markNotificationSeen = useVrcNotificationStore(
-        (state) => state.markNotificationSeen
+    const markNotificationRead = useVrcNotificationStore(
+        (state) => state.markNotificationRead
     );
     const confirm = useModalStore((state) => state.confirm);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
@@ -196,7 +195,16 @@ export function useNotificationActions({
     const markSeen = useCallback(
         async (notification: NotificationRow) => {
             try {
-                await markNotificationSeen(notification);
+                const result = await markNotificationRead(notification);
+                if (result.remoteFailed) {
+                    toast.add({
+                        type: 'warning',
+                        title: t(
+                            'view.notifications.toast.marked_read_locally_only'
+                        ),
+                        description: result.message || undefined
+                    });
+                }
             } catch (error) {
                 toast.add({
                     type: 'error',
@@ -209,7 +217,7 @@ export function useNotificationActions({
                 });
             }
         },
-        [markNotificationSeen, t]
+        [markNotificationRead, t]
     );
 
     const markAllSeen = useCallback(
@@ -337,21 +345,40 @@ export function useNotificationActions({
             notification: NotificationRow,
             { skipConfirm = false }: ConfirmationOptions = {}
         ) => {
+            const isFriendRequest = notification.type === 'friendRequest';
             try {
                 if (!skipConfirm) {
-                    const result = await confirm({
-                        confirmText: t('view.notifications.modal.decline'),
-                        description: `${t(
-                            'view.notifications.dynamic.decline_the_value_notification',
-                            {
-                                value: notificationTypeLabel(notification.type)
-                            }
-                        )} ${t('view.notifications.modal.decline_notification_consequence')}`,
-                        destructive: true,
-                        title: t(
-                            'view.notifications.modal.decline_notification'
-                        )
-                    });
+                    const result = await confirm(
+                        isFriendRequest
+                            ? {
+                                  confirmText: t(
+                                      'view.notifications.modal.ignore'
+                                  ),
+                                  description: t(
+                                      'view.notifications.modal.ignore_friend_request_consequence'
+                                  ),
+                                  title: t(
+                                      'view.notifications.modal.ignore_friend_request'
+                                  )
+                              }
+                            : {
+                                  confirmText: t(
+                                      'view.notifications.modal.decline'
+                                  ),
+                                  description: `${t(
+                                      'view.notifications.dynamic.decline_the_value_notification',
+                                      {
+                                          value: notificationTypeLabel(
+                                              notification.type
+                                          )
+                                      }
+                                  )} ${t('view.notifications.modal.decline_notification_consequence')}`,
+                                  destructive: true,
+                                  title: t(
+                                      'view.notifications.modal.decline_notification'
+                                  )
+                              }
+                    );
                     if (!result.ok) {
                         return;
                     }
@@ -364,9 +391,13 @@ export function useNotificationActions({
                     await reload();
                     toast.add({
                         type: 'success',
-                        title: t(
-                            'view.notification.success.notification_declined'
-                        )
+                        title: isFriendRequest
+                            ? t(
+                                  'view.notification.success.friend_request_ignored'
+                              )
+                            : t(
+                                  'view.notification.success.notification_declined'
+                              )
                     });
                 });
             } catch (error) {
@@ -382,37 +413,6 @@ export function useNotificationActions({
             }
         },
         [confirm, currentUserId, notificationTypeLabel, reload, runExclusive, t]
-    );
-
-    const ignoreNotificationLocally = useCallback(
-        async (notification: NotificationRow) => {
-            try {
-                await runExclusive(notification, async () => {
-                    await expireNotificationLocally({
-                        currentUserId,
-                        notification
-                    });
-                    await reload();
-                    toast.add({
-                        type: 'success',
-                        title: t(
-                            'view.notification.success.notification_ignored_locally'
-                        )
-                    });
-                });
-            } catch (error) {
-                toast.add({
-                    type: 'error',
-                    title:
-                        error instanceof Error
-                            ? error.message
-                            : t(
-                                  'view.notifications.toast.failed_to_ignore_notification'
-                              )
-                });
-            }
-        },
-        [currentUserId, reload, runExclusive, t]
     );
 
     const acceptRequestInvite = useCallback(
@@ -616,7 +616,6 @@ export function useNotificationActions({
         acceptRequestInvite,
         deleteNotification,
         hideNotification,
-        ignoreNotificationLocally,
         markAllSeen,
         markSeen,
         notificationTypeIsClickable,

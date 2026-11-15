@@ -519,13 +519,13 @@ describe('friend request notification rows', () => {
             .filter((button) =>
                 [
                     'view.notification.actions.accept',
-                    'view.notification.actions.decline',
+                    'view.notification.actions.ignore',
                     'view.notification.action.mark_seen'
                 ].includes(button.textContent || '')
             );
         expect(actionButtons.map((button) => button.textContent)).toEqual([
             'view.notification.actions.accept',
-            'view.notification.actions.decline',
+            'view.notification.actions.ignore',
             'view.notification.action.mark_seen'
         ]);
 

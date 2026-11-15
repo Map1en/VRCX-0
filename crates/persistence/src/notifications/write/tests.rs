@@ -404,10 +404,17 @@ fn notification_mutations_update_only_the_requested_rows() -> Result<(), Error> 
     )?;
 
     notification_v2_mark_seen(&db, "usr_self".into(), " first ".into())?;
-    notification_mark_seen_local_bulk(
+    notification_mark_read_bulk(
         &db,
         "usr_self".into(),
-        vec![" second ".into(), "".into(), "missing".into()],
+        [" second ", "", "missing"]
+            .into_iter()
+            .map(|id| NotificationRead {
+                id: id.into(),
+                version: 2,
+                expire: false,
+            })
+            .collect(),
     )?;
     let before = Utc::now();
     notification_v2_expire(&db, "usr_self".into(), " third ".into())?;
@@ -467,17 +474,19 @@ fn expiring_a_v1_notification_marks_it_seen() -> Result<(), Error> {
 }
 
 #[test]
-fn remote_seen_commit_marks_v1_and_v2_seen() -> Result<(), Error> {
-    let (_dir, db) = test_db("remote-seen-commit")?;
-    notification_add_v1(
-        &db,
-        "usr_self".into(),
-        json!({
-            "id": "legacy",
-            "created_at": "2026-05-15T00:00:00Z",
-            "type": "friendRequest"
-        }),
-    )?;
+fn mark_read_bulk_marks_seen_or_expires_per_version() -> Result<(), Error> {
+    let (_dir, db) = test_db("mark-read-bulk")?;
+    for (id, notification_type) in [("legacy", "friendRequest"), ("invite", "invite")] {
+        notification_add_v1(
+            &db,
+            "usr_self".into(),
+            json!({
+                "id": id,
+                "created_at": "2026-05-15T00:00:00Z",
+                "type": notification_type
+            }),
+        )?;
+    }
     notification_add_v2(
         &db,
         "usr_self".into(),
@@ -488,21 +497,46 @@ fn remote_seen_commit_marks_v1_and_v2_seen() -> Result<(), Error> {
         }),
     )?;
 
-    notification_mark_seen(&db, "usr_self".into(), "legacy".into(), 1)?;
-    notification_mark_seen(&db, "usr_self".into(), "modern".into(), 2)?;
+    notification_mark_read_bulk(
+        &db,
+        "usr_self".into(),
+        vec![
+            NotificationRead {
+                id: "legacy".into(),
+                version: 1,
+                expire: false,
+            },
+            NotificationRead {
+                id: "invite".into(),
+                version: 1,
+                expire: true,
+            },
+            NotificationRead {
+                id: "modern".into(),
+                version: 2,
+                expire: false,
+            },
+        ],
+    )?;
 
     let legacy = rows_by_id(
         &db,
         "SELECT expired, seen FROM usrself_notifications WHERE id = @id",
         "legacy",
     )?;
+    let invite = rows_by_id(
+        &db,
+        "SELECT expired, seen FROM usrself_notifications WHERE id = @id",
+        "invite",
+    )?;
     let modern = rows_by_id(
         &db,
-        "SELECT seen FROM usrself_notifications_v2 WHERE id = @id",
+        "SELECT seen, expires_at FROM usrself_notifications_v2 WHERE id = @id",
         "modern",
     )?;
     assert_eq!(legacy[0], vec![json!(0), json!(1)]);
-    assert_eq!(modern[0][0], json!(1));
+    assert_eq!(invite[0], vec![json!(1), json!(1)]);
+    assert_eq!(modern[0], vec![json!(1), Value::Null]);
     Ok(())
 }
 

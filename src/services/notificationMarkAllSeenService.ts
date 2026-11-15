@@ -15,13 +15,7 @@ export async function markAllNotificationsSeenWithFeedback(
                 type: 'warning',
                 title: i18n.t(
                     'host.vrc_notification_center.toast.mark_all_seen_partially_failed'
-                ),
-                actionProps: {
-                    children: i18n.t('common.action.retry'),
-                    onClick: () => {
-                        void markAllNotificationsSeenWithFeedback(errorTitle);
-                    }
-                }
+                )
             });
         }
     } catch (error) {

@@ -37,27 +37,17 @@ describe('markAllNotificationsSeenWithFeedback', () => {
         expect(mocks.toastAdd).not.toHaveBeenCalled();
     });
 
-    it('summarizes partial failures in one toast that can retry', async () => {
-        mocks.markAllSeen
-            .mockResolvedValueOnce({ failedCount: 2 })
-            .mockResolvedValueOnce({ failedCount: 0 });
+    it('summarizes rows that stayed local in one warning toast', async () => {
+        mocks.markAllSeen.mockResolvedValueOnce({ failedCount: 2 });
 
         await markAllNotificationsSeenWithFeedback('Failed');
 
         expect(mocks.toastAdd).toHaveBeenCalledTimes(1);
         const options: AppToastOptions = mocks.toastAdd.mock.calls[0][0];
-        expect(options).toMatchObject({
+        expect(options).toEqual({
             type: 'warning',
-            title: 'host.vrc_notification_center.toast.mark_all_seen_partially_failed',
-            actionProps: { children: 'common.action.retry' }
+            title: 'host.vrc_notification_center.toast.mark_all_seen_partially_failed'
         });
-
-        const retry = options.actionProps?.onClick as () => void;
-        retry();
-
-        await vi.waitFor(() =>
-            expect(mocks.markAllSeen).toHaveBeenCalledTimes(2)
-        );
     });
 
     it('shows the error when mark-all-seen fails outright', async () => {

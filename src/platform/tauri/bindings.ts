@@ -6484,7 +6484,7 @@ export type NotificationMarkSeenBatchInput = {
 export type NotificationMarkSeenBatchItem = {
     id: string;
     version: number;
-    location: NotificationMarkSeenLocation;
+    type: string;
 };
 
 export type NotificationMarkSeenBatchResult = {
@@ -6495,19 +6495,17 @@ export type NotificationMarkSeenBatchResult = {
     lastError: string | null;
 };
 
-export type NotificationMarkSeenEffect = 'seen';
+export type NotificationMarkSeenEffect = 'seen' | 'expired';
 
 export type NotificationMarkSeenItemResult = {
     id: string;
     state: NotificationMarkSeenItemState;
-    effect: NotificationMarkSeenEffect | null;
+    effect: NotificationMarkSeenEffect;
     attempts: number;
     message: string;
 };
 
-export type NotificationMarkSeenItemState = 'succeeded' | 'failed';
-
-export type NotificationMarkSeenLocation = 'remote' | 'local';
+export type NotificationMarkSeenItemState = 'succeeded' | 'remoteFailed';
 
 export type NotificationRequestInviteAcceptInput = {
     ownerUserId: OwnerId;

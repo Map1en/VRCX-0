@@ -28,7 +28,6 @@ const commandMocks = vi.hoisted(() => ({
 }));
 
 const notificationActionMocks = vi.hoisted(() => ({
-    expireNotificationLocally: vi.fn(),
     sendNotificationButtonResponse: vi.fn()
 }));
 
@@ -44,8 +43,6 @@ vi.mock('@/repositories/notificationPersistenceRepository', () => ({
 }));
 
 vi.mock('@/services/notificationActionService', () => ({
-    expireNotificationLocally:
-        notificationActionMocks.expireNotificationLocally,
     sendNotificationButtonResponse:
         notificationActionMocks.sendNotificationButtonResponse
 }));
@@ -69,10 +66,6 @@ describe('vrcNotificationStore', () => {
         commandMocks.markSeenBatch.mockReset();
         commandMocks.sync.mockReset();
         notificationActionMocks.sendNotificationButtonResponse.mockReset();
-        notificationActionMocks.expireNotificationLocally.mockReset();
-        notificationActionMocks.expireNotificationLocally.mockResolvedValue(
-            undefined
-        );
         notificationActionMocks.sendNotificationButtonResponse.mockResolvedValue(
             undefined
         );
@@ -80,7 +73,7 @@ describe('vrcNotificationStore', () => {
             async ({
                 items
             }: {
-                items: Array<{ id: string; version: number }>;
+                items: Array<{ id: string; version: number; type: string }>;
             }) => ({
                 total: items.length,
                 succeeded: items.length,
@@ -88,7 +81,12 @@ describe('vrcNotificationStore', () => {
                 items: items.map((item) => ({
                     id: item.id,
                     state: 'succeeded',
-                    effect: 'seen',
+                    effect:
+                        item.version < 2 &&
+                        (item.type === 'invite' ||
+                            item.type === 'requestInvite')
+                            ? 'expired'
+                            : 'seen',
                     attempts: 1,
                     message: ''
                 })),
@@ -369,7 +367,7 @@ describe('vrcNotificationStore', () => {
                 {
                     id: 'notif_friend_request',
                     version: 1,
-                    location: 'remote'
+                    type: 'friendRequest'
                 }
             ]
         });
@@ -388,16 +386,18 @@ describe('vrcNotificationStore', () => {
         };
         useVrcNotificationStore.getState().upsertNotification(friendRequest);
 
-        await useVrcNotificationStore
-            .getState()
-            .markNotificationSeen(friendRequest);
+        await expect(
+            useVrcNotificationStore
+                .getState()
+                .markNotificationRead(friendRequest)
+        ).resolves.toEqual({ remoteFailed: false, message: '' });
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
             items: [
                 {
                     id: 'notif_friend_request',
                     version: 1,
-                    location: 'remote'
+                    type: 'friendRequest'
                 }
             ]
         });
@@ -411,7 +411,7 @@ describe('vrcNotificationStore', () => {
         ).not.toHaveBeenCalled();
     });
 
-    it('keeps a v1 friend request pending when mark-all-seen fails', async () => {
+    it('keeps a v1 friend request read locally when VRChat rejects mark-all-seen', async () => {
         const friendRequest = {
             id: 'notif_friend_request',
             type: 'friendRequest',
@@ -426,17 +426,14 @@ describe('vrcNotificationStore', () => {
             items: [
                 {
                     id: friendRequest.id,
-                    state: 'failed',
-                    effect: null,
+                    state: 'remoteFailed',
+                    effect: 'seen',
                     attempts: 4,
                     message: 'Too many requests'
                 }
             ],
             lastError: 'Too many requests'
         });
-        notificationRepositoryMock.queryNotifications.mockResolvedValue([
-            friendRequest
-        ]);
         useVrcNotificationStore.getState().upsertNotification(friendRequest);
 
         await expect(
@@ -448,19 +445,88 @@ describe('vrcNotificationStore', () => {
                 {
                     id: friendRequest.id,
                     version: 1,
-                    location: 'remote'
+                    type: 'friendRequest'
                 }
             ]
         });
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
             id: friendRequest.id,
-            seen: false
+            seen: true
         });
-        expect(useVrcNotificationStore.getState().unseenCount).toBe(1);
-        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(1);
+        expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
+        expect(
+            selectMarkAllSeenRowState(
+                useVrcNotificationStore.getState(),
+                friendRequest.id
+            )
+        ).toBe('failed');
     });
 
-    it('reconciles partial failures without overriding persisted v1 seen state', async () => {
+    it('keeps a single read local and flags the row when VRChat rejects it', async () => {
+        const boop = {
+            id: 'notif_boop',
+            type: 'boop',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        };
+        commandMocks.markSeenBatch.mockResolvedValue({
+            total: 1,
+            succeeded: 0,
+            failed: 1,
+            items: [
+                {
+                    id: boop.id,
+                    state: 'remoteFailed',
+                    effect: 'seen',
+                    attempts: 1,
+                    message: 'HTTP 500'
+                }
+            ],
+            lastError: 'HTTP 500'
+        });
+        useVrcNotificationStore.getState().upsertNotification(boop);
+
+        await expect(
+            useVrcNotificationStore.getState().markNotificationRead(boop)
+        ).resolves.toEqual({ remoteFailed: true, message: 'HTTP 500' });
+
+        const state = useVrcNotificationStore.getState();
+        expect(state.rows[0]).toMatchObject({ id: boop.id, seen: true });
+        expect(state.unseenCount).toBe(0);
+        expect(selectMarkAllSeenRowState(state, boop.id)).toBe('failed');
+        expect(
+            notificationRepositoryMock.queryNotifications
+        ).not.toHaveBeenCalled();
+    });
+
+    it('marks a pending invite read on VRChat and clears it from pending invites', async () => {
+        const invite = {
+            id: 'notif_invite',
+            type: 'invite',
+            version: 1,
+            seen: true,
+            created_at: new Date().toISOString()
+        };
+        useVrcNotificationStore.getState().upsertNotification(invite);
+        expect(useVrcNotificationStore.getState().pendingInviteCount).toBe(1);
+
+        await useVrcNotificationStore.getState().markNotificationRead(invite);
+
+        expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
+            items: [{ id: 'notif_invite', version: 1, type: 'invite' }]
+        });
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            pendingInviteCount: 0
+        });
+        expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
+            id: 'notif_invite',
+            expired: true
+        });
+    });
+
+    it('keeps every row read locally when part of mark-all-seen fails remotely', async () => {
         const friendRequest = {
             id: 'notif_friend_request',
             type: 'friendRequest',
@@ -489,18 +555,14 @@ describe('vrcNotificationStore', () => {
                 },
                 {
                     id: failedNotification.id,
-                    state: 'failed',
-                    effect: null,
+                    state: 'remoteFailed',
+                    effect: 'seen',
                     attempts: 4,
                     message: 'Too many requests'
                 }
             ],
             lastError: 'Too many requests'
         });
-        notificationRepositoryMock.queryNotifications.mockResolvedValue([
-            { ...friendRequest, seen: true },
-            failedNotification
-        ]);
         useVrcNotificationStore.getState().upsertNotification(friendRequest);
         useVrcNotificationStore
             .getState()
@@ -519,8 +581,8 @@ describe('vrcNotificationStore', () => {
             useVrcNotificationStore
                 .getState()
                 .rows.find((row) => row.id === failedNotification.id)
-        ).toMatchObject({ seen: false });
-        expect(useVrcNotificationStore.getState().unseenCount).toBe(1);
+        ).toMatchObject({ seen: true });
+        expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
     });
 
     it('excludes expired friend requests from the notification center', () => {
@@ -614,7 +676,7 @@ describe('vrcNotificationStore', () => {
                 {
                     id: 'notif_system',
                     version: 2,
-                    location: 'local'
+                    type: 'event.announcement'
                 }
             ]
         });
@@ -664,13 +726,13 @@ describe('vrcNotificationStore', () => {
                 {
                     id: 'notif_plain',
                     version: 2,
-                    location: 'local'
+                    type: 'event.announcement'
                 }
             ]
         });
     });
 
-    it('ignores pending invites locally on mark-all-seen', async () => {
+    it('marks pending invites read on VRChat during mark-all-seen', async () => {
         const invite = {
             id: 'notif_invite',
             type: 'invite',
@@ -697,25 +759,21 @@ describe('vrcNotificationStore', () => {
             unseenCount: 0,
             pendingInviteCount: 2
         });
-        notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
 
         await useVrcNotificationStore.getState().markAllSeen();
 
+        expect(commandMocks.markSeenBatch).toHaveBeenCalledTimes(1);
         expect(
-            notificationActionMocks.expireNotificationLocally.mock.calls
-                .map(([input]) => input.notification.id)
+            commandMocks.markSeenBatch.mock.calls[0][0].items
+                .map((item: { id: string }) => item.id)
                 .sort()
         ).toEqual(['notif_invite', 'notif_request_invite']);
-        expect(
-            notificationActionMocks.expireNotificationLocally
-        ).toHaveBeenCalledWith({
-            currentUserId: 'usr_me',
-            notification: expect.objectContaining({ id: 'notif_invite' })
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            pendingInviteCount: 0
         });
-        expect(commandMocks.markSeenBatch).not.toHaveBeenCalled();
-        expect(
-            notificationRepositoryMock.queryNotifications
-        ).toHaveBeenCalled();
+        expect(selectCanMarkAllSeen(useVrcNotificationStore.getState())).toBe(
+            false
+        );
     });
 
     it('marks non-system v2 notifications read after mark-all-seen', async () => {
@@ -743,13 +801,13 @@ describe('vrcNotificationStore', () => {
                 {
                     id: 'notif_activity',
                     version: 2,
-                    location: 'remote'
+                    type: 'inviteResponse'
                 }
             ]
         });
     });
 
-    it('marks system notifications locally and activity notifications remotely in one batch', async () => {
+    it('marks system and activity notifications on VRChat in one batch', async () => {
         const systemNotification = {
             id: 'notif_group_announcement',
             type: 'group.announcement',
@@ -780,18 +838,18 @@ describe('vrcNotificationStore', () => {
                 {
                     id: 'notif_group_announcement',
                     version: 2,
-                    location: 'local'
+                    type: 'group.announcement'
                 },
                 {
                     id: 'notif_activity',
                     version: 2,
-                    location: 'remote'
+                    type: 'inviteResponse'
                 }
             ]
         });
     });
 
-    it('keeps notifications unread and reports the failure when the server call fails', async () => {
+    it('keeps notifications read locally and reports the failure when the server call fails', async () => {
         const activityNotification = {
             id: 'notif_failing',
             type: 'inviteResponse',
@@ -806,17 +864,14 @@ describe('vrcNotificationStore', () => {
             items: [
                 {
                     id: 'notif_failing',
-                    state: 'failed',
-                    effect: null,
+                    state: 'remoteFailed',
+                    effect: 'seen',
                     attempts: 4,
                     message: 'Too many requests'
                 }
             ],
             lastError: 'Too many requests'
         });
-        notificationRepositoryMock.queryNotifications.mockResolvedValue([
-            activityNotification
-        ]);
 
         useVrcNotificationStore
             .getState()
@@ -827,7 +882,7 @@ describe('vrcNotificationStore', () => {
         ).resolves.toEqual({ failedCount: 1 });
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledTimes(1);
-        expect(useVrcNotificationStore.getState().unseenCount).toBe(1);
+        expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
         expect(
             selectMarkAllSeenRowState(
                 useVrcNotificationStore.getState(),
@@ -836,9 +891,9 @@ describe('vrcNotificationStore', () => {
         ).toBe('failed');
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
             id: 'notif_failing',
-            seen: false
+            seen: true
         });
-        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(1);
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
     });
 
     it('reloads the persisted unread state when the batch command rejects', async () => {
@@ -949,7 +1004,7 @@ describe('vrcNotificationStore', () => {
         );
     });
 
-    it('keeps mark-all-seen running once and remembers failed dismissals', async () => {
+    it('keeps mark-all-seen running once and marks failed dismissals read instead', async () => {
         const announcement = {
             id: 'notif_announcement',
             type: 'group.announcement',
@@ -960,7 +1015,7 @@ describe('vrcNotificationStore', () => {
         };
         useVrcNotificationStore.getState().upsertNotification(announcement);
         notificationRepositoryMock.queryNotifications.mockResolvedValue([
-            announcement
+            { ...announcement, seen: true }
         ]);
         const dismissal = createDeferred<void>();
         notificationActionMocks.sendNotificationButtonResponse.mockReturnValue(
@@ -973,15 +1028,24 @@ describe('vrcNotificationStore', () => {
         ).resolves.toEqual({ failedCount: 0 });
         dismissal.reject(new Error('Too many requests'));
 
-        await expect(marking).resolves.toEqual({ failedCount: 1 });
+        await expect(marking).resolves.toEqual({ failedCount: 0 });
         expect(
             notificationActionMocks.sendNotificationButtonResponse
         ).toHaveBeenCalledTimes(1);
+        expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
+            items: [
+                {
+                    id: announcement.id,
+                    version: 2,
+                    type: 'group.announcement'
+                }
+            ]
+        });
         const state = useVrcNotificationStore.getState();
         expect(state.markAllSeenProgress).toBe(null);
-        expect(state.unseenCount).toBe(1);
-        expect(selectMarkAllSeenRowState(state, announcement.id)).toBe(
-            'failed'
-        );
+        expect(
+            state.rows.find((row) => row.id === announcement.id)
+        ).toMatchObject({ seen: true });
+        expect(selectMarkAllSeenRowState(state, announcement.id)).toBe(null);
     });
 });

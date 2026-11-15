@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     isNotificationExpired,
-    isUnseenNotification,
-    shouldMarkSeenRemotely
+    isUnseenNotification
 } from './notificationSeen';
 
 describe('isNotificationExpired', () => {
@@ -81,17 +80,5 @@ describe('isUnseenNotification', () => {
     it('treats a missing notification as not contributing to the unread count', () => {
         expect(isUnseenNotification(null)).toBe(false);
         expect(isUnseenNotification(undefined)).toBe(false);
-    });
-});
-
-describe('shouldMarkSeenRemotely', () => {
-    it('syncs read state to the server for action/activity notifications, since VRChat tracks their seen status server-side', () => {
-        expect(shouldMarkSeenRemotely({ type: 'friendRequest' })).toBe(true);
-        expect(shouldMarkSeenRemotely({ type: 'inviteResponse' })).toBe(true);
-    });
-
-    it('keeps system notifications local-only, since the server has no seen-state to sync for them', () => {
-        expect(shouldMarkSeenRemotely({ type: 'votekick' })).toBe(false);
-        expect(shouldMarkSeenRemotely(undefined)).toBe(false);
     });
 });

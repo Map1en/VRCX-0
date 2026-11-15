@@ -5,24 +5,19 @@ use std::{collections::HashSet, time::Duration};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_core::NotificationKind;
 
 const NOTIFICATION_MARK_SEEN_MAX_RETRIES: usize = 3;
 const NOTIFICATION_MARK_SEEN_BASE_DELAY: Duration = Duration::from_millis(1_000);
 pub const NOTIFICATION_MARK_SEEN_MAX_ITEMS: usize = 1_000;
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum NotificationMarkSeenLocation {
-    Remote,
-    Local,
-}
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationMarkSeenBatchItem {
     pub id: String,
     pub version: i64,
-    pub location: NotificationMarkSeenLocation,
+    #[serde(rename = "type")]
+    pub notification_type: String,
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -36,13 +31,14 @@ pub struct NotificationMarkSeenBatchInput {
 #[serde(rename_all = "camelCase")]
 pub enum NotificationMarkSeenItemState {
     Succeeded,
-    Failed,
+    RemoteFailed,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum NotificationMarkSeenEffect {
     Seen,
+    Expired,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -50,7 +46,7 @@ pub enum NotificationMarkSeenEffect {
 pub struct NotificationMarkSeenItemResult {
     pub id: String,
     pub state: NotificationMarkSeenItemState,
-    pub effect: Option<NotificationMarkSeenEffect>,
+    pub effect: NotificationMarkSeenEffect,
     pub attempts: u32,
     pub message: String,
 }
@@ -65,9 +61,17 @@ pub struct NotificationMarkSeenBatchResult {
     pub last_error: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NotificationLocalRead {
+    pub id: String,
+    pub version: i64,
+    pub effect: NotificationMarkSeenEffect,
+}
+
 pub struct NotificationRemoteActionError {
     message: String,
     retryable: bool,
+    not_found: bool,
 }
 
 impl NotificationRemoteActionError {
@@ -75,6 +79,7 @@ impl NotificationRemoteActionError {
         Self {
             message: error.to_string(),
             retryable: false,
+            not_found: false,
         }
     }
 
@@ -82,16 +87,29 @@ impl NotificationRemoteActionError {
         Self {
             message: response_error_message(payload, status),
             retryable: status == 429 || status >= 500,
+            not_found: status == 404,
         }
     }
 }
 
 pub trait NotificationMarkSeenActions: Send + Sync {
-    fn mark_local(&self, ids: Vec<String>) -> Result<()>;
+    fn commit_local(&self, reads: Vec<NotificationLocalRead>) -> Result<()>;
     fn mark_remote<'a>(
         &'a self,
         item: &'a NotificationMarkSeenBatchItem,
     ) -> BoxFuture<'a, std::result::Result<(), NotificationRemoteActionError>>;
+}
+
+pub fn notification_mark_seen_effect(
+    notification_type: &str,
+    version: i64,
+) -> NotificationMarkSeenEffect {
+    match NotificationKind::from(notification_type) {
+        NotificationKind::Invite | NotificationKind::RequestInvite if version < 2 => {
+            NotificationMarkSeenEffect::Expired
+        }
+        _ => NotificationMarkSeenEffect::Seen,
+    }
 }
 
 pub async fn mark_notifications_seen_batch(
@@ -108,55 +126,44 @@ async fn mark_notifications_seen_batch_with_delay(
     base_delay: Duration,
 ) -> Result<NotificationMarkSeenBatchResult> {
     let items = normalize_items(input.items)?;
-    let local_ids = items
+    let reads = items
         .iter()
-        .filter(|item| item.location == NotificationMarkSeenLocation::Local)
-        .map(|item| item.id.clone())
+        .map(|item| NotificationLocalRead {
+            id: item.id.clone(),
+            version: item.version,
+            effect: notification_mark_seen_effect(&item.notification_type, item.version),
+        })
         .collect::<Vec<_>>();
-    if !local_ids.is_empty() {
-        actions.mark_local(local_ids)?;
-    }
+    actions.commit_local(reads.clone())?;
 
     let mut results = Vec::with_capacity(items.len());
     let mut succeeded = 0;
     let mut failed = 0;
     let mut last_error = None;
-    for item in items {
-        if item.location == NotificationMarkSeenLocation::Local {
-            succeeded += 1;
-            results.push(NotificationMarkSeenItemResult {
-                id: item.id,
-                state: NotificationMarkSeenItemState::Succeeded,
-                effect: Some(NotificationMarkSeenEffect::Seen),
-                attempts: 1,
-                message: String::new(),
-            });
-            continue;
-        }
+    for (item, read) in items.into_iter().zip(reads) {
         let (attempts, result) = mark_remote_with_backoff(actions, &item, base_delay).await;
-        match result {
-            Ok(()) => {
-                succeeded += 1;
-                results.push(NotificationMarkSeenItemResult {
-                    id: item.id,
-                    state: NotificationMarkSeenItemState::Succeeded,
-                    effect: Some(NotificationMarkSeenEffect::Seen),
-                    attempts: crate::wire_count(attempts),
-                    message: String::new(),
-                });
+        let attempts = crate::wire_count(attempts);
+        let (state, message) = match result {
+            Ok(()) => (NotificationMarkSeenItemState::Succeeded, String::new()),
+            Err(error) if error.not_found => {
+                (NotificationMarkSeenItemState::Succeeded, error.message)
             }
             Err(error) => {
-                failed += 1;
                 last_error = Some(error.message.clone());
-                results.push(NotificationMarkSeenItemResult {
-                    id: item.id,
-                    state: NotificationMarkSeenItemState::Failed,
-                    effect: None,
-                    attempts: crate::wire_count(attempts),
-                    message: error.message,
-                });
+                (NotificationMarkSeenItemState::RemoteFailed, error.message)
             }
+        };
+        match state {
+            NotificationMarkSeenItemState::Succeeded => succeeded += 1,
+            NotificationMarkSeenItemState::RemoteFailed => failed += 1,
         }
+        results.push(NotificationMarkSeenItemResult {
+            id: item.id,
+            state,
+            effect: read.effect,
+            attempts,
+            message,
+        });
     }
     Ok(NotificationMarkSeenBatchResult {
         total: crate::wire_count(results.len()),
@@ -195,6 +202,7 @@ fn normalize_items(
     let mut normalized = Vec::new();
     for mut item in items {
         item.id = item.id.trim().to_string();
+        item.notification_type = item.notification_type.trim().to_string();
         if item.id.is_empty() || item.version < 1 {
             return Err(Error::Custom(
                 "Notification mark-seen batch contains an invalid notification.".into(),
@@ -213,13 +221,6 @@ fn normalize_items(
         Err(Error::Custom(format!(
             "Notification mark-seen batch cannot exceed {NOTIFICATION_MARK_SEEN_MAX_ITEMS} items."
         )))
-    } else if items
-        .iter()
-        .any(|item| item.location == NotificationMarkSeenLocation::Local && item.version < 2)
-    {
-        Err(Error::Custom(
-            "Only v2 notifications can be committed as local-only seen rows.".into(),
-        ))
     } else {
         Ok(items)
     }
@@ -242,16 +243,36 @@ mod tests {
 
     use super::*;
 
+    #[derive(Clone, Copy)]
+    enum RemoteFailure {
+        Retryable(usize),
+        NotFound,
+        Terminal,
+    }
+
     struct FakeActions {
-        local_ids: Arc<Mutex<Vec<String>>>,
+        local_reads: Arc<Mutex<Vec<NotificationLocalRead>>>,
         calls: Arc<Mutex<Vec<String>>>,
-        retry_id: String,
-        retry_failures: usize,
+        failures: Vec<(String, RemoteFailure)>,
+    }
+
+    impl FakeActions {
+        fn new(failures: Vec<(&str, RemoteFailure)>) -> Self {
+            Self {
+                local_reads: Arc::new(Mutex::new(Vec::new())),
+                calls: Arc::new(Mutex::new(Vec::new())),
+                failures: failures
+                    .into_iter()
+                    .map(|(id, failure)| (id.to_string(), failure))
+                    .collect(),
+            }
+        }
     }
 
     impl NotificationMarkSeenActions for FakeActions {
-        fn mark_local(&self, ids: Vec<String>) -> Result<()> {
-            *self.local_ids.lock().unwrap() = ids;
+        fn commit_local(&self, reads: Vec<NotificationLocalRead>) -> Result<()> {
+            assert!(self.calls.lock().unwrap().is_empty());
+            *self.local_reads.lock().unwrap() = reads;
             Ok(())
         }
 
@@ -263,124 +284,172 @@ mod tests {
                 let mut calls = self.calls.lock().unwrap();
                 calls.push(item.id.clone());
                 let attempts = calls.iter().filter(|id| *id == &item.id).count();
-                if item.id == self.retry_id && attempts <= self.retry_failures {
-                    Err(NotificationRemoteActionError {
-                        message: "rate limited".into(),
-                        retryable: true,
-                    })
-                } else {
-                    Ok(())
+                let failure = self
+                    .failures
+                    .iter()
+                    .find(|(id, _)| id == &item.id)
+                    .map(|(_, failure)| *failure);
+                match failure {
+                    Some(RemoteFailure::Retryable(count)) if attempts <= count => {
+                        Err(NotificationRemoteActionError::response(&Value::Null, 429))
+                    }
+                    Some(RemoteFailure::NotFound) => {
+                        Err(NotificationRemoteActionError::response(&Value::Null, 404))
+                    }
+                    Some(RemoteFailure::Terminal) => {
+                        Err(NotificationRemoteActionError::response(&Value::Null, 400))
+                    }
+                    _ => Ok(()),
                 }
             })
         }
     }
 
-    #[tokio::test]
-    async fn mixed_batch_commits_local_rows_and_retries_remote_rows_serially() {
-        let local_ids = Arc::new(Mutex::new(Vec::new()));
-        let calls = Arc::new(Mutex::new(Vec::new()));
-        let actions = FakeActions {
-            local_ids: Arc::clone(&local_ids),
-            calls: Arc::clone(&calls),
-            retry_id: "remote-a".into(),
-            retry_failures: 2,
-        };
+    fn item(id: &str, version: i64, notification_type: &str) -> NotificationMarkSeenBatchItem {
+        NotificationMarkSeenBatchItem {
+            id: id.into(),
+            version,
+            notification_type: notification_type.into(),
+        }
+    }
 
-        let output = mark_notifications_seen_batch_with_delay(
-            &actions,
-            NotificationMarkSeenBatchInput {
-                items: vec![
-                    NotificationMarkSeenBatchItem {
-                        id: "local-system".into(),
-                        version: 2,
-                        location: NotificationMarkSeenLocation::Local,
-                    },
-                    NotificationMarkSeenBatchItem {
-                        id: "remote-a".into(),
-                        version: 2,
-                        location: NotificationMarkSeenLocation::Remote,
-                    },
-                    NotificationMarkSeenBatchItem {
-                        id: "remote-b".into(),
-                        version: 1,
-                        location: NotificationMarkSeenLocation::Remote,
-                    },
-                ],
-            },
+    async fn run(
+        actions: &FakeActions,
+        items: Vec<NotificationMarkSeenBatchItem>,
+    ) -> NotificationMarkSeenBatchResult {
+        mark_notifications_seen_batch_with_delay(
+            actions,
+            NotificationMarkSeenBatchInput { items },
             Duration::ZERO,
         )
         .await
-        .unwrap();
+        .unwrap()
+    }
 
-        assert_eq!(*local_ids.lock().unwrap(), vec!["local-system"]);
+    #[tokio::test]
+    async fn commits_every_row_locally_before_marking_remote_rows_serially() {
+        let actions = FakeActions::new(vec![("system", RemoteFailure::Retryable(2))]);
+
+        let output = run(
+            &actions,
+            vec![
+                item("system", 2, "group.announcement"),
+                item("invite", 1, "invite"),
+                item("friend", 1, "friendRequest"),
+            ],
+        )
+        .await;
+
         assert_eq!(
-            *calls.lock().unwrap(),
-            vec!["remote-a", "remote-a", "remote-a", "remote-b"]
+            *actions.local_reads.lock().unwrap(),
+            vec![
+                NotificationLocalRead {
+                    id: "system".into(),
+                    version: 2,
+                    effect: NotificationMarkSeenEffect::Seen,
+                },
+                NotificationLocalRead {
+                    id: "invite".into(),
+                    version: 1,
+                    effect: NotificationMarkSeenEffect::Expired,
+                },
+                NotificationLocalRead {
+                    id: "friend".into(),
+                    version: 1,
+                    effect: NotificationMarkSeenEffect::Seen,
+                },
+            ]
+        );
+        assert_eq!(
+            *actions.calls.lock().unwrap(),
+            vec!["system", "system", "system", "invite", "friend"]
         );
         assert_eq!(output.succeeded, 3);
         assert_eq!(output.failed, 0);
+        assert_eq!(output.items[0].attempts, 3);
+        assert_eq!(output.items[1].effect, NotificationMarkSeenEffect::Expired);
+    }
+
+    #[tokio::test]
+    async fn remote_failure_keeps_the_local_read_and_does_not_stop_later_rows() {
+        let actions = FakeActions::new(vec![
+            ("rate-limited", RemoteFailure::Retryable(10)),
+            ("rejected", RemoteFailure::Terminal),
+        ]);
+
+        let output = run(
+            &actions,
+            vec![
+                item("rate-limited", 2, "boop"),
+                item("rejected", 2, "group.invite"),
+                item("ok", 2, "group.invite"),
+            ],
+        )
+        .await;
+
+        assert_eq!(actions.local_reads.lock().unwrap().len(), 3);
+        assert_eq!(output.succeeded, 1);
+        assert_eq!(output.failed, 2);
+        assert_eq!(output.items[0].attempts, 4);
         assert_eq!(
-            output.items[0].effect,
-            Some(NotificationMarkSeenEffect::Seen)
+            output.items[0].state,
+            NotificationMarkSeenItemState::RemoteFailed
         );
-        assert_eq!(output.items[1].attempts, 3);
+        assert_eq!(output.items[1].attempts, 1);
         assert_eq!(
-            output.items[2].effect,
-            Some(NotificationMarkSeenEffect::Seen)
+            output.items[1].state,
+            NotificationMarkSeenItemState::RemoteFailed
+        );
+        assert_eq!(output.items[1].effect, NotificationMarkSeenEffect::Seen);
+        assert_eq!(
+            output.items[2].state,
+            NotificationMarkSeenItemState::Succeeded
         );
     }
 
     #[tokio::test]
-    async fn retry_exhaustion_is_reported_per_item_and_does_not_stop_later_rows() {
-        let actions = FakeActions {
-            local_ids: Arc::new(Mutex::new(Vec::new())),
-            calls: Arc::new(Mutex::new(Vec::new())),
-            retry_id: "remote-a".into(),
-            retry_failures: 10,
-        };
-        let output = mark_notifications_seen_batch_with_delay(
-            &actions,
-            NotificationMarkSeenBatchInput {
-                items: vec![
-                    NotificationMarkSeenBatchItem {
-                        id: "remote-a".into(),
-                        version: 2,
-                        location: NotificationMarkSeenLocation::Remote,
-                    },
-                    NotificationMarkSeenBatchItem {
-                        id: "remote-b".into(),
-                        version: 2,
-                        location: NotificationMarkSeenLocation::Remote,
-                    },
-                ],
-            },
-            Duration::ZERO,
-        )
-        .await
-        .unwrap();
+    async fn remote_not_found_counts_as_already_read() {
+        let actions = FakeActions::new(vec![("gone", RemoteFailure::NotFound)]);
+
+        let output = run(&actions, vec![item("gone", 1, "requestInvite")]).await;
 
         assert_eq!(output.succeeded, 1);
-        assert_eq!(output.failed, 1);
-        assert_eq!(output.items[0].attempts, 4);
+        assert_eq!(output.failed, 0);
+        assert_eq!(output.last_error, None);
         assert_eq!(
-            output.items[1].state,
+            output.items[0].state,
             NotificationMarkSeenItemState::Succeeded
+        );
+        assert_eq!(output.items[0].effect, NotificationMarkSeenEffect::Expired);
+    }
+
+    #[test]
+    fn only_v1_invites_expire_when_read() {
+        assert_eq!(
+            notification_mark_seen_effect("invite", 1),
+            NotificationMarkSeenEffect::Expired
+        );
+        assert_eq!(
+            notification_mark_seen_effect("requestInvite", 1),
+            NotificationMarkSeenEffect::Expired
+        );
+        assert_eq!(
+            notification_mark_seen_effect("invite", 2),
+            NotificationMarkSeenEffect::Seen
+        );
+        assert_eq!(
+            notification_mark_seen_effect("friendRequest", 1),
+            NotificationMarkSeenEffect::Seen
+        );
+        assert_eq!(
+            notification_mark_seen_effect("group.invite", 2),
+            NotificationMarkSeenEffect::Seen
         );
     }
 
     #[test]
     fn validation_rejects_invalid_rows_instead_of_dropping_them() {
-        assert!(normalize_items(vec![NotificationMarkSeenBatchItem {
-            id: String::new(),
-            version: 2,
-            location: NotificationMarkSeenLocation::Remote,
-        }])
-        .is_err());
-        assert!(normalize_items(vec![NotificationMarkSeenBatchItem {
-            id: "notification".into(),
-            version: 0,
-            location: NotificationMarkSeenLocation::Remote,
-        }])
-        .is_err());
+        assert!(normalize_items(vec![item("", 2, "boop")]).is_err());
+        assert!(normalize_items(vec![item("notification", 0, "boop")]).is_err());
     }
 }

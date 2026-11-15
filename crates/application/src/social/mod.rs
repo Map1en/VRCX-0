@@ -121,9 +121,9 @@ pub use note_export::{
     VrchatNoteExportActions, NOTE_EXPORT_MAX_ITEMS,
 };
 pub use notification_actions::{
-    mark_notifications_seen_batch, NotificationMarkSeenActions, NotificationMarkSeenBatchInput,
-    NotificationMarkSeenBatchItem, NotificationMarkSeenBatchResult, NotificationMarkSeenEffect,
-    NotificationMarkSeenItemResult, NotificationMarkSeenItemState, NotificationMarkSeenLocation,
+    mark_notifications_seen_batch, NotificationLocalRead, NotificationMarkSeenActions,
+    NotificationMarkSeenBatchInput, NotificationMarkSeenBatchItem, NotificationMarkSeenBatchResult,
+    NotificationMarkSeenEffect, NotificationMarkSeenItemResult, NotificationMarkSeenItemState,
     NotificationRemoteActionError, NOTIFICATION_MARK_SEEN_MAX_ITEMS,
 };
 pub use notification_chains::{

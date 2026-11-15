@@ -30,6 +30,10 @@ import { HoverCard, HoverCardTrigger } from '@/ui/shadcn/hover-card';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import {
+    NotificationActionMenuText,
+    NotificationActionScopeTooltip
+} from '../components/NotificationActionScope';
 import { NotificationMessage } from '../components/NotificationMessage';
 import {
     NOTIFICATION_ROW_HOVER_REVEAL,
@@ -161,6 +165,7 @@ export function NotificationDrawerRow({
     const showMenuMarkRead =
         isUnseen &&
         notification.type !== 'friendRequest' &&
+        !orderedActions.some((action) => action.key === 'mark-seen') &&
         !getDismissResponse(notification.responses);
     const showDelete = Boolean(shouldShowDeleteLog(notification));
     const hasMenu =
@@ -344,9 +349,12 @@ export function NotificationDrawerRow({
                                                             }
                                                         >
                                                             <CheckCheckIcon data-icon="inline-start" />
-                                                            {t(
-                                                                'side_panel.notification_center.mark_as_read'
-                                                            )}
+                                                            <NotificationActionMenuText
+                                                                label={t(
+                                                                    'side_panel.notification_center.mark_as_read'
+                                                                )}
+                                                                scope="vrchat"
+                                                            />
                                                         </DropdownMenuItem>
                                                     ) : null}
                                                     {overflowActions.map(
@@ -358,7 +366,14 @@ export function NotificationDrawerRow({
                                                                 }
                                                             >
                                                                 <action.Icon data-icon="inline-start" />
-                                                                {action.label}
+                                                                <NotificationActionMenuText
+                                                                    label={
+                                                                        action.label
+                                                                    }
+                                                                    scope={
+                                                                        action.scope
+                                                                    }
+                                                                />
                                                             </DropdownMenuItem>
                                                         )
                                                     )}
@@ -380,9 +395,12 @@ export function NotificationDrawerRow({
                                                                 }
                                                             >
                                                                 <Trash2Icon data-icon="inline-start" />
-                                                                {t(
-                                                                    'view.notification.actions.delete_log'
-                                                                )}
+                                                                <NotificationActionMenuText
+                                                                    label={t(
+                                                                        'view.notification.actions.delete_log'
+                                                                    )}
+                                                                    scope="local"
+                                                                />
                                                             </DropdownMenuItem>
                                                         </DropdownMenuGroup>
                                                     </>
@@ -511,16 +529,20 @@ export function NotificationDrawerRow({
                                                 </Button>
                                             ) : null}
                                             {inlineActions.map((action) => (
-                                                <Button
+                                                <NotificationActionScopeTooltip
                                                     key={action.key}
-                                                    type="button"
-                                                    size="xs"
-                                                    variant="ghost"
-                                                    disabled={actionPending}
-                                                    onClick={action.onClick}
+                                                    scope={action.scope}
                                                 >
-                                                    {action.label}
-                                                </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="xs"
+                                                        variant="ghost"
+                                                        disabled={actionPending}
+                                                        onClick={action.onClick}
+                                                    >
+                                                        {action.label}
+                                                    </Button>
+                                                </NotificationActionScopeTooltip>
                                             ))}
                                         </div>
                                     ) : null}

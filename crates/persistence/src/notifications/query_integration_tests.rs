@@ -6,10 +6,22 @@ use super::types::AppNotification;
 use super::{
     notification_add_v1, notification_add_v2, notification_delete,
     notification_friend_requests_sync, notification_has_unseen_action_required,
-    notification_list_query, notification_mark_seen, NotificationListItemOutput,
-    NotificationListQueryInput,
+    notification_list_query, notification_mark_read_bulk, NotificationListItemOutput,
+    NotificationListQueryInput, NotificationRead,
 };
 use crate::{DatabaseService, Error};
+
+fn mark_read(db: &DatabaseService, user_id: &str, id: &str, version: i64) -> Result<(), Error> {
+    notification_mark_read_bulk(
+        db,
+        user_id.into(),
+        vec![NotificationRead {
+            id: id.into(),
+            version,
+            expire: false,
+        }],
+    )
+}
 
 struct TestDir {
     path: PathBuf,
@@ -253,7 +265,7 @@ fn seen_v1_friend_request_stays_seen_when_remote_sync_keeps_it_active() -> Resul
         "senderUsername": "Sender"
     });
     notification_add_v1(&db, user_id.into(), friend_request.clone())?;
-    notification_mark_seen(&db, user_id.into(), "notif_friend_request".into(), 1)?;
+    mark_read(&db, user_id, "notif_friend_request", 1)?;
 
     notification_friend_requests_sync(
         &db,
@@ -378,7 +390,7 @@ fn unseen_indicator_matches_frontend_action_required_rules() -> Result<(), Error
     )?;
     assert!(notification_has_unseen_action_required(&db, user_id)?);
 
-    notification_mark_seen(&db, user_id.into(), "friend_request".into(), 1)?;
+    mark_read(&db, user_id, "friend_request", 1)?;
     assert!(!notification_has_unseen_action_required(&db, user_id)?);
 
     add_v2(
@@ -391,7 +403,7 @@ fn unseen_indicator_matches_frontend_action_required_rules() -> Result<(), Error
     )?;
     assert!(notification_has_unseen_action_required(&db, user_id)?);
 
-    notification_mark_seen(&db, user_id.into(), "unseen_v2".into(), 2)?;
+    mark_read(&db, user_id, "unseen_v2", 2)?;
     add_v2(
         &db,
         user_id,

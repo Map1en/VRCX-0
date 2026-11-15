@@ -37,6 +37,10 @@ import {
 import { useNotificationNewThisSession } from '../notificationSessionUnread';
 import { toNotificationViewModel } from '../notificationViewModel';
 import { useNotificationActorImage } from '../useNotificationActorImage';
+import {
+    NotificationActionMenuText,
+    NotificationActionScopeTooltip
+} from './NotificationActionScope';
 import { NotificationMessage } from './NotificationMessage';
 import {
     NOTIFICATION_ROW_HOVER_REVEAL,
@@ -117,6 +121,7 @@ export function NotificationRow({
     const showMenuMarkRead =
         view.unseen &&
         notification.type !== 'friendRequest' &&
+        !orderedActions.some((action) => action.key === 'mark-seen') &&
         !getDismissResponse(notification.responses);
     const showDelete = Boolean(shouldShowDeleteLog(notification));
     const hasMenu =
@@ -319,17 +324,21 @@ export function NotificationRow({
                                 <Spinner className="text-muted-foreground size-3.5" />
                             ) : null}
                             {inlineActions.map((action) => (
-                                <Button
+                                <NotificationActionScopeTooltip
                                     key={action.key}
-                                    type="button"
-                                    size="xs"
-                                    variant="ghost"
-                                    disabled={actionPending}
-                                    aria-label={`${action.label} · ${actorName || typeLabel}`}
-                                    onClick={action.onClick}
+                                    scope={action.scope}
                                 >
-                                    {action.label}
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        size="xs"
+                                        variant="ghost"
+                                        disabled={actionPending}
+                                        aria-label={`${action.label} · ${actorName || typeLabel}`}
+                                        onClick={action.onClick}
+                                    >
+                                        {action.label}
+                                    </Button>
+                                </NotificationActionScopeTooltip>
                             ))}
                         </div>
                     ) : null}
@@ -368,9 +377,12 @@ export function NotificationRow({
                                             }
                                         >
                                             <CheckCheckIcon data-icon="inline-start" />
-                                            {t(
-                                                'view.notification.action.mark_seen'
-                                            )}
+                                            <NotificationActionMenuText
+                                                label={t(
+                                                    'view.notification.action.mark_seen'
+                                                )}
+                                                scope="vrchat"
+                                            />
                                         </DropdownMenuItem>
                                     ) : null}
                                     {overflowActions.map((action) => (
@@ -379,7 +391,10 @@ export function NotificationRow({
                                             onClick={action.onClick}
                                         >
                                             <action.Icon data-icon="inline-start" />
-                                            {action.label}
+                                            <NotificationActionMenuText
+                                                label={action.label}
+                                                scope={action.scope}
+                                            />
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuGroup>
@@ -403,9 +418,12 @@ export function NotificationRow({
                                                 }
                                             >
                                                 <Trash2Icon data-icon="inline-start" />
-                                                {t(
-                                                    'view.notification.actions.delete_log'
-                                                )}
+                                                <NotificationActionMenuText
+                                                    label={t(
+                                                        'view.notification.actions.delete_log'
+                                                    )}
+                                                    scope="local"
+                                                />
                                             </DropdownMenuItem>
                                         </DropdownMenuGroup>
                                     </>

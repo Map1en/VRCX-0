@@ -1358,7 +1358,7 @@
             "view_more": "查看更多",
             "mark_all_read": "全部标记已读",
             "marking_all_read": "正在标记已读…",
-            "mark_read_failed": "未能标记已读",
+            "mark_read_failed": "未能同步到 VRChat",
             "mark_as_read": "标记已读",
             "more_actions": "更多操作",
             "join_now": "立即加入",
@@ -2089,9 +2089,9 @@
                 "accept": "接受",
                 "invite": "邀请",
                 "decline": "拒绝",
+                "ignore": "忽略",
                 "delete_log": "删除通知",
-                "decline_with_message": "拒绝并回复",
-                "ignore_locally": "仅本地忽略"
+                "decline_with_message": "拒绝并回复"
             },
             "filters": {
                 "requestInvite": "申请加入",
@@ -2171,14 +2171,18 @@
                 "search_emoji": "搜索表情符号",
                 "send": "发送"
             },
+            "action_scope": {
+                "vrchat": "在 VRChat 中执行",
+                "local": "仅修改 VRCX-0 本地数据"
+            },
             "success": {
                 "friend_request_accepted": "已接受好友请求",
                 "notification_declined": "已拒绝此通知",
+                "friend_request_ignored": "已忽略好友申请",
                 "invite_response_sent": "已发送拒绝回复",
                 "boop_sent": "已发送戳一戳",
                 "notification_response_sent": "已发送通知回应",
-                "notification_log_entry_deleted": "已删除通知日志条目",
-                "notification_ignored_locally": "已在本地忽略"
+                "notification_log_entry_deleted": "已删除通知日志条目"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "无法邀请：你当前不在房间中",
@@ -4207,21 +4211,24 @@
                 "failed_to_delete_notification": "删除通知失败",
                 "failed_to_accept_friend_request": "接受好友请求失败",
                 "failed_to_decline_notification": "拒绝通知失败",
-                "failed_to_ignore_notification": "忽略通知失败",
                 "failed_to_send_invite": "发送邀请失败",
                 "invite_response_photo_sent": "照片回复已发送",
                 "invite_response_sent": "回复已发送",
-                "failed_to_send_notification_response": "无法完成该操作"
+                "failed_to_send_notification_response": "无法完成该操作",
+                "marked_read_locally_only": "已在本机标为已读，但未能同步到 VRChat"
             },
             "modal": {
                 "delete_notification_log_entry": "删除这条通知？",
                 "delete_the_local_value_log_entry": "要删除本地 {value} 日志条目吗？",
                 "accept_friend_request": "接受好友请求",
                 "decline_notification": "拒绝通知",
+                "ignore_friend_request": "忽略好友申请",
                 "decline": "拒绝",
+                "ignore": "忽略",
                 "send_invite": "发送邀请",
                 "accept_friend_request_consequence": "对方会加入你的好友列表。",
                 "decline_notification_consequence": "该通知会在 VRChat 上被移除。",
+                "ignore_friend_request_consequence": "它会在 VRChat 上移到“忽略的好友申请”。",
                 "send_invite_consequence": "邀请会发往你当前所在的房间。"
             },
             "dynamic": {
@@ -7717,7 +7724,7 @@
         "vrc_notification_center": {
             "toast": {
                 "failed_to_mark_notifications_as_seen": "标记通知为已读失败",
-                "mark_all_seen_partially_failed": "部分通知未能标记已读",
+                "mark_all_seen_partially_failed": "已在本机全部标为已读，部分未能同步到 VRChat",
                 "failed_to_accept_friend_request": "接受好友请求失败",
                 "failed_to_decline_notification": "拒绝通知失败",
                 "failed_to_send_invite": "发送邀请失败",

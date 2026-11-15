@@ -308,39 +308,6 @@ pub fn notification_v2_mark_seen(
     Ok(())
 }
 
-pub fn notification_mark_seen(
-    db: &DatabaseService,
-    user_id: String,
-    id: String,
-    version: i64,
-) -> Result<(), Error> {
-    if version >= 2 {
-        notification_v2_mark_seen(db, user_id, id)
-    } else {
-        notification_v1_mark_seen(db, user_id, id)
-    }
-}
-
-fn notification_v1_mark_seen(
-    db: &DatabaseService,
-    user_id: String,
-    id: String,
-) -> Result<(), Error> {
-    let user_prefix = normalize_user_table_prefix(&user_id)?;
-    ensure_realtime_tables(db, &user_prefix)?;
-    let id = normalize_text(id);
-    if id.is_empty() {
-        return Ok(());
-    }
-    let table = format!("{user_prefix}_notifications");
-    let sql = update_by_key_sql(&table, &["seen"], "id");
-    db.execute_non_query(
-        &sql,
-        &ParamsBuilder::new().set("id", id).set("seen", 1).build(),
-    )?;
-    Ok(())
-}
-
 pub fn notification_update_expired(
     db: &DatabaseService,
     user_id: String,
@@ -422,29 +389,41 @@ pub fn notification_expire(db: &DatabaseService, user_id: String, id: String) ->
     Ok(())
 }
 
-pub fn notification_mark_seen_local_bulk(
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NotificationRead {
+    pub id: String,
+    pub version: i64,
+    pub expire: bool,
+}
+
+pub fn notification_mark_read_bulk(
     db: &DatabaseService,
     user_id: String,
-    ids: Vec<String>,
+    reads: Vec<NotificationRead>,
 ) -> Result<(), Error> {
     let user_prefix = normalize_user_table_prefix(&user_id)?;
     ensure_realtime_tables(db, &user_prefix)?;
-    let ids: Vec<String> = ids
-        .into_iter()
-        .map(normalize_text)
-        .filter(|value| !value.is_empty())
-        .collect();
-    let table = format!("{user_prefix}_notifications_v2");
-    let sql = update_by_key_sql(&table, &["seen"], "id");
+    let v1_table = format!("{user_prefix}_notifications");
+    let v2_table = format!("{user_prefix}_notifications_v2");
+    let v1_seen_sql = update_by_key_sql(&v1_table, &["seen"], "id");
+    let v1_expire_sql = update_by_key_sql(&v1_table, &["expired", "seen"], "id");
+    let v2_seen_sql = update_by_key_sql(&v2_table, &["seen"], "id");
+    let v2_expire_sql = update_by_key_sql(&v2_table, &["expires_at", "seen"], "id");
+    let now = now_iso();
     db.write_transaction(|tx| {
-        for id in &ids {
-            tx.execute_non_query(
-                &sql,
-                &ParamsBuilder::new()
-                    .set("id", id.clone())
-                    .set("seen", 1)
-                    .build(),
-            )?;
+        for read in &reads {
+            let id = normalize_text(&read.id);
+            if id.is_empty() {
+                continue;
+            }
+            let params = ParamsBuilder::new().set("id", id).set("seen", 1);
+            let (sql, params) = match (read.version >= 2, read.expire) {
+                (false, false) => (&v1_seen_sql, params),
+                (false, true) => (&v1_expire_sql, params.set("expired", 1)),
+                (true, false) => (&v2_seen_sql, params),
+                (true, true) => (&v2_expire_sql, params.set("expires_at", now.clone())),
+            };
+            tx.execute_non_query(sql, &params.build())?;
         }
         Ok(())
     })?;

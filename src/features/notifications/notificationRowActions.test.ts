@@ -16,7 +16,6 @@ function createHandlers(): NotificationRowActionHandlers {
         onAcceptFriendRequest: vi.fn(),
         onAcceptRequestInvite: vi.fn(),
         onHideNotification: vi.fn(),
-        onIgnoreNotificationLocally: vi.fn(),
         onMarkSeen: vi.fn(),
         onSendInviteResponseWithMessage: vi.fn(),
         onSendNotificationResponse: vi.fn()
@@ -37,7 +36,7 @@ function buildActions(
 }
 
 describe('buildOrderedActions', () => {
-    it('adds mark seen as the third action for an unseen friend request', () => {
+    it('labels the friend request hide as ignore and keeps mark seen beside it', () => {
         const handlers = createHandlers();
         const notification: NotificationRow = {
             id: 'notif_friend_request',
@@ -51,14 +50,17 @@ describe('buildOrderedActions', () => {
 
         expect(actions.map((action) => action.key)).toEqual([
             'accept',
-            'decline',
+            'ignore',
             'mark-seen'
         ]);
+        expect(actions[1]?.label).toBe('view.notification.actions.ignore');
+        actions[1]?.onClick();
+        expect(handlers.onHideNotification).toHaveBeenCalledWith(notification);
         actions[2]?.onClick();
         expect(handlers.onMarkSeen).toHaveBeenCalledWith(notification);
     });
 
-    it('offers a local ignore after the remote decline for an invite', () => {
+    it('offers mark seen after the remote decline for an invite', () => {
         const handlers = createHandlers();
         const notification: NotificationRow = {
             id: 'notif_invite',
@@ -72,13 +74,49 @@ describe('buildOrderedActions', () => {
         expect(actions.map((action) => action.key)).toEqual([
             'decline-with-message',
             'decline',
-            'ignore-locally'
+            'mark-seen'
         ]);
         actions[2]?.onClick();
-        expect(handlers.onIgnoreNotificationLocally).toHaveBeenCalledWith(
-            notification
-        );
+        expect(handlers.onMarkSeen).toHaveBeenCalledWith(notification);
         expect(handlers.onHideNotification).not.toHaveBeenCalled();
+    });
+
+    it('offers mark seen next to the reply for an unseen boop', () => {
+        const actions = buildActions(
+            {
+                id: 'notif_boop',
+                type: 'boop',
+                version: 2,
+                seen: false,
+                senderUserId: 'usr_sender',
+                responses: []
+            },
+            createHandlers()
+        );
+
+        expect(actions.map((action) => action.key)).toEqual([
+            'reply-boop',
+            'mark-seen'
+        ]);
+    });
+
+    it('marks every action as a VRChat operation', () => {
+        const actions = buildActions(
+            {
+                id: 'notif_friend_request',
+                type: 'friendRequest',
+                version: 1,
+                senderUserId: 'usr_sender',
+                seen: false
+            },
+            createHandlers()
+        );
+
+        expect(actions.map((action) => action.scope)).toEqual([
+            'vrchat',
+            'vrchat',
+            'vrchat'
+        ]);
     });
 
     it('adds a manual reply response for a received boop', () => {

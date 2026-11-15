@@ -1354,7 +1354,7 @@
             "view_more": "さらに表示",
             "mark_all_read": "すべて既読にする",
             "marking_all_read": "既読にしています…",
-            "mark_read_failed": "既読にできませんでした",
+            "mark_read_failed": "VRChat に同期できませんでした",
             "mark_as_read": "既読にする",
             "more_actions": "その他の操作",
             "join_now": "今すぐ参加",
@@ -2085,9 +2085,9 @@
                 "accept": "受け入れる",
                 "invite": "招待する",
                 "decline": "断る",
+                "ignore": "無視",
                 "delete_log": "通知を削除",
-                "decline_with_message": "メッセージを添えて断る",
-                "ignore_locally": "ローカルで無視"
+                "decline_with_message": "メッセージを添えて断る"
             },
             "filters": {
                 "requestInvite": "招待リクエスト",
@@ -2167,14 +2167,18 @@
                 "search_emoji": "絵文字を検索",
                 "send": "送信"
             },
+            "action_scope": {
+                "vrchat": "VRChat 上で実行",
+                "local": "VRCX-0 のローカルデータだけを変更"
+            },
             "success": {
                 "friend_request_accepted": "フレンドリクエストを承認しました",
                 "notification_declined": "断りました",
+                "friend_request_ignored": "フレンドリクエストを無視しました",
                 "invite_response_sent": "返信を送信しました",
                 "boop_sent": "つっつきを送信しました",
                 "notification_response_sent": "返信しました",
-                "notification_log_entry_deleted": "通知を履歴から削除しました",
-                "notification_ignored_locally": "ローカルで無視しました"
+                "notification_log_entry_deleted": "通知を履歴から削除しました"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "招待できません: 現在インスタンスにいません",
@@ -4203,21 +4207,24 @@
                 "failed_to_delete_notification": "通知の削除に失敗しました",
                 "failed_to_accept_friend_request": "フレンドリクエストの承認に失敗しました",
                 "failed_to_decline_notification": "通知を断れませんでした",
-                "failed_to_ignore_notification": "通知を無視できませんでした",
                 "failed_to_send_invite": "招待の送信に失敗しました",
                 "invite_response_photo_sent": "写真付きの返信を送信しました",
                 "invite_response_sent": "返信を送信しました",
-                "failed_to_send_notification_response": "操作を完了できませんでした"
+                "failed_to_send_notification_response": "操作を完了できませんでした",
+                "marked_read_locally_only": "このアプリでは既読にしましたが、VRChat に同期できませんでした"
             },
             "modal": {
                 "delete_notification_log_entry": "通知を削除しますか？",
                 "delete_the_local_value_log_entry": "この {value} 通知を履歴から削除しますか？",
                 "accept_friend_request": "フレンドリクエストを承認",
                 "decline_notification": "通知を断る",
+                "ignore_friend_request": "フレンドリクエストを無視",
                 "decline": "断る",
+                "ignore": "無視",
                 "send_invite": "招待を送信",
                 "accept_friend_request_consequence": "相手がフレンドリストに追加されます。",
                 "decline_notification_consequence": "この通知は VRChat 上から削除されます。",
+                "ignore_friend_request_consequence": "VRChat の「無視したフレンドリクエスト」に移動します。",
                 "send_invite_consequence": "招待は今いるインスタンスに送られます。"
             },
             "dynamic": {
@@ -7690,7 +7697,7 @@
         "vrc_notification_center": {
             "toast": {
                 "failed_to_mark_notifications_as_seen": "通知を既読にできませんでした",
-                "mark_all_seen_partially_failed": "一部の通知を既読にできませんでした",
+                "mark_all_seen_partially_failed": "すべて既読にしましたが、一部は VRChat に同期できませんでした",
                 "failed_to_accept_friend_request": "フレンドリクエストの承認に失敗しました",
                 "failed_to_decline_notification": "通知を断れませんでした",
                 "failed_to_send_invite": "招待の送信に失敗しました",

@@ -76,7 +76,6 @@ export function useVrcNotificationPageController() {
             onAcceptRequestInvite: actions.acceptRequestInvite,
             onDeleteNotification: actions.deleteNotification,
             onHideNotification: actions.hideNotification,
-            onIgnoreNotificationLocally: actions.ignoreNotificationLocally,
             onMarkSeen: actions.markSeen,
             onOpenImagePreview: actions.openNotificationImagePreview,
             onOpenLink: actions.openNotificationLink,

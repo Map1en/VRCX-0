@@ -1375,7 +1375,7 @@
             "view_more": "Посмотрите больше",
             "mark_all_read": "Отметить всё как прочитанное",
             "marking_all_read": "Отмечаем как прочитанные…",
-            "mark_read_failed": "Не удалось отметить как прочитанное",
+            "mark_read_failed": "Не синхронизировано с VRChat",
             "mark_as_read": "Отметить как прочитанное",
             "more_actions": "Дополнительные действия",
             "join_now": "Присоединяйтесь.",
@@ -2119,9 +2119,9 @@
                 "accept": "Принять",
                 "invite": "Приглашение",
                 "decline": "Отклонить",
+                "ignore": "Игнорировать",
                 "delete_log": "Удалить уведомление",
-                "decline_with_message": "Отклонить с сообщением",
-                "ignore_locally": "Игнорировать локально"
+                "decline_with_message": "Отклонить с сообщением"
             },
             "filters": {
                 "requestInvite": "Запрос на приглашение",
@@ -2201,14 +2201,18 @@
                 "search_emoji": "Поиск эмоджи",
                 "send": "Отправить"
             },
+            "action_scope": {
+                "vrchat": "Выполняется в VRChat",
+                "local": "Меняет только локальные данные VRCX-0"
+            },
             "success": {
                 "friend_request_accepted": "Запрос друга принят",
                 "notification_declined": "Отказ в уведомлении",
+                "friend_request_ignored": "Запрос в друзья проигнорирован",
                 "invite_response_sent": "Ответ отправлен",
                 "boop_sent": "Буп отправлен",
                 "notification_response_sent": "Готово",
-                "notification_log_entry_deleted": "Уведомление удалено из истории",
-                "notification_ignored_locally": "Проигнорировано локально"
+                "notification_log_entry_deleted": "Уведомление удалено из истории"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "Невозможно пригласить: нет доступного текущего местоположения VRChat",
@@ -4240,21 +4244,24 @@
                 "failed_to_delete_notification": "Не удалось удалить уведомление",
                 "failed_to_accept_friend_request": "Не удалось принять заявку в друзья",
                 "failed_to_decline_notification": "Не удалось отклонить уведомление",
-                "failed_to_ignore_notification": "Не удалось проигнорировать уведомление",
                 "failed_to_send_invite": "Не удалось отправить приглашение",
                 "invite_response_photo_sent": "Ответ с фотографией отправлен",
                 "invite_response_sent": "Ответ отправлен",
-                "failed_to_send_notification_response": "Не удалось выполнить это действие"
+                "failed_to_send_notification_response": "Не удалось выполнить это действие",
+                "marked_read_locally_only": "Отмечено как прочитанное здесь, но не удалось синхронизировать с VRChat"
             },
             "modal": {
                 "delete_notification_log_entry": "Удалить уведомление?",
                 "delete_the_local_value_log_entry": "Удалить уведомление «{value}» из истории?",
                 "accept_friend_request": "Примите просьбу друга",
                 "decline_notification": "Отклонить уведомление",
+                "ignore_friend_request": "Игнорировать запрос в друзья",
                 "decline": "Отклонить",
+                "ignore": "Игнорировать",
                 "send_invite": "Отправить приглашение",
                 "accept_friend_request_consequence": "Пользователь будет добавлен в ваш список друзей.",
                 "decline_notification_consequence": "Уведомление будет удалено в VRChat.",
+                "ignore_friend_request_consequence": "Он переместится в проигнорированные запросы в друзья в VRChat.",
                 "send_invite_consequence": "Приглашение будет отправлено в инстанс, где вы сейчас находитесь."
             },
             "dynamic": {
@@ -7678,7 +7685,7 @@
         "vrc_notification_center": {
             "toast": {
                 "failed_to_mark_notifications_as_seen": "Не удалось отметить уведомления как просмотренные",
-                "mark_all_seen_partially_failed": "Не удалось отметить некоторые уведомления как прочитанные",
+                "mark_all_seen_partially_failed": "Всё отмечено как прочитанное, но часть не удалось синхронизировать с VRChat",
                 "failed_to_accept_friend_request": "Не удалось принять заявку в друзья",
                 "failed_to_decline_notification": "Не удалось отклонить уведомление",
                 "failed_to_send_invite": "Не удалось отправить приглашение",

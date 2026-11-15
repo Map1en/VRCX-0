@@ -1295,7 +1295,7 @@
             "view_more": "더 많이 보기",
             "mark_all_read": "모두 읽음으로 표시",
             "marking_all_read": "읽음으로 표시하는 중…",
-            "mark_read_failed": "읽음으로 표시하지 못했습니다",
+            "mark_read_failed": "VRChat에 동기화하지 못함",
             "mark_as_read": "읽음으로 표시",
             "more_actions": "추가 작업",
             "join_now": "지금 참가",
@@ -2026,9 +2026,9 @@
                 "accept": "수락",
                 "invite": "초대",
                 "decline": "거절",
+                "ignore": "무시",
                 "delete_log": "알림 삭제",
-                "decline_with_message": "메시지로 거절",
-                "ignore_locally": "로컬에서만 무시"
+                "decline_with_message": "메시지로 거절"
             },
             "filters": {
                 "requestInvite": "참가 요청",
@@ -2108,14 +2108,18 @@
                 "search_emoji": "이모지 검색",
                 "send": "보내기"
             },
+            "action_scope": {
+                "vrchat": "VRChat에서 실행",
+                "local": "VRCX-0 로컬 데이터만 변경"
+            },
             "success": {
                 "friend_request_accepted": "친구 요청이 수락되었습니다.",
                 "notification_declined": "거절했습니다.",
+                "friend_request_ignored": "친구 요청을 무시했습니다",
                 "invite_response_sent": "답장을 보냈습니다.",
                 "boop_sent": "콕찌르기를 보냈습니다",
                 "notification_response_sent": "응답을 보냈습니다.",
-                "notification_log_entry_deleted": "알림을 기록에서 삭제했습니다.",
-                "notification_ignored_locally": "로컬에서 무시했습니다."
+                "notification_log_entry_deleted": "알림을 기록에서 삭제했습니다."
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 지금 인스턴스에 있지 않습니다.",
@@ -4144,21 +4148,24 @@
                 "failed_to_delete_notification": "알림을 삭제하지 못했습니다.",
                 "failed_to_accept_friend_request": "친구 요청을 수락하지 못했습니다.",
                 "failed_to_decline_notification": "알림을 거절하지 못했습니다.",
-                "failed_to_ignore_notification": "알림을 무시하지 못했습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",
                 "invite_response_photo_sent": "사진으로 답장했습니다.",
                 "invite_response_sent": "답장을 보냈습니다.",
-                "failed_to_send_notification_response": "작업을 완료하지 못했습니다."
+                "failed_to_send_notification_response": "작업을 완료하지 못했습니다.",
+                "marked_read_locally_only": "여기서는 읽음으로 표시했지만 VRChat에 동기화하지 못했습니다"
             },
             "modal": {
                 "delete_notification_log_entry": "알림을 삭제할까요?",
                 "delete_the_local_value_log_entry": "이 {value} 알림을 기록에서 삭제할까요?",
                 "accept_friend_request": "친구 요청 수락",
                 "decline_notification": "알림 거절",
+                "ignore_friend_request": "친구 요청 무시",
                 "decline": "거절",
+                "ignore": "무시",
                 "send_invite": "초대장 보내기",
                 "accept_friend_request_consequence": "상대가 친구 목록에 추가됩니다.",
                 "decline_notification_consequence": "이 알림은 VRChat에서 삭제됩니다.",
+                "ignore_friend_request_consequence": "VRChat에서 무시된 친구 요청으로 이동합니다.",
                 "send_invite_consequence": "초대는 지금 있는 인스턴스로 보내집니다."
             },
             "dynamic": {
@@ -7632,7 +7639,7 @@
         "vrc_notification_center": {
             "toast": {
                 "failed_to_mark_notifications_as_seen": "알림을 읽음으로 표시하지 못했습니다.",
-                "mark_all_seen_partially_failed": "일부 알림을 읽음으로 표시하지 못했습니다",
+                "mark_all_seen_partially_failed": "모두 읽음으로 표시했지만 일부는 VRChat에 동기화하지 못했습니다",
                 "failed_to_accept_friend_request": "친구 요청을 수락하지 못했습니다.",
                 "failed_to_decline_notification": "알림을 거절하지 못했습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",

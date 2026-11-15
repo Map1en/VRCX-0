@@ -1361,7 +1361,7 @@
             "view_more": "View More",
             "mark_all_read": "Mark all read",
             "marking_all_read": "Marking as read…",
-            "mark_read_failed": "Couldn't mark as read",
+            "mark_read_failed": "Couldn't sync to VRChat",
             "mark_as_read": "Mark as read",
             "more_actions": "More actions",
             "join_now": "Join now",
@@ -2098,9 +2098,9 @@
                 "accept": "Accept",
                 "invite": "Invite",
                 "decline": "Decline",
+                "ignore": "Ignore",
                 "delete_log": "Delete notification",
-                "decline_with_message": "Decline with message",
-                "ignore_locally": "Ignore locally"
+                "decline_with_message": "Decline with message"
             },
             "filters": {
                 "requestInvite": "Request Invite",
@@ -2180,14 +2180,18 @@
                 "search_emoji": "Search emoji",
                 "send": "Send"
             },
+            "action_scope": {
+                "vrchat": "Runs on VRChat",
+                "local": "Only changes VRCX-0's local data"
+            },
             "success": {
                 "friend_request_accepted": "Friend request accepted",
                 "notification_declined": "Declined",
+                "friend_request_ignored": "Friend request ignored",
                 "invite_response_sent": "Reply sent",
                 "boop_sent": "Boop sent",
                 "notification_response_sent": "Response sent",
-                "notification_log_entry_deleted": "Notification removed from history",
-                "notification_ignored_locally": "Ignored locally"
+                "notification_log_entry_deleted": "Notification removed from history"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "Cannot invite: you're not in an instance right now",
@@ -4218,21 +4222,24 @@
                 "failed_to_delete_notification": "Failed to delete notification",
                 "failed_to_accept_friend_request": "Failed to accept friend request",
                 "failed_to_decline_notification": "Failed to decline notification",
-                "failed_to_ignore_notification": "Failed to ignore notification",
                 "failed_to_send_invite": "Failed to send invite",
                 "invite_response_photo_sent": "Photo reply sent",
                 "invite_response_sent": "Reply sent",
-                "failed_to_send_notification_response": "Couldn't complete that action"
+                "failed_to_send_notification_response": "Couldn't complete that action",
+                "marked_read_locally_only": "Marked as read here, but couldn't sync to VRChat"
             },
             "modal": {
                 "delete_notification_log_entry": "Remove notification?",
                 "delete_the_local_value_log_entry": "Remove this {value} notification from history?",
                 "accept_friend_request": "Accept friend request",
                 "decline_notification": "Decline notification",
+                "ignore_friend_request": "Ignore friend request",
                 "decline": "Decline",
+                "ignore": "Ignore",
                 "send_invite": "Send invite",
                 "accept_friend_request_consequence": "They will be added to your friends list.",
                 "decline_notification_consequence": "The notification will be removed on VRChat.",
+                "ignore_friend_request_consequence": "It will move to Ignored Friend Requests on VRChat.",
                 "send_invite_consequence": "The invite goes to the instance you are in now."
             },
             "dynamic": {
@@ -7733,7 +7740,7 @@
         "vrc_notification_center": {
             "toast": {
                 "failed_to_mark_notifications_as_seen": "Failed to mark notifications as seen",
-                "mark_all_seen_partially_failed": "Some notifications couldn't be marked as read",
+                "mark_all_seen_partially_failed": "All marked as read here, but some couldn't sync to VRChat",
                 "failed_to_accept_friend_request": "Failed to accept friend request",
                 "failed_to_decline_notification": "Failed to decline notification",
                 "failed_to_send_invite": "Failed to send invite",

@@ -7,7 +7,6 @@ import {
     CheckCheckIcon,
     CheckIcon,
     ExternalLinkIcon,
-    EyeOffIcon,
     GlobeIcon,
     LinkIcon,
     MessageCircleIcon,
@@ -27,7 +26,7 @@ import type {
     NotificationRow
 } from '@/repositories/notificationPersistenceRepository';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
-import { canIgnoreNotificationLocally } from '@/shared/utils/notificationLifecycle';
+import { isInviteNotificationType } from '@/shared/utils/notificationLifecycle';
 import { isUnseenNotification } from '@/shared/utils/notificationSeen';
 
 import {
@@ -48,20 +47,29 @@ const PERSON_TYPES = new Set<string>([
     'message'
 ]);
 
+export type NotificationActionScope = 'vrchat' | 'local';
+
 export type NotificationRowAction = {
     Icon: LucideIcon;
     key: string;
     label: string;
+    scope: NotificationActionScope;
     onClick: () => void;
 };
+
+export function getNotificationActionScopeLabel(
+    scope: NotificationActionScope,
+    t: TFunction
+): string {
+    return scope === 'local'
+        ? t('view.notification.action_scope.local')
+        : t('view.notification.action_scope.vrchat');
+}
 
 export type NotificationRowActionHandlers = {
     onAcceptFriendRequest(notification: NotificationRow): void | Promise<void>;
     onAcceptRequestInvite(notification: NotificationRow): void | Promise<void>;
     onHideNotification(notification: NotificationRow): void | Promise<void>;
-    onIgnoreNotificationLocally(
-        notification: NotificationRow
-    ): void | Promise<void>;
     onMarkSeen(notification: NotificationRow): void | Promise<void>;
     onSendInviteResponseWithMessage(
         notification: NotificationRow,
@@ -181,6 +189,7 @@ export function buildOrderedActions({
             key: 'accept',
             label: t('view.notification.actions.accept'),
             Icon: CheckIcon,
+            scope: 'vrchat',
             onClick: () => handlers.onAcceptFriendRequest(notification)
         });
     }
@@ -189,6 +198,7 @@ export function buildOrderedActions({
             key: 'invite',
             label: t('view.notification.actions.invite'),
             Icon: SendIcon,
+            scope: 'vrchat',
             onClick: () => handlers.onAcceptRequestInvite(notification)
         });
     }
@@ -197,6 +207,7 @@ export function buildOrderedActions({
             key: 'decline-with-message',
             label: t('view.notification.actions.decline_with_message'),
             Icon: MessageCircleIcon,
+            scope: 'vrchat',
             onClick: () =>
                 handlers.onSendInviteResponseWithMessage(
                     notification,
@@ -209,6 +220,7 @@ export function buildOrderedActions({
             key: 'decline-with-message-request',
             label: t('view.notification.actions.decline_with_message'),
             Icon: MessageCircleIcon,
+            scope: 'vrchat',
             onClick: () =>
                 handlers.onSendInviteResponseWithMessage(
                     notification,
@@ -221,6 +233,7 @@ export function buildOrderedActions({
             key: 'reply-boop',
             label: t('view.notification.action.send_boop'),
             Icon: ReplyIcon,
+            scope: 'vrchat',
             onClick: () =>
                 handlers.onSendNotificationResponse(
                     notification,
@@ -233,31 +246,33 @@ export function buildOrderedActions({
             key: `response:${response?.type}:${response?.text || response?.data || ''}`,
             label: getResponseLabel(response, t),
             Icon: getResponseIcon(response, type),
+            scope: 'vrchat',
             onClick: () =>
                 handlers.onSendNotificationResponse(notification, response)
         });
     }
     if (canDeclineNotification(notification)) {
+        const isFriendRequest = type === 'friendRequest';
         actions.push({
-            key: 'decline',
-            label: t('view.notification.actions.decline'),
-            Icon: XIcon,
+            key: isFriendRequest ? 'ignore' : 'decline',
+            label: isFriendRequest
+                ? t('view.notification.actions.ignore')
+                : t('view.notification.actions.decline'),
+            Icon: isFriendRequest ? BellOffIcon : XIcon,
+            scope: 'vrchat',
             onClick: () => handlers.onHideNotification(notification)
         });
     }
-    if (canIgnoreNotificationLocally(type)) {
-        actions.push({
-            key: 'ignore-locally',
-            label: t('view.notification.actions.ignore_locally'),
-            Icon: EyeOffIcon,
-            onClick: () => handlers.onIgnoreNotificationLocally(notification)
-        });
-    }
-    if (type === 'friendRequest' && isUnseenNotification(notification)) {
+    if (
+        isInviteNotificationType(type) ||
+        ((type === 'friendRequest' || type === 'boop') &&
+            isUnseenNotification(notification))
+    ) {
         actions.push({
             key: 'mark-seen',
             label: t('view.notification.action.mark_seen'),
             Icon: CheckCheckIcon,
+            scope: 'vrchat',
             onClick: () => handlers.onMarkSeen(notification)
         });
     }

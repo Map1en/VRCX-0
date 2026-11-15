@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import {
     commands,
     type NotificationMarkSeenBatchItem,
+    type NotificationMarkSeenEffect,
     type NotificationMarkSeenItemResult
 } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
@@ -10,27 +11,23 @@ import type {
     NotificationResponse,
     NotificationRow
 } from '@/repositories/notificationPersistenceRepository';
-import {
-    expireNotificationLocally,
-    sendNotificationButtonResponse
-} from '@/services/notificationActionService';
+import { sendNotificationButtonResponse } from '@/services/notificationActionService';
 import {
     getNotificationCategory,
     getNotificationTs
 } from '@/shared/utils/notificationCategory';
-import { canIgnoreNotificationLocally } from '@/shared/utils/notificationLifecycle';
+import { isInviteNotificationType } from '@/shared/utils/notificationLifecycle';
 import { getDismissResponse } from '@/shared/utils/notificationResponse';
 import {
     isNotificationExpired,
     isUnseenNotification,
-    RECENT_WINDOW_MS,
-    shouldMarkSeenRemotely
+    RECENT_WINDOW_MS
 } from '@/shared/utils/notificationSeen';
 import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
-const pendingSeenIds = new Set<string>();
+const pendingReadEffects = new Map<string, NotificationMarkSeenEffect>();
 let notificationScopeGeneration = 0;
 let notificationRowsRevision = 0;
 
@@ -132,6 +129,10 @@ export type MarkAllSeenRowState = 'queued' | 'active' | 'failed' | null;
 export type MarkAllSeenResult = {
     failedCount: number;
 };
+export type MarkNotificationReadResult = {
+    remoteFailed: boolean;
+    message: string;
+};
 type VrcNotificationStore = {
     rows: NotificationRow[];
     categories: NotificationCategories;
@@ -150,7 +151,9 @@ type VrcNotificationStore = {
     patchNotification(id: string, fields: NotificationPatch): void;
     expireNotifications(ids: string | string[]): void;
     markNotificationsSeen(ids: string | string[]): void;
-    markNotificationSeen(notification?: NotificationRow | null): Promise<void>;
+    markNotificationRead(
+        notification?: NotificationRow | null
+    ): Promise<MarkNotificationReadResult>;
     markAllSeen(): Promise<MarkAllSeenResult>;
     resetVrcNotificationState(): void;
 };
@@ -287,64 +290,126 @@ function isCurrentNotificationScope(
     );
 }
 
-function getUnseenRows(rows: NotificationRow[]): NotificationRow[] {
-    return rows.filter(isUnseenNotification);
-}
-
 function isPendingInvite(notification: NotificationRow): boolean {
     return (
-        canIgnoreNotificationLocally(notification.type) &&
+        isInviteNotificationType(notification.type) &&
         !isNotificationExpired(notification)
     );
+}
+
+function canMarkNotificationRead(notification: NotificationRow): boolean {
+    return isUnseenNotification(notification) || isPendingInvite(notification);
 }
 
 function notificationMarkSeenBatchItem(
     notification: NotificationRow
 ): NotificationMarkSeenBatchItem | null {
     const id = normalizeNotificationId(notification.id);
-    const version = Number(notification.version) || 1;
-    const remote = shouldMarkSeenRemotely(notification);
-    if (!id || (!remote && version !== 2)) {
+    if (!id) {
         return null;
     }
     return {
         id,
-        version,
-        location: remote ? 'remote' : 'local'
+        version: Number(notification.version) || 1,
+        type: String(notification.type || '')
     };
 }
 
-function applyMarkSeenResults(
-    rows: NotificationRow[],
-    results: NotificationMarkSeenItemResult[]
-): NotificationRow[] {
-    const seenIds = new Set(
-        results.flatMap((result) =>
-            result.state === 'succeeded' && result.effect === 'seen'
-                ? [result.id]
-                : []
-        )
-    );
-    if (!seenIds.size) {
-        return rows;
-    }
-    return rows.map((row) =>
-        row.id && seenIds.has(row.id) ? { ...row, seen: true } : row
-    );
+function optimisticReadEffect(
+    notification: NotificationRow
+): NotificationMarkSeenEffect {
+    return isPendingInvite(notification) && Number(notification.version) !== 2
+        ? 'expired'
+        : 'seen';
 }
 
-function applyPendingSeenRows(rows: NotificationRow[]): NotificationRow[] {
-    if (!pendingSeenIds.size) {
+function applyReadEffects(
+    rows: NotificationRow[],
+    effects: ReadonlyMap<string, NotificationMarkSeenEffect>
+): NotificationRow[] {
+    if (!effects.size) {
         return rows;
     }
-    return rows.map((row) =>
-        row.id && pendingSeenIds.has(row.id)
-            ? {
-                  ...row,
-                  seen: true
-              }
-            : row
-    );
+    const expiresAt = new Date().toISOString();
+    return rows.map((row) => {
+        const effect = row.id ? effects.get(row.id) : undefined;
+        if (effect === 'expired') {
+            return { ...row, expiresAt, expired: true, seen: true };
+        }
+        return effect === 'seen' ? { ...row, seen: true } : row;
+    });
+}
+
+function readResultEffects(
+    results: NotificationMarkSeenItemResult[]
+): Map<string, NotificationMarkSeenEffect> {
+    return new Map(results.map((result) => [result.id, result.effect]));
+}
+
+function toMarkReadBatch(rows: NotificationRow[]) {
+    const items: NotificationMarkSeenBatchItem[] = [];
+    const effects = new Map<string, NotificationMarkSeenEffect>();
+    for (const notification of rows) {
+        const item = notificationMarkSeenBatchItem(notification);
+        if (item) {
+            items.push(item);
+            effects.set(item.id, optimisticReadEffect(notification));
+        }
+    }
+    return { items, effects };
+}
+
+function applyReadEffectsToStore(
+    effects: ReadonlyMap<string, NotificationMarkSeenEffect>
+) {
+    const idSet = new Set(effects.keys());
+    useVrcNotificationStore.setState((state) => ({
+        ...createNotificationStateFromSortedRows(
+            applyReadEffects(state.rows, effects),
+            state.detail
+        ),
+        markAllSeenFailedIds: withoutFailedIds(
+            state.markAllSeenFailedIds,
+            idSet
+        )
+    }));
+    notificationRowsRevision += 1;
+    syncShellUnseenCount(useVrcNotificationStore.getState().unseenCount);
+}
+
+async function runMarkReadBatch(
+    scope: NotificationOperationScope,
+    items: NotificationMarkSeenBatchItem[],
+    effects: ReadonlyMap<string, NotificationMarkSeenEffect>
+) {
+    for (const [id, effect] of effects) {
+        pendingReadEffects.set(id, effect);
+    }
+    applyReadEffectsToStore(effects);
+    let result: Awaited<
+        ReturnType<typeof commands.appNotificationMarkSeenBatch>
+    >;
+    try {
+        result = await commands.appNotificationMarkSeenBatch({ items });
+    } catch (error) {
+        for (const id of effects.keys()) {
+            pendingReadEffects.delete(id);
+        }
+        if (isCurrentNotificationScope(scope)) {
+            await useVrcNotificationStore
+                .getState()
+                .loadForCurrentUser()
+                .catch(() => {});
+        }
+        throw error;
+    }
+    for (const id of effects.keys()) {
+        pendingReadEffects.delete(id);
+    }
+    if (isCurrentNotificationScope(scope)) {
+        applyReadEffectsToStore(readResultEffects(result.items));
+    }
+    return result;
 }
 
 function syncShellUnseenCount(unseenCount: number, force = false) {
@@ -422,10 +487,11 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             set({ loadStatus: 'running', detail: '' });
             const rowsRevision = notificationRowsRevision;
             try {
-                let rows = applyPendingSeenRows(
+                let rows = applyReadEffects(
                     await notificationPersistenceRepository.queryNotifications({
                         userId: scope.currentUserId
-                    })
+                    }),
+                    pendingReadEffects
                 );
                 if (!isCurrentNotificationScope(scope)) {
                     return rows;
@@ -630,66 +696,46 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             notificationRowsRevision += 1;
             syncShellUnseenCount(get().unseenCount);
         },
-        async markNotificationSeen(notification?: NotificationRow | null) {
-            const auth = getCurrentAuth();
+        async markNotificationRead(notification?: NotificationRow | null) {
+            const scope = captureNotificationScope();
             const item = notification
                 ? notificationMarkSeenBatchItem(notification)
                 : null;
             if (
-                !auth.currentUserId ||
+                !scope ||
+                !notification ||
                 !item ||
-                !isUnseenNotification(notification)
+                !canMarkNotificationRead(notification)
             ) {
-                return;
+                return { remoteFailed: false, message: '' };
             }
-            pendingSeenIds.add(item.id);
-            get().markNotificationsSeen(item.id);
-            let failedCount = 0;
-            let failureMessage = '';
-            try {
-                const result = await commands.appNotificationMarkSeenBatch({
-                    items: [item]
-                });
-                failedCount = result.failed;
-                failureMessage = result.lastError || '';
-                for (const resultItem of result.items) {
-                    pendingSeenIds.delete(resultItem.id);
-                }
-                set((state) =>
-                    createNotificationStateFromSortedRows(
-                        applyMarkSeenResults(state.rows, result.items),
-                        state.detail
-                    )
-                );
-                notificationRowsRevision += 1;
-                syncShellUnseenCount(get().unseenCount);
-                if (failedCount > 0) {
-                    await get().loadForCurrentUser();
-                }
-            } catch (error) {
-                pendingSeenIds.delete(item.id);
-                await get()
-                    .loadForCurrentUser()
-                    .catch(() => {});
-                throw error;
-            } finally {
-                pendingSeenIds.delete(item.id);
+            const effects = new Map([
+                [item.id, optimisticReadEffect(notification)]
+            ]);
+            const result = await runMarkReadBatch(scope, [item], effects);
+            const failed = result.items.find(
+                (resultItem) => resultItem.state === 'remoteFailed'
+            );
+            if (failed && isCurrentNotificationScope(scope)) {
+                set((state) => ({
+                    markAllSeenFailedIds: [
+                        ...withoutFailedIds(
+                            state.markAllSeenFailedIds,
+                            new Set([failed.id])
+                        ),
+                        failed.id
+                    ]
+                }));
             }
-            if (failedCount > 0) {
-                throw new Error(
-                    failureMessage || 'Failed to mark the notification as seen.'
-                );
-            }
+            return {
+                remoteFailed: Boolean(failed),
+                message: failed?.message || ''
+            };
         },
         async markAllSeen() {
             const scope = captureNotificationScope();
-            const unseenRows = getUnseenRows(get().rows);
-            const pendingInvites = get().rows.filter(isPendingInvite);
-            if (
-                !scope ||
-                get().markAllSeenProgress ||
-                (!unseenRows.length && !pendingInvites.length)
-            ) {
+            const readableRows = get().rows.filter(canMarkNotificationRead);
+            if (!scope || get().markAllSeenProgress || !readableRows.length) {
                 return { failedCount: 0 };
             }
 
@@ -697,27 +743,22 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 notification: NotificationRow;
                 response: NotificationResponse;
             }[] = [];
-            const seenRows: NotificationRow[] = [];
-            for (const notification of unseenRows) {
-                const response = getDismissResponse(notification.responses);
+            const readRows: NotificationRow[] = [];
+            for (const notification of readableRows) {
+                const response = isUnseenNotification(notification)
+                    ? getDismissResponse(notification.responses)
+                    : null;
                 if (response) {
                     dismissTargets.push({ notification, response });
                 } else {
-                    seenRows.push(notification);
+                    readRows.push(notification);
                 }
             }
 
-            const items = seenRows.flatMap<NotificationMarkSeenBatchItem>(
-                (notification) => {
-                    const item = notificationMarkSeenBatchItem(notification);
-                    return item ? [item] : [];
-                }
+            const readBatch = toMarkReadBatch(readRows);
+            const dismissIds = dismissTargets.map((target) =>
+                normalizeNotificationId(target.notification.id)
             );
-            const ids = items.map((item) => item.id);
-            const serialIds = [
-                ...dismissTargets.map((target) => target.notification.id),
-                ...pendingInvites.map((notification) => notification.id)
-            ].map((id) => normalizeNotificationId(id));
             const updateProgress = (
                 update: (progress: MarkAllSeenProgress) => MarkAllSeenProgress
             ) => {
@@ -736,138 +777,93 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             };
             set({
                 markAllSeenProgress: {
-                    total: ids.length + serialIds.length,
+                    total: readBatch.items.length + dismissIds.length,
                     done: 0,
                     activeId: '',
-                    queuedIds: serialIds
+                    queuedIds: dismissIds
                 },
                 markAllSeenFailedIds: []
             });
 
-            let failedCount = 0;
             const failedIds: string[] = [];
-            const runSerialStep = async (
-                notification: NotificationRow,
-                action: () => Promise<void>,
-                warning: string
+            const collectRemoteFailures = (
+                results: NotificationMarkSeenItemResult[]
             ) => {
-                const id = normalizeNotificationId(notification.id);
-                updateProgress((progress) => ({
-                    ...progress,
-                    activeId: id,
-                    queuedIds: progress.queuedIds.filter(
-                        (queuedId) => queuedId !== id
-                    )
-                }));
-                try {
-                    await action();
-                    if (isCurrentNotificationScope(scope)) {
-                        get().expireNotifications(id);
+                for (const result of results) {
+                    if (result.state === 'remoteFailed') {
+                        failedIds.push(result.id);
+                        console.warn(
+                            'Failed to mark VRChat notification as seen:',
+                            result.message
+                        );
                     }
-                } catch (error) {
-                    failedCount += 1;
-                    failedIds.push(id);
-                    console.warn(warning, error);
                 }
-                updateProgress((progress) => ({
-                    ...progress,
-                    activeId: '',
-                    done: progress.done + 1
-                }));
             };
 
             try {
-                if (ids.length) {
-                    for (const id of ids) {
-                        pendingSeenIds.add(id);
-                    }
-                    get().markNotificationsSeen(ids);
-                    try {
-                        const result =
-                            await commands.appNotificationMarkSeenBatch({
-                                items
-                            });
-                        failedCount += result.failed;
-                        const failedSeenIds = new Set<string>();
-                        for (const item of result.items) {
-                            pendingSeenIds.delete(item.id);
-                            if (item.state === 'failed') {
-                                failedSeenIds.add(item.id);
-                                console.warn(
-                                    'Failed to mark VRChat notification as seen:',
-                                    item.message
-                                );
-                            }
-                        }
-                        failedIds.push(...failedSeenIds);
-                        set((state) =>
-                            createNotificationStateFromSortedRows(
-                                applyMarkSeenResults(
-                                    state.rows,
-                                    result.items
-                                ).map((row) =>
-                                    row.id && failedSeenIds.has(row.id)
-                                        ? { ...row, seen: false }
-                                        : row
-                                ),
-                                state.detail
-                            )
-                        );
-                        notificationRowsRevision += 1;
-                        syncShellUnseenCount(get().unseenCount);
-                    } catch (error) {
-                        for (const id of ids) {
-                            pendingSeenIds.delete(id);
-                        }
-                        await get()
-                            .loadForCurrentUser()
-                            .catch(() => {});
-                        throw error;
-                    } finally {
-                        for (const id of ids) {
-                            pendingSeenIds.delete(id);
-                        }
-                    }
+                if (readBatch.items.length) {
+                    const result = await runMarkReadBatch(
+                        scope,
+                        readBatch.items,
+                        readBatch.effects
+                    );
+                    collectRemoteFailures(result.items);
                     updateProgress((progress) => ({
                         ...progress,
-                        done: progress.done + ids.length
+                        done: progress.done + readBatch.items.length
                     }));
                 }
 
+                const failedDismissRows: NotificationRow[] = [];
                 for (const target of dismissTargets) {
                     if (!isCurrentNotificationScope(scope)) {
                         break;
                     }
-                    await runSerialStep(
-                        target.notification,
-                        () =>
-                            sendNotificationButtonResponse({
-                                currentUserId: scope.currentUserId,
-                                notification: target.notification,
-                                response: target.response
-                            }),
-                        'Failed to dismiss VRChat notification:'
-                    );
-                }
-                for (const notification of pendingInvites) {
-                    if (!isCurrentNotificationScope(scope)) {
-                        break;
+                    const id = normalizeNotificationId(target.notification.id);
+                    updateProgress((progress) => ({
+                        ...progress,
+                        activeId: id,
+                        queuedIds: progress.queuedIds.filter(
+                            (queuedId) => queuedId !== id
+                        )
+                    }));
+                    try {
+                        await sendNotificationButtonResponse({
+                            currentUserId: scope.currentUserId,
+                            notification: target.notification,
+                            response: target.response
+                        });
+                        if (isCurrentNotificationScope(scope)) {
+                            get().expireNotifications(id);
+                        }
+                    } catch (error) {
+                        failedDismissRows.push(target.notification);
+                        console.warn(
+                            'Failed to dismiss VRChat notification:',
+                            error
+                        );
                     }
-                    await runSerialStep(
-                        notification,
-                        () =>
-                            expireNotificationLocally({
-                                currentUserId: scope.currentUserId,
-                                notification
-                            }),
-                        'Failed to ignore VRChat notification locally:'
-                    );
+                    updateProgress((progress) => ({
+                        ...progress,
+                        activeId: '',
+                        done: progress.done + 1
+                    }));
                 }
 
+                const fallbackBatch = toMarkReadBatch(failedDismissRows);
                 if (
-                    isCurrentNotificationScope(scope) &&
-                    (failedCount > 0 || serialIds.length > 0)
+                    fallbackBatch.items.length &&
+                    isCurrentNotificationScope(scope)
                 ) {
+                    const result = await runMarkReadBatch(
+                        scope,
+                        fallbackBatch.items,
+                        fallbackBatch.effects
+                    );
+                    collectRemoteFailures(result.items);
+                }
+
+                if (isCurrentNotificationScope(scope) && dismissIds.length) {
                     await get().loadForCurrentUser();
                 }
             } finally {
@@ -878,7 +874,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     });
                 }
             }
-            return { failedCount };
+            return { failedCount: failedIds.length };
         },
         resetVrcNotificationState() {
             notificationScopeGeneration += 1;
