@@ -4369,7 +4369,10 @@
             "accent": {
                 "header": "Цвет акцента",
                 "custom": "Пользовательский",
-                "hex_label": "HEX-код цвета"
+                "hex_label": "HEX-код цвета",
+                "override_theme": "Заменить акцент темы",
+                "provided_by_theme": "Задаётся темой сообщества «{{name}}»",
+                "override_hint": "Ваш акцент может не сочетаться с цветами темы"
             },
             "custom_css": {
                 "status_on": "Вкл",

@@ -13,6 +13,7 @@ export {
     reportCommunityThemeInstall,
     updateInstalledCommunityTheme
 } from './community-theme/installedThemes';
+export { setCommunityThemeAccentOverride } from './community-theme/appearanceControl';
 export {
     loadLocalCommunityThemePreview,
     startLocalCommunityThemePreviewWatch,

@@ -25,6 +25,7 @@ import {
     loadLocalCommunityThemePreview,
     reportCommunityThemeInstall,
     saveCommunityThemeOverrideCss,
+    setCommunityThemeAccentOverride,
     startLocalCommunityThemePreviewWatch,
     stopLocalCommunityThemePreview,
     stopLocalCommunityThemePreviewWatch
@@ -59,6 +60,7 @@ export function useThemesController() {
         localPreview,
         localPreviewWatch,
         overrideCssLength,
+        accentOverride,
         loading,
         error
     } = useThemesRuntimeState();
@@ -453,11 +455,14 @@ export function useThemesController() {
         }
     }
 
-    const accentControlled = communityThemeControlsAccent(
+    const themeControlsAccent = communityThemeControlsAccent(
         enabled,
         installedTheme,
         localPreview
     );
+    const accentControlled = themeControlsAccent && !accentOverride;
+    const accentThemeName =
+        localPreview?.themeName ?? installedTheme?.themeName ?? '';
     const installedThemeById = new Map<string, CommunityThemeInstallMetadata>(
         installedThemes.map((theme: CommunityThemeInstallMetadata) => [
             theme.themeId,
@@ -506,6 +511,20 @@ export function useThemesController() {
         }
     }
 
+    async function updateAccentOverride(nextAccentOverride: boolean) {
+        try {
+            await setCommunityThemeAccentOverride(nextAccentOverride);
+        } catch (overrideError) {
+            toast.add({
+                type: 'error',
+                title:
+                    overrideError instanceof Error
+                        ? overrideError.message
+                        : t('view.themes.toast.source_failed')
+            });
+        }
+    }
+
     return {
         themeMode,
         themeColor,
@@ -533,6 +552,9 @@ export function useThemesController() {
         developerToolsAvailable,
         visibleSource,
         accentControlled,
+        themeControlsAccent,
+        accentOverride,
+        accentThemeName,
         customCssBadge,
         installTheme,
         disableTheme,
@@ -550,6 +572,7 @@ export function useThemesController() {
         pickLocalThemeFolder,
         stopLocalPreview,
         updateThemeMode,
-        updateThemeColor
+        updateThemeColor,
+        updateAccentOverride
     };
 }

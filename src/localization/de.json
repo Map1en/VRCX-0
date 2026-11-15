@@ -4343,7 +4343,10 @@
             "accent": {
                 "header": "Akzentfarbe",
                 "custom": "Benutzerdefiniert",
-                "hex_label": "Hex-Farbwert"
+                "hex_label": "Hex-Farbwert",
+                "override_theme": "Theme-Akzent überschreiben",
+                "provided_by_theme": "Vom Community-Theme „{{name}}“ vorgegeben",
+                "override_hint": "Deine Akzentfarbe passt eventuell nicht zum Theme"
             },
             "custom_css": {
                 "status_on": "An",

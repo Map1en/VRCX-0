@@ -65,7 +65,7 @@ export async function syncCommunityThemeAccentControl(): Promise<void> {
         return;
     }
 
-    const { enabled, installedTheme, localPreview } =
+    const { enabled, installedTheme, localPreview, accentOverride } =
         useCommunityThemeStore.getState();
     const controlsAccent = communityThemeControlsAccent(
         enabled,
@@ -73,12 +73,35 @@ export async function syncCommunityThemeAccentControl(): Promise<void> {
         localPreview
     );
     const root = document.documentElement;
-    if (controlsAccent) {
+    if (controlsAccent && !accentOverride) {
         root.setAttribute(COMMUNITY_THEME_ACCENT_ATTR, 'theme');
         clearThemeColorInlineProperties();
         return;
     }
 
-    root.removeAttribute(COMMUNITY_THEME_ACCENT_ATTR);
+    if (controlsAccent) {
+        root.setAttribute(COMMUNITY_THEME_ACCENT_ATTR, 'override');
+    } else {
+        root.removeAttribute(COMMUNITY_THEME_ACCENT_ATTR);
+    }
     await applySavedThemeColor();
+}
+
+export async function loadCommunityThemeAccentOverride(): Promise<void> {
+    const accentOverride = await configRepository.getBool(
+        APP_THEME_CONFIG_KEYS.communityThemeAccentOverride,
+        false
+    );
+    useCommunityThemeStore.getState().setAccentOverride(accentOverride);
+}
+
+export async function setCommunityThemeAccentOverride(
+    accentOverride: boolean
+): Promise<void> {
+    await configRepository.setBool(
+        APP_THEME_CONFIG_KEYS.communityThemeAccentOverride,
+        accentOverride
+    );
+    useCommunityThemeStore.getState().setAccentOverride(accentOverride);
+    await syncCommunityThemeAccentControl();
 }

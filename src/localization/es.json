@@ -4347,7 +4347,10 @@
             "accent": {
                 "header": "Color de acento",
                 "custom": "Personalizado",
-                "hex_label": "Color hexadecimal"
+                "hex_label": "Color hexadecimal",
+                "override_theme": "Reemplazar acento del tema",
+                "provided_by_theme": "Definido por el tema de la comunidad «{{name}}»",
+                "override_hint": "Tu acento puede no combinar con los colores del tema"
             },
             "custom_css": {
                 "status_on": "Encendido",

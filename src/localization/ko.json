@@ -4273,7 +4273,10 @@
             "accent": {
                 "header": "강조 색상",
                 "custom": "사용자 지정",
-                "hex_label": "16진수 색상"
+                "hex_label": "16진수 색상",
+                "override_theme": "테마 강조 색상 덮어쓰기",
+                "provided_by_theme": "커뮤니티 테마 “{{name}}”의 색상 사용 중",
+                "override_hint": "테마 색상과 어울리지 않을 수 있습니다"
             },
             "custom_css": {
                 "status_on": "켜짐",

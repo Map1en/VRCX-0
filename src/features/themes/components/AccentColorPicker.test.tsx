@@ -8,11 +8,90 @@ import { AccentColorPicker } from './AccentColorPicker';
 
 afterEach(cleanup);
 
+const baseProps = {
+    themeControlsAccent: false,
+    accentOverride: false,
+    accentThemeName: '',
+    updateAccentOverride: vi.fn<() => Promise<void>>()
+};
+
+describe('AccentColorPicker theme override', () => {
+    it('hides the override switch when no theme controls the accent', () => {
+        render(
+            <AccentColorPicker
+                {...baseProps}
+                accentControlled={false}
+                themeColor="default"
+                updateThemeColor={vi.fn<() => Promise<void>>()}
+            />
+        );
+
+        expect(screen.queryByRole('switch')).toBeNull();
+    });
+
+    it('lets the user override a theme-controlled accent', async () => {
+        const user = userEvent.setup();
+        const updateAccentOverride = vi.fn<() => Promise<void>>();
+        render(
+            <AccentColorPicker
+                {...baseProps}
+                accentControlled
+                themeControlsAccent
+                accentThemeName="Aurora"
+                themeColor="blue"
+                updateThemeColor={vi.fn<() => Promise<void>>()}
+                updateAccentOverride={updateAccentOverride}
+            />
+        );
+
+        expect(
+            screen.getByText('view.themes.accent.provided_by_theme')
+        ).toBeTruthy();
+        expect(
+            (
+                screen.getByLabelText(
+                    'view.themes.accent.hex_label'
+                ) as HTMLInputElement
+            ).disabled
+        ).toBe(true);
+
+        await user.click(screen.getByRole('switch'));
+
+        expect(updateAccentOverride).toHaveBeenCalledWith(true);
+    });
+
+    it('enables the picker while the theme accent is overridden', () => {
+        render(
+            <AccentColorPicker
+                {...baseProps}
+                accentControlled={false}
+                themeControlsAccent
+                accentOverride
+                accentThemeName="Aurora"
+                themeColor="blue"
+                updateThemeColor={vi.fn<() => Promise<void>>()}
+            />
+        );
+
+        expect(
+            screen.getByText('view.themes.accent.override_hint')
+        ).toBeTruthy();
+        expect(
+            (
+                screen.getByLabelText(
+                    'view.themes.accent.hex_label'
+                ) as HTMLInputElement
+            ).disabled
+        ).toBe(false);
+    });
+});
+
 describe('AccentColorPicker custom color', () => {
     it('applies colors selected by the native picker', () => {
         const updateThemeColor = vi.fn<() => Promise<void>>();
         render(
             <AccentColorPicker
+                {...baseProps}
                 accentControlled={false}
                 themeColor="default"
                 updateThemeColor={updateThemeColor}
@@ -31,6 +110,7 @@ describe('AccentColorPicker custom color', () => {
         const updateThemeColor = vi.fn<() => Promise<void>>();
         render(
             <AccentColorPicker
+                {...baseProps}
                 accentControlled={false}
                 themeColor="default"
                 updateThemeColor={updateThemeColor}
@@ -51,6 +131,7 @@ describe('AccentColorPicker custom color', () => {
         const updateThemeColor = vi.fn<() => Promise<void>>();
         const { rerender } = render(
             <AccentColorPicker
+                {...baseProps}
                 accentControlled={false}
                 themeColor="#123456"
                 updateThemeColor={updateThemeColor}
@@ -68,6 +149,7 @@ describe('AccentColorPicker custom color', () => {
 
         rerender(
             <AccentColorPicker
+                {...baseProps}
                 accentControlled={false}
                 themeColor="default"
                 updateThemeColor={updateThemeColor}
@@ -84,6 +166,7 @@ describe('AccentColorPicker custom color', () => {
         const updateThemeColor = vi.fn<() => Promise<void>>();
         const { rerender } = render(
             <AccentColorPicker
+                {...baseProps}
                 accentControlled={false}
                 themeColor="#123456"
                 updateThemeColor={updateThemeColor}
@@ -105,6 +188,7 @@ describe('AccentColorPicker custom color', () => {
 
         rerender(
             <AccentColorPicker
+                {...baseProps}
                 accentControlled
                 themeColor="#123456"
                 updateThemeColor={updateThemeColor}

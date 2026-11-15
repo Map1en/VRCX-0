@@ -23,6 +23,7 @@ interface CommunityThemeStore {
     localPreview: CommunityThemeLocalPreview | null;
     localPreviewWatch: CommunityThemeLocalPreviewWatch;
     overrideCssLength: number;
+    accentOverride: boolean;
     loading: boolean;
     error: string | null;
     setCatalog(catalogUrl: string, catalog: CommunityThemeManifest[]): void;
@@ -45,6 +46,7 @@ interface CommunityThemeStore {
         localPreviewWatch: Partial<CommunityThemeLocalPreviewWatch>
     ): void;
     setOverrideCssLength(length: number): void;
+    setAccentOverride(accentOverride: boolean): void;
     setLoading(loading: boolean): void;
     setError(error: string | null): void;
 }
@@ -96,6 +98,7 @@ export const useCommunityThemeStore = create<CommunityThemeStore>((set) => ({
         error: null
     },
     overrideCssLength: 0,
+    accentOverride: false,
     loading: false,
     error: null,
     setCatalog(catalogUrl, catalog) {
@@ -146,6 +149,9 @@ export const useCommunityThemeStore = create<CommunityThemeStore>((set) => ({
     },
     setOverrideCssLength(length) {
         set({ overrideCssLength: Math.max(0, length || 0) });
+    },
+    setAccentOverride(accentOverride) {
+        set({ accentOverride });
     },
     setLoading(loading) {
         set({ loading });

@@ -4347,7 +4347,10 @@
             "accent": {
                 "header": "Accent color",
                 "custom": "Custom",
-                "hex_label": "Hex color"
+                "hex_label": "Hex color",
+                "override_theme": "Override theme accent",
+                "provided_by_theme": "Provided by the community theme “{{name}}”",
+                "override_hint": "Your accent may clash with the theme's colors"
             },
             "custom_css": {
                 "status_on": "On",

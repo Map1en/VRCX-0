@@ -350,6 +350,7 @@ export type ConfigKeyName = keyof typeof ConfigKeys;
 export const APP_THEME_CONFIG_KEYS = Object.freeze({
     themeMode: 'ThemeMode',
     themeColor: 'VRCX_themeColor',
+    communityThemeAccentOverride: 'VRCX_communityThemeAccentOverride',
     zoomLevel: 'VRCX_ZoomLevel',
     fontFamily: 'VRCX_fontFamily'
 });

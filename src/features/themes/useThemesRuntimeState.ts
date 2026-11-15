@@ -36,6 +36,9 @@ export function useThemesRuntimeState() {
     const overrideCssLength = useCommunityThemeStore(
         (state) => state.overrideCssLength
     );
+    const accentOverride = useCommunityThemeStore(
+        (state) => state.accentOverride
+    );
     const loading = useCommunityThemeStore((state) => state.loading);
     const error = useCommunityThemeStore((state) => state.error);
 
@@ -53,6 +56,7 @@ export function useThemesRuntimeState() {
         localPreview,
         localPreviewWatch,
         overrideCssLength,
+        accentOverride,
         loading,
         error
     };

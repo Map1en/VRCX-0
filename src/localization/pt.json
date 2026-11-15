@@ -4343,7 +4343,10 @@
             "accent": {
                 "header": "Cor de destaque",
                 "custom": "Personalizado",
-                "hex_label": "Cor hexadecimal"
+                "hex_label": "Cor hexadecimal",
+                "override_theme": "Substituir destaque do tema",
+                "provided_by_theme": "Definida pelo tema da comunidade “{{name}}”",
+                "override_hint": "Seu destaque pode não combinar com as cores do tema"
             },
             "custom_css": {
                 "status_on": "Ativado",

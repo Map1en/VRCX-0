@@ -4336,7 +4336,10 @@
             "accent": {
                 "header": "強調色",
                 "custom": "自訂",
-                "hex_label": "十六進位色碼"
+                "hex_label": "十六進位色碼",
+                "override_theme": "覆寫主題強調色",
+                "provided_by_theme": "由社群主題「{{name}}」提供",
+                "override_hint": "可能與主題配色不協調"
             },
             "custom_css": {
                 "status_on": "開啟",

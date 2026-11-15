@@ -4375,7 +4375,10 @@
             "accent": {
                 "header": "Zvýrazňující barva",
                 "custom": "Vlastní",
-                "hex_label": "Hexadecimální kód barvy"
+                "hex_label": "Hexadecimální kód barvy",
+                "override_theme": "Přepsat barvu motivu",
+                "provided_by_theme": "Určuje komunitní motiv „{{name}}“",
+                "override_hint": "Vaše barva nemusí ladit s barvami motivu"
             },
             "custom_css": {
                 "status_on": "Zapnuto",

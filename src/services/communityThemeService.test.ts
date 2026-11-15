@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
     appCommunityThemeInstallReport: vi.fn(),
     appCommunityThemeConfigure: vi.fn(),
     getString: vi.fn(),
+    getBool: vi.fn(),
+    setBool: vi.fn(),
     isDevToolsBuild: vi.fn(),
     disableBackgroundImage: vi.fn(),
     isBackgroundImageActive: vi.fn(),
@@ -49,7 +51,9 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 vi.mock('@/repositories/configRepository', () => ({
     default: {
-        getString: mocks.getString
+        getString: mocks.getString,
+        getBool: mocks.getBool,
+        setBool: mocks.setBool
     }
 }));
 
@@ -185,6 +189,10 @@ describe('communityThemeService', () => {
         mocks.getString.mockImplementation((key: string, fallback = '') =>
             Promise.resolve(String(fallback))
         );
+        mocks.getBool.mockImplementation((key: string, fallback = false) =>
+            Promise.resolve(fallback)
+        );
+        mocks.setBool.mockResolvedValue(null);
         mocks.isDevToolsBuild.mockReturnValue(true);
         mocks.disableBackgroundImage.mockResolvedValue(undefined);
         mocks.isBackgroundImageActive.mockReturnValue(false);
@@ -309,6 +317,71 @@ describe('communityThemeService', () => {
             'theme'
         );
         expect(mocks.appRefreshTrayMenu).toHaveBeenCalledTimes(1);
+    });
+
+    it('applies the saved accent over an accent-controlling theme when override is on', async () => {
+        mocks.appCommunityThemeStateGet.mockResolvedValueOnce(
+            projection(1, {
+                enabled: true,
+                installedTheme: installedTheme(),
+                installedThemes: [installedTheme()]
+            })
+        );
+        mocks.getBool.mockImplementation((key: string, fallback = false) =>
+            Promise.resolve(
+                key === 'VRCX_communityThemeAccentOverride' ? true : fallback
+            )
+        );
+        mocks.getString.mockImplementation((key: string, fallback = '') =>
+            Promise.resolve(key === 'VRCX_themeColor' ? 'blue' : fallback)
+        );
+        const { service, useCommunityThemeStore } =
+            await loadCommunityThemeService();
+
+        await service.initializeCommunityThemes();
+
+        expect(useCommunityThemeStore.getState().accentOverride).toBe(true);
+        expect(
+            document.documentElement.getAttribute(
+                'data-vrcx-0-community-theme-accent'
+            )
+        ).toBe('override');
+        expect(mocks.applyThemeColor).toHaveBeenLastCalledWith('blue');
+        expect(mocks.clearThemeColorInlineProperties).not.toHaveBeenCalled();
+    });
+
+    it('persists the accent override and hands the accent back to the theme when turned off', async () => {
+        mocks.appCommunityThemeStateGet.mockResolvedValueOnce(
+            projection(1, {
+                enabled: true,
+                installedTheme: installedTheme(),
+                installedThemes: [installedTheme()]
+            })
+        );
+        const { service } = await loadCommunityThemeService();
+        await service.initializeCommunityThemes();
+
+        await service.setCommunityThemeAccentOverride(true);
+        expect(mocks.setBool).toHaveBeenLastCalledWith(
+            'VRCX_communityThemeAccentOverride',
+            true
+        );
+        expect(
+            document.documentElement.getAttribute(
+                'data-vrcx-0-community-theme-accent'
+            )
+        ).toBe('override');
+
+        await service.setCommunityThemeAccentOverride(false);
+        expect(mocks.setBool).toHaveBeenLastCalledWith(
+            'VRCX_communityThemeAccentOverride',
+            false
+        );
+        expect(
+            document.documentElement.getAttribute(
+                'data-vrcx-0-community-theme-accent'
+            )
+        ).toBe('theme');
     });
 
     it('sends mutations to Rust and applies only returned projections', async () => {

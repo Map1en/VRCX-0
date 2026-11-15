@@ -4332,7 +4332,10 @@
             "accent": {
                 "header": "アクセントカラー",
                 "custom": "カスタム",
-                "hex_label": "16進カラーコード"
+                "hex_label": "16進カラーコード",
+                "override_theme": "テーマのアクセントを上書き",
+                "provided_by_theme": "コミュニティテーマ「{{name}}」の配色を使用中",
+                "override_hint": "テーマの配色と合わない場合があります"
             },
             "custom_css": {
                 "status_on": "オン",

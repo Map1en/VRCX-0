@@ -5,21 +5,32 @@ import { THEME_COLORS } from '@/shared/constants/themes';
 import { normalizeCustomThemeColor } from '@/shared/utils/themeColor';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
+import { Switch } from '@/ui/shadcn/switch';
 
 import { themeColorLabel } from '../themeHelpers';
 import type { useThemesController } from '../useThemesController';
 
 type AccentColorPickerProps = Pick<
     ReturnType<typeof useThemesController>,
-    'accentControlled' | 'themeColor' | 'updateThemeColor'
+    | 'accentControlled'
+    | 'themeControlsAccent'
+    | 'accentOverride'
+    | 'accentThemeName'
+    | 'themeColor'
+    | 'updateThemeColor'
+    | 'updateAccentOverride'
 >;
 
 const DEFAULT_CUSTOM_THEME_COLOR = '#2563eb';
 
 export function AccentColorPicker({
     accentControlled,
+    themeControlsAccent,
+    accentOverride,
+    accentThemeName,
     themeColor,
-    updateThemeColor
+    updateThemeColor,
+    updateAccentOverride
 }: AccentColorPickerProps) {
     const { t } = useTranslation();
     const activeCustomColor = normalizeCustomThemeColor(themeColor);
@@ -54,14 +65,31 @@ export function AccentColorPicker({
 
     return (
         <div className="border-border/70 bg-card/60 flex min-w-0 flex-col gap-2 rounded-lg border px-3 py-2.5">
-            <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm font-medium">
-                    {t('view.themes.accent.header')}
+            <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                    <div className="text-sm font-medium">
+                        {t('view.themes.accent.header')}
+                    </div>
+                    {themeControlsAccent ? (
+                        <p className="text-muted-foreground text-xs">
+                            {accentOverride
+                                ? t('view.themes.accent.override_hint')
+                                : t('view.themes.accent.provided_by_theme', {
+                                      name: accentThemeName
+                                  })}
+                        </p>
+                    ) : null}
                 </div>
-                {accentControlled ? (
-                    <p className="text-muted-foreground text-xs">
-                        {t('view.community_themes.installed.accent_controlled')}
-                    </p>
+                {themeControlsAccent ? (
+                    <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs">
+                        {t('view.themes.accent.override_theme')}
+                        <Switch
+                            checked={accentOverride}
+                            onCheckedChange={(checked) =>
+                                void updateAccentOverride(checked)
+                            }
+                        />
+                    </label>
                 ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
