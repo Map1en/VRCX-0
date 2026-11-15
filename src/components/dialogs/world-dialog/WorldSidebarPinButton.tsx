@@ -54,8 +54,8 @@ export function WorldSidebarPinButton({
         <Button
             type="button"
             variant="outline"
-            size="xs"
-            className="ml-auto"
+            data-vrcx-0-control="toolbar"
+            className="vrcx-0-toolbar-control ml-auto"
             disabled={!worldId || !hydrated}
             onClick={toggle}
         >
