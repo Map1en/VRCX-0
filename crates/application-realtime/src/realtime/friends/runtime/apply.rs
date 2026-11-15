@@ -167,7 +167,11 @@ fn apply_change(
             previous.presence.is_online_section(),
             &now.iso,
         );
-        if let Some(change) = friend_icon_change(&user_id, &patch, &previous.record, &now.iso) {
+    }
+    if source == Source::Ws {
+        if let Some(change) =
+            friend_icon_change(&user_id, &patch, &previous.record, &record, &now.iso)
+        {
             output.icon_changes.push(change);
         }
     }
@@ -300,21 +304,38 @@ fn friend_icon_change(
     user_id: &str,
     patch: &Value,
     previous: &FriendRecord,
+    record: &FriendRecord,
     created_at: &str,
 ) -> Option<FriendIconChange> {
-    let next_icon_url = patch.trimmed_field("iconUrl")?;
-    if next_icon_url == previous.icon_url
-        || extract_file_id(next_icon_url)? == extract_file_id(&previous.icon_url)?
-    {
-        return None;
-    }
+    let avatar_banner = record.extra.trimmed_field("bannerType") == Some("avatarBanner");
+    let (previous_icon_url, next_icon_url) = avatar_banner
+        .then(|| {
+            changed_image_url(
+                patch,
+                "bannerUrl",
+                previous
+                    .extra
+                    .trimmed_field("bannerUrl")
+                    .unwrap_or_default(),
+            )
+        })
+        .flatten()
+        .or_else(|| changed_image_url(patch, "iconUrl", &previous.icon_url))?;
     Some(FriendIconChange {
         user_id: user_id.to_string(),
         display_name: display_name(user_id, patch, Some(previous)),
-        previous_icon_url: previous.icon_url.clone(),
-        next_icon_url: next_icon_url.to_string(),
+        previous_icon_url,
+        next_icon_url,
         created_at: created_at.to_string(),
     })
+}
+
+fn changed_image_url(patch: &Value, key: &str, previous_url: &str) -> Option<(String, String)> {
+    let next_url = patch.trimmed_field(key)?;
+    if next_url == previous_url || extract_file_id(next_url)? == extract_file_id(previous_url)? {
+        return None;
+    }
+    Some((previous_url.to_string(), next_url.to_string()))
 }
 
 fn push_profile_refetch_user_id(output: &mut RealtimeFriendOutput, user_id: &str) {

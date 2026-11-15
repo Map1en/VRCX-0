@@ -974,6 +974,79 @@ mod tests {
     }
 
     #[test]
+    fn avatar_banner_friends_report_banner_file_changes_as_avatar_changes() {
+        let mut baseline = friend_record("online", "wrld_1:123~region(jp)");
+        baseline.record.icon_url = "https://api.vrchat.cloud/api/1/image/file_icon/1/256".into();
+        baseline
+            .record
+            .extra
+            .insert("bannerType".into(), json!("avatarBanner"));
+        baseline.record.extra.insert(
+            "bannerUrl".into(),
+            json!("https://api.vrchat.cloud/api/1/file/file_old/1/file"),
+        );
+        let runtime = runtime_with_friend(baseline);
+
+        let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
+            "type": "friend-update",
+            "content": {
+                "userId": "usr_friend",
+                "user": {
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "iconUrl": "https://api.vrchat.cloud/api/1/image/file_icon/1/256",
+                    "bannerType": "avatarBanner",
+                    "bannerUrl": "https://api.vrchat.cloud/api/1/file/file_new/1/file"
+                }
+            }
+        }))) else {
+            panic!("friend-update should produce an output");
+        };
+
+        assert_eq!(
+            output.icon_changes,
+            vec![FriendIconChange {
+                user_id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                previous_icon_url: "https://api.vrchat.cloud/api/1/file/file_old/1/file".into(),
+                next_icon_url: "https://api.vrchat.cloud/api/1/file/file_new/1/file".into(),
+                created_at: output.icon_changes[0].created_at.clone(),
+            }]
+        );
+    }
+
+    #[test]
+    fn icon_file_changes_on_presence_events_are_reported() {
+        let mut baseline = friend_record("online", "wrld_1:123~region(jp)");
+        baseline.record.icon_url = "https://api.vrchat.cloud/api/1/image/file_old/1/256".into();
+        let runtime = runtime_with_friend(baseline);
+
+        let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
+            "type": "friend-location",
+            "content": {
+                "userId": "usr_friend",
+                "location": "wrld_1:456~region(jp)",
+                "travelingToLocation": "",
+                "worldId": "wrld_1",
+                "platform": "standalonewindows",
+                "user": {
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "iconUrl": "https://api.vrchat.cloud/api/1/image/file_new/1/256"
+                }
+            }
+        }))) else {
+            panic!("friend-location should produce an output");
+        };
+
+        assert_eq!(output.icon_changes.len(), 1);
+        assert_eq!(
+            output.icon_changes[0].next_icon_url,
+            "https://api.vrchat.cloud/api/1/image/file_new/1/256"
+        );
+    }
+
+    #[test]
     fn icon_url_changes_without_a_new_file_id_are_not_reported() {
         let mut baseline = friend_record("online", "wrld_1:123~region(jp)");
         baseline.record.icon_url = "https://api.vrchat.cloud/api/1/image/file_same/1/256".into();
