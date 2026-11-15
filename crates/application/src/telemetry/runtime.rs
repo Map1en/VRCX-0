@@ -19,6 +19,7 @@ use vrcx_0_contracts::telemetry::{
 };
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};
+use super::avatar_search::avatar_search_failure_detail;
 use super::event::TelemetryClientEvent;
 use super::scale::{db_size_bucket, friend_count_bucket, row_bucket, TelemetryDatabaseScale};
 
@@ -193,6 +194,18 @@ impl TelemetryRuntime {
         }
         match self.inner.state.lock() {
             Ok(mut state) => state.acc.record(event),
+            Err(error) => tracing::debug!("failed to lock telemetry accumulator: {error}"),
+        }
+    }
+
+    pub fn record_avatar_search_failure(&self, provider_url: &str, status: i32, body: &str) {
+        if !self.usage_enabled() {
+            return;
+        }
+        let detail =
+            avatar_search_failure_detail(provider_url, status, body, &self.inner.app_version);
+        match self.inner.state.lock() {
+            Ok(mut state) => state.acc.record_client_error(detail),
             Err(error) => tracing::debug!("failed to lock telemetry accumulator: {error}"),
         }
     }

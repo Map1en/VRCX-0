@@ -169,6 +169,10 @@ impl TelemetryAccumulator {
                 }),
             _ => return,
         };
+        self.record_client_error(detail);
+    }
+
+    pub(super) fn record_client_error(&mut self, detail: TelemetryErrorDetail) {
         if self.client_errors.record(detail) {
             let revision = self.advance_revision();
             self.client_errors_revision = revision;

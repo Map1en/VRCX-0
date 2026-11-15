@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use vrcx_0_application::telemetry::TelemetryRuntime;
 use vrcx_0_application_core::{
     Error, Result, RuntimeDiagnostics, RuntimeOperationStatus, RuntimeSyncEngine, WebClient,
 };
@@ -13,6 +14,7 @@ pub struct ExternalApiRuntime {
     web: Arc<WebClient>,
     diagnostics: RuntimeDiagnostics,
     sync: RuntimeSyncEngine,
+    telemetry: TelemetryRuntime,
 }
 
 impl ExternalApiRuntime {
@@ -20,11 +22,13 @@ impl ExternalApiRuntime {
         web: Arc<WebClient>,
         diagnostics: RuntimeDiagnostics,
         sync: RuntimeSyncEngine,
+        telemetry: TelemetryRuntime,
     ) -> Self {
         Self {
             web,
             diagnostics,
             sync,
+            telemetry,
         }
     }
 
@@ -33,17 +37,30 @@ impl ExternalApiRuntime {
         url: String,
         vrcx_id: String,
     ) -> Result<ExternalApiExecuteResponse> {
-        self.execute(
-            "app__external_api_avatar_search_get",
-            "Searching external avatar provider.",
-            external_api::ExternalApiScope::AvatarSearch,
-            || {
-                let url = require_text(url, "ExternalApiAvatarSearchGet requires url.")?;
-                let vrcx_id = require_text(vrcx_id, "ExternalApiAvatarSearchGet requires vrcxId.")?;
-                Ok(external_api::avatar_search_get_input(&url, &vrcx_id))
-            },
-        )
-        .await
+        let provider_url = url.clone();
+        let result = self
+            .execute(
+                "app__external_api_avatar_search_get",
+                "Searching external avatar provider.",
+                external_api::ExternalApiScope::AvatarSearch,
+                || {
+                    let url = require_text(url, "ExternalApiAvatarSearchGet requires url.")?;
+                    let vrcx_id =
+                        require_text(vrcx_id, "ExternalApiAvatarSearchGet requires vrcxId.")?;
+                    Ok(external_api::avatar_search_get_input(&url, &vrcx_id))
+                },
+            )
+            .await;
+        if let Ok(response) = &result {
+            if response.status != 200 {
+                self.telemetry.record_avatar_search_failure(
+                    &provider_url,
+                    response.status,
+                    &response.data,
+                );
+            }
+        }
+        result
     }
 
     pub async fn youtube_video_metadata(

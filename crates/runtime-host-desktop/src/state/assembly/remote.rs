@@ -8,6 +8,7 @@ use vrcx_0_application::social::{
     CurrentUserMutationRuntime, GroupMembershipBatchCoordinator, GroupModerationBatchCoordinator,
     QuickSearchRuntime, QuickSearchSources,
 };
+use vrcx_0_application::telemetry::TelemetryRuntime;
 use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_outbound_adapters::{
     CachedWorldNameResolver, CachedWorldResponseProjection, LocalAvatarApplicationAdapter,
@@ -48,6 +49,7 @@ pub(crate) struct RemoteRuntimes {
 pub(crate) fn build_remote_runtimes(
     runtime: &RuntimeHostState,
     host_file_access: &HostFileAccess,
+    telemetry: &TelemetryRuntime,
 ) -> RemoteRuntimes {
     let context = runtime.desktop_assembly();
     let instance_launch = build_instance_launch_runtime(InstanceLaunchRuntimeDeps {
@@ -85,6 +87,7 @@ pub(crate) fn build_remote_runtimes(
         Arc::clone(runtime.web_client()),
         context.diagnostics().clone(),
         context.sync().clone(),
+        telemetry.clone(),
     );
     let groups = DesktopGroupRuntime::new(
         Arc::clone(runtime.web_client()),

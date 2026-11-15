@@ -1,4 +1,5 @@
 mod accumulator;
+mod avatar_search;
 mod event;
 mod privacy;
 mod runtime;
