@@ -439,12 +439,14 @@ export function WorldDialogInstancesPanel({
                                         onHistory={onShowHistory}
                                     />
                                 </div>
-                                <InstanceUserTiles
-                                    instance={instance}
-                                    instanceLocation={location}
-                                    visibleUserIds={visibleInstanceUserIds}
-                                    showInstanceDuration
-                                />
+                                <div className="pl-6.5">
+                                    <InstanceUserTiles
+                                        instance={instance}
+                                        instanceLocation={location}
+                                        visibleUserIds={visibleInstanceUserIds}
+                                        showInstanceDuration
+                                    />
+                                </div>
                             </div>
                         );
                     })
