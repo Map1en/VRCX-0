@@ -3,7 +3,8 @@ import {
     CrownIcon,
     ExternalLinkIcon,
     PencilIcon,
-    SparklesIcon
+    SparklesIcon,
+    UsersRoundIcon
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -542,6 +543,12 @@ function UserDialogProfileLinksPanel({
             }
           : null;
 
+    const representedGroupIconFallback = (
+        <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-md">
+            <UsersRoundIcon aria-hidden="true" className="size-5" />
+        </span>
+    );
+
     return (
         <InfoPanel title={t('dialog.user.info.profile_details')}>
             {avatarInfo ? (
@@ -586,8 +593,11 @@ function UserDialogProfileLinksPanel({
                                 )}
                                 alt=""
                                 className="size-10 shrink-0 rounded-md object-cover"
+                                fallback={representedGroupIconFallback}
                             />
-                        ) : null}
+                        ) : (
+                            representedGroupIconFallback
+                        )}
                         <span className="min-w-0">
                             <span className="flex min-w-0 items-center gap-1.5">
                                 {representedGroup.ownerId === profile.id && (
