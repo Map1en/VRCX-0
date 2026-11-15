@@ -44,7 +44,10 @@ import {
     type WorldWorldScreenshots
 } from './useWorldDialogScreenshots';
 import { WorldDialogOverviewSection } from './WorldDialogHeaderSection';
-import { buildWorldDialogDisplayInstanceRows } from './worldDialogInstanceRows';
+import {
+    buildWorldDialogDisplayInstanceRows,
+    worldDialogInstanceViewer
+} from './worldDialogInstanceRows';
 import { WorldDialogTabPanels } from './WorldDialogTabPanels';
 import {
     authorWorldTags,
@@ -295,21 +298,21 @@ export function WorldDialogTabbedView({
             ...instance,
             ref: detail,
             userCount: firstKnownValue(
+                detail.n_users,
                 detail.userCount,
                 detail.occupants,
-                detail.n_users,
                 instance.userCount
             ),
             occupants: firstKnownValue(
+                detail.n_users,
                 detail.userCount,
                 detail.occupants,
-                detail.n_users,
                 instance.occupants
             ),
             playerCount: firstKnownValue(
+                detail.n_users,
                 detail.userCount,
                 detail.occupants,
-                detail.n_users,
                 Array.isArray(detail.users) ? detail.users.length : undefined,
                 instance.playerCount,
                 instance.userCount,
@@ -359,6 +362,10 @@ export function WorldDialogTabbedView({
         }
         return userIds;
     }, [currentUserId, currentUserSnapshot?.id, friendsById]);
+    const instanceViewer = useMemo(
+        () => worldDialogInstanceViewer(currentUserSnapshot),
+        [currentUserSnapshot]
+    );
     const { creatorGroupKey, displayInstanceRows } =
         buildWorldDialogDisplayInstanceRows({
             creatorGroupsById,
@@ -368,6 +375,7 @@ export function WorldDialogTabbedView({
             instanceRows: hydratedInstanceRows,
             isInstanceLocation,
             normalizedWorldId,
+            viewer: instanceViewer,
             world,
             worldDialogShortName
         });

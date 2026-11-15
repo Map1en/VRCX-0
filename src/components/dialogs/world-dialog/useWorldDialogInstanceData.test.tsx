@@ -89,4 +89,45 @@ describe('useWorldDialogInstanceData', () => {
             instanceId: '67890'
         });
     });
+
+    it('fetches only newly listed locations while the source is unchanged', async () => {
+        const sourceRevision = [{ location: target.location }];
+        const added = {
+            location: 'wrld_test:67890',
+            worldId: 'wrld_test',
+            instanceId: '67890'
+        };
+        mocks.getInstance.mockImplementation(({ instanceId }) =>
+            Promise.resolve({ json: { id: `wrld_test:${instanceId}` } })
+        );
+        const { result, rerender } = renderHook(
+            ({ targets }) =>
+                useWorldDialogInstanceData({
+                    endpoint: 'https://api.example.test',
+                    sourceRevision,
+                    targets
+                }),
+            { initialProps: { targets: [{ ...target }] } }
+        );
+
+        await waitFor(() => {
+            expect(
+                result.current.detailsByLocation[target.location]
+            ).toBeTruthy();
+        });
+
+        rerender({ targets: [{ ...target }, added] });
+
+        await waitFor(() => {
+            expect(
+                result.current.detailsByLocation[added.location]
+            ).toBeTruthy();
+        });
+        expect(mocks.getInstance).toHaveBeenCalledTimes(2);
+        expect(mocks.getInstance).toHaveBeenLastCalledWith({
+            worldId: 'wrld_test',
+            instanceId: '67890'
+        });
+        expect(result.current.detailsByLocation[target.location]).toBeTruthy();
+    });
 });

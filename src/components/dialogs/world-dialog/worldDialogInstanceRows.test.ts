@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { offlinePresence, onlinePresence } from '@/test/presenceFixtures';
 
-import { buildWorldDialogDisplayInstanceRows } from './worldDialogInstanceRows';
+import {
+    buildWorldDialogDisplayInstanceRows,
+    worldDialogInstanceViewer
+} from './worldDialogInstanceRows';
+
+const anonymousViewer = { ageVerified: false, languages: [] };
 
 describe('worldDialogInstanceRows', () => {
     it('adds a friend instance that is absent from the searched world profile', () => {
@@ -40,6 +45,7 @@ describe('worldDialogInstanceRows', () => {
                     users: []
                 }
             ],
+            viewer: anonymousViewer,
             isInstanceLocation: false,
             normalizedWorldId: 'wrld_test',
             world: {
@@ -81,6 +87,7 @@ describe('worldDialogInstanceRows', () => {
                 { id: 'quiet', location: 'wrld_test:quiet', users: [] },
                 { id: 'two', location: 'wrld_test:two', users: [] }
             ],
+            viewer: anonymousViewer,
             isInstanceLocation: false,
             normalizedWorldId: 'wrld_test',
             world: { id: 'wrld_test', capacity: 40 }
@@ -104,6 +111,7 @@ describe('worldDialogInstanceRows', () => {
                     users: []
                 }
             ],
+            viewer: anonymousViewer,
             isInstanceLocation: true,
             normalizedWorldId: 'wrld_test:123',
             world: { id: 'wrld_test', capacity: 40 }
@@ -160,6 +168,7 @@ describe('worldDialogInstanceRows', () => {
                     users: []
                 }
             ],
+            viewer: anonymousViewer,
             isInstanceLocation: true,
             normalizedWorldId:
                 'wrld_test:live~group(grp_live)~groupAccessType(public)',
@@ -229,6 +238,7 @@ describe('worldDialogInstanceRows', () => {
                 }
             },
             instanceRows: [],
+            viewer: anonymousViewer,
             isInstanceLocation: true,
             normalizedWorldId:
                 'wrld_test:live~group(grp_live)~groupAccessType(public)',
@@ -282,6 +292,7 @@ describe('worldDialogInstanceRows', () => {
                 }
             },
             instanceRows: [],
+            viewer: anonymousViewer,
             isInstanceLocation: true,
             normalizedWorldId: location,
             world: {
@@ -322,6 +333,7 @@ describe('worldDialogInstanceRows', () => {
                 }
             },
             instanceRows: [],
+            viewer: anonymousViewer,
             isInstanceLocation: true,
             normalizedWorldId: location,
             world: { id: 'wrld_test', capacity: 40 }
@@ -350,11 +362,118 @@ describe('worldDialogInstanceRows', () => {
                     ]
                 }
             ],
+            viewer: anonymousViewer,
             isInstanceLocation: true,
             normalizedWorldId: 'wrld_current:123',
             world: { id: 'wrld_current', capacity: 40 }
         });
 
         expect(result.displayInstanceRows[0].users).toEqual([]);
+    });
+
+    it('ranks joinable instances in the viewer language by listed population', () => {
+        const result = buildWorldDialogDisplayInstanceRows({
+            creatorGroupsById: {},
+            currentInstanceDetails: {},
+            friendsById: {},
+            instanceRows: [
+                {
+                    id: 'small-en',
+                    location: 'wrld_test:small-en',
+                    n_users: 3,
+                    languageRatio: { en: 1 },
+                    users: []
+                },
+                {
+                    id: 'big-en',
+                    location: 'wrld_test:big-en',
+                    n_users: 20,
+                    languageRatio: { en: 0.9, ja: 0.1 },
+                    users: []
+                },
+                {
+                    id: 'mixed-ja',
+                    location: 'wrld_test:mixed-ja',
+                    n_users: 5,
+                    languageRatio: { en: 0.6, ja: 0.4 },
+                    users: []
+                },
+                {
+                    id: 'zh',
+                    location: 'wrld_test:zh',
+                    n_users: 4,
+                    languageRatio: { 'zh-CN': 0.75, en: 0.25 },
+                    users: []
+                },
+                {
+                    id: 'adult',
+                    location: 'wrld_test:adult~ageGate',
+                    n_users: 30,
+                    languageRatio: { 'zh-CN': 1 },
+                    users: []
+                },
+                {
+                    id: 'full',
+                    location: 'wrld_test:full',
+                    n_users: 40,
+                    languageRatio: { 'zh-CN': 1 },
+                    users: []
+                },
+                {
+                    id: 'unknown',
+                    location: 'wrld_test:unknown',
+                    n_users: 2,
+                    users: []
+                }
+            ],
+            isInstanceLocation: false,
+            normalizedWorldId: 'wrld_test',
+            viewer: worldDialogInstanceViewer({
+                tags: ['system_trust_known', 'language_zho', 'language_jpn']
+            }),
+            world: { id: 'wrld_test', capacity: 40 }
+        });
+
+        expect(
+            result.displayInstanceRows.map((instance) => instance.id)
+        ).toEqual([
+            'zh',
+            'big-en',
+            'mixed-ja',
+            'small-en',
+            'unknown',
+            'full',
+            'adult'
+        ]);
+    });
+
+    it('keeps age-gated instances in place for an age-verified viewer', () => {
+        const result = buildWorldDialogDisplayInstanceRows({
+            creatorGroupsById: {},
+            currentInstanceDetails: {},
+            friendsById: {},
+            instanceRows: [
+                {
+                    id: 'quiet',
+                    location: 'wrld_test:quiet',
+                    n_users: 2,
+                    users: []
+                },
+                {
+                    id: 'adult',
+                    location: 'wrld_test:adult~ageGate',
+                    n_users: 12,
+                    users: []
+                }
+            ],
+            isInstanceLocation: false,
+            normalizedWorldId: 'wrld_test',
+            viewer: worldDialogInstanceViewer({ ageVerified: true }),
+            world: { id: 'wrld_test', capacity: 40 }
+        });
+
+        expect(
+            result.displayInstanceRows.map((instance) => instance.id)
+        ).toEqual(['adult', 'quiet']);
     });
 });

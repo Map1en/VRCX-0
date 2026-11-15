@@ -242,6 +242,8 @@ export function resolveInstanceRows(
                 return {
                     id,
                     occupants: finiteNumber(entry[1]),
+                    n_users: finiteNumber(entry[1]),
+                    languageRatio: entry[2],
                     location,
                     users: [],
                     creatorUserId: '',

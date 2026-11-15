@@ -13,6 +13,7 @@ import type {
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
+import { languageShortCode } from '@/shared/utils/userLanguage';
 
 import {
     firstText,
@@ -44,12 +45,37 @@ type BuildWorldDialogDisplayInstanceRowsInput = {
     instanceRows: EntityRecord[];
     isInstanceLocation: boolean;
     normalizedWorldId: string;
+    viewer: WorldDialogInstanceViewer;
     world: Pick<WorldProfileRecord, 'id' | 'capacity'>;
     worldDialogShortName?: string;
 };
 
+export type WorldDialogInstanceViewer = {
+    ageVerified: boolean;
+    languages: string[];
+};
+
 function record(value: unknown): EntityRecord {
     return isRecord(value) ? value : {};
+}
+
+function baseLanguageCode(code: string) {
+    return (code.split('-')[0] ?? code).toLowerCase();
+}
+
+export function worldDialogInstanceViewer(
+    currentUser: EntityRecord | null | undefined
+): WorldDialogInstanceViewer {
+    const tags = Array.isArray(currentUser?.tags) ? currentUser.tags : [];
+    return {
+        ageVerified: currentUser?.ageVerified === true,
+        languages: tags
+            .filter(
+                (tag): tag is string =>
+                    typeof tag === 'string' && tag.startsWith('language_')
+            )
+            .map((tag) => baseLanguageCode(languageShortCode(tag)))
+    };
 }
 
 function recordOrNull(value: unknown): EntityRecord | null {
@@ -64,6 +90,7 @@ export function buildWorldDialogDisplayInstanceRows({
     instanceRows,
     isInstanceLocation,
     normalizedWorldId,
+    viewer,
     world,
     worldDialogShortName
 }: BuildWorldDialogDisplayInstanceRowsInput) {
@@ -167,13 +194,15 @@ export function buildWorldDialogDisplayInstanceRows({
                       '',
                   occupants:
                       finiteLocationNumber(
-                          currentInstance.userCount ??
+                          currentInstance.n_users ??
+                              currentInstance.userCount ??
                               currentInstance.occupants ??
                               playerSnapshotContext.playerCount
                       ) ?? undefined,
                   playerCount:
                       finiteLocationNumber(
-                          currentInstance.userCount ??
+                          currentInstance.n_users ??
+                              currentInstance.userCount ??
                               currentInstance.occupants ??
                               playerSnapshotContext.playerCount
                       ) ?? undefined,
@@ -384,17 +413,50 @@ export function buildWorldDialogDisplayInstanceRows({
         instance.users.filter((user) =>
             Boolean(friendsById[firstText(user.id, user.userId)])
         ).length;
+    const viewerLanguageCodes = new Set(viewer.languages);
+    const listedOccupants = (instance: WorldDialogInstanceRow) =>
+        finiteLocationNumber(instance.n_users) ?? 0;
+    const isBlocked = (instance: WorldDialogInstanceRow) => {
+        const location = resolveLaunchLocation(world, instance);
+        if (!viewer.ageVerified && parseLocation(location).ageGate) {
+            return true;
+        }
+        const capacity = finiteLocationNumber(world.capacity);
+        return Boolean(capacity && listedOccupants(instance) >= capacity);
+    };
+    const languageMatch = (instance: WorldDialogInstanceRow) => {
+        const ratio = record(instance.languageRatio);
+        const ranked = Object.entries(ratio)
+            .map(([code, share]) => ({
+                code: baseLanguageCode(code),
+                share: Number(share) || 0
+            }))
+            .filter((entry) => entry.share > 0)
+            .sort((left, right) => right.share - left.share);
+        if (ranked[0] && viewerLanguageCodes.has(ranked[0].code)) {
+            return 2;
+        }
+        return ranked.some((entry) => viewerLanguageCodes.has(entry.code))
+            ? 1
+            : 0;
+    };
     const displayInstanceRows = unsortedInstanceRows
         .map((instance, index) => ({
             instance,
             index,
-            friends: friendCount(instance)
+            friends: friendCount(instance),
+            blocked: isBlocked(instance),
+            language: languageMatch(instance),
+            occupants: listedOccupants(instance)
         }))
         .sort(
             (left, right) =>
                 Number(Boolean(right.instance.isCurrentInstance)) -
                     Number(Boolean(left.instance.isCurrentInstance)) ||
                 right.friends - left.friends ||
+                Number(left.blocked) - Number(right.blocked) ||
+                right.language - left.language ||
+                right.occupants - left.occupants ||
                 left.index - right.index
         )
         .map(({ instance }) => instance);
