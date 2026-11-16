@@ -5205,7 +5205,6 @@
                 "closed": "Zavřená",
                 "public_count": "Veřejné {count}",
                 "private_count": "Soukromé {count}",
-                "capacity_count": "Kapacita {count} ({max})",
                 "pin_to_sidebar": "Připnout na postranní panel",
                 "pinned_to_sidebar": "Připnuto na postranní panel",
                 "pin_to_sidebar_failed": "Připnutí na postranní panel se nezdařilo",

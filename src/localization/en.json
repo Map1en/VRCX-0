@@ -5167,7 +5167,6 @@
                 "closed": "Closed",
                 "public_count": "Public {count}",
                 "private_count": "Private {count}",
-                "capacity_count": "Capacity {count} (max {max})",
                 "pin_to_sidebar": "Pin to Sidebar",
                 "pinned_to_sidebar": "Pinned to the sidebar",
                 "pin_to_sidebar_failed": "Couldn't pin to the sidebar",

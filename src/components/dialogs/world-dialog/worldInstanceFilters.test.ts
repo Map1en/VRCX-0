@@ -122,6 +122,13 @@ describe('filterWorldInstanceRows', () => {
                 )
             )
         ).toEqual(['hangout-jp', 'plain']);
+        expect(
+            activeWorldInstanceFilterCount({
+                ...EMPTY_WORLD_INSTANCE_FILTER,
+                withFriends: true,
+                hideUnavailable: true
+            })
+        ).toBe(0);
     });
 });
 

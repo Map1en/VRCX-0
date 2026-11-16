@@ -5152,7 +5152,6 @@
                 "closed": "已关闭",
                 "public_count": "公开房间有{count}人在线",
                 "private_count": "私人房间有{count}人在线",
-                "capacity_count": "推荐人数: {count}人（上限:{max}人）",
                 "pin_to_sidebar": "固定到侧边栏",
                 "pinned_to_sidebar": "已固定到侧边栏",
                 "pin_to_sidebar_failed": "固定到侧边栏失败",

@@ -5148,7 +5148,6 @@
                 "closed": "終了済み",
                 "public_count": "パブリック {count}",
                 "private_count": "プライベート {count}",
-                "capacity_count": "定員 {count}（最大 {max}）",
                 "pin_to_sidebar": "サイドバーに固定",
                 "pinned_to_sidebar": "サイドバーに固定しました",
                 "pin_to_sidebar_failed": "サイドバーに固定できませんでした",

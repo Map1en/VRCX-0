@@ -5199,7 +5199,6 @@
                 "closed": "Закрыт",
                 "public_count": "Публичных {count}",
                 "private_count": "Приватных {count}",
-                "capacity_count": "Вместимость {count} ({max})",
                 "pin_to_sidebar": "Закрепить на боковой панели",
                 "pinned_to_sidebar": "Закреплено на боковой панели",
                 "pin_to_sidebar_failed": "Не удалось закрепить на боковой панели",

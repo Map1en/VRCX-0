@@ -113,6 +113,7 @@ export interface WorldDialogHeaderCommands {
 }
 
 export interface WorldDialogTabModel {
+    actionStatus: string;
     activeTab: string;
     authorTags: string[];
     currentUserId: string | null;
@@ -142,6 +143,7 @@ export interface WorldDialogTabCommands {
     onOpenAuthor: () => void;
     onOpenScreenshot: (path: string) => void;
     onPreviousInstancesChange: Dispatch<SetStateAction<WorldPreviousInstances>>;
+    onRefresh: () => void;
     onRefreshScreenshots: () => void;
     onSaveMemo: (memo: string) => void | Promise<void>;
 }
@@ -546,6 +548,7 @@ export function WorldDialogTabbedView({
         onRefresh
     };
     const tabModel: WorldDialogTabModel = {
+        actionStatus,
         activeTab,
         authorTags,
         currentUserId,
@@ -578,6 +581,7 @@ export function WorldDialogTabbedView({
             }),
         onOpenScreenshot,
         onPreviousInstancesChange,
+        onRefresh,
         onRefreshScreenshots: refreshWorldScreenshots,
         onSaveMemo
     };

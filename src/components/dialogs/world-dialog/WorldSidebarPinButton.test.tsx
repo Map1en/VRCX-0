@@ -48,9 +48,9 @@ describe('world dialog sidebar pin button', () => {
     it('pins a world that is not in the sidebar', async () => {
         const store = await openDialog([]);
 
-        fireEvent.click(await screen.findByText(PIN));
+        fireEvent.click(await screen.findByRole('button', { name: PIN }));
 
-        expect(await screen.findByText(UNPIN)).toBeTruthy();
+        expect(await screen.findByRole('button', { name: UNPIN })).toBeTruthy();
         expect(worldTabs(store)).toMatchObject([{ worldId: WORLD_ID }]);
         expect(mocks.toast).toHaveBeenCalledWith({
             type: 'success',
@@ -68,9 +68,9 @@ describe('world dialog sidebar pin button', () => {
             }
         ]);
 
-        fireEvent.click(await screen.findByText(UNPIN));
+        fireEvent.click(await screen.findByRole('button', { name: UNPIN }));
 
-        expect(await screen.findByText(PIN)).toBeTruthy();
+        expect(await screen.findByRole('button', { name: PIN })).toBeTruthy();
         expect(worldTabs(store)).toEqual([]);
         expect(mocks.toast).toHaveBeenCalledWith({
             type: 'success',
@@ -89,14 +89,14 @@ describe('world dialog sidebar pin button', () => {
             }
         ]);
 
-        expect(await screen.findByText(PIN)).toBeTruthy();
+        expect(await screen.findByRole('button', { name: PIN })).toBeTruthy();
     });
 
     it('reports when the sidebar cannot be saved', async () => {
         await openDialog([]);
         mocks.setString.mockRejectedValue(new Error('disk full'));
 
-        fireEvent.click(await screen.findByText(PIN));
+        fireEvent.click(await screen.findByRole('button', { name: PIN }));
 
         await vi.waitFor(() =>
             expect(mocks.toast).toHaveBeenCalledWith({

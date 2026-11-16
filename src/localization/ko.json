@@ -5089,7 +5089,6 @@
                 "closed": "닫힘",
                 "public_count": "공개 {count}",
                 "private_count": "비공개 {count}",
-                "capacity_count": "인원 제한 {count} (최대 {max})",
                 "pin_to_sidebar": "사이드바에 고정",
                 "pinned_to_sidebar": "사이드바에 고정했습니다.",
                 "pin_to_sidebar_failed": "사이드바에 고정하지 못했습니다.",

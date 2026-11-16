@@ -5163,7 +5163,6 @@
                 "closed": "Geschlossen",
                 "public_count": "Öffentlich {count}",
                 "private_count": "Privat {count}",
-                "capacity_count": "Kapazität {count} ({max})",
                 "pin_to_sidebar": "An Seitenleiste anheften",
                 "pinned_to_sidebar": "An die Seitenleiste angeheftet",
                 "pin_to_sidebar_failed": "Anheften an die Seitenleiste fehlgeschlagen",

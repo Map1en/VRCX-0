@@ -149,6 +149,7 @@ export function WorldDialogTabPanels({
 }) {
     const { t } = useTranslation();
     const {
+        actionStatus,
         activeTab,
         authorTags,
         currentUserId,
@@ -177,6 +178,7 @@ export function WorldDialogTabPanels({
         onOpenAuthor,
         onOpenScreenshot,
         onPreviousInstancesChange,
+        onRefresh,
         onRefreshScreenshots,
         onSaveMemo
     } = commands;
@@ -236,7 +238,9 @@ export function WorldDialogTabPanels({
                     visibleInstanceUserIds={visibleInstanceUserIds}
                     isInstanceLocation={isInstanceLocation}
                     showHistory={Boolean(previousInstances.length)}
+                    refreshing={actionStatus === 'refresh'}
                     onShowHistory={() => onChangeTab('visit-history')}
+                    onRefresh={onRefresh}
                 />
             </EntityDialogTabContent>
             <EntityDialogTabContent

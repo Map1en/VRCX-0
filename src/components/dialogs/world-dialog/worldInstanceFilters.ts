@@ -100,9 +100,7 @@ export function activeWorldInstanceFilterCount(filter: WorldInstanceFilter) {
     return [
         filter.categoryId !== '',
         filter.languages.length > 0,
-        filter.vibeIds.length > 0,
-        filter.withFriends,
-        filter.hideUnavailable
+        filter.vibeIds.length > 0
     ].filter(Boolean).length;
 }
 

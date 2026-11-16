@@ -1,4 +1,4 @@
-import { UserIcon, UsersIcon } from 'lucide-react';
+import { EyeOffIcon, UsersIcon, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -6,7 +6,10 @@ import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadg
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
 import { useLanguageNames } from '@/components/language/useLanguageNames';
-import { ToolbarFilterMenu } from '@/components/layout/ToolbarControls';
+import {
+    ToolbarFilterMenu,
+    ToolbarRefreshButton
+} from '@/components/layout/ToolbarControls';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import type { WorldProfileRecord } from '@/domain/entities/world';
 import { cn } from '@/lib/utils';
@@ -16,6 +19,7 @@ import type {
 } from '@/platform/tauri/bindings';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { isRecord } from '@/shared/utils/record';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenuCheckboxItem,
     DropdownMenuGroup,
@@ -54,6 +58,35 @@ function stringList(value: unknown): string[] {
         : [];
 }
 
+function WorldInstanceQuickFilter({
+    icon: Icon,
+    label,
+    pressed,
+    onPressedChange
+}: {
+    icon: LucideIcon;
+    label: string;
+    pressed: boolean;
+    onPressedChange: (pressed: boolean) => void;
+}) {
+    return (
+        <Button
+            type="button"
+            variant="outline"
+            aria-pressed={pressed}
+            data-vrcx-0-control="toolbar"
+            className={cn(
+                'vrcx-0-toolbar-control',
+                pressed && 'vrcx-0-toolbar-control-active'
+            )}
+            onClick={() => onPressedChange(!pressed)}
+        >
+            <Icon data-icon="inline-start" />
+            {label}
+        </Button>
+    );
+}
+
 function toggle(values: string[], value: string, checked: boolean) {
     return checked
         ? [...values.filter((item) => item !== value), value]
@@ -68,7 +101,9 @@ export function WorldDialogInstancesPanel({
     visibleInstanceUserIds,
     isInstanceLocation,
     showHistory,
-    onShowHistory
+    refreshing,
+    onShowHistory,
+    onRefresh
 }: {
     world: WorldProfileRecord;
     rows: WorldDialogInstanceRow[];
@@ -77,7 +112,9 @@ export function WorldDialogInstancesPanel({
     visibleInstanceUserIds: ReadonlySet<string>;
     isInstanceLocation: boolean;
     showHistory: boolean;
+    refreshing: boolean;
     onShowHistory: () => void;
+    onRefresh: () => void;
 }) {
     const { t } = useTranslation();
     const [createOptions, setCreateOptions] =
@@ -124,6 +161,12 @@ export function WorldDialogInstancesPanel({
 
     const filterOptions = worldInstanceFilterOptions(rows);
     const activeFilterCount = activeWorldInstanceFilterCount(filter);
+    const hasMenuFilters = Boolean(
+        activeFilterCount ||
+        filterOptions.categoryIds.length ||
+        filterOptions.vibeIds.length ||
+        filterOptions.languages.length
+    );
     const visibleRows = filterWorldInstanceRows(rows, filter, {
         isFriend: (userId) =>
             userId !== currentUserId && visibleInstanceUserIds.has(userId),
@@ -136,166 +179,161 @@ export function WorldDialogInstancesPanel({
 
     return (
         <>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                <div className="text-muted-foreground flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    <span className="inline-flex items-center gap-1">
-                        <UserIcon className="size-3.5" />
-                        {t('dialog.world.instances.public_count', {
-                            count: world.publicOccupants ?? 0
-                        })}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                        <UserIcon className="size-3.5" />
-                        {t('dialog.world.instances.private_count', {
-                            count: world.privateOccupants ?? 0
-                        })}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                        <UsersIcon className="size-3.5" />
-                        {t('dialog.world.instances.capacity_count', {
-                            count: world.recommendedCapacity || '—',
-                            max: world.capacity || '—'
-                        })}
-                    </span>
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="mr-auto flex min-w-0 flex-wrap items-center gap-2">
+                    <WorldInstanceQuickFilter
+                        icon={UsersIcon}
+                        label={t('dialog.world.instances.filter_with_friends')}
+                        pressed={filter.withFriends}
+                        onPressedChange={(withFriends) =>
+                            patchFilter({ withFriends })
+                        }
+                    />
+                    <WorldInstanceQuickFilter
+                        icon={EyeOffIcon}
+                        label={t(
+                            'dialog.world.instances.filter_hide_unavailable'
+                        )}
+                        pressed={filter.hideUnavailable}
+                        onPressedChange={(hideUnavailable) =>
+                            patchFilter({ hideUnavailable })
+                        }
+                    />
                 </div>
-                <ToolbarFilterMenu activeCount={activeFilterCount}>
-                    <DropdownMenuGroup>
-                        <DropdownMenuCheckboxItem
-                            checked={filter.withFriends}
-                            onClick={(event) => event.preventDefault()}
-                            onCheckedChange={(checked) =>
-                                patchFilter({ withFriends: checked })
-                            }
-                        >
-                            {t('dialog.world.instances.filter_with_friends')}
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={filter.hideUnavailable}
-                            onClick={(event) => event.preventDefault()}
-                            onCheckedChange={(checked) =>
-                                patchFilter({ hideUnavailable: checked })
-                            }
-                        >
-                            {t(
-                                'dialog.world.instances.filter_hide_unavailable'
-                            )}
-                        </DropdownMenuCheckboxItem>
-                    </DropdownMenuGroup>
-                    {filterOptions.categoryIds.length ? (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    {t('dialog.new_instance.category')}
-                                </DropdownMenuLabel>
-                                <DropdownMenuRadioGroup
-                                    value={filter.categoryId}
-                                    onValueChange={(categoryId: string) =>
-                                        patchFilter({ categoryId })
-                                    }
-                                >
-                                    <DropdownMenuRadioItem
-                                        value=""
-                                        onClick={(event) =>
-                                            event.preventDefault()
+                {hasMenuFilters ? (
+                    <ToolbarFilterMenu activeCount={activeFilterCount}>
+                        {filterOptions.categoryIds.length ? (
+                            <>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>
+                                        {t('dialog.new_instance.category')}
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuRadioGroup
+                                        value={filter.categoryId}
+                                        onValueChange={(categoryId: string) =>
+                                            patchFilter({ categoryId })
                                         }
                                     >
-                                        {t(
-                                            'dialog.world.instances.filter_category_all'
-                                        )}
-                                    </DropdownMenuRadioItem>
-                                    {filterOptions.categoryIds.map((id) => (
                                         <DropdownMenuRadioItem
-                                            key={id}
-                                            value={id}
+                                            value=""
                                             onClick={(event) =>
                                                 event.preventDefault()
                                             }
                                         >
-                                            {optionLabel(
-                                                id,
-                                                categoryById,
-                                                'category'
+                                            {t(
+                                                'dialog.world.instances.filter_category_all'
                                             )}
                                         </DropdownMenuRadioItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuGroup>
-                        </>
-                    ) : null}
-                    {filterOptions.vibeIds.length ? (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    {t('dialog.new_instance.vibes')}
-                                </DropdownMenuLabel>
-                                {filterOptions.vibeIds.map((id) => (
-                                    <DropdownMenuCheckboxItem
-                                        key={id}
-                                        checked={filter.vibeIds.includes(id)}
-                                        onClick={(event) =>
-                                            event.preventDefault()
-                                        }
-                                        onCheckedChange={(checked) =>
-                                            patchFilter({
-                                                vibeIds: toggle(
-                                                    filter.vibeIds,
+                                        {filterOptions.categoryIds.map((id) => (
+                                            <DropdownMenuRadioItem
+                                                key={id}
+                                                value={id}
+                                                onClick={(event) =>
+                                                    event.preventDefault()
+                                                }
+                                            >
+                                                {optionLabel(
                                                     id,
-                                                    checked
-                                                )
-                                            })
-                                        }
-                                    >
-                                        {optionLabel(id, vibeById, 'vibe')}
-                                    </DropdownMenuCheckboxItem>
-                                ))}
-                            </DropdownMenuGroup>
-                        </>
-                    ) : null}
-                    {filterOptions.languages.length ? (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    {t('dialog.user.label.languages')}
-                                </DropdownMenuLabel>
-                                {filterOptions.languages.map((key) => (
-                                    <DropdownMenuCheckboxItem
-                                        key={key}
-                                        checked={filter.languages.includes(key)}
-                                        onClick={(event) =>
-                                            event.preventDefault()
-                                        }
-                                        onCheckedChange={(checked) =>
-                                            patchFilter({
-                                                languages: toggle(
-                                                    filter.languages,
-                                                    key,
-                                                    checked
-                                                )
-                                            })
-                                        }
-                                    >
-                                        {languageName(key)}
-                                    </DropdownMenuCheckboxItem>
-                                ))}
-                            </DropdownMenuGroup>
-                        </>
-                    ) : null}
-                    {activeFilterCount ? (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                onClick={() =>
-                                    setFilter(EMPTY_WORLD_INSTANCE_FILTER)
-                                }
-                            >
-                                {t('dialog.world.instances.filter_clear')}
-                            </DropdownMenuItem>
-                        </>
-                    ) : null}
-                </ToolbarFilterMenu>
+                                                    categoryById,
+                                                    'category'
+                                                )}
+                                            </DropdownMenuRadioItem>
+                                        ))}
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuGroup>
+                            </>
+                        ) : null}
+                        {filterOptions.vibeIds.length ? (
+                            <>
+                                {filterOptions.categoryIds.length ? (
+                                    <DropdownMenuSeparator />
+                                ) : null}
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>
+                                        {t('dialog.new_instance.vibes')}
+                                    </DropdownMenuLabel>
+                                    {filterOptions.vibeIds.map((id) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={id}
+                                            checked={filter.vibeIds.includes(
+                                                id
+                                            )}
+                                            onClick={(event) =>
+                                                event.preventDefault()
+                                            }
+                                            onCheckedChange={(checked) =>
+                                                patchFilter({
+                                                    vibeIds: toggle(
+                                                        filter.vibeIds,
+                                                        id,
+                                                        checked
+                                                    )
+                                                })
+                                            }
+                                        >
+                                            {optionLabel(id, vibeById, 'vibe')}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuGroup>
+                            </>
+                        ) : null}
+                        {filterOptions.languages.length ? (
+                            <>
+                                {filterOptions.categoryIds.length ||
+                                filterOptions.vibeIds.length ? (
+                                    <DropdownMenuSeparator />
+                                ) : null}
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>
+                                        {t('dialog.user.label.languages')}
+                                    </DropdownMenuLabel>
+                                    {filterOptions.languages.map((key) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={key}
+                                            checked={filter.languages.includes(
+                                                key
+                                            )}
+                                            onClick={(event) =>
+                                                event.preventDefault()
+                                            }
+                                            onCheckedChange={(checked) =>
+                                                patchFilter({
+                                                    languages: toggle(
+                                                        filter.languages,
+                                                        key,
+                                                        checked
+                                                    )
+                                                })
+                                            }
+                                        >
+                                            {languageName(key)}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuGroup>
+                            </>
+                        ) : null}
+                        {activeFilterCount ? (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        patchFilter({
+                                            categoryId: '',
+                                            languages: [],
+                                            vibeIds: []
+                                        })
+                                    }
+                                >
+                                    {t('dialog.world.instances.filter_clear')}
+                                </DropdownMenuItem>
+                            </>
+                        ) : null}
+                    </ToolbarFilterMenu>
+                ) : null}
+                <ToolbarRefreshButton
+                    loading={refreshing}
+                    onRefresh={onRefresh}
+                />
                 <WorldSidebarPinButton worldId={world.id} name={world.name} />
             </div>
             <div

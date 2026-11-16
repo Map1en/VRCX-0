@@ -5152,7 +5152,6 @@
                 "closed": "已關閉",
                 "public_count": "公開 {count}",
                 "private_count": "私人 {count}",
-                "capacity_count": "用戶上限 {count} ({max})",
                 "pin_to_sidebar": "固定到側欄",
                 "pinned_to_sidebar": "已固定到側欄",
                 "pin_to_sidebar_failed": "固定到側欄失敗",
