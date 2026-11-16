@@ -1296,7 +1296,7 @@
         "online": "オンライン",
         "active": "アクティブ",
         "offline": "オフライン",
-        "pending_offline": "オフラインの可能性",
+        "pending_offline": "オフラインの可能性あり",
         "status_menu": {
             "clear_description": "ステータスメッセージをクリア",
             "recently_used": "最近使った項目",
