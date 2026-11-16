@@ -159,6 +159,14 @@
       "created_at": "2026-11-04T14:53:12Z",
       "repoId": 1201710991,
       "pullRequestNo": 545
+    },
+    {
+      "name": "takatsukiharune",
+      "id": 283564002,
+      "comment_id": 6913762281,
+      "created_at": "2026-11-16T10:23:37Z",
+      "repoId": 1201710991,
+      "pullRequestNo": 557
     }
   ]
 }
