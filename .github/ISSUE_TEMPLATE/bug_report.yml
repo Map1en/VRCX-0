@@ -13,7 +13,7 @@ body:
     - type: input
       attributes:
           label: VRCX-0 version
-          description: You can find this in Settings → About (e.g., 2.9.1)
+          description: You can find this in Settings → About (e.g., 2.34.0)
     - type: input
       attributes:
           label: Operating system
