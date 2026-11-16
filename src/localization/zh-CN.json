@@ -3132,7 +3132,7 @@
                     "tracker_disconnect": "追踪器断开提醒",
                     "timeout": "显示时长",
                     "opacity": "不透明度",
-                    "filters": "头显通知过滤"
+                    "filters": "头显通知筛选器"
                 },
                 "wrist_overlay": {
                     "header": "手腕叠加界面",
@@ -3155,7 +3155,7 @@
                     "hide_private_worlds": "隐藏私人世界",
                     "vr_device_status": "VR 设备状态",
                     "battery_percentage": "显示电量百分比",
-                    "wrist_feed_notifications": "叠加界面通知过滤"
+                    "wrist_feed_notifications": "手腕叠加界面通知筛选器"
                 },
                 "test_mode": {
                     "header": "叠加界面测试",
@@ -3509,7 +3509,7 @@
                         "wayvr_notifications": "WayVR 通知",
                         "ovrtoolkit_hud_notifications": "OVR Toolkit HUD 通知",
                         "ovrtoolkit_wrist_notifications": "OVR Toolkit 手腕通知",
-                        "notification_filters": "VR 叠加通知过滤器",
+                        "notification_filters": "VR 叠加界面通知筛选器",
                         "user_images": "显示好友头像",
                         "notification_opacity": "通知透明度",
                         "notification_timeout": "通知时长"
@@ -3526,7 +3526,7 @@
                     "desktop_notifications": {
                         "header": "桌面通知",
                         "when_to_display": "何时显示",
-                        "notification_filters": "桌面通知过滤器",
+                        "notification_filters": "桌面通知筛选器",
                         "desktop_notification_while_afk": "当处于 AFK 状态时显示桌面通知",
                         "notification_sound": "通知音",
                         "friend_icons": "显示好友头像"
@@ -3539,7 +3539,7 @@
                         "order": "排列顺序",
                         "order_newest_top": "最新在上",
                         "order_newest_bottom": "最新在下",
-                        "activity_filters": "桌面叠加界面过滤器"
+                        "activity_filters": "桌面叠加界面筛选器"
                     },
                     "webhook": {
                         "header": "Webhook 通知",
@@ -3550,7 +3550,7 @@
                         "url_placeholder": "https://example.com/webhook",
                         "format": "载荷格式",
                         "format_generic": "通用 JSON",
-                        "notification_filters": "Webhook 通知过滤器",
+                        "notification_filters": "Webhook 通知筛选器",
                         "send_test": "发送测试 Webhook",
                         "test_sent": "Webhook 测试已发送（HTTP {status}）",
                         "delivery_status": "投递状态",
@@ -3602,7 +3602,7 @@
                         "tts_voice": "TTS 语音样式",
                         "tts_volume": "TTS 音量",
                         "system_default_voice": "系统默认",
-                        "notification_filters": "TTS 通知过滤器",
+                        "notification_filters": "TTS 通知筛选器",
                         "name_mode": "朗读名称",
                         "name_mode_username": "用户名",
                         "name_mode_note": "备注",
@@ -3773,7 +3773,7 @@
                     "youtube_api": {
                         "header": "YouTube API",
                         "enable": "启用",
-                        "youtube_api_key": "输入 API 密钥",
+                        "youtube_api_key": "YouTube API 密钥",
                         "enable_tooltip": "获取视频标题以供日志记录使用，会一并获取进度条的时间"
                     },
                     "translation_api": {
@@ -4742,7 +4742,7 @@
                 "launch_invite_tooltip": "启动 / 邀请",
                 "self_invite_tooltip": "邀请自己",
                 "refresh_instance_info": "刷新房间信息",
-                "instance_creator": "房间建立者",
+                "instance_creator": "房间创建者",
                 "note": "线上备注",
                 "memo": "本地备注",
                 "avatar_info": "正在使用的模型",
@@ -5158,7 +5158,7 @@
                 "unpin_from_sidebar": "取消固定",
                 "unpinned_from_sidebar": "已从侧边栏取消固定",
                 "unpin_from_sidebar_failed": "从侧边栏取消固定失败",
-                "instance_creator": "房间建立者",
+                "instance_creator": "房间创建者",
                 "languages_declared": "房主设定：{languages}",
                 "languages_current": "当前玩家：{languages}",
                 "filter_with_friends": "有好友在",
@@ -6362,31 +6362,31 @@
             "reset": "重置为默认"
         },
         "vr_notifications": {
-            "title": "VR 叠加界面通知过滤器",
+            "title": "VR 叠加界面通知筛选器",
             "description": "选择在 SteamVR 运行时哪些通知会发送到 XSOverlay 和 OVR Toolkit。"
         },
         "tts_notifications": {
-            "title": "TTS 通知过滤器",
+            "title": "TTS 通知筛选器",
             "description": "选择哪些通知会通过文字转语音播放。上方的 TTS 播放条件依然生效。"
         },
         "hmd_notifications": {
-            "title": "头显通知过滤",
+            "title": "头显通知筛选器",
             "description": "选择哪些通知会显示在头显视野内。"
         },
         "desktop_notifications": {
-            "title": "桌面通知过滤器",
+            "title": "桌面通知筛选器",
             "description": "选择哪些活动会触发桌面（系统）通知。上方的桌面通知显示条件依然生效。"
         },
         "desktop_widget": {
-            "title": "桌面叠加界面过滤器",
+            "title": "桌面叠加界面筛选器",
             "description": "选择哪些活动会显示在桌面叠加界面中。"
         },
         "webhook_notifications": {
-            "title": "Webhook 通知过滤器",
+            "title": "Webhook 通知筛选器",
             "description": "选择哪些通知会发送到已配置的 Webhook。"
         },
         "wrist_feed_notifications": {
-            "title": "叠加界面通知过滤器",
+            "title": "手腕叠加界面通知筛选器",
             "description": "选择哪些内容会显示在手腕叠加界面中。桌面通知使用单独的过滤设置。",
             "scopes": {
                 "off": "关闭",
@@ -7441,7 +7441,7 @@
             "display_name": "昵称",
             "world": "世界",
             "instance_name": "房间名称",
-            "instance_creator": "房间建立者",
+            "instance_creator": "房间创建者",
             "avatars": "虚拟形象",
             "time": "停留时间",
             "action": "操作",

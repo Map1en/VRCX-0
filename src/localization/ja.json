@@ -17,7 +17,7 @@
         "game_log_description": "VRCX-0 を起動したまま VRChat を始めると、訪れたワールドや一緒になったプレイヤーなどがここに表示されます。",
         "game_log_disabled_description": "ゲームログの記録がオフのため、新しいアクティビティは保存されません。",
         "game_log_enable_action": "設定でオンにする",
-        "game_log_unavailable_description": "この PC で VRChat のログフォルダーが見つからないため、新しいアクティビティを記録できません。ログファイルを手動でインポートすることはできます。",
+        "game_log_unavailable_description": "この PC で VRChat のログフォルダが見つからないため、新しいアクティビティを記録できません。ログファイルを手動でインポートすることはできます。",
         "game_log_unsupported_description": "このシステムでは VRChat のログを読み取れないため、ゲームのアクティビティは記録されません。",
         "my_avatars_title": "アップロードしたアバターはまだありません",
         "my_avatars_description": "VRChatにアップロードしたアバターがここに表示されます。",
@@ -586,7 +586,7 @@
         "sync_failed_title": "レコーダーから補完できませんでした",
         "sync_failed_description": "続行すると、レコーダー上でまだ補完していないアクティビティは補完できなくなります。",
         "sign_out_failed_title": "レコーダーをログアウトできませんでした",
-        "sign_out_failed_description": "レコーダーがあなたの VRChat アカウントで記録を続ける可能性があります。止めるには、レコーダーを停止するかデータフォルダーを削除してください。",
+        "sign_out_failed_description": "レコーダーがあなたの VRChat アカウントで記録を続ける可能性があります。止めるには、レコーダーを停止するかデータフォルダを削除してください。",
         "continue_anyway": "このまま続行",
         "vrchat_login": "VRChat へのログイン",
         "risk_title": "リスク",
@@ -939,14 +939,14 @@
                 "selectAll": "すべて選択"
             },
             "window": {
-                "title": "ウインドウ",
+                "title": "ウィンドウ",
                 "minimize": "最小化",
                 "maximize": "最大化",
-                "close": "ウインドウを閉じる"
+                "close": "ウィンドウを閉じる"
             },
             "help": {
                 "title": "ヘルプ",
-                "changelog": "新機能 (更新履歴)",
+                "changelog": "更新履歴",
                 "keyboardShortcuts": "キーボードショートカット",
                 "sendFeedback": "フィードバックを送信",
                 "reportIssue": "GitHub で問題を報告",
@@ -981,7 +981,7 @@
         "toggle_theme": "テーマを切り替える"
     },
     "nav_menu": {
-        "changelog": "新機能 (更新履歴)",
+        "changelog": "更新履歴",
         "update": "アップデート",
         "update_downloading": "ダウンロード中",
         "update_downloaded": "再起動",
@@ -1110,7 +1110,7 @@
         "show_friends_sidebar": "フレンドサイドバーを表示",
         "hide_friends_sidebar": "フレンドサイドバーを非表示",
         "enter_sidebar_mode": "サイドバーモード",
-        "restore_full_window": "通常のウインドウに戻す",
+        "restore_full_window": "通常のウィンドウに戻す",
         "always_on_top": "常に手前に表示",
         "zoom_in": "拡大",
         "zoom_out": "縮小",
@@ -1305,9 +1305,9 @@
         "settings": {
             "auto_hide": {
                 "label": "デスクトップの端に寄せているときは自動的に隠す",
-                "description": "サイドバーのウインドウをデスクトップの上端または左右の端に移動すると、ポインターを外したときに隠れます。端にポインターを合わせるか、トレイから開くと再表示できます。",
+                "description": "サイドバーのウィンドウをデスクトップの上端または左右の端に移動すると、ポインターを外したときに隠れます。端にポインターを合わせるか、トレイから開くと再表示できます。",
                 "save_failed": "自動非表示の設定を保存できませんでした。",
-                "paused": "ウインドウの操作に失敗したため、自動非表示を一時停止しました。トレイから開き直すか、サイドバーモードに切り替え直すと再試行できます。"
+                "paused": "ウィンドウの操作に失敗したため、自動非表示を一時停止しました。トレイから開き直すか、サイドバーモードに切り替え直すと再試行できます。"
             },
             "display": "表示",
             "sort": "並べ替え",
@@ -1945,7 +1945,7 @@
                 "export_favorite": "お気に入りをエクスポート",
                 "move": "移動",
                 "move_to": "移動先",
-                "copy_ids": "IDをコピー",
+                "copy_ids": "ID をコピー",
                 "copy_to": "コピー先"
             },
             "empty": {
@@ -2816,7 +2816,7 @@
                 "menu": "フレームを付ける",
                 "copy": "コピー",
                 "copied": "フレーム付きのスクリーンショットをコピーしました",
-                "save": "フォルダーに保存…",
+                "save": "フォルダに保存…",
                 "saved": "フレーム付きのスクリーンショットを {count} 枚保存しました",
                 "failed": "フレームを付けられませんでした：{reason}",
                 "dialog_title": "スクリーンショットにフレームを付ける",
@@ -4724,7 +4724,7 @@
                 "ban_failed": "ユーザーをBANできませんでした"
             },
             "profile_media": {
-                "banner": "プロフィール写真",
+                "banner": "バナー",
                 "profile_icon": "アイコン画像",
                 "empty_title": "メディアが読み込まれていません",
                 "empty_description": "ギャラリーで素材をアップロードまたは管理します。"
@@ -4768,8 +4768,8 @@
                 "url": "VRChat URL",
                 "username": "ユーザー名",
                 "display_name": "表示名",
-                "copy_id": "IDをコピー",
-                "copy_url": "URLをコピー",
+                "copy_id": "ID をコピー",
+                "copy_url": "URL をコピー",
                 "copy_display_name": "表示名をコピー",
                 "instance_closed": "閉じたインスタンス",
                 "instance_age_restricted": "年齢制限あり",
@@ -5172,8 +5172,8 @@
                 "translate_description": "説明を翻訳",
                 "show_original_description": "原文を表示",
                 "id": "ワールドID",
-                "copy_id": "IDをコピー",
-                "copy_url": "URLをコピー",
+                "copy_id": "ID をコピー",
+                "copy_url": "URL をコピー",
                 "url": "VRChat リンク",
                 "vrcx_url": "共有リンク",
                 "vrcx_url_description": "このリンクから VRCX-0 を直接起動できます",
@@ -5381,9 +5381,9 @@
                 "name": "名前",
                 "description": "説明",
                 "id": "アバターID",
-                "copy_id": "IDをコピー",
+                "copy_id": "ID をコピー",
                 "url": "VRChat リンク",
-                "copy_url": "URLをコピー",
+                "copy_url": "URL をコピー",
                 "vrcx_url": "共有リンク",
                 "vrcx_url_description": "このリンクから VRCX-0 を直接起動できます",
                 "vrcx_share_text": "VRCX-0 でアバター「{name}」を開く：{url}",
@@ -5621,7 +5621,7 @@
                 "name": "グループ名",
                 "id": "グループID",
                 "url": "グループ URL",
-                "id_tooltip": "IDをコピー",
+                "id_tooltip": "ID をコピー",
                 "roles": "ロール",
                 "role": "ロール:",
                 "last_visited": "最後に訪問した日時",
@@ -6054,19 +6054,19 @@
             "upload": "アップロード",
             "paste_upload": "画像を貼り付け",
             "clear": "消去",
-            "banner": "プロフィール写真",
-            "profile_photo": "プロフィール写真",
+            "banner": "バナー",
+            "profile_photo": "バナー",
             "profile_icon": "アイコン画像",
-            "use_banner": "プロフィール写真を使用",
+            "use_banner": "バナーに使用",
             "use_profile_icon": "アイコン画像を使用",
-            "clear_banner": "プロフィール写真をクリア",
-            "clear_profile_photo": "プロフィール写真をクリア",
+            "clear_banner": "バナーをクリア",
+            "clear_profile_photo": "バナーをクリア",
             "clear_profile_icon": "アイコン画像をクリア",
-            "set_profile_photo": "プロフィール写真に設定",
+            "set_profile_photo": "バナーに設定",
             "set_profile_icon": "アイコン画像に設定",
             "current": "現在",
-            "edit_profile_media": "プロフィール写真とアイコン画像を編集",
-            "edit_current_profile_media": "現在のプロフィール写真とアイコン画像を編集",
+            "edit_profile_media": "バナーとアイコン画像を編集",
+            "edit_current_profile_media": "現在のバナーとアイコン画像を編集",
             "profile_icons_managed_link": "アイコン画像はギャラリーで管理します",
             "emoji_animation_styles": "アニメーションスタイル",
             "emoji_animation_type": "アニメーション絵文字",
@@ -6454,7 +6454,7 @@
         },
         "previous_instances": {
             "action": {
-                "copy_instance_id": "インスタンスIDをコピー",
+                "copy_instance_id": "インスタンスID をコピー",
                 "copy_world_name": "ワールド名をコピー",
                 "more_actions": "その他の操作"
             },
@@ -7162,7 +7162,7 @@
         "gallery": {
             "uploaded": "ギャラリー画像がアップロードされました",
             "failed": "ギャラリー画像のアップロードに失敗しました",
-            "profile_pic_changed": "プロフィール写真を変更しました",
+            "profile_pic_changed": "バナーを変更しました",
             "profile_icon_changed": "アイコン画像が変更されました"
         },
         "upload": {
@@ -7846,13 +7846,13 @@
         "delete_description": "「{name}」を削除すると、保存されている{count}件のグループもお気に入りから外れます。",
         "choose_collection": "保存先を選択",
         "remove": "お気に入りから削除",
-        "toggle": "グループをお気に入りに追加",
+        "toggle": "グループを保存",
         "sidebar_saved": "保存したグループ",
-        "sidebar_none": "お気に入りグループはまだありません",
+        "sidebar_none": "保存したグループはまだありません",
         "sidebar_other": "その他のアクティブなグループ",
         "sidebar_failed": "グループインスタンスを読み込めませんでした",
         "sidebar_no_active": "その他のアクティブなグループインスタンスはありません",
-        "scope_all": "すべてのお気に入りグループ",
+        "scope_all": "保存したすべてのグループ",
         "scope_selected": "選択したコレクション",
         "notification_type": "グループの新規インスタンス",
         "notification_empty": "グループのコレクションはまだありません。"
