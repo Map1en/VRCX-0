@@ -17,6 +17,17 @@ The user name is shown in its own slot (wrist feed, desktop overlay, HMD, deskto
 
 `notifications.sentence.*` are the full-sentence forms read aloud or shown as one line (TTS, XSOverlay/OVR Toolkit, webhooks). Keep `{name}` and let the word order follow the language; Japanese uses が for the subject and no さん.
 
+## Japanese spacing
+
+Put a half-width space between Japanese text (kana/kanji) and half-width words or placeholders, on both sides. This matches the VRChat client (`VRChat を終了`, `URL をコピー`).
+
+- Latin words, including ones with digits or symbols: `VRChat のサーバー`, `この PC で`, `VRCX-0 を表示`, `BAN 済み`, `100MB まで`.
+- Placeholders: `{name} から {count} 件`, `{value} をコピーしました`.
+- No space next to full-width punctuation or brackets (`、。・「」（）：`): `このリンク・ID`, `（{count} 件）`.
+- No space in katakana + `ID`/`URL` compounds: `ユーザーID`, `ワールドURL`. A particle after them still gets one: `ユーザーID を検索`.
+- Literal numbers stay attached to counters and units: `7日間`, `30秒`. Dates stay attached: `{year}年`.
+- Official VRChat terms keep the in-game spelling even when it breaks these rules (`トラッキングとIK`).
+
 ## VRChat (official client terms)
 
 | English                        | Chinese (Simplified)     | Chinese (Traditional)   | Japanese                             | Korean                           |
