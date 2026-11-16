@@ -1,6 +1,6 @@
 # VRCX-0 自建记录端（实验性）
 
-[English](README.md) | **简体中文** | [繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md)
+[English](recorder.md) | **简体中文** | [繁體中文](recorder.zh-Hant.md) | [日本語](recorder.ja-JP.md) | [한국어](recorder.ko-KR.md)
 
 自建记录端运行在常开的机器上，在 VRCX-0 关闭期间记录好友动态。VRCX-0 启动后，这段时间的记录会补回本地好友动态。
 

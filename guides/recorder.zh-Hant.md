@@ -1,6 +1,6 @@
 # VRCX-0 自架記錄端（實驗性）
 
-[English](README.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md)
+[English](recorder.md) | [简体中文](recorder.zh-CN.md) | **繁體中文** | [日本語](recorder.ja-JP.md) | [한국어](recorder.ko-KR.md)
 
 自架記錄端執行在常開的機器上，在 VRCX-0 關閉期間記錄好友動態。VRCX-0 啟動後，這段時間的紀錄會補回本機好友動態。
 

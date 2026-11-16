@@ -128,17 +128,17 @@ describe('recorder errors', () => {
 
 describe('recorder setup guide', () => {
     it.each([
-        ['zh-CN', 'README.zh-CN.md'],
-        ['zh-TW', 'README.zh-Hant.md'],
-        ['ja', 'README.ja-JP.md'],
-        ['ko', 'README.ko-KR.md'],
-        ['en', 'README.md'],
-        ['fr', 'README.md']
+        ['zh-CN', 'recorder.zh-CN.md'],
+        ['zh-TW', 'recorder.zh-Hant.md'],
+        ['ja', 'recorder.ja-JP.md'],
+        ['ko', 'recorder.ko-KR.md'],
+        ['en', 'recorder.md'],
+        ['fr', 'recorder.md']
     ])(
         'opens the guide for the %s interface language as %s',
         (language, file) => {
             expect(offlineRecordGuideUrl(language)).toBe(
-                `https://github.com/Map1en/VRCX-0/blob/master/crates/logger/${file}`
+                `https://github.com/Map1en/VRCX-0/blob/master/guides/${file}`
             );
         }
     );

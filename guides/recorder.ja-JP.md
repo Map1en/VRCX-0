@@ -1,6 +1,6 @@
 # VRCX-0 セルフホストレコーダー（試験的）
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | **日本語** | [한국어](README.ko-KR.md)
+[English](recorder.md) | [简体中文](recorder.zh-CN.md) | [繁體中文](recorder.zh-Hant.md) | **日本語** | [한국어](recorder.ko-KR.md)
 
 セルフホストレコーダーは常時稼働するマシン上で動作し、VRCX-0 を閉じている間のフレンドのアクティビティを記録します。VRCX-0 の起動後、その間の記録がローカルのフィードに補完されます。
 

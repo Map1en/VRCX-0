@@ -67,11 +67,13 @@ VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt 
 ### For advanced users
 
 - **MCP server** — let external AI tools use your local social data directly
-- **Integration API** — real-time in-game data for third-party apps
+- **Integration API** — real-time in-game data for third-party apps; see
+  [guides/integration-api.md](guides/integration-api.md)
 - **Self-hosted Recorder (experimental)** — runs on your own server and keeps
   your Feed recording while VRCX-0 is closed; the gap fills in the next time
-  you open it
-- **Headless mode** — run without a UI; see `crates/headless`
+  you open it; see [guides/recorder.md](guides/recorder.md)
+- **Headless mode** — run without a UI; see
+  [guides/headless.md](guides/headless.md)
 
 ### Compared with VRCX
 
@@ -88,7 +90,7 @@ VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt 
 | Themes                | Built-in themes, custom CSS file                                       | + Community themes, background image, in-app CSS editor, accent color                     |
 | Multiple accounts     | Game logs from all accounts mixed together                             | Game log kept per account; play VRChat on another account without affecting this one      |
 
-Everything else VRCX does, VRCX-0 does too.
+Nearly everything else VRCX does, VRCX-0 does too.
 
 ## Install
 
@@ -124,6 +126,7 @@ Use these steps to contribute or build VRCX-0 locally. Before contributing, see 
 
 Requirements: Node.js ≥ 24.10, npm ≥ 11.5, and a stable Rust toolchain via rustup.
 On Windows, also install **Visual Studio Build Tools** with the **Desktop development with C++** workload.
+On Linux, also install the system packages listed in Tauri's [prerequisites](https://v2.tauri.app/start/prerequisites/#linux).
 
 ```bash
 git clone https://github.com/Map1en/VRCX-0

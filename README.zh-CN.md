@@ -51,9 +51,9 @@ VRCX-0 是 VRCX 的完全重写版本，由 VRCX 前维护者之一开发。基�
 ### 进阶
 
 - **MCP 服务器** — 让外部 AI 工具直接使用你的本地社交数据
-- **集成 API** — 为第三方应用提供游戏内实时数据
-- **自建记录端（实验性）** — 部署在你自己的服务器上，VRCX-0 关闭期间继续记录好友动态，下次打开时自动补上
-- **无头模式（Headless）** — 无界面运行，详见 `crates/headless`
+- **集成 API** — 为第三方应用提供游戏内实时数据，详见 [进阶文档](guides/integration-api.md)（英文）
+- **自建记录端（实验性）** — 部署在你自己的服务器上，VRCX-0 关闭期间继续记录好友动态，下次打开时自动补上，详见 [部署说明](guides/recorder.zh-CN.md)
+- **无头模式（Headless）** — 无界面运行，详见 [进阶文档](guides/headless.md)（英文）
 
 ### 与 VRCX 的对比
 
@@ -70,7 +70,7 @@ VRCX-0 是 VRCX 的完全重写版本，由 VRCX 前维护者之一开发。基�
 | 主题           | 内置主题、自定义 CSS 文件                      | + 社区主题、背景图片、应用内 CSS 编辑、强调色                     |
 | 多账号         | 多账号游戏日志混在一起                         | 游戏日志按账号分开存储；用另一个账号玩 VRChat 时互不影响          |
 
-VRCX 的其他功能，VRCX-0 同样具备。
+VRCX 的其他功能，VRCX-0 也基本都有。
 
 ## 安装
 
@@ -101,6 +101,7 @@ macOS 首次启动如被系统拦截，请前往 **系统设置 → 隐私与安
 
 依赖：Node.js ≥ 24.10、npm ≥ 11.5，以及通过 rustup 安装的稳定版 Rust 工具链。
 Windows 用户还需安装 **Visual Studio Build Tools**，并勾选 **"使用 C++ 的桌面开发"**。
+Linux 用户还需安装 Tauri [环境准备](https://v2.tauri.app/start/prerequisites/#linux) 中列出的系统依赖。
 
 ```bash
 git clone https://github.com/Map1en/VRCX-0

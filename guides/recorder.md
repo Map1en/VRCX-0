@@ -1,6 +1,6 @@
 # VRCX-0 Self-hosted Recorder (experimental)
 
-**English** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md)
+**English** | [简体中文](recorder.zh-CN.md) | [繁體中文](recorder.zh-Hant.md) | [日本語](recorder.ja-JP.md) | [한국어](recorder.ko-KR.md)
 
 The Self-hosted Recorder runs on an always-on machine and records friend activity while VRCX-0 is closed. When VRCX-0 starts, the recorded activity is filled into the local Feed.
 

@@ -1,6 +1,6 @@
 # VRCX-0 자체 호스팅 기록기 (실험적)
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) | **한국어**
+[English](recorder.md) | [简体中文](recorder.zh-CN.md) | [繁體中文](recorder.zh-Hant.md) | [日本語](recorder.ja-JP.md) | **한국어**
 
 자체 호스팅 기록기는 항상 켜져 있는 기기에서 실행되며, VRCX-0이 꺼져 있는 동안 친구 활동을 기록합니다. VRCX-0을 시작하면 그동안의 기록이 로컬 피드에 채워집니다.
 
