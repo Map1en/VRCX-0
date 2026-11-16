@@ -114,6 +114,16 @@ doesn't display properly, VRCX-0 turns it back off automatically. NVIDIA GPUs
 on X11 or Hyprland usually can't use it. Setting
 `WEBKIT_DISABLE_DMABUF_RENDERER` yourself hides this option.
 
+## Privacy
+
+To help improve the app, VRCX-0 collects anonymous usage information: a random
+install ID and only the information it needs. Sensitive data is removed before
+anything is sent. It's on by default; turn it off under **Settings → Advanced →
+Collect Anonymous Usage Information**. Even when it's off, VRCX-0 still sends
+one basic record after each update, so active installs can be counted. If
+you're not comfortable with that, this software may not be the right fit for
+you.
+
 ## Feedback
 
 - Questions and chat: [Discord](https://discord.gg/fehKP3SVPN)
