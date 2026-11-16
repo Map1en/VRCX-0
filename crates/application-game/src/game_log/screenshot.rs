@@ -31,10 +31,16 @@ pub async fn handle_screenshot(
     author: &RuntimeAuthIdentity,
     input: ScreenshotInput,
 ) -> Result<()> {
-    let screenshot_path = input.path.trim().to_string();
-    if screenshot_path.is_empty() {
+    let logged_path = input.path.trim().to_string();
+    if logged_path.is_empty() {
         return Ok(());
     }
+    let host_actions_for_resolve = std::sync::Arc::clone(&host_actions);
+    let screenshot_path = tokio::task::spawn_blocking(move || {
+        host_actions_for_resolve.resolve_game_path(&logged_path)
+    })
+    .await
+    .map_err(|error| Error::Custom(format!("screenshot path task: {error}")))?;
 
     let screenshot_helper = config.get_bool("screenshotHelper", true)?;
     let modify_filename = config.get_bool("screenshotHelperModifyFilename", false)?;

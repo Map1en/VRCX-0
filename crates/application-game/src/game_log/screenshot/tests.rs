@@ -231,3 +231,109 @@ fn captured_author_does_not_follow_a_later_account_switch() {
     assert_eq!(metadata["author"]["id"], "usr_first");
     assert_eq!(metadata["author"]["displayName"], "First User");
 }
+
+const WINE_SCREENSHOT_PATH: &str = r"C:\users\steamuser\Pictures\VRChat\VRChat_2026-04-30.png";
+const HOST_SCREENSHOT_PATH: &str =
+    "/pfx/drive_c/users/steamuser/Pictures/VRChat/VRChat_2026-04-30.png";
+
+#[derive(Default)]
+struct WinePathHostActions {
+    metadata_paths: std::sync::Mutex<Vec<String>>,
+    clipboard_paths: std::sync::Mutex<Vec<String>>,
+}
+
+impl GameLogHostActions for WinePathHostActions {
+    fn quit_game(&self) -> i64 {
+        0
+    }
+
+    fn copy_image_to_clipboard(&self, path: &str) -> Result<()> {
+        self.clipboard_paths.lock().unwrap().push(path.to_string());
+        Ok(())
+    }
+
+    fn ugc_photo_location(&self, configured_path: Option<String>) -> String {
+        configured_path.unwrap_or_default()
+    }
+
+    fn add_screenshot_metadata(
+        &self,
+        path: &str,
+        _metadata: &str,
+        _world_id: &str,
+        _modify_filename: bool,
+    ) -> String {
+        self.metadata_paths.lock().unwrap().push(path.to_string());
+        path.to_string()
+    }
+
+    fn resolve_game_path(&self, path: &str) -> String {
+        if path == WINE_SCREENSHOT_PATH {
+            HOST_SCREENSHOT_PATH.to_string()
+        } else {
+            path.to_string()
+        }
+    }
+}
+
+#[derive(Default)]
+struct ProcessedPaths(std::sync::Mutex<Vec<String>>);
+
+impl crate::GameLogSideEffectObserver for ProcessedPaths {
+    fn on_game_log_side_effect(&self, event: &GameLogSideEffectEvent) {
+        if let GameLogSideEffectEvent::ScreenshotProcessed(payload) = event {
+            self.0.lock().unwrap().push(payload.path.clone());
+        }
+    }
+}
+
+#[test]
+fn screenshot_side_effects_use_the_host_path_of_a_logged_wine_path() {
+    let store = test_store("screenshot-wine-path");
+    store
+        .config
+        .set_bool("screenshotHelperCopyToClipboard", true)
+        .unwrap();
+    let host_actions = std::sync::Arc::new(WinePathHostActions::default());
+    let processed = std::sync::Arc::new(ProcessedPaths::default());
+    let observer: std::sync::Arc<dyn crate::GameLogSideEffectObserver> = processed.clone();
+    let sink = GameLogSideEffectSink::new(crate::RuntimeEventBus::new(), Some(observer));
+    let author = RuntimeAuthIdentity {
+        user_id: "usr_self".to_string(),
+        display_name: "Self".to_string(),
+    };
+    let input = ScreenshotInput {
+        created_at: SHOT_AT.to_string(),
+        path: format!("{WINE_SCREENSHOT_PATH}\r\n"),
+        snapshot: RuntimeSnapshot {
+            location: LOCATION.to_string(),
+            world_name: "Live World".to_string(),
+            ..RuntimeSnapshot::default()
+        },
+    };
+    let actions: std::sync::Arc<dyn GameLogHostActions> = host_actions.clone();
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(handle_screenshot(
+            &store,
+            &store.config,
+            actions,
+            &sink,
+            &author,
+            input,
+        ))
+        .unwrap();
+
+    assert_eq!(
+        *host_actions.metadata_paths.lock().unwrap(),
+        [HOST_SCREENSHOT_PATH]
+    );
+    assert_eq!(
+        *host_actions.clipboard_paths.lock().unwrap(),
+        [HOST_SCREENSHOT_PATH]
+    );
+    assert_eq!(*processed.0.lock().unwrap(), [HOST_SCREENSHOT_PATH]);
+}

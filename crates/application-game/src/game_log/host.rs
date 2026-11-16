@@ -11,6 +11,11 @@ pub trait GameLogHostActions: Send + Sync {
         world_id: &str,
         modify_filename: bool,
     ) -> String;
+
+    /// The game log holds paths as the game sees them, which under Proton are Wine paths.
+    fn resolve_game_path(&self, path: &str) -> String {
+        path.to_string()
+    }
 }
 
 #[derive(Default)]
