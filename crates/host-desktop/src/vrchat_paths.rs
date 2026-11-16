@@ -445,7 +445,8 @@ fn wine_path_in_prefix(prefix: &Path, path: &str) -> Option<PathBuf> {
     let mut resolved = match drive {
         'c' => prefix.join("drive_c"),
         'z' => PathBuf::from("/"),
-        other => prefix.join("dosdevices").join(format!("{other}:")),
+        // One component, so Windows test builds don't read `d:` as a drive prefix.
+        other => prefix.join(format!("dosdevices/{other}:")),
     };
     resolved.extend(
         path[2..]
