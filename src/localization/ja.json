@@ -1119,7 +1119,7 @@
         "send_feedback": "フィードバックを送信",
         "report_issue": "GitHub で問題を報告",
         "community": "コミュニティ",
-        "open_source_licenses": "サードパーティー通知",
+        "open_source_licenses": "オープンソースライセンス",
         "about": "VRCX-0 について",
         "messages": {
             "zoom_failed": "ズームの適用に失敗しました",
@@ -6765,7 +6765,7 @@
             "view_changes": "更新内容を見る"
         },
         "open_source": {
-            "header": "サードパーティー通知",
+            "header": "オープンソースライセンス",
             "loading": "サードパーティーの通知を読み込んでいます",
             "unavailable": "サードパーティーの通知を読み込めませんでした。プロダクションのビルドを行い、再生成してください。",
             "search_placeholder": "パッケージ、ライセンス、またはバージョンで検索",

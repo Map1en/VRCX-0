@@ -392,7 +392,7 @@ The user name is shown in its own slot (wrist feed, desktop overlay, HMD, deskto
 | Table Entries Settings             | 条目读取设置               | 表格最大列數          | 最大読み込み件数                     |
 | Test                               | 测试                       | 測試                  | テスト                               |
 | Themes                             | 主题                       | 主題                  | テーマ                               |
-| Third-Party Notices                | 第三方声明                 | 第三方聲明            | サードパーティー通知                 |
+| Third-Party Notices                | 第三方声明                 | 第三方聲明            | オープンソースライセンス             |
 | Time Spent                         | 总停留时长                 | 停留時長              | 過ごした時間                         |
 | Time Together                      | 一起游玩的时长             | 一起遊玩時長          | 一緒に居た時間                       |
 | User ID                            | 玩家 ID                    | 用戶 ID               | ユーザーID                           |
