@@ -82,6 +82,18 @@ impl GameLogHostActions for HostGameLogActions {
             modify_filename,
         )
     }
+
+    fn resolve_game_path(&self, path: &str) -> String {
+        #[cfg(target_os = "linux")]
+        {
+            vrchat_paths::linux_path_from_vrchat_path(path)
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            path.to_string()
+        }
+    }
 }
 
 pub struct GameLogHostRuntime {

@@ -405,6 +405,56 @@ pub fn discover_linux_vrchat_paths() -> Result<LinuxVrchatPaths, String> {
     Err("VRChat Proton prefix not found".into())
 }
 
+/// Under Proton the log holds Wine paths such as `C:\users\steamuser\Pictures\...`,
+/// which only exist inside the VRChat prefix.
+#[cfg(target_os = "linux")]
+pub fn linux_path_from_vrchat_path(path: &str) -> String {
+    if !is_wine_drive_path(path) {
+        return path.to_string();
+    }
+    match discover_linux_vrchat_paths() {
+        Ok(paths) => wine_path_in_prefix(&paths.proton_prefix, path)
+            .map(|resolved| resolved.to_string_lossy().into_owned())
+            .unwrap_or_else(|| path.to_string()),
+        Err(error) => {
+            tracing::warn!(%error, path, "could not map VRChat Wine path onto Linux");
+            path.to_string()
+        }
+    }
+}
+
+#[cfg(any(target_os = "linux", test))]
+fn is_wine_drive_path(path: &str) -> bool {
+    let bytes = path.as_bytes();
+    bytes.len() >= 2
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && bytes
+            .get(2)
+            .is_some_and(|separator| matches!(separator, b'\\' | b'/'))
+}
+
+/// `C:` is the prefix's `drive_c`, `Z:` is Wine's default mapping of `/`, and any other
+/// drive goes through the prefix's `dosdevices` links.
+#[cfg(any(target_os = "linux", test))]
+fn wine_path_in_prefix(prefix: &Path, path: &str) -> Option<PathBuf> {
+    if !is_wine_drive_path(path) {
+        return None;
+    }
+    let drive = path.as_bytes()[0].to_ascii_lowercase() as char;
+    let mut resolved = match drive {
+        'c' => prefix.join("drive_c"),
+        'z' => PathBuf::from("/"),
+        other => prefix.join("dosdevices").join(format!("{other}:")),
+    };
+    resolved.extend(
+        path[2..]
+            .split(['\\', '/'])
+            .filter(|component| !component.is_empty()),
+    );
+    Some(resolved)
+}
+
 #[cfg(target_os = "linux")]
 pub fn discover_linux_vrchat_log_paths() -> Result<LinuxVrchatPaths, String> {
     let paths = discover_linux_vrchat_paths()?;
@@ -611,6 +661,46 @@ mod tests {
         let roots = discover_linux_steam_roots_in(&dir.path).unwrap();
 
         assert_eq!(roots, [local_root, legacy_root]);
+    }
+
+    #[test]
+    fn maps_vrchat_wine_paths_into_the_proton_prefix() {
+        let prefix = Path::new("/steam/steamapps/compatdata/438100/pfx");
+
+        assert_eq!(
+            wine_path_in_prefix(
+                prefix,
+                r"C:\users\steamuser\Pictures\VRChat\2026-11\VRChat_2026-11-16_03-09-10.568_3840x2160.png",
+            ),
+            Some(prefix.join(
+                "drive_c/users/steamuser/Pictures/VRChat/2026-11/VRChat_2026-11-16_03-09-10.568_3840x2160.png"
+            ))
+        );
+        assert_eq!(
+            wine_path_in_prefix(prefix, r"z:\home\example\Pictures\VRChat_1.png"),
+            Some(PathBuf::from("/home/example/Pictures/VRChat_1.png"))
+        );
+        assert_eq!(
+            wine_path_in_prefix(prefix, r"D:\Photos\VRChat_1.png"),
+            Some(prefix.join("dosdevices/d:/Photos/VRChat_1.png"))
+        );
+    }
+
+    #[test]
+    fn leaves_non_wine_paths_unmapped() {
+        let prefix = Path::new("/pfx");
+
+        assert_eq!(
+            wine_path_in_prefix(prefix, "/home/example/VRChat_1.png"),
+            None
+        );
+        assert_eq!(wine_path_in_prefix(prefix, "VRChat_1.png"), None);
+        assert_eq!(wine_path_in_prefix(prefix, "C:VRChat_1.png"), None);
+        assert_eq!(wine_path_in_prefix(prefix, "C:"), None);
+        assert_eq!(
+            wine_path_in_prefix(prefix, r"\\server\share\VRChat_1.png"),
+            None
+        );
     }
 
     #[test]
