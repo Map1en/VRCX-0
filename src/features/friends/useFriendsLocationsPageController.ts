@@ -59,11 +59,12 @@ export function useFriendsLocationsPageController() {
         viewMode
     } = useFriendsLocationsPreferences();
     const deferredSearchQuery = useDeferredValue(searchQuery);
+    const deferredViewMode = useDeferredValue(viewMode);
     const {
         resetScrollTop,
         viewportMetrics: scrollMetrics,
         viewportRef: scrollRef
-    } = useScrollViewportMetrics({ enabled: viewMode === 'people' });
+    } = useScrollViewportMetrics({ enabled: deferredViewMode === 'people' });
 
     useEffect(() => {
         resetScrollTop();
@@ -73,7 +74,7 @@ export function useFriendsLocationsPageController() {
         resetScrollTop,
         showFavoritesInOnline,
         showSameInstanceInOnline,
-        viewMode
+        deferredViewMode
     ]);
 
     const derived = useFriendsLocationsPageDerivedState({
@@ -100,7 +101,7 @@ export function useFriendsLocationsPageController() {
         showSameInstanceInOnline,
         sidebarFavoritePrefs,
         sidebarSortMethods,
-        viewMode
+        viewMode: deferredViewMode
     });
     const instanceActionGateTargets = useMemo(
         () =>
