@@ -772,7 +772,8 @@
             "action_failed": "Couldn't complete that action",
             "failed_to_load_data": "Couldn't load the data",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Couldn't open the instance in VRChat. Sending you a self-invite instead.",
-            "failed_to_save_memo": "Failed to save local note"
+            "failed_to_save_memo": "Failed to save local note",
+            "page_crashed": "Oops, something went wrong."
         },
         "picker": {
             "more_not_shown": "{count} more not shown. Narrow your search to find them."

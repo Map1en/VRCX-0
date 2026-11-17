@@ -771,7 +771,8 @@
             "action_failed": "無法完成此操作",
             "failed_to_load_data": "無法載入資料",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "無法在 VRChat 中開啟房間，改用自我邀請",
-            "failed_to_save_memo": "無法儲存本機筆記"
+            "failed_to_save_memo": "無法儲存本機筆記",
+            "page_crashed": "哎呀，出了點問題"
         },
         "picker": {
             "more_not_shown": "還有 {count} 位未顯示，縮小搜尋範圍即可找到。"

@@ -772,7 +772,8 @@
             "action_failed": "No se pudo completar la acción",
             "failed_to_load_data": "No se pudieron cargar los datos",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "No se pudo abrir la instancia en VRChat. Se te enviará una autoinvitación en su lugar.",
-            "failed_to_save_memo": "No se pudo guardar la nota local"
+            "failed_to_save_memo": "No se pudo guardar la nota local",
+            "page_crashed": "Vaya, algo salió mal."
         },
         "picker": {
             "more_not_shown": "Hay {count} más que no se muestran. Acota la búsqueda para encontrarlos."

@@ -774,7 +774,8 @@
             "action_failed": "Akci se nepodařilo dokončit",
             "failed_to_load_data": "Data se nepodařilo načíst",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Nepodařilo se otevřít instanci ve VRChat, použije se pozvání sebe sama",
-            "failed_to_save_memo": "Nepodařilo se uložit lokální poznámku"
+            "failed_to_save_memo": "Nepodařilo se uložit lokální poznámku",
+            "page_crashed": "Jejda, něco se pokazilo."
         },
         "picker": {
             "more_not_shown": "Dalších {count} není zobrazeno. Zužte hledání, abyste je našli."

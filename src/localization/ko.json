@@ -771,7 +771,8 @@
             "action_failed": "작업을 완료하지 못했습니다",
             "failed_to_load_data": "데이터를 불러오지 못했습니다",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat에서 인스턴스를 열지 못해 대신 셀프 초대를 보냅니다.",
-            "failed_to_save_memo": "로컬 메모를 저장하지 못했습니다."
+            "failed_to_save_memo": "로컬 메모를 저장하지 못했습니다.",
+            "page_crashed": "앗, 문제가 발생했어요."
         },
         "picker": {
             "more_not_shown": "{count}명이 더 있습니다. 검색어를 좁혀 찾아보세요."

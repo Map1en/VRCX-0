@@ -772,7 +772,8 @@
             "action_failed": "Die Aktion konnte nicht abgeschlossen werden",
             "failed_to_load_data": "Die Daten konnten nicht geladen werden",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Instanz konnte nicht in VRChat geöffnet werden, es wird stattdessen eine Selbsteinladung verwendet",
-            "failed_to_save_memo": "Lokale Notiz konnte nicht gespeichert werden"
+            "failed_to_save_memo": "Lokale Notiz konnte nicht gespeichert werden",
+            "page_crashed": "Hoppla, da ist etwas schiefgelaufen."
         },
         "picker": {
             "more_not_shown": "{count} weitere werden nicht angezeigt. Grenze die Suche ein, um sie zu finden."

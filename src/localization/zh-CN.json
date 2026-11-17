@@ -771,7 +771,8 @@
             "action_failed": "无法完成该操作",
             "failed_to_load_data": "无法加载数据",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "无法在 VRChat 中打开房间，已改为向自己发送邀请",
-            "failed_to_save_memo": "保存本地备注失败"
+            "failed_to_save_memo": "保存本地备注失败",
+            "page_crashed": "哎呀，出了点问题"
         },
         "picker": {
             "more_not_shown": "还有 {count} 位未显示，缩小搜索范围即可找到。"

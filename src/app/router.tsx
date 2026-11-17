@@ -42,6 +42,7 @@ function RouteErrorFallback() {
     const { t } = useTranslation();
     return (
         <div className="text-muted-foreground flex h-full min-h-0 flex-col items-center justify-center gap-3 text-sm">
+            <p>{t('common.error.page_crashed')}</p>
             <Button
                 variant="outline"
                 size="sm"

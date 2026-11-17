@@ -771,7 +771,8 @@
             "action_failed": "操作を完了できませんでした",
             "failed_to_load_data": "データを読み込めませんでした",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat でインスタンスを開けなかったため、自分への招待に切り替えます",
-            "failed_to_save_memo": "ローカルノートの保存に失敗しました"
+            "failed_to_save_memo": "ローカルノートの保存に失敗しました",
+            "page_crashed": "おっと、問題が発生しました。"
         },
         "picker": {
             "more_not_shown": "他 {count} 人は表示されていません。検索条件を絞り込んでください。"

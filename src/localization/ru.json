@@ -774,7 +774,8 @@
             "action_failed": "Не удалось выполнить действие",
             "failed_to_load_data": "Не удалось загрузить данные",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Не удалось открыть инстанс в VRChat, отправляется самоприглашение",
-            "failed_to_save_memo": "Не удалось сохранить локальную заметку"
+            "failed_to_save_memo": "Не удалось сохранить локальную заметку",
+            "page_crashed": "Упс, что-то пошло не так."
         },
         "picker": {
             "more_not_shown": "Ещё {count} не показаны. Уточните запрос, чтобы найти их."
