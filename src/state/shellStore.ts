@@ -306,7 +306,7 @@ export const useShellStore = create<ShellStore>((set, get) => ({
         get().updateTrayIconNotification();
     },
     removeNotify(index) {
-        if (!index) {
+        if (!index || !get().notifiedMenus.includes(index)) {
             return;
         }
         set((state) => ({

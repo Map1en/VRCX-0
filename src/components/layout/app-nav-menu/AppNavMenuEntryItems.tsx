@@ -4,7 +4,7 @@ import {
     PinOffIcon,
     Trash2Icon
 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 
@@ -140,7 +140,7 @@ function CollapsedFolderDropdownEntry({
     );
 }
 
-function NavMenuFolderItem({
+const NavMenuFolderItem = memo(function NavMenuFolderItem({
     item,
     isCollapsed,
     shortcutHintsVisible,
@@ -363,13 +363,13 @@ function NavMenuFolderItem({
             </SidebarMenuItem>
         </NavItemContextMenu>
     );
-}
+});
 
-function NavMenuEntryItem({
+const NavMenuEntryItem = memo(function NavMenuEntryItem({
     item,
     shortcutHintsVisible,
     shortcutPositionByIndex,
-    activeIndex,
+    isActive,
     notifiedKeys,
     hasNotifications,
     onSelect,
@@ -382,7 +382,7 @@ function NavMenuEntryItem({
     item: NavMenuItem;
     shortcutHintsVisible: boolean;
     shortcutPositionByIndex: ReadonlyMap<string, number>;
-    activeIndex: string;
+    isActive: boolean;
     notifiedKeys: ReadonlySet<string>;
     hasNotifications: boolean;
 }) {
@@ -404,7 +404,7 @@ function NavMenuEntryItem({
             <SidebarMenuItem>
                 <SidebarMenuButton
                     render={itemPath ? <NavLink to={itemPath} /> : undefined}
-                    isActive={item.index === activeIndex}
+                    isActive={isActive}
                     tooltip={labelForEntry(item, t)}
                     className={cn(
                         navMenuLucideClassName,
@@ -440,6 +440,6 @@ function NavMenuEntryItem({
             </SidebarMenuItem>
         </NavItemContextMenu>
     );
-}
+});
 
 export { NavMenuEntryItem, NavMenuFolderItem };

@@ -18,6 +18,7 @@ import {
 import { navMenuLucideClassName } from './app-nav-menu/AppNavMenuIcons';
 import type { NavMenuActionHandlers } from './app-nav-menu/types';
 import {
+    isEntryActive,
     NavItemContextMenu,
     NavMenuEntryItem,
     NavMenuFolderItem
@@ -106,8 +107,40 @@ function AppNavMenuContent({
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {menuItems.map((item) =>
-                                item.children?.length ? (
+                            {menuItems.map((item) => {
+                                if (!item.children?.length) {
+                                    return (
+                                        <NavMenuEntryItem
+                                            key={item.index}
+                                            item={item}
+                                            shortcutHintsVisible={
+                                                shortcutHintsVisible
+                                            }
+                                            shortcutPositionByIndex={
+                                                shortcutPositionByIndex
+                                            }
+                                            isActive={
+                                                item.index === activeIndex
+                                            }
+                                            notifiedKeys={notifiedKeys}
+                                            hasNotifications={hasNotifications}
+                                            onSelect={onSelect}
+                                            onMarkAllRead={onMarkAllRead}
+                                            onEditDashboard={onEditDashboard}
+                                            onDeleteDashboard={
+                                                onDeleteDashboard
+                                            }
+                                            onUnpinTool={onUnpinTool}
+                                            onOpenCustomNav={onOpenCustomNav}
+                                        />
+                                    );
+                                }
+                                const folderOwnsRoute = item.children.some(
+                                    (entry) =>
+                                        entry.index === activeIndex ||
+                                        isEntryActive(entry, pathname)
+                                );
+                                return (
                                     <NavMenuFolderItem
                                         key={item.index}
                                         item={item}
@@ -118,8 +151,12 @@ function AppNavMenuContent({
                                         shortcutPositionByIndex={
                                             shortcutPositionByIndex
                                         }
-                                        activeIndex={activeIndex}
-                                        pathname={pathname}
+                                        activeIndex={
+                                            folderOwnsRoute ? activeIndex : ''
+                                        }
+                                        pathname={
+                                            folderOwnsRoute ? pathname : ''
+                                        }
                                         notifiedKeys={notifiedKeys}
                                         hasNotifications={hasNotifications}
                                         onSelect={onSelect}
@@ -129,28 +166,8 @@ function AppNavMenuContent({
                                         onUnpinTool={onUnpinTool}
                                         onOpenCustomNav={onOpenCustomNav}
                                     />
-                                ) : (
-                                    <NavMenuEntryItem
-                                        key={item.index}
-                                        item={item}
-                                        shortcutHintsVisible={
-                                            shortcutHintsVisible
-                                        }
-                                        shortcutPositionByIndex={
-                                            shortcutPositionByIndex
-                                        }
-                                        activeIndex={activeIndex}
-                                        notifiedKeys={notifiedKeys}
-                                        hasNotifications={hasNotifications}
-                                        onSelect={onSelect}
-                                        onMarkAllRead={onMarkAllRead}
-                                        onEditDashboard={onEditDashboard}
-                                        onDeleteDashboard={onDeleteDashboard}
-                                        onUnpinTool={onUnpinTool}
-                                        onOpenCustomNav={onOpenCustomNav}
-                                    />
-                                )
-                            )}
+                                );
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

@@ -45,6 +45,15 @@ describe('shellStore tray notification ownership', () => {
         });
     });
 
+    it('keeps notified menus unchanged when removing a menu that is not notified', () => {
+        useShellStore.setState({ notifiedMenus: ['friend-log'] });
+        const notifiedMenus = useShellStore.getState().notifiedMenus;
+
+        useShellStore.getState().removeNotify('feed');
+
+        expect(useShellStore.getState().notifiedMenus).toBe(notifiedMenus);
+    });
+
     it('includes notification menu unread state only in table layout', () => {
         useShellStore.getState().notifyMenu('notification');
 
