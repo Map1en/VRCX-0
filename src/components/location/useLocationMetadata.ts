@@ -1,5 +1,5 @@
 import { useQueries } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { groupProfileQueryOptions } from '@/lib/groupProfileQuery';
@@ -31,6 +31,23 @@ export type { LocationMetadata, LocationMetadataEntry };
 
 const WORLD_PROFILE_REQUEST_KEY_SEPARATOR = '\u0000';
 const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
+
+function isSameLocationMetadata(
+    left: LocationMetadata,
+    right: LocationMetadata
+): boolean {
+    return (
+        left.currentEndpoint === right.currentEndpoint &&
+        left.region === right.region &&
+        left.instanceName === right.instanceName &&
+        left.isClosed === right.isClosed &&
+        left.groupName === right.groupName &&
+        left.groupNamePending === right.groupNamePending &&
+        left.worldName === right.worldName &&
+        left.worldNameHint === right.worldNameHint &&
+        left.worldNamePending === right.worldNamePending
+    );
+}
 
 export function useLocationMetadataBatch(
     entries: readonly (LocationMetadataEntry | null | undefined)[] = [],
@@ -310,25 +327,33 @@ export function useLocationMetadataBatch(
         worldProfilesById
     ]);
 
-    return useMemo(() => {
-        const metadataByKey = new Map<string, LocationMetadata>();
+    const previousMetadataByKeyRef = useRef(
+        new Map<string, LocationMetadata>()
+    );
+    const metadataByKey = useMemo(() => {
+        const previousMetadataByKey = previousMetadataByKeyRef.current;
+        const nextMetadataByKey = new Map<string, LocationMetadata>();
         for (const entry of normalizedEntries) {
-            metadataByKey.set(
+            const metadata = resolveEntryMetadata(entry, {
+                cachedInstances,
+                currentEndpoint,
+                groupProfilesById,
+                pendingGroupIds,
+                locationHintsByKey,
+                localWorldNamesById,
+                settledLocalWorldIds,
+                settledWorldProfileIds,
+                worldProfilesById
+            });
+            const previous = previousMetadataByKey.get(entry.key);
+            nextMetadataByKey.set(
                 entry.key,
-                resolveEntryMetadata(entry, {
-                    cachedInstances,
-                    currentEndpoint,
-                    groupProfilesById,
-                    pendingGroupIds,
-                    locationHintsByKey,
-                    localWorldNamesById,
-                    settledLocalWorldIds,
-                    settledWorldProfileIds,
-                    worldProfilesById
-                })
+                previous && isSameLocationMetadata(previous, metadata)
+                    ? previous
+                    : metadata
             );
         }
-        return metadataByKey;
+        return nextMetadataByKey;
     }, [
         cachedInstances,
         currentEndpoint,
@@ -341,6 +366,10 @@ export function useLocationMetadataBatch(
         settledWorldProfileIds,
         worldProfilesById
     ]);
+    useLayoutEffect(() => {
+        previousMetadataByKeyRef.current = metadataByKey;
+    }, [metadataByKey]);
+    return metadataByKey;
 }
 
 export function useLocationMetadata({

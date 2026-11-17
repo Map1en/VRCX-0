@@ -174,7 +174,7 @@ function buildCurrentUserRows({
         );
     }
 
-    const currentUserRow: SidebarFriendRecord = { ...currentUser };
+    const currentUserRow: SidebarFriendRecord = currentUser;
     return buildFriendRows(sectionKey, [currentUserRow], {
         currentUserId,
         isCurrentUser: true,

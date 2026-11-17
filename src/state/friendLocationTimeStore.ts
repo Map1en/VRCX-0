@@ -15,22 +15,42 @@ const initialState = {
 };
 
 export const useFriendLocationTimeStore = create<FriendLocationTimeState>(
-    (set) => ({
+    (set, get) => ({
         ...initialState,
         replaceSnapshot(snapshot) {
+            const previousByUserId = get().byUserId;
             const byUserId: Record<string, FriendLocationTimeEntry> = {};
+            let changed = false;
             for (const entry of snapshot) {
                 const userId = entry.userId.trim();
                 if (!userId) {
                     continue;
                 }
-                const sinceMs = Number(entry.sinceMs);
-                byUserId[userId] = {
-                    location: entry.location.trim(),
-                    source: entry.source,
-                    sinceMs:
-                        Number.isFinite(sinceMs) && sinceMs > 0 ? sinceMs : null
-                };
+                const parsedSinceMs = Number(entry.sinceMs);
+                const location = entry.location.trim();
+                const sinceMs =
+                    Number.isFinite(parsedSinceMs) && parsedSinceMs > 0
+                        ? parsedSinceMs
+                        : null;
+                const previous = previousByUserId[userId];
+                if (
+                    previous &&
+                    previous.location === location &&
+                    previous.source === entry.source &&
+                    previous.sinceMs === sinceMs
+                ) {
+                    byUserId[userId] = previous;
+                    continue;
+                }
+                changed = true;
+                byUserId[userId] = { location, source: entry.source, sinceMs };
+            }
+            if (
+                !changed &&
+                Object.keys(byUserId).length ===
+                    Object.keys(previousByUserId).length
+            ) {
+                return;
             }
             set({ byUserId });
         },

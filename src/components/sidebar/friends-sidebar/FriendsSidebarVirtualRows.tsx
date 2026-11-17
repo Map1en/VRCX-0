@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import { ListSectionHeader } from '@/components/layout/ListSectionHeader';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { cn } from '@/lib/utils';
@@ -108,33 +110,37 @@ function SidebarSkeletonRow() {
     );
 }
 
-function FriendVirtualRow({
+const EMPTY_STATUS_PRESETS: StatusPreset[] = [];
+
+const FriendVirtualRow = memo(function FriendVirtualRow({
     appearance,
+    canBoop,
+    canSendInvite,
+    canUseFriendInstance,
+    currentLocationStartedAt,
     friend,
-    metadataKey = '',
     isCurrentUser = false,
     isGroupByInstance = false,
     instanceLocation,
     friendCommands,
-    location,
-    runtime,
+    locationMetadata,
+    locationTime,
     statusCommands
 }: {
     appearance: AppearanceView;
+    canBoop: boolean;
+    canSendInvite: boolean;
+    canUseFriendInstance: boolean;
+    currentLocationStartedAt?: string | number | null;
     friend: SidebarFriendRecord;
-    metadataKey?: string;
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
     instanceLocation?: string;
     friendCommands: FriendCommandsView;
-    location: LocationView;
-    runtime: RuntimeView;
+    locationMetadata?: LocationMetadata;
+    locationTime: FriendLocationTimeEntry | null;
     statusCommands: StatusCommandsView;
 }) {
-    const friendId = friend.id || '';
-    const instanceActionGates =
-        runtime.instanceActionGatesByUserId.get(friendId);
-
     return (
         <FriendRow
             friend={friend}
@@ -142,11 +148,11 @@ function FriendVirtualRow({
                 isCurrentUser,
                 isGroupByInstance,
                 instanceLocation,
-                locationTime: location.locationTimesByUserId[friendId] ?? null,
-                canSendInvite: Boolean(instanceActionGates?.canInvite),
+                locationTime,
+                canSendInvite,
                 canRequestInvite: !isCurrentUser,
-                canBoop: Boolean(runtime.currentUser?.isBoopingEnabled),
-                canUseFriendInstance: Boolean(instanceActionGates?.canJoin)
+                canBoop,
+                canUseFriendInstance
             }}
             rowCommands={{
                 onOpen: () => friendCommands.onOpenFriend(friend),
@@ -158,18 +164,18 @@ function FriendVirtualRow({
                 onSetStatusDescription: statusCommands.onSetStatusDescription,
                 onEditSocialStatus: statusCommands.onEditSocialStatus,
                 onApplyStatusPreset: statusCommands.onApplyStatusPreset,
-                statusPresets: isCurrentUser ? statusCommands.statusPresets : []
+                statusPresets: isCurrentUser
+                    ? statusCommands.statusPresets
+                    : EMPTY_STATUS_PRESETS
             }}
             appearance={{
                 randomUserColours: appearance.randomUserColours,
                 randomUserColourStyle: appearance.randomUserColourStyle,
                 isDarkMode: appearance.isDarkMode,
                 trustColor: appearance.trustColor,
-                currentLocationStartedAt:
-                    runtime.gameState.currentLocationStartedAt,
+                currentLocationStartedAt,
                 recentActionVersion: appearance.recentActionVersion,
-                locationMetadata:
-                    location.locationMetadataByKey.get(metadataKey),
+                locationMetadata,
                 showInstanceIdInLocation: appearance.showInstanceIdInLocation,
                 ageGatedInstancesVisible: appearance.ageGatedInstancesVisible,
                 showAvatarFrame: appearance.showSidebarAvatarFrame,
@@ -177,7 +183,7 @@ function FriendVirtualRow({
             }}
         />
     );
-}
+});
 
 function FriendsSidebarVirtualRow({
     appearance,
@@ -240,21 +246,37 @@ function FriendsSidebarVirtualRow({
         case 'footer':
             return <div className="h-4" />;
         case 'friend':
-        default:
-            return row.friend ? (
+        default: {
+            if (!row.friend) {
+                return null;
+            }
+            const friendId = row.friend.id || '';
+            const instanceActionGates =
+                runtime.instanceActionGatesByUserId.get(friendId);
+            return (
                 <FriendVirtualRow
                     appearance={appearance}
+                    canBoop={Boolean(runtime.currentUser?.isBoopingEnabled)}
+                    canSendInvite={Boolean(instanceActionGates?.canInvite)}
+                    canUseFriendInstance={Boolean(instanceActionGates?.canJoin)}
+                    currentLocationStartedAt={
+                        runtime.gameState.currentLocationStartedAt
+                    }
                     friend={row.friend}
                     isCurrentUser={row.isCurrentUser}
                     isGroupByInstance={row.isGroupByInstance}
                     instanceLocation={row.instanceLocation}
-                    metadataKey={row.key}
                     friendCommands={friendCommands}
-                    location={location}
-                    runtime={runtime}
+                    locationMetadata={location.locationMetadataByKey.get(
+                        row.key ?? ''
+                    )}
+                    locationTime={
+                        location.locationTimesByUserId[friendId] ?? null
+                    }
                     statusCommands={statusCommands}
                 />
-            ) : null;
+            );
+        }
     }
 }
 

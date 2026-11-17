@@ -123,6 +123,33 @@ describe('useLocationMetadataBatch', () => {
         expect(mocks.getWorldProfile).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps metadata objects for unchanged entries when other entries change', async () => {
+        mocks.getWorldProfile.mockResolvedValueOnce({
+            id: WORLD_ID,
+            name: 'Stable World'
+        });
+        mocks.getWorldProfile.mockImplementation(
+            () => new Promise(() => undefined)
+        );
+        const { result, rerender } = renderHook(
+            ({ entries }) => useLocationMetadataBatch(entries),
+            { initialProps: { entries: metadataEntries() } }
+        );
+        await waitFor(() => {
+            expect(result.current.get(`friend:${WORLD_ID}`)?.worldName).toBe(
+                'Stable World'
+            );
+        });
+        const stableMetadata = result.current.get(`friend:${WORLD_ID}`);
+
+        rerender({ entries: metadataEntries([WORLD_ID, SECOND_WORLD_ID]) });
+
+        expect(result.current.get(`friend:${WORLD_ID}`)).toBe(stableMetadata);
+        expect(
+            result.current.get(`friend:${SECOND_WORLD_ID}`)?.worldNamePending
+        ).toBe(true);
+    });
+
     it('keeps the world name pending until both lookups settle without a name', async () => {
         let rejectProfile!: (error: Error) => void;
         mocks.getWorldProfile.mockReturnValueOnce(

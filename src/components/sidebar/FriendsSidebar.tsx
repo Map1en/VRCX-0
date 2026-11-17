@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/UserSelfEditDialogs';
@@ -22,6 +22,7 @@ import {
 import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
 import { useCurrentInviteContext } from '@/lib/useCurrentInviteContext';
 import { useFriendSortContext } from '@/lib/useFriendStats';
+import type { UserStatus } from '@/platform/tauri/bindings';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import {
     buildLocalInstanceActionGateMap,
@@ -37,6 +38,7 @@ import {
     buildFavoriteCollectionSameInstanceGroups,
     buildFavoriteCollectionSidebarVirtualRows
 } from './friends-sidebar/favoriteCollectionSidebarRows';
+import type { StatusPreset } from './friends-sidebar/FriendsSidebarActionItems';
 import {
     buildSameInstanceGroups,
     friendMatchesSidebarFilterQuery,
@@ -56,7 +58,10 @@ import {
 } from './friends-sidebar/friendsSidebarVirtualRowBuilder';
 import { FriendsSidebarVirtualRow } from './friends-sidebar/FriendsSidebarVirtualRows';
 import { useFriendsSidebarActions } from './friends-sidebar/useFriendsSidebarActions';
-import { useFriendsSidebarPreferences } from './friends-sidebar/useFriendsSidebarPreferences';
+import {
+    useFriendsSidebarPreferences,
+    type FriendsSidebarGroupKey
+} from './friends-sidebar/useFriendsSidebarPreferences';
 import { useFriendsSidebarDisplayPreferences } from './useFriendsSidebarDisplayPreferences';
 import { useFriendsSidebarFavoriteState } from './useFriendsSidebarFavoriteState';
 import { useFriendsSidebarRosterState } from './useFriendsSidebarRosterState';
@@ -787,36 +792,83 @@ export function FriendsSidebar({
         gameState,
         instanceActionGatesByUserId
     };
-    const appearanceView = {
-        ageGatedInstancesVisible,
-        isDarkMode,
-        randomUserColours,
-        randomUserColourStyle,
-        recentActionVersion,
-        showInstanceIdInLocation,
-        showSidebarAvatarFrame,
-        showSidebarNameplate,
-        trustColor
-    };
+    const appearanceView = useMemo(
+        () => ({
+            ageGatedInstancesVisible,
+            isDarkMode,
+            randomUserColours,
+            randomUserColourStyle,
+            recentActionVersion,
+            showInstanceIdInLocation,
+            showSidebarAvatarFrame,
+            showSidebarNameplate,
+            trustColor
+        }),
+        [
+            ageGatedInstancesVisible,
+            isDarkMode,
+            randomUserColours,
+            randomUserColourStyle,
+            recentActionVersion,
+            showInstanceIdInLocation,
+            showSidebarAvatarFrame,
+            showSidebarNameplate,
+            trustColor
+        ]
+    );
     const locationView = {
         locationMetadataByKey,
         locationTimesByUserId
     };
-    const friendRowCommands = {
-        onOpenFriend: openFriend,
-        onToggleSection: toggleSection,
-        onSelfInvite: selfInviteToFriendLocation,
-        onInvite: sendFriendInvite,
-        onRequestInvite: requestFriendInvite,
-        onBoop: sendFriendBoop
+    const rowHandlers = {
+        applyCurrentUserStatusPreset,
+        changeCurrentUserStatus,
+        editCurrentUserSocialStatus,
+        openFriend,
+        requestFriendInvite,
+        selfInviteToFriendLocation,
+        sendFriendBoop,
+        sendFriendInvite,
+        setCurrentUserStatusDescription,
+        toggleSection
     };
-    const statusCommands = {
-        statusPresets,
-        onChangeStatus: changeCurrentUserStatus,
-        onSetStatusDescription: setCurrentUserStatusDescription,
-        onEditSocialStatus: editCurrentUserSocialStatus,
-        onApplyStatusPreset: applyCurrentUserStatusPreset
-    };
+    const latestRowHandlers = useRef(rowHandlers);
+    useLayoutEffect(() => {
+        latestRowHandlers.current = rowHandlers;
+    });
+    const friendRowCommands = useMemo(
+        () => ({
+            onOpenFriend: (friend: SidebarFriendRecord) =>
+                latestRowHandlers.current.openFriend(friend),
+            onToggleSection: (id: FriendsSidebarGroupKey) =>
+                latestRowHandlers.current.toggleSection(id),
+            onSelfInvite: (location: string) =>
+                latestRowHandlers.current.selfInviteToFriendLocation(location),
+            onInvite: (friend: SidebarFriendRecord) =>
+                latestRowHandlers.current.sendFriendInvite(friend),
+            onRequestInvite: (friend: SidebarFriendRecord) =>
+                latestRowHandlers.current.requestFriendInvite(friend),
+            onBoop: (friend: SidebarFriendRecord) =>
+                latestRowHandlers.current.sendFriendBoop(friend)
+        }),
+        []
+    );
+    const statusCommands = useMemo(
+        () => ({
+            statusPresets,
+            onChangeStatus: (status: UserStatus) =>
+                latestRowHandlers.current.changeCurrentUserStatus(status),
+            onSetStatusDescription: (statusDescription: string) =>
+                latestRowHandlers.current.setCurrentUserStatusDescription(
+                    statusDescription
+                ),
+            onEditSocialStatus: () =>
+                latestRowHandlers.current.editCurrentUserSocialStatus(),
+            onApplyStatusPreset: (preset: StatusPreset) =>
+                latestRowHandlers.current.applyCurrentUserStatusPreset(preset)
+        }),
+        [statusPresets]
+    );
 
     return (
         <>
