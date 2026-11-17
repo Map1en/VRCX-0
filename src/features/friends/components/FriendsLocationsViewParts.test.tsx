@@ -154,15 +154,6 @@ describe('FriendsLocationCardItem', () => {
             ]);
             const { container } = render(
                 <FriendsLocationCardItem
-                    section={{
-                        key: `instance:${location}`,
-                        title: 'Local',
-                        description: '',
-                        friends: [friend],
-                        worldId: 'wrld_local',
-                        groupId: '',
-                        rawLocation: location
-                    }}
                     friend={friend}
                     currentUserId="usr_self"
                     densityConfig={getFriendsLocationsDensityConfig('compact')}
@@ -207,15 +198,6 @@ describe('FriendsLocationCardItem', () => {
         const destination = 'wrld_dest:1';
         const { container } = render(
             <FriendsLocationCardItem
-                section={{
-                    key: `instance:${destination}`,
-                    title: 'World',
-                    description: '',
-                    friends: [friendAt(travelingPresence(destination))],
-                    worldId: 'wrld_dest',
-                    groupId: '',
-                    rawLocation: destination
-                }}
                 friend={friendAt(travelingPresence(destination))}
                 currentUserId="usr_self"
                 densityConfig={getFriendsLocationsDensityConfig('compact')}
@@ -249,15 +231,6 @@ describe('FriendsLocationCardItem', () => {
         ]);
         const { container } = render(
             <FriendsLocationCardItem
-                section={{
-                    key: `instance:${location}`,
-                    title: 'World',
-                    description: '',
-                    friends: [friend],
-                    worldId: 'wrld_test',
-                    groupId: '',
-                    rawLocation: location
-                }}
                 friend={friend}
                 currentUserId="usr_self"
                 densityConfig={getFriendsLocationsDensityConfig('compact')}
@@ -283,19 +256,9 @@ describe('FriendsLocationCardItem', () => {
     });
 
     it('withholds the location for an online friend with a hidden presence location', () => {
-        const location = 'wrld_test:123';
         const friend = friendAt('private');
         const html = renderToStaticMarkup(
             <FriendsLocationCardItem
-                section={{
-                    key: `instance:${location}`,
-                    title: 'World',
-                    description: '',
-                    friends: [friend],
-                    worldId: 'wrld_test',
-                    groupId: '',
-                    rawLocation: location
-                }}
                 friend={friend}
                 currentUserId="usr_self"
                 densityConfig={getFriendsLocationsDensityConfig('compact')}
@@ -316,19 +279,9 @@ describe('FriendsLocationCardItem', () => {
     });
 
     it('withholds invite requests while the friend is pending offline', () => {
-        const location = 'wrld_test:123';
         const friend = friendAt(pendingPresence('private'));
         const html = renderToStaticMarkup(
             <FriendsLocationCardItem
-                section={{
-                    key: `instance:${location}`,
-                    title: 'World',
-                    description: '',
-                    friends: [friend],
-                    worldId: 'wrld_test',
-                    groupId: '',
-                    rawLocation: location
-                }}
                 friend={friend}
                 currentUserId="usr_self"
                 densityConfig={getFriendsLocationsDensityConfig('compact')}
@@ -353,15 +306,6 @@ describe('FriendsLocationCardItem', () => {
         const friend = friendAt(location);
         const html = renderToStaticMarkup(
             <FriendsLocationCardItem
-                section={{
-                    key: `instance:${location}`,
-                    title: 'World',
-                    description: '',
-                    friends: [friend],
-                    worldId: 'wrld_test',
-                    groupId: '',
-                    rawLocation: location
-                }}
                 friend={friend}
                 currentUserId={friend.id}
                 densityConfig={getFriendsLocationsDensityConfig('compact')}
@@ -390,15 +334,6 @@ describe('FriendsLocationCardItem', () => {
         const renderCard = () =>
             render(
                 <FriendsLocationCardItem
-                    section={{
-                        key: `instance:${location}`,
-                        title: 'World',
-                        description: '',
-                        friends: [friend],
-                        worldId: 'wrld_test',
-                        groupId: '',
-                        rawLocation: location
-                    }}
                     friend={friend}
                     currentUserId="usr_self"
                     densityConfig={getFriendsLocationsDensityConfig('compact')}

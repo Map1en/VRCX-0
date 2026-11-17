@@ -163,7 +163,12 @@ export function FriendsLocationsVirtualList({
                                     {row.friends.map((friend: FriendRecord) => (
                                         <FriendsLocationCardItem
                                             key={`${row.section.key}:${friend.id}`}
-                                            section={row.section}
+                                            cardContentMode={
+                                                row.section.cardContentMode
+                                            }
+                                            displayInstanceInfo={
+                                                row.section.displayInstanceInfo
+                                            }
                                             friend={friend}
                                             currentUserId={
                                                 runtime.currentUserId

@@ -1,4 +1,11 @@
-import type { Dispatch, SetStateAction } from 'react';
+import {
+    useCallback,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    type Dispatch,
+    type SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { FriendRecord } from '@/domain/friends/types';
@@ -36,6 +43,45 @@ function getFriendActionLabel(friend: FriendRecord, fallback: string): string {
     return friend.displayName || normalizeString(friend.username) || fallback;
 }
 
+function openSectionWorld(section: FriendsLocationsSectionActionTarget) {
+    openWorldDialog({
+        worldId: resolveWorldDialogTarget(section),
+        title: section.title
+    });
+}
+
+function openWorldGroup(group: FriendsLocationsWorldGroup, name: string) {
+    openWorldDialog({
+        worldId: group.worldId,
+        title: name || undefined
+    });
+}
+
+function openSectionGroup(section: FriendsLocationsSectionActionTarget) {
+    openGroupDialog({
+        groupId: section.groupId,
+        title: undefined
+    });
+}
+
+function openFriendUser(friend: FriendRecord) {
+    openUserDialog({
+        userId: friend?.id,
+        title: getFriendActionLabel(friend, '') || undefined,
+        seedData: friend
+    });
+}
+
+function openFriendWorld(
+    target: FriendsLocationsSectionActionTarget,
+    location: FriendsLocationsLocationActionSummary
+) {
+    openWorldDialog({
+        worldId: resolveWorldDialogTarget(target),
+        title: normalizeString(location.label) || undefined
+    });
+}
+
 export function useFriendsLocationsActions({
     canInviteFromCurrentLocation,
     currentInviteLocation,
@@ -53,29 +99,47 @@ export function useFriendsLocationsActions({
     const confirm = useModalStore((state) => state.confirm);
     const boopPrompt = useModalStore((state) => state.boopPrompt);
 
-    function toggleCollapsibleGroup(groupKey: string) {
-        setCollapsedGroups((current) => {
-            const next = new Set(current);
-            if (next.has(groupKey)) {
-                next.delete(groupKey);
-            } else {
-                next.add(groupKey);
-            }
-            return next;
-        });
-    }
+    const toggleCollapsibleGroup = useCallback(
+        (groupKey: string) => {
+            setCollapsedGroups((current) => {
+                const next = new Set(current);
+                if (next.has(groupKey)) {
+                    next.delete(groupKey);
+                } else {
+                    next.add(groupKey);
+                }
+                return next;
+            });
+        },
+        [setCollapsedGroups]
+    );
 
-    function canUseFriendLocation(location: string) {
-        const parsedLocation = parseLocation(location);
-        if (
-            !parsedLocation.isRealInstance ||
-            !parsedLocation.worldId ||
-            !parsedLocation.instanceId
-        ) {
-            return false;
-        }
-        return Boolean(instanceActionGatesByLocation.get(location)?.canJoin);
-    }
+    const joinableLocationsKey = Array.from(instanceActionGatesByLocation)
+        .filter(([, gates]) => gates.canJoin)
+        .map(([location]) => location)
+        .sort()
+        .join('\u0000');
+    const joinableLocations = useMemo(
+        () =>
+            new Set(
+                joinableLocationsKey ? joinableLocationsKey.split('\u0000') : []
+            ),
+        [joinableLocationsKey]
+    );
+    const canUseFriendLocation = useCallback(
+        (location: string) => {
+            const parsedLocation = parseLocation(location);
+            if (
+                !parsedLocation.isRealInstance ||
+                !parsedLocation.worldId ||
+                !parsedLocation.instanceId
+            ) {
+                return false;
+            }
+            return joinableLocations.has(location);
+        },
+        [joinableLocations]
+    );
 
     async function launchFriendLocation(location: string) {
         const parsedLocation = parseLocation(location);
@@ -272,57 +336,44 @@ export function useFriendsLocationsActions({
         }
     }
 
-    function openSectionWorld(section: FriendsLocationsSectionActionTarget) {
-        openWorldDialog({
-            worldId: resolveWorldDialogTarget(section),
-            title: section.title
-        });
-    }
-
-    function openWorldGroup(group: FriendsLocationsWorldGroup, name: string) {
-        openWorldDialog({
-            worldId: group.worldId,
-            title: name || undefined
-        });
-    }
-
-    function openSectionGroup(section: FriendsLocationsSectionActionTarget) {
-        openGroupDialog({
-            groupId: section.groupId,
-            title: undefined
-        });
-    }
-
-    function openFriendUser(friend: FriendRecord) {
-        openUserDialog({
-            userId: friend?.id,
-            title: getFriendActionLabel(friend, '') || undefined,
-            seedData: friend
-        });
-    }
-
-    function openFriendWorld(
-        target: FriendsLocationsSectionActionTarget,
-        location: FriendsLocationsLocationActionSummary
-    ) {
-        openWorldDialog({
-            worldId: resolveWorldDialogTarget(target),
-            title: normalizeString(location.label) || undefined
-        });
-    }
-
-    return {
-        canUseFriendLocation,
+    const handlers = {
         launchFriendLocation,
-        openFriendUser,
-        openFriendWorld,
-        openSectionGroup,
-        openSectionWorld,
-        openWorldGroup,
         requestFriendInvite,
         selfInviteFriendLocation,
         sendFriendBoop,
-        sendFriendInvite,
-        toggleCollapsibleGroup
+        sendFriendInvite
     };
+    const latestHandlers = useRef(handlers);
+    useLayoutEffect(() => {
+        latestHandlers.current = handlers;
+    });
+    const stableHandlers = useMemo<typeof handlers>(
+        () => ({
+            launchFriendLocation: (location) =>
+                latestHandlers.current.launchFriendLocation(location),
+            requestFriendInvite: (friend) =>
+                latestHandlers.current.requestFriendInvite(friend),
+            selfInviteFriendLocation: (location) =>
+                latestHandlers.current.selfInviteFriendLocation(location),
+            sendFriendBoop: (friend) =>
+                latestHandlers.current.sendFriendBoop(friend),
+            sendFriendInvite: (friend) =>
+                latestHandlers.current.sendFriendInvite(friend)
+        }),
+        []
+    );
+
+    return useMemo(
+        () => ({
+            ...stableHandlers,
+            canUseFriendLocation,
+            openFriendUser,
+            openFriendWorld,
+            openSectionGroup,
+            openSectionWorld,
+            openWorldGroup,
+            toggleCollapsibleGroup
+        }),
+        [canUseFriendLocation, stableHandlers, toggleCollapsibleGroup]
+    );
 }
