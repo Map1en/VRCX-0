@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import type { FriendRosterById } from '@/domain/friends/types';
 import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import { openAvatarDialog, openGroupDialog } from '@/services/dialogService';
 import {
@@ -94,6 +95,7 @@ interface UserDialogTabbedViewProps {
         isFriend: boolean;
         isFavorite: boolean;
         friendRequestState: ReturnType<typeof resolveFriendRequestState>;
+        friendsById: FriendRosterById;
     };
     platformInfo: {
         platform: ReturnType<typeof resolvePlatformMeta>;
@@ -243,7 +245,8 @@ export function UserDialogTabbedView({
         avatarOverrideState = { hideAvatar: false, showAvatar: false },
         isCurrentUser,
         isFriend,
-        friendRequestState
+        friendRequestState,
+        friendsById
     } = relationship;
     const { platform, platformIcon: PlatformIcon } = platformInfo;
     const {
@@ -308,7 +311,6 @@ export function UserDialogTabbedView({
         currentAvatarId,
         currentEndpoint,
         currentUserId,
-        friendsById,
         inGameGroupOrder,
         isLocalUserVrcPlusSupporter,
         openImagePreview,

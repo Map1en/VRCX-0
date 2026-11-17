@@ -69,7 +69,9 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
     const groupInstancesStatus = useRuntimeStore(
         (state) => state.groupInstances.status
     );
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const targetFriend = useFriendRosterStore(
+        (state) => state.friendsById[normalizedUserId] ?? null
+    );
     const applyFriendPatch = useFriendRosterStore(
         (state) => state.applyFriendPatch
     );
@@ -138,7 +140,6 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
         currentUserSnapshot,
         gameState,
         groupInstancesState,
-        friendsById,
         hideUserMemos,
         hideUserNotes,
         isLocalUserVrcPlusSupporter,
@@ -146,6 +147,7 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
         localFriendFavorites,
         prompt,
         remoteFavoriteFriendIds,
+        targetFriend,
         updateEntityDialogMetadata
     };
 }
@@ -177,14 +179,12 @@ export function useUserDialogTabbedRuntimeState() {
             ? state.groupInstances.groupOrder
             : EMPTY_GROUP_ORDER
     );
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
 
     return {
         currentAvatarId,
         currentEndpoint,
         currentUserId,
-        friendsById,
         inGameGroupOrder,
         isLocalUserVrcPlusSupporter,
         openImagePreview,

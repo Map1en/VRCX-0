@@ -29,6 +29,10 @@ import {
 import { normalizeUserId } from './user-dialog/userProfileFields';
 import { useUserDialogActions } from './user-dialog/useUserDialogActions';
 import {
+    useUserDialogLocationFriendsById,
+    useUserDialogTargetFriendsById
+} from './user-dialog/useUserDialogFriendsById';
+import {
     createEmptyUserDialogLocationPanel,
     useUserDialogLocationPanel
 } from './user-dialog/useUserDialogLocationPanel';
@@ -70,7 +74,6 @@ export function UserDialogContent({
         currentEndpoint,
         currentUserId,
         currentUserSnapshot,
-        friendsById,
         gameState,
         groupInstancesState,
         hideUserMemos,
@@ -79,34 +82,34 @@ export function UserDialogContent({
         knownTargetUser,
         localFriendFavorites,
         remoteFavoriteFriendIds,
+        targetFriend,
         updateEntityDialogMetadata
     } = useUserDialogRuntimeState(normalizedUserId);
     const normalizedCurrentUserId = normalizeUserId(currentUserId);
     const isTargetCurrentUser = Boolean(
         normalizedUserId && normalizedUserId === normalizedCurrentUserId
     );
-    const friendSnapshot = friendsById[normalizedUserId] || null;
-    const isKnownFriend = Boolean(friendSnapshot);
+    const isKnownFriend = Boolean(targetFriend);
     const localSnapshot = useMemo(
         () =>
             isTargetCurrentUser
                 ? currentUserSnapshot
                 : mergeUserDialogLocalSnapshot({
-                      friendSnapshot,
+                      friendSnapshot: targetFriend,
                       seedData,
                       knownTargetUser
                   }),
         [
             currentUserSnapshot,
-            friendSnapshot,
             isTargetCurrentUser,
             knownTargetUser,
-            seedData
+            seedData,
+            targetFriend
         ]
     );
     const activitySnapshot = isTargetCurrentUser
         ? currentUserSnapshot
-        : friendSnapshot;
+        : targetFriend;
     const targetKey = dialogTargetKey(currentEndpoint, normalizedUserId);
     const actionStatusRef = useRef('idle');
     const [actionStatus, setActionStatus] = useState('idle');
@@ -137,6 +140,11 @@ export function UserDialogContent({
         updateEntityDialogMetadata
     });
     const targetIdentity = `${currentEndpoint || ''}:${normalizedUserId || ''}:${openNonce}`;
+    const targetFriendsById = useUserDialogTargetFriendsById({
+        normalizedUserId,
+        snapshotKey: `${targetIdentity}:${reloadToken}`,
+        targetFriend
+    });
     const profileIsLoading = loadStatus === 'running' && !profile;
     const showProfileSkeleton = useDelayedFlag(
         profileIsLoading,
@@ -164,8 +172,12 @@ export function UserDialogContent({
         currentLocation: currentGameLocation || currentSnapshotLocation,
         currentLocationPlayerIds: gameState?.currentLocationPlayerIds,
         currentLocationPlayers: gameState?.currentLocationPlayers,
-        friendsById
+        friendsById: targetFriendsById
     });
+    const friendsById = useUserDialogLocationFriendsById(
+        targetFriendsById,
+        presenceLocation
+    );
 
     useEffect(
         () =>
@@ -383,7 +395,8 @@ export function UserDialogContent({
                     isCurrentUser,
                     isFriend,
                     isFavorite,
-                    friendRequestState
+                    friendRequestState,
+                    friendsById
                 }}
                 platformInfo={{
                     platform,
