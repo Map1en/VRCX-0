@@ -7,6 +7,7 @@ import {
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DeferredContextMenu } from '@/components/DeferredContextMenu';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
@@ -163,83 +164,89 @@ function NavItemContextMenu({
     const isDashboard = isDashboardEntry(entry);
     const isTool = isToolEntry(entry);
 
-    return (
-        <ContextMenu>
-            <ContextMenuTrigger render={children} />
-            <ContextMenuContent className="w-56">
-                {hasNotifications ? (
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            disabled={isMarkingAllRead}
-                            onClick={() => {
-                                onMarkAllRead();
-                            }}
-                        >
-                            {t('nav_menu.mark_all_read')}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                ) : null}
-                {hasNotifications ? <ContextMenuSeparator /> : null}
-                {showCreateDashboard ? (
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            onClick={() => {
-                                onCreateDashboard?.();
-                            }}
-                        >
-                            {t('dashboard.new_dashboard')}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                ) : null}
-                {isDashboard ? (
-                    <>
-                        <ContextMenuGroup>
-                            <ContextMenuItem
-                                onClick={() => {
-                                    if (entry) {
-                                        onEditDashboard(entry);
-                                    }
-                                }}
-                            >
-                                {t('nav_menu.edit_dashboard')}
-                            </ContextMenuItem>
-                        </ContextMenuGroup>
-                        <ContextMenuSeparator />
-                        <ContextMenuGroup>
-                            <ContextMenuItem
-                                variant="destructive"
-                                onClick={() => {
-                                    if (entry) {
-                                        onDeleteDashboard(entry);
-                                    }
-                                }}
-                            >
-                                {t('nav_menu.delete_dashboard')}
-                            </ContextMenuItem>
-                        </ContextMenuGroup>
-                    </>
-                ) : null}
-                {isDashboard ? <ContextMenuSeparator /> : null}
-                {isTool ? (
+    const content = (
+        <ContextMenuContent className="w-56">
+            {hasNotifications ? (
+                <ContextMenuGroup>
+                    <ContextMenuItem
+                        disabled={isMarkingAllRead}
+                        onClick={() => {
+                            onMarkAllRead();
+                        }}
+                    >
+                        {t('nav_menu.mark_all_read')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
+            ) : null}
+            {hasNotifications ? <ContextMenuSeparator /> : null}
+            {showCreateDashboard ? (
+                <ContextMenuGroup>
+                    <ContextMenuItem
+                        onClick={() => {
+                            onCreateDashboard?.();
+                        }}
+                    >
+                        {t('dashboard.new_dashboard')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
+            ) : null}
+            {isDashboard ? (
+                <>
                     <ContextMenuGroup>
                         <ContextMenuItem
                             onClick={() => {
                                 if (entry) {
-                                    onUnpinTool(entry);
+                                    onEditDashboard(entry);
                                 }
                             }}
                         >
-                            {t('nav_menu.custom_nav.unpin_from_nav')}
+                            {t('nav_menu.edit_dashboard')}
                         </ContextMenuItem>
                     </ContextMenuGroup>
-                ) : null}
-                {isTool ? <ContextMenuSeparator /> : null}
+                    <ContextMenuSeparator />
+                    <ContextMenuGroup>
+                        <ContextMenuItem
+                            variant="destructive"
+                            onClick={() => {
+                                if (entry) {
+                                    onDeleteDashboard(entry);
+                                }
+                            }}
+                        >
+                            {t('nav_menu.delete_dashboard')}
+                        </ContextMenuItem>
+                    </ContextMenuGroup>
+                </>
+            ) : null}
+            {isDashboard ? <ContextMenuSeparator /> : null}
+            {isTool ? (
                 <ContextMenuGroup>
-                    <ContextMenuItem onClick={onOpenCustomNav}>
-                        {t('nav_menu.custom_nav.header')}
+                    <ContextMenuItem
+                        onClick={() => {
+                            if (entry) {
+                                onUnpinTool(entry);
+                            }
+                        }}
+                    >
+                        {t('nav_menu.custom_nav.unpin_from_nav')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
-            </ContextMenuContent>
+            ) : null}
+            {isTool ? <ContextMenuSeparator /> : null}
+            <ContextMenuGroup>
+                <ContextMenuItem onClick={onOpenCustomNav}>
+                    {t('nav_menu.custom_nav.header')}
+                </ContextMenuItem>
+            </ContextMenuGroup>
+        </ContextMenuContent>
+    );
+
+    return entry ? (
+        <DeferredContextMenu trigger={children}>{content}</DeferredContextMenu>
+    ) : (
+        <ContextMenu>
+            <ContextMenuTrigger render={children} />
+            {content}
         </ContextMenu>
     );
 }

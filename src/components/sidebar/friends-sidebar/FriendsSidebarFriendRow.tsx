@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DeferredContextMenu } from '@/components/DeferredContextMenu';
 import {
     FriendInstanceTimer,
     FriendLocationTimer
@@ -25,7 +26,6 @@ import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 import { useShellStore } from '@/state/shellStore';
 import { buttonVariants } from '@/ui/shadcn/button';
 import {
-    ContextMenu,
     ContextMenuCheckboxItem,
     ContextMenuContent,
     ContextMenuGroup,
@@ -33,8 +33,7 @@ import {
     ContextMenuSeparator,
     ContextMenuSub,
     ContextMenuSubContent,
-    ContextMenuSubTrigger,
-    ContextMenuTrigger
+    ContextMenuSubTrigger
 } from '@/ui/shadcn/context-menu';
 import {
     DropdownMenu,
@@ -362,37 +361,30 @@ export function FriendRow({
         podButton
     );
 
-    return (
-        <ContextMenu>
-            {isCurrentUser ? (
-                <ContextMenuTrigger
-                    render={
-                        <div className="group flex w-full min-w-0 items-center gap-0.5">
-                            <div className="min-w-0 flex-1">{rowButton}</div>
-                            <AccountSwitcherPopover />
-                        </div>
-                    }
-                />
-            ) : (
-                <UserHoverCard
-                    userId={friend?.id}
-                    seed={friend}
-                    disabled={isCurrentUser}
-                >
-                    <ContextMenuTrigger
-                        render={
-                            sidebarWindowMode ? (
-                                <div>{rowButton}</div>
-                            ) : (
-                                podButton
-                            )
-                        }
-                    />
-                </UserHoverCard>
-            )}
-            <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
-                {menuItems}
-            </ContextMenuContent>
-        </ContextMenu>
+    const menuContent = (
+        <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
+            {menuItems}
+        </ContextMenuContent>
+    );
+
+    return isCurrentUser ? (
+        <DeferredContextMenu
+            trigger={
+                <div className="group flex w-full min-w-0 items-center gap-0.5">
+                    <div className="min-w-0 flex-1">{rowButton}</div>
+                    <AccountSwitcherPopover />
+                </div>
+            }
+        >
+            {menuContent}
+        </DeferredContextMenu>
+    ) : (
+        <UserHoverCard userId={friend?.id} seed={friend}>
+            <DeferredContextMenu
+                trigger={sidebarWindowMode ? <div>{rowButton}</div> : podButton}
+            >
+                {menuContent}
+            </DeferredContextMenu>
+        </UserHoverCard>
     );
 }

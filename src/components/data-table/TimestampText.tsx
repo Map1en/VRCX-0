@@ -1,3 +1,4 @@
+import { MountOnIntent } from '@/components/MountOnIntent';
 import { formatDateFilter } from '@/lib/dateTime';
 import type { DateFilterFormat } from '@/shared/utils/dateTime';
 import { useShellStore } from '@/state/shellStore';
@@ -34,13 +35,18 @@ export function TimestampText({
     }
 
     return (
-        <Tooltip>
-            <TooltipTrigger
-                render={<span className={className}>{text}</span>}
-            />
-            <TooltipContent side={tooltipSide}>
-                {formatDateFilter(value, 'long')}
-            </TooltipContent>
-        </Tooltip>
+        <MountOnIntent
+            trigger="hover"
+            render={(child) => (
+                <Tooltip>
+                    <TooltipTrigger render={child} />
+                    <TooltipContent side={tooltipSide}>
+                        {formatDateFilter(value, 'long')}
+                    </TooltipContent>
+                </Tooltip>
+            )}
+        >
+            <span className={className}>{text}</span>
+        </MountOnIntent>
     );
 }

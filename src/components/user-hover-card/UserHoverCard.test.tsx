@@ -20,17 +20,31 @@ vi.mock('./useUserHoverCardData', () => ({
 
 import { UserHoverCard } from './UserHoverCard';
 
+function pointer(clientX: number, clientY: number) {
+    return { clientX, clientY, pointerType: 'mouse' };
+}
+
 function renderTrigger() {
     render(
         <UserHoverCard userId="usr_alice" openDelay={500}>
             <button type="button">Alice</button>
         </UserHoverCard>
     );
+    fireEvent.pointerEnter(
+        screen.getByRole('button', { name: 'Alice' }),
+        pointer(40, 12)
+    );
+    act(() => {
+        vi.advanceTimersByTime(60);
+    });
+    act(() => {
+        vi.advanceTimersByTime(0);
+    });
+    fireEvent.pointerLeave(
+        screen.getByRole('button', { name: 'Alice' }),
+        pointer(90, 13)
+    );
     return screen.getByRole('button', { name: 'Alice' });
-}
-
-function pointer(clientX: number, clientY: number) {
-    return { clientX, clientY, pointerType: 'mouse' };
 }
 
 describe('UserHoverCard intent', () => {
@@ -42,6 +56,31 @@ describe('UserHoverCard intent', () => {
     afterEach(() => {
         cleanup();
         vi.useRealTimers();
+    });
+
+    it('opens on the first hover once the pointer rests after moving in', () => {
+        render(
+            <UserHoverCard userId="usr_alice" openDelay={500}>
+                <button type="button">Alice</button>
+            </UserHoverCard>
+        );
+        const trigger = screen.getByRole('button', { name: 'Alice' });
+
+        fireEvent.pointerEnter(trigger, pointer(40, 12));
+        fireEvent.pointerMove(trigger, pointer(44, 13));
+        act(() => {
+            vi.advanceTimersByTime(60);
+        });
+        act(() => {
+            vi.advanceTimersByTime(499);
+        });
+        expect(mocks.prefetch).toHaveBeenCalledWith('usr_alice');
+        expect(screen.queryByText('hover card content')).toBeNull();
+
+        act(() => {
+            vi.advanceTimersByTime(1);
+        });
+        expect(screen.getByText('hover card content')).toBeTruthy();
     });
 
     it('stays closed when the row slides under a resting pointer', () => {

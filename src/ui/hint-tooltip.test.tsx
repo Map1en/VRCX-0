@@ -33,16 +33,16 @@ describe('HintTooltip', () => {
             </HintTooltip>
         );
 
-        const button = screen.getByRole('button', { name: 'Refresh' });
-        fireEvent.pointerEnter(button, { pointerType: 'mouse' });
-        fireEvent.mouseEnter(button);
-        fireEvent.mouseMove(button);
+        fireEvent.pointerEnter(
+            screen.getByRole('button', { name: 'Refresh' }),
+            { pointerType: 'mouse' }
+        );
 
         await waitFor(() => {
             expect(screen.getByText('Refresh')).toBeTruthy();
         });
 
-        fireEvent.click(button);
+        fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
         expect(onClick).toHaveBeenCalledTimes(1);
     });
 

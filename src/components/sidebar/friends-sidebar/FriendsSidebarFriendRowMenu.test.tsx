@@ -232,7 +232,7 @@ describe('FriendRow menus', () => {
         expect(screen.getAllByRole('menu')).toHaveLength(1);
         await user.keyboard('[Escape]');
         await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
-        await user.click(row);
+        await user.click(screen.getByRole('button', { name: /^Friend/ }));
         expect((await screen.findByRole('menu')).textContent).toBe(actions);
     });
 

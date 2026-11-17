@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { DeferredContextMenu } from '@/components/DeferredContextMenu';
 import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
 import { useRecentlyOnline } from '@/components/friends/useRecentlyOnline';
@@ -42,12 +43,10 @@ import {
     CardTitle
 } from '@/ui/shadcn/card';
 import {
-    ContextMenu,
     ContextMenuContent,
     ContextMenuGroup,
     ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuTrigger
+    ContextMenuSeparator
 } from '@/ui/shadcn/context-menu';
 import {
     DropdownMenu,
@@ -402,65 +401,99 @@ export function FriendLocationCard({
     );
 
     return (
-        <ContextMenu>
-            <ContextMenuTrigger
-                render={
-                    <Card
-                        ref={cardRef}
-                        size="sm"
-                        data-pending-offline={isPendingOffline || undefined}
-                        className={cn(
-                            'bg-object-surface border-border focus-visible:ring-ring/50 relative isolate h-full rounded-lg border ring-0 transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none hover:bg-[color-mix(in_oklch,var(--object-surface),var(--foreground)_7%)] focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none',
-                            canOpenUser && 'cursor-pointer',
-                            isDense
-                                ? 'flex-row items-center gap-[calc(var(--friend-card-gap)+2px)] rounded-lg p-[var(--friend-card-padding)]'
-                                : 'gap-[var(--friend-card-gap)] py-[var(--friend-card-padding)]'
-                        )}
-                        onClick={onOpenUser}
-                        {...decorationHover.hoverProps}
-                        onKeyDown={(event) => {
-                            if (
-                                event.target === event.currentTarget &&
-                                (event.key === 'Enter' || event.key === ' ')
-                            ) {
-                                event.preventDefault();
-                                onOpenUser?.();
-                            }
-                        }}
-                        role={canOpenUser ? 'button' : undefined}
-                        tabIndex={canOpenUser ? 0 : undefined}
-                        aria-label={
-                            canOpenUser
-                                ? `${t('common.actions.view_details')}: ${friend?.displayName || ''}`
-                                : undefined
+        <DeferredContextMenu
+            trigger={
+                <Card
+                    ref={cardRef}
+                    size="sm"
+                    data-pending-offline={isPendingOffline || undefined}
+                    className={cn(
+                        'bg-object-surface border-border focus-visible:ring-ring/50 relative isolate h-full rounded-lg border ring-0 transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none hover:bg-[color-mix(in_oklch,var(--object-surface),var(--foreground)_7%)] focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none',
+                        canOpenUser && 'cursor-pointer',
+                        isDense
+                            ? 'flex-row items-center gap-[calc(var(--friend-card-gap)+2px)] rounded-lg p-[var(--friend-card-padding)]'
+                            : 'gap-[var(--friend-card-gap)] py-[var(--friend-card-padding)]'
+                    )}
+                    onClick={onOpenUser}
+                    {...decorationHover.hoverProps}
+                    onKeyDown={(event) => {
+                        if (
+                            event.target === event.currentTarget &&
+                            (event.key === 'Enter' || event.key === ' ')
+                        ) {
+                            event.preventDefault();
+                            onOpenUser?.();
                         }
-                        style={{
-                            '--friend-card-padding': `${resolvedDensityConfig.cardPadding}px`,
-                            '--friend-card-gap': `${resolvedDensityConfig.cardGap}px`,
-                            '--friend-card-inner-gap': `${resolvedDensityConfig.cardInnerGap}px`,
-                            '--friend-card-avatar-size': `${resolvedDensityConfig.avatarSize}px`,
-                            '--friend-card-dot-size': `${resolvedDensityConfig.dotSize}px`,
-                            '--friend-card-title-font-size': `${resolvedDensityConfig.titleFontSize}px`
-                        }}
-                    >
-                        {nameplateId ? (
-                            <ProfileNameplate
-                                templateId={nameplateId}
-                                active={decorationActive}
-                            />
-                        ) : null}
-                        {cardActions}
-                        {isDense ? (
-                            <>
-                                <CardHeader className="flex w-[var(--friend-card-avatar-size)] shrink-0 p-0">
-                                    {avatarNode}
-                                </CardHeader>
-                                <CardContent className="flex min-w-0 flex-1 flex-col gap-0.5 px-0 group-focus-within/card:pr-8 group-hover/card:pr-8">
+                    }}
+                    role={canOpenUser ? 'button' : undefined}
+                    tabIndex={canOpenUser ? 0 : undefined}
+                    aria-label={
+                        canOpenUser
+                            ? `${t('common.actions.view_details')}: ${friend?.displayName || ''}`
+                            : undefined
+                    }
+                    style={{
+                        '--friend-card-padding': `${resolvedDensityConfig.cardPadding}px`,
+                        '--friend-card-gap': `${resolvedDensityConfig.cardGap}px`,
+                        '--friend-card-inner-gap': `${resolvedDensityConfig.cardInnerGap}px`,
+                        '--friend-card-avatar-size': `${resolvedDensityConfig.avatarSize}px`,
+                        '--friend-card-dot-size': `${resolvedDensityConfig.dotSize}px`,
+                        '--friend-card-title-font-size': `${resolvedDensityConfig.titleFontSize}px`
+                    }}
+                >
+                    {nameplateId ? (
+                        <ProfileNameplate
+                            templateId={nameplateId}
+                            active={decorationActive}
+                        />
+                    ) : null}
+                    {cardActions}
+                    {isDense ? (
+                        <>
+                            <CardHeader className="flex w-[var(--friend-card-avatar-size)] shrink-0 p-0">
+                                {avatarNode}
+                            </CardHeader>
+                            <CardContent className="flex min-w-0 flex-1 flex-col gap-0.5 px-0 group-focus-within/card:pr-8 group-hover/card:pr-8">
+                                {titleNode}
+                                {showLocationInfo ? (
+                                    <div
+                                        role="presentation"
+                                        className="text-muted-foreground min-w-0 text-left text-xs leading-4"
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                        onKeyDown={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                    >
+                                        <span
+                                            className={cn(
+                                                'min-w-0 break-words',
+                                                locationLineClampClass
+                                            )}
+                                        >
+                                            {locationNode}
+                                        </span>
+                                    </div>
+                                ) : null}
+                                {statusDescriptionNode}
+                            </CardContent>
+                        </>
+                    ) : (
+                        <>
+                            <CardHeader className="flex flex-row items-center gap-[var(--friend-card-gap)] px-[var(--friend-card-padding)]">
+                                {avatarNode}
+                                <div className="flex min-w-0 flex-1 flex-col gap-1 group-focus-within/card:pr-8 group-hover/card:pr-8">
                                     {titleNode}
+                                </div>
+                            </CardHeader>
+
+                            {showLocationInfo || statusDescriptionNode ? (
+                                <CardContent className="flex min-h-0 flex-1 flex-col gap-[var(--friend-card-inner-gap)] overflow-hidden px-[var(--friend-card-padding)]">
                                     {showLocationInfo ? (
                                         <div
                                             role="presentation"
-                                            className="text-muted-foreground min-w-0 text-left text-xs leading-4"
+                                            className="text-muted-foreground w-full min-w-0 text-left text-xs leading-4"
                                             onClick={(event) =>
                                                 event.stopPropagation()
                                             }
@@ -470,7 +503,7 @@ export function FriendLocationCard({
                                         >
                                             <span
                                                 className={cn(
-                                                    'min-w-0 break-words',
+                                                    'text-foreground min-w-0 break-words',
                                                     locationLineClampClass
                                                 )}
                                             >
@@ -478,50 +511,15 @@ export function FriendLocationCard({
                                             </span>
                                         </div>
                                     ) : null}
+
                                     {statusDescriptionNode}
                                 </CardContent>
-                            </>
-                        ) : (
-                            <>
-                                <CardHeader className="flex flex-row items-center gap-[var(--friend-card-gap)] px-[var(--friend-card-padding)]">
-                                    {avatarNode}
-                                    <div className="flex min-w-0 flex-1 flex-col gap-1 group-focus-within/card:pr-8 group-hover/card:pr-8">
-                                        {titleNode}
-                                    </div>
-                                </CardHeader>
-
-                                {showLocationInfo || statusDescriptionNode ? (
-                                    <CardContent className="flex min-h-0 flex-1 flex-col gap-[var(--friend-card-inner-gap)] overflow-hidden px-[var(--friend-card-padding)]">
-                                        {showLocationInfo ? (
-                                            <div
-                                                role="presentation"
-                                                className="text-muted-foreground w-full min-w-0 text-left text-xs leading-4"
-                                                onClick={(event) =>
-                                                    event.stopPropagation()
-                                                }
-                                                onKeyDown={(event) =>
-                                                    event.stopPropagation()
-                                                }
-                                            >
-                                                <span
-                                                    className={cn(
-                                                        'text-foreground min-w-0 break-words',
-                                                        locationLineClampClass
-                                                    )}
-                                                >
-                                                    {locationNode}
-                                                </span>
-                                            </div>
-                                        ) : null}
-
-                                        {statusDescriptionNode}
-                                    </CardContent>
-                                ) : null}
-                            </>
-                        )}
-                    </Card>
-                }
-            />
+                            ) : null}
+                        </>
+                    )}
+                </Card>
+            }
+        >
             <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
                 <ContextMenuGroup>
                     <ContextMenuItem
@@ -588,6 +586,6 @@ export function FriendLocationCard({
                     </ContextMenuItem>
                 </ContextMenuGroup>
             </ContextMenuContent>
-        </ContextMenu>
+        </DeferredContextMenu>
     );
 }

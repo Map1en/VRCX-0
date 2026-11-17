@@ -1,6 +1,7 @@
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
 import type { ReactElement } from 'react';
 
+import { MountOnIntent } from '@/components/MountOnIntent';
 import { Tooltip, TooltipContent } from '@/ui/shadcn/tooltip';
 
 export function HintTooltip({
@@ -11,9 +12,17 @@ export function HintTooltip({
     children: ReactElement;
 }) {
     return (
-        <Tooltip>
-            <TooltipPrimitive.Trigger aria-label={label} render={children} />
-            <TooltipContent>{label}</TooltipContent>
-        </Tooltip>
+        <MountOnIntent
+            trigger="hover"
+            aria-label={label}
+            render={(child) => (
+                <Tooltip>
+                    <TooltipPrimitive.Trigger render={child} />
+                    <TooltipContent>{label}</TooltipContent>
+                </Tooltip>
+            )}
+        >
+            {children}
+        </MountOnIntent>
     );
 }

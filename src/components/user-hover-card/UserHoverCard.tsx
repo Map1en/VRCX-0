@@ -7,6 +7,7 @@ import {
     type ReactElement
 } from 'react';
 
+import { MountOnIntent } from '@/components/MountOnIntent';
 import type { SidebarFriendRecord } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { cn } from '@/lib/utils';
 import { nextHoverCardToken, useHoverCardStore } from '@/state/hoverCardStore';
@@ -135,75 +136,85 @@ export function UserHoverCard({
         return children;
     }
     return (
-        <HoverCard
-            open={open}
-            onOpenChange={(next, eventDetails) => {
-                if (next && eventDetails.reason === 'trigger-hover') {
-                    return;
-                }
-                if (next && Date.now() < suppressUntilRef.current) {
-                    return;
-                }
-                if (!next) {
-                    clearIntentTimers();
-                }
-                if (next) {
-                    setScrollClosed(false);
-                }
-                setOpen(next);
-            }}
+        <MountOnIntent
+            trigger="hover"
+            render={(child) => (
+                <HoverCard
+                    open={open}
+                    onOpenChange={(next, eventDetails) => {
+                        if (next && eventDetails.reason === 'trigger-hover') {
+                            return;
+                        }
+                        if (next && Date.now() < suppressUntilRef.current) {
+                            return;
+                        }
+                        if (!next) {
+                            clearIntentTimers();
+                        }
+                        if (next) {
+                            setScrollClosed(false);
+                        }
+                        setOpen(next);
+                    }}
+                >
+                    <HoverCardTrigger
+                        delay={openDelay}
+                        closeDelay={closeDelay}
+                        render={child}
+                        onPointerEnter={(event) => {
+                            if (event.pointerType !== 'touch') {
+                                lastPointRef.current = {
+                                    x: event.clientX,
+                                    y: event.clientY
+                                };
+                            }
+                        }}
+                        onPointerMove={handleIntentPointerMove}
+                        onPointerLeave={() => {
+                            lastPointRef.current = null;
+                            dismissedRef.current = false;
+                            clearIntentTimers();
+                        }}
+                        onPointerOverCapture={(event) => {
+                            if (
+                                !event.currentTarget.closest(
+                                    MODAL_CONTENT_SELECTOR
+                                ) &&
+                                document.querySelector(MODAL_OVERLAY_SELECTOR)
+                            ) {
+                                suppressUntilRef.current =
+                                    getHoverOpenSuppressionDeadline(
+                                        Date.now(),
+                                        openDelay
+                                    );
+                            }
+                        }}
+                        onPointerDownCapture={() => {
+                            dismissedRef.current = true;
+                            clearIntentTimers();
+                            suppressUntilRef.current =
+                                getHoverOpenSuppressionDeadline(
+                                    Date.now(),
+                                    openDelay
+                                );
+                            setOpen(false);
+                        }}
+                    />
+                    <HoverCardContent
+                        className={cn(
+                            'w-72 overflow-hidden p-0',
+                            scrollClosed && 'data-closed:!animate-none'
+                        )}
+                        side={side}
+                        align={align}
+                        sideOffset={8}
+                    >
+                        <UserHoverCardContent userId={userId} seed={seed} />
+                    </HoverCardContent>
+                </HoverCard>
+            )}
         >
-            <HoverCardTrigger
-                delay={openDelay}
-                closeDelay={closeDelay}
-                render={children}
-                onPointerEnter={(event) => {
-                    if (event.pointerType !== 'touch') {
-                        lastPointRef.current = {
-                            x: event.clientX,
-                            y: event.clientY
-                        };
-                    }
-                }}
-                onPointerMove={handleIntentPointerMove}
-                onPointerLeave={() => {
-                    lastPointRef.current = null;
-                    dismissedRef.current = false;
-                    clearIntentTimers();
-                }}
-                onPointerOverCapture={(event) => {
-                    if (
-                        !event.currentTarget.closest(MODAL_CONTENT_SELECTOR) &&
-                        document.querySelector(MODAL_OVERLAY_SELECTOR)
-                    ) {
-                        suppressUntilRef.current =
-                            getHoverOpenSuppressionDeadline(
-                                Date.now(),
-                                openDelay
-                            );
-                    }
-                }}
-                onPointerDownCapture={() => {
-                    dismissedRef.current = true;
-                    clearIntentTimers();
-                    suppressUntilRef.current = getHoverOpenSuppressionDeadline(
-                        Date.now(),
-                        openDelay
-                    );
-                    setOpen(false);
-                }}
-            />
-            <HoverCardContent
-                className={cn(
-                    'w-72 overflow-hidden p-0',
-                    scrollClosed && 'data-closed:!animate-none'
-                )}
-                side={side}
-                align={align}
-                sideOffset={8}
-            >
-                <UserHoverCardContent userId={userId} seed={seed} />
-            </HoverCardContent>
-        </HoverCard>
+            {children}
+        </MountOnIntent>
     );
 }
