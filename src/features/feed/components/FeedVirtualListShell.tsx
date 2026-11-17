@@ -1,5 +1,12 @@
 import { ChevronRightIcon } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import {
+    Fragment,
+    memo,
+    useCallback,
+    useEffect,
+    useMemo,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -168,7 +175,7 @@ function FeedListDayHeading({
     );
 }
 
-function FeedVirtualListRow({
+const FeedVirtualListRow = memo(function FeedVirtualListRow({
     actions,
     cachedDisplayName,
     expanded,
@@ -177,7 +184,8 @@ function FeedVirtualListRow({
     loadingPreviousInstancesKey,
     onOpenPreviousInstances,
     onToggle,
-    row
+    row,
+    rowKey
 }: {
     actions: FeedFriendActions;
     cachedDisplayName: string;
@@ -186,8 +194,9 @@ function FeedVirtualListRow({
     layout: FeedListLayout;
     loadingPreviousInstancesKey: string;
     onOpenPreviousInstances(payload?: FeedLocationActionPayload): void;
-    onToggle(): void;
+    onToggle(rowKey: string): void;
     row: FeedRow;
+    rowKey: string;
 }) {
     const { t } = useTranslation();
     const canExpand = canExpandFeedRow(row);
@@ -220,7 +229,7 @@ function FeedVirtualListRow({
                     canExpand
                         ? (event) => {
                               if (!shouldSkipFeedRowToggle(event)) {
-                                  onToggle();
+                                  onToggle(rowKey);
                               }
                           }
                         : undefined
@@ -241,7 +250,7 @@ function FeedVirtualListRow({
                             : t('view.feed.actions.expand_entry')
                     }
                     disabled={!canExpand}
-                    onClick={onToggle}
+                    onClick={() => onToggle(rowKey)}
                 >
                     <ChevronRightIcon
                         data-icon="icon"
@@ -289,7 +298,7 @@ function FeedVirtualListRow({
             ) : null}
         </div>
     );
-}
+});
 
 export function FeedVirtualListShell({
     actions,
@@ -331,7 +340,22 @@ export function FeedVirtualListShell({
     );
     const newRowKeys = useFeedNewTopRowKeys(sourceRows, resetKey);
     const listColumns = getFeedListColumns(table);
-    const layout = getColumnGridLayout(listColumns, 'detail');
+    const { gridTemplateColumns, minWidth } = getColumnGridLayout(
+        listColumns,
+        'detail'
+    );
+    const layout = useMemo(
+        () => ({ gridTemplateColumns, minWidth }),
+        [gridTemplateColumns, minWidth]
+    );
+    const toggleRow = useCallback((rowKey: string) => {
+        setExpandedRowKeys((current) => {
+            const next = new Set(current);
+            if (next.has(rowKey)) next.delete(rowKey);
+            else next.add(rowKey);
+            return next;
+        });
+    }, []);
     useEffect(() => {
         setExpandedRowKeys(new Set());
     }, [resetKey]);
@@ -394,16 +418,9 @@ export function FeedVirtualListShell({
                                 onOpenPreviousInstances={
                                     onOpenPreviousInstances
                                 }
-                                onToggle={() =>
-                                    setExpandedRowKeys((current) => {
-                                        const next = new Set(current);
-                                        if (next.has(entry.key))
-                                            next.delete(entry.key);
-                                        else next.add(entry.key);
-                                        return next;
-                                    })
-                                }
+                                onToggle={toggleRow}
                                 row={entry.row}
+                                rowKey={entry.key}
                             />
                         )
                     }

@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 import {
     canRequestInviteFromFeedFriend,
@@ -37,20 +38,19 @@ function resolveActionFriendId(friend: FeedFriendActionTarget) {
 export function useFeedFriendActions(): FeedFriendActions {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentUserSnapshot = useRuntimeStore(
-        (state) => state.auth.currentUserSnapshot
+    const canBoopFromFeed = useRuntimeStore((state) =>
+        Boolean(state.auth.currentUserSnapshot?.isBoopingEnabled)
     );
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const friendIds = useFriendRosterStore(
+        useShallow((state) => Object.keys(state.friendsById))
+    );
     const feedHiddenUsers = usePreferencesStore(
         (state) => state.feedHiddenUsers
     );
     const confirm = useModalStore((state) => state.confirm);
     const boopPrompt = useModalStore((state) => state.boopPrompt);
     const normalizedCurrentUserId = normalizeId(currentUserId);
-    const friendsMap = useMemo(
-        () => new Map(Object.entries(friendsById || {})),
-        [friendsById]
-    );
+    const friendIdSet = useMemo(() => new Set(friendIds), [friendIds]);
     const hiddenUserIdSet = useMemo(
         () => new Set(feedHiddenUsers),
         [feedHiddenUsers]
@@ -60,7 +60,6 @@ export function useFeedFriendActions(): FeedFriendActions {
         canInviteFromCurrentLocation,
         canSendInvite: canSendInviteFromFeed
     } = useCurrentInviteContext();
-    const canBoopFromFeed = Boolean(currentUserSnapshot?.isBoopingEnabled);
 
     const isFeedUserHidden = useCallback(
         (userId: string) => hiddenUserIdSet.has(normalizeId(userId)),
@@ -115,10 +114,10 @@ export function useFeedFriendActions(): FeedFriendActions {
             return checkCanInviteSelf(normalizedLocation, {
                 currentUserId: normalizedCurrentUserId,
                 cachedInstances: new Map(),
-                friends: friendsMap
+                friends: friendIdSet
             });
         },
-        [friendsMap, normalizedCurrentUserId]
+        [friendIdSet, normalizedCurrentUserId]
     );
 
     const selfInviteFeedFriendLocation = useCallback(
