@@ -1,10 +1,12 @@
 import {
     type ComponentProps,
     memo,
+    type ReactNode,
     type UIEvent,
     useLayoutEffect,
     useMemo,
-    useRef
+    useRef,
+    useState
 } from 'react';
 
 import {
@@ -141,6 +143,30 @@ type UserDialogTabsSectionProps = {
         };
 };
 
+const FreezeWhenHidden = memo(
+    function FreezeWhenHidden({
+        children
+    }: {
+        active: boolean;
+        children: ReactNode;
+    }) {
+        return children;
+    },
+    (prev, next) => !prev.active && !next.active
+);
+
+function useVisitedTabs(activeTab: string) {
+    const [visited, setVisited] = useState<ReadonlySet<string>>(
+        () => new Set([activeTab])
+    );
+    if (!visited.has(activeTab)) {
+        const next = new Set([...visited, activeTab]);
+        setVisited(next);
+        return next;
+    }
+    return visited;
+}
+
 function useTabScrollMemory(activeTab: string, resetKey: string) {
     const containerRef = useRef<HTMLDivElement>(null);
     const positionsRef = useRef(new Map<string, number>());
@@ -154,7 +180,7 @@ function useTabScrollMemory(activeTab: string, resetKey: string) {
         }
         activeTabRef.current = activeTab;
         const panel = containerRef.current?.querySelector<HTMLElement>(
-            '[data-slot="tabs-content"]:not([hidden])'
+            '[data-slot="tabs-content"]:not([hidden]):not([hidden] *)'
         );
         if (panel) {
             panel.scrollTop = positionsRef.current.get(activeTab) ?? 0;
@@ -215,6 +241,7 @@ export function UserDialogTabsSection({
         activeTab,
         String(profile?.id ?? '')
     );
+    const visitedTabs = useVisitedTabs(activeTab);
     const {
         filteredMutualFriends,
         mutualFriends,
@@ -372,98 +399,119 @@ export function UserDialogTabsSection({
                 value={activeTab}
                 onValueChange={changeTab}
                 tabs={tabsWithCounts}
+                keptTabs={visitedTabs}
             >
-                <UserDialogInfoTab
-                    presenceSection={presenceSection}
-                    notesSection={notesSection}
-                    bioSection={bioSection}
-                    profileLinksSection={profileLinksSection}
-                    activitySummarySection={activitySummarySection}
-                />
-                <MemoMutualTab
-                    profile={profile}
-                    mutualFriends={mutualFriends}
-                    filteredMutualFriends={filteredMutualFriends}
-                    visibleMutualFriends={visibleMutualFriends}
-                    remoteStatus={remoteStatus}
-                    remoteErrors={remoteErrors}
-                    loadTab={loadTab}
-                    search={search}
-                    setSearch={setSearch}
-                    mutualSort={mutualSort}
-                    setMutualSort={setMutualSort}
-                />
-                <MemoGroupsTab
-                    profileGroups={profileGroups}
-                    filteredProfileGroups={filteredProfileGroups}
-                    remoteStatus={remoteStatus}
-                    remoteErrors={remoteErrors}
-                    loadTab={loadTab}
-                    search={search}
-                    setSearch={setSearch}
-                    effectiveGroupSort={effectiveGroupSort}
-                    setGroupSort={setGroupSort}
-                    isCurrentUser={isCurrentUser}
-                    groupSearchActive={groupSearchActive}
-                    userGroupSections={userGroupSections}
-                    ownGroupCountText={ownGroupCountText}
-                    remainingGroupCountText={remainingGroupCountText}
-                />
-                <MemoWorldsTab
-                    filteredProfileWorlds={filteredProfileWorlds}
-                    profileWorlds={profileWorlds}
-                    remoteStatus={remoteStatus}
-                    remoteErrors={remoteErrors}
-                    loadTab={loadTab}
-                    search={search}
-                    setSearch={setSearch}
-                    worldSort={worldSort}
-                    changeWorldSort={changeWorldSort}
-                    worldOrder={worldOrder}
-                    changeWorldOrder={changeWorldOrder}
-                />
-                <MemoFavoriteWorldsTab
-                    remoteData={remoteData}
-                    favoriteWorlds={favoriteWorldRows}
-                    filteredFavoriteWorlds={filteredFavoriteWorlds}
-                    remoteStatus={remoteStatus}
-                    remoteErrors={remoteErrors}
-                    loadTab={loadTab}
-                    search={search}
-                    setSearch={setSearch}
-                />
-                <MemoAvatarsTab
-                    visibleProfileAvatars={visibleProfileAvatars}
-                    profileAvatars={profileAvatars}
-                    remoteStatus={remoteStatus}
-                    remoteErrors={remoteErrors}
-                    loadTab={loadTab}
-                    search={search}
-                    setSearch={setSearch}
-                    profile={profile}
-                    currentUserId={currentUserId}
-                    avatarSort={avatarSort}
-                    changeAvatarSort={changeAvatarSort}
-                    avatarReleaseStatus={avatarReleaseStatus}
-                    changeAvatarReleaseStatus={changeAvatarReleaseStatus}
-                />
-                <MemoInstanceHistoryTab
-                    previousInstances={previousInstances}
-                    previousInstancesError={previousInstancesError}
-                    previousInstancesStatus={previousInstancesStatus}
-                    profile={profile}
-                    onPreviousInstancesChange={onPreviousInstancesChange}
-                />
-                <MemoFeedTab
-                    active={activeTab === 'feed'}
-                    currentUserId={presence.currentUserId || null}
-                    profile={profile}
-                />
-                <MemoActivityTab
-                    profile={profile}
-                    active={activeTab === 'activity'}
-                />
-                <MemoJsonTab profile={profile} />
+                <FreezeWhenHidden active={activeTab === 'info'}>
+                    <UserDialogInfoTab
+                        presenceSection={presenceSection}
+                        notesSection={notesSection}
+                        bioSection={bioSection}
+                        profileLinksSection={profileLinksSection}
+                        activitySummarySection={activitySummarySection}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'mutual'}>
+                    <MemoMutualTab
+                        profile={profile}
+                        mutualFriends={mutualFriends}
+                        filteredMutualFriends={filteredMutualFriends}
+                        visibleMutualFriends={visibleMutualFriends}
+                        remoteStatus={remoteStatus}
+                        remoteErrors={remoteErrors}
+                        loadTab={loadTab}
+                        search={search}
+                        setSearch={setSearch}
+                        mutualSort={mutualSort}
+                        setMutualSort={setMutualSort}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'groups'}>
+                    <MemoGroupsTab
+                        profileGroups={profileGroups}
+                        filteredProfileGroups={filteredProfileGroups}
+                        remoteStatus={remoteStatus}
+                        remoteErrors={remoteErrors}
+                        loadTab={loadTab}
+                        search={search}
+                        setSearch={setSearch}
+                        effectiveGroupSort={effectiveGroupSort}
+                        setGroupSort={setGroupSort}
+                        isCurrentUser={isCurrentUser}
+                        groupSearchActive={groupSearchActive}
+                        userGroupSections={userGroupSections}
+                        ownGroupCountText={ownGroupCountText}
+                        remainingGroupCountText={remainingGroupCountText}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'worlds'}>
+                    <MemoWorldsTab
+                        filteredProfileWorlds={filteredProfileWorlds}
+                        profileWorlds={profileWorlds}
+                        remoteStatus={remoteStatus}
+                        remoteErrors={remoteErrors}
+                        loadTab={loadTab}
+                        search={search}
+                        setSearch={setSearch}
+                        worldSort={worldSort}
+                        changeWorldSort={changeWorldSort}
+                        worldOrder={worldOrder}
+                        changeWorldOrder={changeWorldOrder}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'favorite-worlds'}>
+                    <MemoFavoriteWorldsTab
+                        remoteData={remoteData}
+                        favoriteWorlds={favoriteWorldRows}
+                        filteredFavoriteWorlds={filteredFavoriteWorlds}
+                        remoteStatus={remoteStatus}
+                        remoteErrors={remoteErrors}
+                        loadTab={loadTab}
+                        search={search}
+                        setSearch={setSearch}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'avatars'}>
+                    <MemoAvatarsTab
+                        visibleProfileAvatars={visibleProfileAvatars}
+                        profileAvatars={profileAvatars}
+                        remoteStatus={remoteStatus}
+                        remoteErrors={remoteErrors}
+                        loadTab={loadTab}
+                        search={search}
+                        setSearch={setSearch}
+                        profile={profile}
+                        currentUserId={currentUserId}
+                        avatarSort={avatarSort}
+                        changeAvatarSort={changeAvatarSort}
+                        avatarReleaseStatus={avatarReleaseStatus}
+                        changeAvatarReleaseStatus={changeAvatarReleaseStatus}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'instance-history'}>
+                    <MemoInstanceHistoryTab
+                        previousInstances={previousInstances}
+                        previousInstancesError={previousInstancesError}
+                        previousInstancesStatus={previousInstancesStatus}
+                        profile={profile}
+                        onPreviousInstancesChange={onPreviousInstancesChange}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'feed'}>
+                    <MemoFeedTab
+                        active={activeTab === 'feed'}
+                        currentUserId={presence.currentUserId || null}
+                        profile={profile}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'activity'}>
+                    <MemoActivityTab
+                        profile={profile}
+                        active={activeTab === 'activity'}
+                    />
+                </FreezeWhenHidden>
+                <FreezeWhenHidden active={activeTab === 'json'}>
+                    <MemoJsonTab profile={profile} />
+                </FreezeWhenHidden>
             </EntityDialogTabs>
         </div>
     );

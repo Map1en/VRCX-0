@@ -17,7 +17,11 @@ vi.mock('@/services/clipboardService', () => ({
     copyTextToClipboard: mocks.copyTextToClipboard
 }));
 
-import { EntityRawJson } from './EntityDialogScaffold';
+import {
+    EntityDialogTabContent,
+    EntityDialogTabs,
+    EntityRawJson
+} from './EntityDialogScaffold';
 
 describe('EntityRawJson', () => {
     afterEach(() => {
@@ -63,5 +67,41 @@ describe('EntityRawJson', () => {
                 )
             );
         });
+    });
+});
+
+describe('EntityDialogTabContent', () => {
+    afterEach(() => {
+        cleanup();
+    });
+
+    function renderTabs(activeTab: string, keptTabs: ReadonlySet<string>) {
+        return (
+            <EntityDialogTabs
+                value={activeTab}
+                onValueChange={vi.fn()}
+                tabs={[
+                    { value: 'info', label: 'Info' },
+                    { value: 'groups', label: 'Groups' }
+                ]}
+                keptTabs={keptTabs}
+            >
+                <EntityDialogTabContent value="info">
+                    <span>info panel</span>
+                </EntityDialogTabContent>
+                <EntityDialogTabContent value="groups">
+                    <span>groups panel</span>
+                </EntityDialogTabContent>
+            </EntityDialogTabs>
+        );
+    }
+
+    it('keeps inactive panels mounted only when they are listed as kept', () => {
+        const view = render(renderTabs('groups', new Set(['groups'])));
+        expect(screen.queryByText('info panel')).toBeNull();
+
+        view.rerender(renderTabs('groups', new Set(['info', 'groups'])));
+        expect(screen.getByText('info panel')).not.toBeNull();
+        expect(screen.getByText('groups panel')).not.toBeNull();
     });
 });

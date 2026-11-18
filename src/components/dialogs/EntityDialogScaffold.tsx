@@ -3,7 +3,9 @@ import {
     type ComponentProps,
     type ComponentType,
     type CSSProperties,
+    createContext,
     type ReactNode,
+    use,
     useEffect,
     useState
 } from 'react';
@@ -140,17 +142,22 @@ export type EntityDialogTab = {
     label: ReactNode;
 };
 
+const EMPTY_KEPT_TABS: ReadonlySet<string> = new Set();
+const EntityDialogKeptTabsContext = createContext(EMPTY_KEPT_TABS);
+
 function EntityDialogTabs({
     value,
     onValueChange,
     tabs,
     actions,
+    keptTabs = EMPTY_KEPT_TABS,
     children
 }: {
     value: string;
     onValueChange: (value: string) => void;
     tabs: EntityDialogTab[];
     actions?: ReactNode;
+    keptTabs?: ReadonlySet<string>;
     children?: ReactNode;
 }) {
     const tabList = (
@@ -188,7 +195,9 @@ function EntityDialogTabs({
             ) : (
                 tabList
             )}
-            {children}
+            <EntityDialogKeptTabsContext value={keptTabs}>
+                {children}
+            </EntityDialogKeptTabsContext>
         </Tabs>
     );
 }
@@ -202,10 +211,11 @@ function EntityDialogTabContent({
     value: string;
     forceMount?: boolean;
 }) {
+    const keptTabs = use(EntityDialogKeptTabsContext);
     return (
         <TabsContent
             value={value}
-            keepMounted={forceMount || undefined}
+            keepMounted={forceMount || keptTabs.has(value) || undefined}
             className={cn(
                 'm-0 min-h-0 flex-1 overflow-auto px-1 pt-4 pb-1 data-hidden:hidden',
                 className

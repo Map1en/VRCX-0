@@ -10,9 +10,9 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { EntityRecord } from '@/domain/entities/shared';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { groupMemberVisibility } from '../userDialogGroupRows';
 import { groupDisplayName } from '../userDialogRows';
@@ -34,17 +34,9 @@ function MarkerIcon({
     className?: string;
 }) {
     return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <Icon
-                        aria-label={label}
-                        className={`size-3.5 shrink-0 ${className}`}
-                    />
-                }
-            />
-            <TooltipContent>{label}</TooltipContent>
-        </Tooltip>
+        <HintTooltip label={label}>
+            <Icon className={`size-3.5 shrink-0 ${className}`} />
+        </HintTooltip>
     );
 }
 
