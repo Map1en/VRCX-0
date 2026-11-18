@@ -22,13 +22,13 @@ import {
     userDialogGroupSortingOptions,
     type UserDialogGroupSort
 } from '../userDialogListOptions';
-import type { buildUserDialogProfileSummary } from '../userDialogViewData';
+import type { buildUserDialogGroupSummary } from '../userDialogViewData';
 import { EntityList, UserGroupSection } from '../UserDialogViewParts';
 import type { useUserDialogTabData } from '../useUserDialogTabData';
 import { UserDialogSearchHeader } from './UserDialogSearchHeader';
 
 type UserTabData = ReturnType<typeof useUserDialogTabData>;
-type ProfileSummary = ReturnType<typeof buildUserDialogProfileSummary>;
+type GroupSummary = ReturnType<typeof buildUserDialogGroupSummary>;
 type UserDialogGroupsTabProps = Pick<
     UserTabData,
     | 'profileGroups'
@@ -43,7 +43,7 @@ type UserDialogGroupsTabProps = Pick<
     | 'groupSearchActive'
 > &
     Pick<
-        ProfileSummary,
+        GroupSummary,
         'userGroupSections' | 'ownGroupCountText' | 'remainingGroupCountText'
     > & {
         isCurrentUser: boolean;

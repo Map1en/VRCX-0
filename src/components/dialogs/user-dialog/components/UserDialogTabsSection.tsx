@@ -1,7 +1,9 @@
 import {
     type ComponentProps,
+    memo,
     type UIEvent,
     useLayoutEffect,
+    useMemo,
     useRef
 } from 'react';
 
@@ -29,6 +31,16 @@ import {
     type UserDialogPresenceSectionProps,
     type UserDialogProfileLinksSectionProps
 } from './UserDialogInfoTab';
+
+const MemoMutualTab = memo(UserDialogMutualTab);
+const MemoGroupsTab = memo(UserDialogGroupsTab);
+const MemoWorldsTab = memo(UserDialogWorldsTab);
+const MemoFavoriteWorldsTab = memo(UserDialogFavoriteWorldsTab);
+const MemoAvatarsTab = memo(UserDialogAvatarsTab);
+const MemoInstanceHistoryTab = memo(UserDialogInstanceHistoryTab);
+const MemoFeedTab = memo(UserDialogFeedTab);
+const MemoActivityTab = memo(UserDialogActivityTab);
+const MemoJsonTab = memo(UserDialogJsonTab);
 
 type MutualTabProps = ComponentProps<typeof UserDialogMutualTab>;
 type GroupsTabProps = ComponentProps<typeof UserDialogGroupsTab>;
@@ -62,7 +74,7 @@ type UserDialogTabsSectionProps = {
         };
         remote: Pick<
             MutualTabProps,
-            'loadTab' | 'remoteErrors' | 'remoteStatus' | 'search'
+            'remoteErrors' | 'remoteStatus' | 'search'
         > &
             Pick<FavoriteWorldsTabProps, 'remoteData'>;
         mutual: Pick<
@@ -108,7 +120,10 @@ type UserDialogTabsSectionProps = {
             | 'previousInstancesStatus'
         >;
     };
-    tabsCommands: Pick<MutualTabProps, 'setMutualSort' | 'setSearch'> &
+    tabsCommands: Pick<
+        MutualTabProps,
+        'loadTab' | 'setMutualSort' | 'setSearch'
+    > &
         Pick<GroupsTabProps, 'setGroupSort'> &
         Pick<WorldsTabProps, 'changeWorldOrder' | 'changeWorldSort'> &
         Pick<
@@ -195,7 +210,7 @@ export function UserDialogTabsSection({
         userTimeSpent,
         visibleHomeLocationTarget
     } = info;
-    const { loadTab, remoteData, remoteErrors, remoteStatus, search } = remote;
+    const { remoteData, remoteErrors, remoteStatus, search } = remote;
     const tabScrollMemory = useTabScrollMemory(
         activeTab,
         String(profile?.id ?? '')
@@ -227,9 +242,9 @@ export function UserDialogTabsSection({
         visibleProfileAvatars
     } = avatars;
     const {
-        previousInstances = [],
-        previousInstancesError = '',
-        previousInstancesStatus = 'idle'
+        previousInstances,
+        previousInstancesError,
+        previousInstancesStatus
     } = history;
     const {
         changeAvatarReleaseStatus,
@@ -237,6 +252,7 @@ export function UserDialogTabsSection({
         changeTab,
         changeWorldOrder,
         changeWorldSort,
+        loadTab,
         onEditMemo,
         onEditSelfProfileDetails,
         onOpenFeed,
@@ -248,32 +264,36 @@ export function UserDialogTabsSection({
         setMutualSort,
         setSearch
     } = commands;
-    const locationInstanceSource =
-        presence.locationInstance &&
-        typeof presence.locationInstance === 'object'
-            ? Object.fromEntries(Object.entries(presence.locationInstance))
+    const presenceLocationInstance = presence.locationInstance;
+    const locationInstance = useMemo(() => {
+        const locationInstanceSource =
+            presenceLocationInstance &&
+            typeof presenceLocationInstance === 'object'
+                ? Object.fromEntries(Object.entries(presenceLocationInstance))
+                : undefined;
+        return locationInstanceSource
+            ? {
+                  ...locationInstanceSource,
+                  capacity:
+                      typeof locationInstanceSource.capacity === 'number'
+                          ? locationInstanceSource.capacity
+                          : undefined,
+                  groupName:
+                      typeof locationInstanceSource.groupName === 'string'
+                          ? locationInstanceSource.groupName
+                          : undefined,
+                  recommendedCapacity:
+                      typeof locationInstanceSource.recommendedCapacity ===
+                      'number'
+                          ? locationInstanceSource.recommendedCapacity
+                          : undefined,
+                  shortName:
+                      typeof locationInstanceSource.shortName === 'string'
+                          ? locationInstanceSource.shortName
+                          : undefined
+              }
             : undefined;
-    const locationInstance = locationInstanceSource
-        ? {
-              ...locationInstanceSource,
-              capacity:
-                  typeof locationInstanceSource.capacity === 'number'
-                      ? locationInstanceSource.capacity
-                      : undefined,
-              groupName:
-                  typeof locationInstanceSource.groupName === 'string'
-                      ? locationInstanceSource.groupName
-                      : undefined,
-              recommendedCapacity:
-                  typeof locationInstanceSource.recommendedCapacity === 'number'
-                      ? locationInstanceSource.recommendedCapacity
-                      : undefined,
-              shortName:
-                  typeof locationInstanceSource.shortName === 'string'
-                      ? locationInstanceSource.shortName
-                      : undefined
-          }
-        : undefined;
+    }, [presenceLocationInstance]);
     const tabsWithCounts = tabs
         .filter((tab: EntityDialogTab & { hidden?: boolean }) => !tab.hidden)
         .map((tab: EntityDialogTab & { hidden?: boolean }) => {
@@ -360,7 +380,7 @@ export function UserDialogTabsSection({
                     profileLinksSection={profileLinksSection}
                     activitySummarySection={activitySummarySection}
                 />
-                <UserDialogMutualTab
+                <MemoMutualTab
                     profile={profile}
                     mutualFriends={mutualFriends}
                     filteredMutualFriends={filteredMutualFriends}
@@ -373,7 +393,7 @@ export function UserDialogTabsSection({
                     mutualSort={mutualSort}
                     setMutualSort={setMutualSort}
                 />
-                <UserDialogGroupsTab
+                <MemoGroupsTab
                     profileGroups={profileGroups}
                     filteredProfileGroups={filteredProfileGroups}
                     remoteStatus={remoteStatus}
@@ -389,7 +409,7 @@ export function UserDialogTabsSection({
                     ownGroupCountText={ownGroupCountText}
                     remainingGroupCountText={remainingGroupCountText}
                 />
-                <UserDialogWorldsTab
+                <MemoWorldsTab
                     filteredProfileWorlds={filteredProfileWorlds}
                     profileWorlds={profileWorlds}
                     remoteStatus={remoteStatus}
@@ -402,7 +422,7 @@ export function UserDialogTabsSection({
                     worldOrder={worldOrder}
                     changeWorldOrder={changeWorldOrder}
                 />
-                <UserDialogFavoriteWorldsTab
+                <MemoFavoriteWorldsTab
                     remoteData={remoteData}
                     favoriteWorlds={favoriteWorldRows}
                     filteredFavoriteWorlds={filteredFavoriteWorlds}
@@ -412,7 +432,7 @@ export function UserDialogTabsSection({
                     search={search}
                     setSearch={setSearch}
                 />
-                <UserDialogAvatarsTab
+                <MemoAvatarsTab
                     visibleProfileAvatars={visibleProfileAvatars}
                     profileAvatars={profileAvatars}
                     remoteStatus={remoteStatus}
@@ -427,23 +447,23 @@ export function UserDialogTabsSection({
                     avatarReleaseStatus={avatarReleaseStatus}
                     changeAvatarReleaseStatus={changeAvatarReleaseStatus}
                 />
-                <UserDialogInstanceHistoryTab
+                <MemoInstanceHistoryTab
                     previousInstances={previousInstances}
                     previousInstancesError={previousInstancesError}
                     previousInstancesStatus={previousInstancesStatus}
                     profile={profile}
                     onPreviousInstancesChange={onPreviousInstancesChange}
                 />
-                <UserDialogFeedTab
+                <MemoFeedTab
                     active={activeTab === 'feed'}
                     currentUserId={presence.currentUserId || null}
                     profile={profile}
                 />
-                <UserDialogActivityTab
+                <MemoActivityTab
                     profile={profile}
                     active={activeTab === 'activity'}
                 />
-                <UserDialogJsonTab profile={profile} />
+                <MemoJsonTab profile={profile} />
             </EntityDialogTabs>
         </div>
     );

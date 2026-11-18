@@ -1,5 +1,7 @@
 import { ClockIcon } from 'lucide-react';
 import {
+    memo,
+    useCallback,
     useEffect,
     useEffectEvent,
     useMemo,
@@ -8,10 +10,12 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
+import { shallow } from 'zustand/shallow';
 
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import type { FriendRosterById } from '@/domain/friends/types';
 import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
+import { useStableCommands } from '@/lib/useStableCommands';
 import { openAvatarDialog, openGroupDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
@@ -46,7 +50,10 @@ import {
     normalizedText
 } from './user-dialog/userDialogRows';
 import type { UserDialogLoadStatus } from './user-dialog/userDialogTabService';
-import { buildUserDialogProfileSummary } from './user-dialog/userDialogViewData';
+import {
+    buildUserDialogGroupSummary,
+    buildUserDialogProfileSummary
+} from './user-dialog/userDialogViewData';
 import { useUserDialogAvatarAuthorAction } from './user-dialog/useUserDialogAvatarAuthorAction';
 import { useUserDialogClipboardActions } from './user-dialog/useUserDialogClipboardActions';
 import type { useUserDialogLocationPanel } from './user-dialog/useUserDialogLocationPanel';
@@ -170,6 +177,32 @@ function isSelfPanel(value: string): value is Exclude<SelfPanel, ''> {
 }
 
 const VRC_PLUS_SUMMARY_SNAPSHOT = Object.freeze({ $isVRCPlus: true });
+const DEFAULT_EXTENDED_MODERATION_STATE = {
+    interactOff: false,
+    muteChat: false
+};
+const DEFAULT_AVATAR_OVERRIDE_STATE = { hideAvatar: false, showAvatar: false };
+const EMPTY_USER_STATS = {};
+const EMPTY_PREVIOUS_INSTANCES: NonNullable<
+    SupplementalData['previousInstances']
+> = [];
+const EMPTY_INSTANCE_USERS: InstanceRosterRow[] = [];
+
+const MemoUserDialogHeaderSection = memo(
+    UserDialogHeaderSection,
+    (prev, next) =>
+        prev.headerCommands === next.headerCommands &&
+        shallow(prev.headerModel, next.headerModel)
+);
+
+const MemoUserDialogTabsSection = memo(
+    UserDialogTabsSection,
+    (prev, next) =>
+        prev.tabsCommands === next.tabsCommands &&
+        Object.entries(next.tabsModel).every(([key, model]) =>
+            shallow(prev.tabsModel[key as keyof typeof prev.tabsModel], model)
+        )
+);
 
 function finiteTabCount(value: number | undefined) {
     return value !== undefined && Number.isFinite(value) && value >= 0
@@ -241,8 +274,8 @@ export function UserDialogTabbedView({
         : canonicalProfileAppearance;
     const {
         moderationState,
-        extendedModerationState = { interactOff: false, muteChat: false },
-        avatarOverrideState = { hideAvatar: false, showAvatar: false },
+        extendedModerationState = DEFAULT_EXTENDED_MODERATION_STATE,
+        avatarOverrideState = DEFAULT_AVATAR_OVERRIDE_STATE,
         isCurrentUser,
         isFriend,
         friendRequestState,
@@ -257,9 +290,9 @@ export function UserDialogTabbedView({
         currentUserHasSharedConnectionsOptOut,
         currentUserBoopingEnabled,
         currentUserAccountStanding,
-        userStats = {},
+        userStats = EMPTY_USER_STATS,
         loadPreviousInstances,
-        previousInstances = [],
+        previousInstances = EMPTY_PREVIOUS_INSTANCES,
         previousInstancesError = '',
         previousInstancesStatus = 'idle',
         representedGroup = null,
@@ -268,7 +301,7 @@ export function UserDialogTabbedView({
         hideUserMemos = false
     } = presence;
     const {
-        sameInstanceUsers = [],
+        sameInstanceUsers = EMPTY_INSTANCE_USERS,
         locationOwnerUser = null,
         locationOwnerGroup = null,
         locationInstance = null,
@@ -412,12 +445,30 @@ export function UserDialogTabbedView({
             ? profile.pronouns.join(', ')
             : normalizedText(profile.pronouns)
     );
+    const summaryCurrentUserSnapshot = isLocalUserVrcPlusSupporter
+        ? VRC_PLUS_SUMMARY_SNAPSHOT
+        : null;
+    const { userGroupSections, ownGroupCountText, remainingGroupCountText } =
+        useMemo(
+            () =>
+                buildUserDialogGroupSummary({
+                    profile,
+                    sortedProfileGroups,
+                    isCurrentUser,
+                    vrchatConfigConstants,
+                    currentUserSnapshot: summaryCurrentUserSnapshot
+                }),
+            [
+                isCurrentUser,
+                profile,
+                sortedProfileGroups,
+                summaryCurrentUserSnapshot,
+                vrchatConfigConstants
+            ]
+        );
     const {
         previousDisplayNames,
         statusStateText,
-        userGroupSections,
-        ownGroupCountText,
-        remainingGroupCountText,
         userTimeSpent,
         userJoinCount,
         lastSeen,
@@ -428,21 +479,25 @@ export function UserDialogTabbedView({
         presenceActivityAt,
         friendedAt,
         relationshipHistory
-    } = buildUserDialogProfileSummary({
-        profile,
-        userStats: {
-            ...userStats,
-            mutualFriendCount:
-                remoteTabCounts.mutual ?? record(userStats).mutualFriendCount
-        },
-        sortedProfileGroups,
-        isCurrentUser,
-        vrchatConfigConstants,
-        currentUserSnapshot: isLocalUserVrcPlusSupporter
-            ? VRC_PLUS_SUMMARY_SNAPSHOT
-            : null,
-        nowMs
-    });
+    } = useMemo(
+        () =>
+            buildUserDialogProfileSummary({
+                profile,
+                userStats: record(userStats),
+                isCurrentUser,
+                vrchatConfigConstants,
+                currentUserSnapshot: summaryCurrentUserSnapshot,
+                nowMs
+            }),
+        [
+            isCurrentUser,
+            nowMs,
+            profile,
+            summaryCurrentUserSnapshot,
+            userStats,
+            vrchatConfigConstants
+        ]
+    );
     const statusDotClassName = resolveSidebarStatusDotClassName(profile, {
         hideNonFriend: false
     });
@@ -463,9 +518,13 @@ export function UserDialogTabbedView({
     const visiblePresenceLocation = isOfflineLikeValue(presenceLocation)
         ? ''
         : presenceLocation;
-    const visiblePresenceParsedLocation = visiblePresenceLocation
-        ? parseLocation(visiblePresenceLocation)
-        : null;
+    const visiblePresenceParsedLocation = useMemo(
+        () =>
+            visiblePresenceLocation
+                ? parseLocation(visiblePresenceLocation)
+                : null,
+        [visiblePresenceLocation]
+    );
     const locationWorldTitle = normalizedText(
         profile.worldName || profile.$worldName
     );
@@ -533,15 +592,16 @@ export function UserDialogTabbedView({
             remoteTabCounts
         ]
     );
-    const isRecentDialogAction = (
-        actionType: Parameters<typeof isActionRecent>[1]
-    ) => recentActionVersion >= 0 && isActionRecent(profile.id, actionType);
-    const recentDialogShortcut = (
-        actionType: Parameters<typeof isActionRecent>[1]
-    ) =>
-        isRecentDialogAction(actionType) ? (
-            <ClockIcon className="text-muted-foreground size-3.5" />
-        ) : null;
+    const profileId = profile.id;
+    const recentDialogShortcut = useCallback(
+        (actionType: Parameters<typeof isActionRecent>[1]) =>
+            recentActionVersion >= 0 &&
+            nowMs > 0 &&
+            isActionRecent(profileId, actionType) ? (
+                <ClockIcon className="text-muted-foreground size-3.5" />
+            ) : null,
+        [nowMs, profileId, recentActionVersion]
+    );
 
     const showAvatarAuthor = useUserDialogAvatarAuthorAction({
         currentAvatarTarget
@@ -608,7 +668,7 @@ export function UserDialogTabbedView({
         userUrl,
         estimatedOnlineDurationMs
     };
-    const headerCommands = {
+    const headerCommands = useStableCommands({
         onAvatarOverride,
         onBoop,
         onCopyDisplayName: (displayName: string) => {
@@ -666,7 +726,25 @@ export function UserDialogTabbedView({
         onToggleSelfDiscordConnections,
         onToggleSelfSharedConnections,
         onUnfriend
-    };
+    });
+    const tabsCommands = useStableCommands({
+        changeAvatarReleaseStatus,
+        changeAvatarSort,
+        changeTab,
+        changeWorldOrder,
+        changeWorldSort,
+        loadTab,
+        onEditMemo,
+        onEditSelfProfileDetails: openSelfProfileEditor,
+        onOpenFeed: openFeed,
+        onOpenInstanceHistory: openInstanceHistory,
+        onPreviousInstancesChange,
+        onRefreshLocation,
+        openGroupDialog,
+        setGroupSort,
+        setMutualSort,
+        setSearch
+    });
     const tabsModel = {
         root: {
             activeTab,
@@ -705,7 +783,6 @@ export function UserDialogTabbedView({
             locationInstanceUsers
         },
         remote: {
-            loadTab,
             remoteData,
             remoteErrors,
             remoteStatus,
@@ -749,29 +826,12 @@ export function UserDialogTabbedView({
             previousInstancesStatus
         }
     };
-    const tabsCommands = {
-        changeAvatarReleaseStatus,
-        changeAvatarSort,
-        changeTab,
-        changeWorldOrder,
-        changeWorldSort,
-        onEditMemo,
-        onEditSelfProfileDetails: openSelfProfileEditor,
-        onOpenFeed: openFeed,
-        onOpenInstanceHistory: openInstanceHistory,
-        onPreviousInstancesChange,
-        onRefreshLocation,
-        openGroupDialog,
-        setGroupSort,
-        setMutualSort,
-        setSearch
-    };
 
     return (
         <EntityDialogScaffold className="gap-3">
             <EntityDialogTwoColumnLayout
                 rail={
-                    <UserDialogHeaderSection
+                    <MemoUserDialogHeaderSection
                         headerModel={headerModel}
                         headerCommands={headerCommands}
                     />
@@ -795,7 +855,7 @@ export function UserDialogTabbedView({
                         onSetBannerColor={onSetSelfBannerColor}
                     />
                 ) : (
-                    <UserDialogTabsSection
+                    <MemoUserDialogTabsSection
                         tabsModel={tabsModel}
                         tabsCommands={tabsCommands}
                     />

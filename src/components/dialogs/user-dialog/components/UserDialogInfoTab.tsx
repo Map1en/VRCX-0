@@ -6,8 +6,9 @@ import {
     SparklesIcon,
     UsersRoundIcon
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { shallow } from 'zustand/shallow';
 
 import { formatCredits } from '@/components/economy/economyDisplay';
 import { useEconomyBalance } from '@/components/economy/useEconomyBalance';
@@ -957,6 +958,17 @@ export function UserDialogActivitySummaryPanel({
     );
 }
 
+const MemoPresenceSection = memo(
+    UserDialogPresenceSection,
+    (prev, next) =>
+        shallow(prev.presence, next.presence) &&
+        shallow(prev.actions, next.actions)
+);
+const MemoNotesPanel = memo(UserDialogNotesPanel);
+const MemoBioPanel = memo(UserDialogBioPanel);
+const MemoProfileLinksPanel = memo(UserDialogProfileLinksPanel);
+const MemoActivitySummaryPanel = memo(UserDialogActivitySummaryPanel);
+
 export function UserDialogInfoTab({
     presenceSection,
     notesSection,
@@ -970,25 +982,25 @@ export function UserDialogInfoTab({
         <EntityDialogTabContent value="info" className="pt-3">
             <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
                 <div className="flex min-w-0 flex-col gap-4">
-                    <UserDialogPresenceSection
+                    <MemoPresenceSection
                         presence={presenceSection.presence}
                         actions={presenceSection.actions}
                     />
-                    <UserDialogNotesPanel
+                    <MemoNotesPanel
                         profile={notesSection.profile}
                         hideUserNotes={notesSection.hideUserNotes}
                         memo={notesSection.memo}
                         hideUserMemos={notesSection.hideUserMemos}
                         onEditMemo={notesSection.onEditMemo}
                     />
-                    <UserDialogBioPanel
+                    <MemoBioPanel
                         profile={profile}
                         bioLinks={bioLinks}
                         onEditBio={onEditBio}
                     />
                 </div>
                 <div className="flex min-w-0 flex-col gap-4">
-                    <UserDialogProfileLinksPanel
+                    <MemoProfileLinksPanel
                         currentAvatarDisplayName={
                             profileLinksSection.currentAvatarDisplayName
                         }
@@ -1003,7 +1015,7 @@ export function UserDialogInfoTab({
                             profileLinksSection.visibleHomeLocationTarget
                         }
                     />
-                    <UserDialogActivitySummaryPanel
+                    <MemoActivitySummaryPanel
                         friendedAt={activitySummarySection.friendedAt}
                         relationshipHistory={
                             activitySummarySection.relationshipHistory
