@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { LocationPendingText } from '@/components/location/LocationPendingText';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
+import { MountOnIntent } from '@/components/MountOnIntent';
 import { cn } from '@/lib/utils';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -22,10 +23,17 @@ function LocationTooltip({
     }
 
     return (
-        <Tooltip>
-            <TooltipTrigger render={children} />
-            <TooltipContent>{content}</TooltipContent>
-        </Tooltip>
+        <MountOnIntent
+            trigger="hover"
+            render={(child) => (
+                <Tooltip>
+                    <TooltipTrigger render={child} />
+                    <TooltipContent>{content}</TooltipContent>
+                </Tooltip>
+            )}
+        >
+            {children}
+        </MountOnIntent>
     );
 }
 

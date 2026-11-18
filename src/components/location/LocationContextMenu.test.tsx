@@ -35,6 +35,18 @@ vi.mock('@/ui/shadcn/context-menu', async () => {
     };
 });
 
+vi.mock('@/components/DeferredContextMenu', async () => {
+    const React = await import('react');
+
+    return {
+        DeferredContextMenu: ({
+            trigger,
+            children
+        }: React.PropsWithChildren<{ trigger: React.ReactNode }>) =>
+            React.createElement('div', null, trigger, children)
+    };
+});
+
 vi.mock('react-i18next', () => {
     const translations: Record<string, string> = {
         'common.actions.view_details': 'View details',

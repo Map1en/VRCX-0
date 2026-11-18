@@ -16,6 +16,7 @@ import {
     getLogFilterRowAttributes
 } from '@/components/data-table/LogFilterContextMenu';
 import { TimestampText } from '@/components/data-table/TimestampText';
+import { DeferredContextMenu } from '@/components/DeferredContextMenu';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -30,12 +31,10 @@ import {
     CollapsibleTrigger
 } from '@/ui/shadcn/collapsible';
 import {
-    ContextMenu,
     ContextMenuContent,
     ContextMenuGroup,
     ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuTrigger
+    ContextMenuSeparator
 } from '@/ui/shadcn/context-menu';
 
 import {
@@ -411,55 +410,54 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
     );
 
     return (
-        <ContextMenu>
-            <ContextMenuTrigger
-                render={
-                    <div className="grid min-h-8 grid-cols-[4rem_minmax(0,1fr)_auto] items-baseline gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-(--state-hover-surface)">
-                        <EventTime value={event.created_at} />
-                        <div className="flex min-w-0 items-baseline gap-1.5">
-                            {showVideoLink ? (
-                                <Button
-                                    type="button"
-                                    variant="link"
-                                    className="text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal whitespace-normal"
-                                    onClick={(eventObject) => {
-                                        eventObject.stopPropagation();
-                                        openExternalLink(videoUrl);
-                                    }}
-                                >
-                                    <span className="line-clamp-2 leading-tight break-words">
-                                        {videoLabel}
-                                    </span>
-                                </Button>
-                            ) : (
-                                <span className="line-clamp-2 min-w-0 leading-tight break-words">
+        <DeferredContextMenu
+            trigger={
+                <div className="grid min-h-8 grid-cols-[4rem_minmax(0,1fr)_auto] items-baseline gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-(--state-hover-surface)">
+                    <EventTime value={event.created_at} />
+                    <div className="flex min-w-0 items-baseline gap-1.5">
+                        {showVideoLink ? (
+                            <Button
+                                type="button"
+                                variant="link"
+                                className="text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal whitespace-normal"
+                                onClick={(eventObject) => {
+                                    eventObject.stopPropagation();
+                                    openExternalLink(videoUrl);
+                                }}
+                            >
+                                <span className="line-clamp-2 leading-tight break-words">
                                     {videoLabel}
                                 </span>
-                            )}
-                            {typeof event.playCount === 'number' &&
-                            event.playCount > 1 ? (
-                                <Badge
-                                    variant="secondary"
-                                    className="h-4 shrink-0 px-1 text-xs"
-                                >
-                                    {t('view.game_log.sessions.play_count', {
-                                        count: event.playCount
-                                    })}
-                                </Badge>
-                            ) : null}
-                        </div>
-                        {event?.displayName ? (
-                            <span className="text-muted-foreground max-w-40 min-w-0 truncate text-xs">
-                                {t('view.game_log.sessions.played_by', {
-                                    name: event.displayName
-                                })}
-                            </span>
+                            </Button>
                         ) : (
-                            <span aria-hidden="true" />
+                            <span className="line-clamp-2 min-w-0 leading-tight break-words">
+                                {videoLabel}
+                            </span>
                         )}
+                        {typeof event.playCount === 'number' &&
+                        event.playCount > 1 ? (
+                            <Badge
+                                variant="secondary"
+                                className="h-4 shrink-0 px-1 text-xs"
+                            >
+                                {t('view.game_log.sessions.play_count', {
+                                    count: event.playCount
+                                })}
+                            </Badge>
+                        ) : null}
                     </div>
-                }
-            />
+                    {event?.displayName ? (
+                        <span className="text-muted-foreground max-w-40 min-w-0 truncate text-xs">
+                            {t('view.game_log.sessions.played_by', {
+                                name: event.displayName
+                            })}
+                        </span>
+                    ) : (
+                        <span aria-hidden="true" />
+                    )}
+                </div>
+            }
+        >
             <ContextMenuContent>
                 {showVideoLink ? (
                     <>
@@ -498,7 +496,7 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
                     }}
                 />
             </ContextMenuContent>
-        </ContextMenu>
+        </DeferredContextMenu>
     );
 }
 

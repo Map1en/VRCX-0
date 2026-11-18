@@ -8,14 +8,13 @@ import {
 import type { ReactNode, SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DeferredContextMenu } from '@/components/DeferredContextMenu';
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import {
-    ContextMenu,
     ContextMenuContent,
     ContextMenuGroup,
     ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuTrigger
+    ContextMenuSeparator
 } from '@/ui/shadcn/context-menu';
 
 export function LocationContextMenu({
@@ -65,14 +64,13 @@ export function LocationContextMenu({
         : 'dialog.world.actions.new_instance_and_self_invite';
 
     return (
-        <ContextMenu>
-            <ContextMenuTrigger
-                render={
-                    <span className="inline-flex max-w-full min-w-0">
-                        {children}
-                    </span>
-                }
-            />
+        <DeferredContextMenu
+            trigger={
+                <span className="inline-flex max-w-full min-w-0">
+                    {children}
+                </span>
+            }
+        >
             <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
                 <ContextMenuGroup>
                     <ContextMenuItem
@@ -154,6 +152,6 @@ export function LocationContextMenu({
                 ) : null}
                 {extraItems}
             </ContextMenuContent>
-        </ContextMenu>
+        </DeferredContextMenu>
     );
 }
