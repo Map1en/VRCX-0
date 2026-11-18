@@ -4,11 +4,12 @@ const scrollTopByKey = new Map<string, number>();
 
 export function useRouteScrollMemory(
     ref: RefObject<HTMLElement | null>,
-    key: string
+    key: string,
+    active = true
 ) {
     useLayoutEffect(() => {
         const element = ref.current;
-        if (!element) {
+        if (!element || !active) {
             return undefined;
         }
 
@@ -27,5 +28,5 @@ export function useRouteScrollMemory(
         return () => {
             element.removeEventListener('scroll', remember);
         };
-    }, [key, ref]);
+    }, [active, key, ref]);
 }

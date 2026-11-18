@@ -7,9 +7,15 @@ import { useRouteScrollMemory } from './useRouteScrollMemory';
 
 let scrollHeight = 1000;
 
-function ScrollPage({ scrollKey }: { scrollKey: string }) {
+function ScrollPage({
+    scrollKey,
+    active
+}: {
+    scrollKey: string;
+    active?: boolean;
+}) {
     const ref = useRef<HTMLDivElement | null>(null);
-    useRouteScrollMemory(ref, scrollKey);
+    useRouteScrollMemory(ref, scrollKey, active);
     return <div ref={ref} data-testid="scroller" />;
 }
 
@@ -66,5 +72,16 @@ describe('useRouteScrollMemory', () => {
         render(<ScrollPage scrollKey="short" />);
 
         expect(screen.getByTestId('scroller').scrollTop).toBe(0);
+    });
+
+    it('restores the position when a page that stayed mounted becomes active again', () => {
+        const view = render(<ScrollPage scrollKey="kept" active />);
+        scrollTo(260);
+
+        view.rerender(<ScrollPage scrollKey="kept" active={false} />);
+        screen.getByTestId('scroller').scrollTop = 0;
+        view.rerender(<ScrollPage scrollKey="kept" active />);
+
+        expect(screen.getByTestId('scroller').scrollTop).toBe(260);
     });
 });
