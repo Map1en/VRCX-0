@@ -1,17 +1,17 @@
 import {
     type ComponentProps,
     memo,
-    type ReactNode,
     type UIEvent,
     useLayoutEffect,
     useMemo,
-    useRef,
-    useState
+    useRef
 } from 'react';
 
 import {
+    EntityDialogFreezeWhenHidden,
     EntityDialogTabs,
-    type EntityDialogTab
+    type EntityDialogTab,
+    useEntityDialogVisitedTabs
 } from '../../EntityDialogScaffold';
 import { formatPreviousInstanceCount } from '../../previous-instances-table/previousInstancesRows';
 import {
@@ -143,30 +143,6 @@ type UserDialogTabsSectionProps = {
         };
 };
 
-const FreezeWhenHidden = memo(
-    function FreezeWhenHidden({
-        children
-    }: {
-        active: boolean;
-        children: ReactNode;
-    }) {
-        return children;
-    },
-    (prev, next) => !prev.active && !next.active
-);
-
-function useVisitedTabs(activeTab: string) {
-    const [visited, setVisited] = useState<ReadonlySet<string>>(
-        () => new Set([activeTab])
-    );
-    if (!visited.has(activeTab)) {
-        const next = new Set([...visited, activeTab]);
-        setVisited(next);
-        return next;
-    }
-    return visited;
-}
-
 function useTabScrollMemory(activeTab: string, resetKey: string) {
     const containerRef = useRef<HTMLDivElement>(null);
     const positionsRef = useRef(new Map<string, number>());
@@ -241,7 +217,10 @@ export function UserDialogTabsSection({
         activeTab,
         String(profile?.id ?? '')
     );
-    const visitedTabs = useVisitedTabs(activeTab);
+    const visitedTabs = useEntityDialogVisitedTabs(
+        activeTab,
+        String(profile?.id ?? '')
+    );
     const {
         filteredMutualFriends,
         mutualFriends,
@@ -401,7 +380,7 @@ export function UserDialogTabsSection({
                 tabs={tabsWithCounts}
                 keptTabs={visitedTabs}
             >
-                <FreezeWhenHidden active={activeTab === 'info'}>
+                <EntityDialogFreezeWhenHidden active={activeTab === 'info'}>
                     <UserDialogInfoTab
                         presenceSection={presenceSection}
                         notesSection={notesSection}
@@ -409,8 +388,8 @@ export function UserDialogTabsSection({
                         profileLinksSection={profileLinksSection}
                         activitySummarySection={activitySummarySection}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'mutual'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden active={activeTab === 'mutual'}>
                     <MemoMutualTab
                         profile={profile}
                         mutualFriends={mutualFriends}
@@ -424,8 +403,8 @@ export function UserDialogTabsSection({
                         mutualSort={mutualSort}
                         setMutualSort={setMutualSort}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'groups'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden active={activeTab === 'groups'}>
                     <MemoGroupsTab
                         profileGroups={profileGroups}
                         filteredProfileGroups={filteredProfileGroups}
@@ -442,8 +421,8 @@ export function UserDialogTabsSection({
                         ownGroupCountText={ownGroupCountText}
                         remainingGroupCountText={remainingGroupCountText}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'worlds'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden active={activeTab === 'worlds'}>
                     <MemoWorldsTab
                         filteredProfileWorlds={filteredProfileWorlds}
                         profileWorlds={profileWorlds}
@@ -457,8 +436,10 @@ export function UserDialogTabsSection({
                         worldOrder={worldOrder}
                         changeWorldOrder={changeWorldOrder}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'favorite-worlds'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden
+                    active={activeTab === 'favorite-worlds'}
+                >
                     <MemoFavoriteWorldsTab
                         remoteData={remoteData}
                         favoriteWorlds={favoriteWorldRows}
@@ -469,8 +450,8 @@ export function UserDialogTabsSection({
                         search={search}
                         setSearch={setSearch}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'avatars'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden active={activeTab === 'avatars'}>
                     <MemoAvatarsTab
                         visibleProfileAvatars={visibleProfileAvatars}
                         profileAvatars={profileAvatars}
@@ -486,8 +467,10 @@ export function UserDialogTabsSection({
                         avatarReleaseStatus={avatarReleaseStatus}
                         changeAvatarReleaseStatus={changeAvatarReleaseStatus}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'instance-history'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden
+                    active={activeTab === 'instance-history'}
+                >
                     <MemoInstanceHistoryTab
                         previousInstances={previousInstances}
                         previousInstancesError={previousInstancesError}
@@ -495,23 +478,23 @@ export function UserDialogTabsSection({
                         profile={profile}
                         onPreviousInstancesChange={onPreviousInstancesChange}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'feed'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden active={activeTab === 'feed'}>
                     <MemoFeedTab
                         active={activeTab === 'feed'}
                         currentUserId={presence.currentUserId || null}
                         profile={profile}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'activity'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden active={activeTab === 'activity'}>
                     <MemoActivityTab
                         profile={profile}
                         active={activeTab === 'activity'}
                     />
-                </FreezeWhenHidden>
-                <FreezeWhenHidden active={activeTab === 'json'}>
+                </EntityDialogFreezeWhenHidden>
+                <EntityDialogFreezeWhenHidden active={activeTab === 'json'}>
                     <MemoJsonTab profile={profile} />
-                </FreezeWhenHidden>
+                </EntityDialogFreezeWhenHidden>
             </EntityDialogTabs>
         </div>
     );

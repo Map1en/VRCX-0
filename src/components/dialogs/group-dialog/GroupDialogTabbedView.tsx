@@ -1,6 +1,7 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { memo, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
+import { shallow } from 'zustand/shallow';
 
 import {
     getEventGroupId,
@@ -8,6 +9,7 @@ import {
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { useStableCommands } from '@/lib/useStableCommands';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import vrchatToolsRepository, {
     type GroupCalendarEventRecord
@@ -70,6 +72,13 @@ import { useGroupDialogTabbedRuntimeState } from './useGroupDialogTabbedRuntimeS
 import { useGroupEventEditor } from './useGroupEventEditor';
 
 let lastGroupDialogTab = 'overview';
+
+const MemoGroupDialogHeaderSection = memo(
+    GroupDialogHeaderSection,
+    (prev, next) =>
+        prev.headerCommands === next.headerCommands &&
+        shallow(prev.headerModel, next.headerModel)
+);
 
 function isGroupRemoteTab(value: string): value is GroupRemoteTab {
     return value === 'posts' || value === 'photos';
@@ -686,11 +695,11 @@ export function GroupDialogTabbedView({
         memberStatus,
         memberVisibility,
         ownerLinkLabel,
-        remoteStatus,
+        postsLoading: remoteStatus.posts === 'running',
         showMembershipBadge,
         showPrivacyBadge
     };
-    const headerCommands = {
+    const headerCommands = useStableCommands({
         onBlockToggle: () => onBlock(!isBlocked),
         onCancelRequest,
         onCopyGroupId: () => copyGroupText(group.id, t('dialog.group.info.id')),
@@ -719,7 +728,7 @@ export function GroupDialogTabbedView({
         onSubscribeToggle: () => onSubscribe(!isSubscribedToAnnouncements),
         onInviteUserToGroup: inviteUserToGroup,
         onVisibilityChange: onVisibility
-    };
+    });
     const tabModel: GroupDialogTabModel = {
         activeInstances,
         activeTab,
@@ -796,7 +805,7 @@ export function GroupDialogTabbedView({
             <EntityDialogTwoColumnLayout
                 railWidth="19rem"
                 rail={
-                    <GroupDialogHeaderSection
+                    <MemoGroupDialogHeaderSection
                         headerModel={headerModel}
                         headerCommands={headerCommands}
                     />

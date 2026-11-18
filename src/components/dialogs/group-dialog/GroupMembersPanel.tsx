@@ -16,6 +16,7 @@ import {
     ToolbarSearch
 } from '@/components/layout/ToolbarControls';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { MountOnIntent } from '@/components/MountOnIntent';
 import type {
     GroupMemberRow,
     GroupProfileRecord,
@@ -189,38 +190,48 @@ function GroupMemberTile({
                 <span className="flex min-w-0 items-center gap-1 leading-5 font-medium">
                     <span className="truncate">{label}</span>
                     {row.isRepresenting ? (
-                        <Tooltip>
-                            <TooltipTrigger
-                                render={
-                                    <span className="inline-flex shrink-0" />
-                                }
-                            >
+                        <MountOnIntent
+                            trigger="hover"
+                            render={(child) => (
+                                <Tooltip>
+                                    <TooltipTrigger render={child} />
+                                    <TooltipContent>
+                                        {t('dialog.group.members.representing')}
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
+                        >
+                            <span className="inline-flex shrink-0">
                                 <TagIcon className="text-muted-foreground size-3.5" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {t('dialog.group.members.representing')}
-                            </TooltipContent>
-                        </Tooltip>
+                            </span>
+                        </MountOnIntent>
                     ) : null}
                     {hiddenMembership ? (
-                        <Tooltip>
-                            <TooltipTrigger
-                                render={
-                                    <span className="inline-flex shrink-0" />
-                                }
-                            >
+                        <MountOnIntent
+                            trigger="hover"
+                            render={(child) => (
+                                <Tooltip>
+                                    <TooltipTrigger render={child} />
+                                    <TooltipContent>
+                                        {row.visibility === 'friends'
+                                            ? t(
+                                                  'dialog.user.label.visibility_friends'
+                                              )
+                                            : t(
+                                                  'dialog.user.label.visibility_hidden'
+                                              )}
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
+                        >
+                            <span className="inline-flex shrink-0">
                                 {row.visibility === 'friends' ? (
                                     <UsersIcon className="text-muted-foreground size-3.5" />
                                 ) : (
                                     <EyeOffIcon className="text-muted-foreground size-3.5" />
                                 )}
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {row.visibility === 'friends'
-                                    ? t('dialog.user.label.visibility_friends')
-                                    : t('dialog.user.label.visibility_hidden')}
-                            </TooltipContent>
-                        </Tooltip>
+                            </span>
+                        </MountOnIntent>
                     ) : null}
                 </span>
                 {visibleRoles.length ? (
@@ -237,23 +248,28 @@ function GroupMemberTile({
                             </Badge>
                         ))}
                         {hiddenRoles.length ? (
-                            <Tooltip>
-                                <TooltipTrigger
-                                    render={
-                                        <Badge
-                                            variant="outline"
-                                            className="text-muted-foreground h-4 px-1.5 text-[10px] font-normal tabular-nums"
-                                        >
-                                            +{hiddenRoles.length}
-                                        </Badge>
-                                    }
-                                />
-                                <TooltipContent>
-                                    {hiddenRoles
-                                        .map((role) => roleLabel(role.name, t))
-                                        .join(', ')}
-                                </TooltipContent>
-                            </Tooltip>
+                            <MountOnIntent
+                                trigger="hover"
+                                render={(child) => (
+                                    <Tooltip>
+                                        <TooltipTrigger render={child} />
+                                        <TooltipContent>
+                                            {hiddenRoles
+                                                .map((role) =>
+                                                    roleLabel(role.name, t)
+                                                )
+                                                .join(', ')}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
+                            >
+                                <Badge
+                                    variant="outline"
+                                    className="text-muted-foreground h-4 px-1.5 text-[10px] font-normal tabular-nums"
+                                >
+                                    +{hiddenRoles.length}
+                                </Badge>
+                            </MountOnIntent>
                         ) : null}
                     </span>
                 ) : null}

@@ -4,6 +4,7 @@ import {
     type ComponentType,
     type CSSProperties,
     createContext,
+    memo,
     type ReactNode,
     use,
     useEffect,
@@ -144,6 +145,39 @@ export type EntityDialogTab = {
 
 const EMPTY_KEPT_TABS: ReadonlySet<string> = new Set();
 const EntityDialogKeptTabsContext = createContext(EMPTY_KEPT_TABS);
+
+const EntityDialogFreezeWhenHidden = memo(
+    function EntityDialogFreezeWhenHidden({
+        children
+    }: {
+        active: boolean;
+        children: ReactNode;
+    }) {
+        return children;
+    },
+    (prev, next) => !prev.active && !next.active
+);
+
+function useEntityDialogVisitedTabs(activeTab: string, resetKey: string) {
+    const [state, setState] = useState<{
+        resetKey: string;
+        visited: ReadonlySet<string>;
+    }>(() => ({ resetKey, visited: new Set([activeTab]) }));
+    if (state.resetKey !== resetKey) {
+        const next = { resetKey, visited: new Set([activeTab]) };
+        setState(next);
+        return next.visited;
+    }
+    if (!state.visited.has(activeTab)) {
+        const next = {
+            resetKey,
+            visited: new Set([...state.visited, activeTab])
+        };
+        setState(next);
+        return next.visited;
+    }
+    return state.visited;
+}
 
 function EntityDialogTabs({
     value,
@@ -625,6 +659,7 @@ export {
     EntityActionSeparator,
     EntityActionSub,
     EntityBlank,
+    EntityDialogFreezeWhenHidden,
     EntityDialogScaffold,
     EntityDialogTabContent,
     EntityDialogTabs,
@@ -637,5 +672,6 @@ export {
     EntityInfoGrid,
     EntityMemoTextarea,
     EntityOverviewCard,
-    EntityRawJson
+    EntityRawJson,
+    useEntityDialogVisitedTabs
 };

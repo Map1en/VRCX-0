@@ -49,7 +49,7 @@ import {
     EntityActionSub,
     EntityOverviewCard
 } from '../EntityDialogScaffold';
-import type { GroupActionStatus, GroupRemoteStatus } from './groupDialogTypes';
+import type { GroupActionStatus } from './groupDialogTypes';
 import { GroupTitleLanguages } from './GroupDialogViewParts';
 import { SavedGroupFavoriteButton } from './SavedGroupFavoriteButton';
 
@@ -80,7 +80,7 @@ interface GroupHeaderModel {
     memberStatus: string;
     memberVisibility: string;
     ownerLinkLabel: string;
-    remoteStatus: GroupRemoteStatus;
+    postsLoading: boolean;
     showMembershipBadge: boolean;
     showPrivacyBadge: boolean;
 }
@@ -165,7 +165,7 @@ export function GroupDialogHeaderSection({
         memberStatus,
         memberVisibility,
         ownerLinkLabel,
-        remoteStatus,
+        postsLoading,
         showMembershipBadge,
         showPrivacyBadge
     } = model;
@@ -431,7 +431,7 @@ export function GroupDialogHeaderSection({
                             {canManagePosts ? (
                                 <EntityActionItem
                                     icon={TicketIcon}
-                                    disabled={remoteStatus.posts === 'running'}
+                                    disabled={postsLoading}
                                     onClick={() => {
                                         onCreateGroupPost();
                                     }}

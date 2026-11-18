@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { MountOnIntent } from '@/components/MountOnIntent';
 import { TranslatableText } from '@/components/translation/TranslatableText';
 import type {
     GroupPostRecord,
@@ -231,42 +232,47 @@ function PostCard({
                                 />
                             ) : null}
                             {post.createdAt ? (
-                                <Tooltip>
-                                    <TooltipTrigger
-                                        render={
-                                            <span>
-                                                {formatRelativeTime(
-                                                    post.createdAt
+                                <MountOnIntent
+                                    trigger="hover"
+                                    render={(child) => (
+                                        <Tooltip>
+                                            <TooltipTrigger render={child} />
+                                            <TooltipContent>
+                                                {formatDateFilter(
+                                                    post.createdAt,
+                                                    'long'
                                                 )}
-                                            </span>
-                                        }
-                                    />
-                                    <TooltipContent>
-                                        {formatDateFilter(
-                                            post.createdAt,
-                                            'long'
-                                        )}
-                                    </TooltipContent>
-                                </Tooltip>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                >
+                                    <span>
+                                        {formatRelativeTime(post.createdAt)}
+                                    </span>
+                                </MountOnIntent>
                             ) : null}
                             {edited ? (
-                                <Tooltip>
-                                    <TooltipTrigger
-                                        render={
-                                            <span>
-                                                ·{' '}
-                                                {t('dialog.group.posts.edited')}
-                                            </span>
-                                        }
-                                    />
-                                    <TooltipContent>
-                                        {t('dialog.group.posts.edited_at')}
-                                        {formatDateFilter(
-                                            post.updatedAt,
-                                            'long'
-                                        )}
-                                    </TooltipContent>
-                                </Tooltip>
+                                <MountOnIntent
+                                    trigger="hover"
+                                    render={(child) => (
+                                        <Tooltip>
+                                            <TooltipTrigger render={child} />
+                                            <TooltipContent>
+                                                {t(
+                                                    'dialog.group.posts.edited_at'
+                                                )}
+                                                {formatDateFilter(
+                                                    post.updatedAt,
+                                                    'long'
+                                                )}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                >
+                                    <span>
+                                        · {t('dialog.group.posts.edited')}
+                                    </span>
+                                </MountOnIntent>
                             ) : null}
                             {edited &&
                             post.editorId &&
@@ -284,25 +290,30 @@ function PostCard({
                         </div>
                         <div className="ml-auto flex shrink-0 items-center gap-1">
                             {roleNames.length ? (
-                                <Tooltip>
-                                    <TooltipTrigger
-                                        render={
-                                            <Badge
-                                                variant="outline"
-                                                className="max-w-48"
-                                            >
-                                                <EyeIcon data-icon="inline-start" />
-                                                <span className="truncate">
-                                                    {roleNames.join(', ')}
-                                                </span>
-                                            </Badge>
-                                        }
-                                    />
-                                    <TooltipContent>
-                                        {t('dialog.group.posts.visibility')}
-                                        {roleNames.join(', ')}
-                                    </TooltipContent>
-                                </Tooltip>
+                                <MountOnIntent
+                                    trigger="hover"
+                                    render={(child) => (
+                                        <Tooltip>
+                                            <TooltipTrigger render={child} />
+                                            <TooltipContent>
+                                                {t(
+                                                    'dialog.group.posts.visibility'
+                                                )}
+                                                {roleNames.join(', ')}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                >
+                                    <Badge
+                                        variant="outline"
+                                        className="max-w-48"
+                                    >
+                                        <EyeIcon data-icon="inline-start" />
+                                        <span className="truncate">
+                                            {roleNames.join(', ')}
+                                        </span>
+                                    </Badge>
+                                </MountOnIntent>
                             ) : null}
                             <div className="flex items-center opacity-0 transition-opacity group-focus-within/post:opacity-100 group-hover/post:opacity-100">
                                 {action}

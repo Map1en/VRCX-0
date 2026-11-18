@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { EconomyStoreListings } from '@/components/economy/EconomyStoreListings';
 import { useLanguageNames } from '@/components/language/useLanguageNames';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { MountOnIntent } from '@/components/MountOnIntent';
 import { TranslatableText } from '@/components/translation/TranslatableText';
 import type {
     GroupAnnouncementRecord,
@@ -19,11 +20,13 @@ import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
+    EntityDialogFreezeWhenHidden,
     EntityDialogTabContent,
     EntityDialogTabs,
     EntityInfoBlock,
     EntityInfoGrid,
-    EntityRawJson
+    EntityRawJson,
+    useEntityDialogVisitedTabs
 } from '../EntityDialogScaffold';
 import { PreviousInstancesPanel } from '../PreviousInstancesTableDialog';
 import { GroupEventsTab, GroupEventSummary } from './GroupDialogEvents';
@@ -130,19 +133,24 @@ function GroupAnnouncementPanel({
             </div>
             <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                 {roleNames.length ? (
-                    <Tooltip>
-                        <TooltipTrigger
-                            render={
-                                <Badge variant="outline" className="max-w-full">
-                                    <EyeIcon data-icon="inline-start" />
-                                    <span className="truncate">
-                                        {roleNames.join(', ')}
-                                    </span>
-                                </Badge>
-                            }
-                        />
-                        <TooltipContent>{roleNames.join(', ')}</TooltipContent>
-                    </Tooltip>
+                    <MountOnIntent
+                        trigger="hover"
+                        render={(child) => (
+                            <Tooltip>
+                                <TooltipTrigger render={child} />
+                                <TooltipContent>
+                                    {roleNames.join(', ')}
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                    >
+                        <Badge variant="outline" className="max-w-full">
+                            <EyeIcon data-icon="inline-start" />
+                            <span className="truncate">
+                                {roleNames.join(', ')}
+                            </span>
+                        </Badge>
+                    </MountOnIntent>
                 ) : null}
                 {authorId || authorLabel ? (
                     authorId ? (
@@ -263,6 +271,7 @@ export function GroupDialogTabPanels({
     const tags = Array.isArray(group.tags) ? group.tags : [];
     const roles = Array.isArray(group.roles) ? group.roles : [];
     const [bannerFailed, setBannerFailed] = useState(false);
+    const visitedTabs = useEntityDialogVisitedTabs(activeTab, group.id);
 
     useEffect(() => {
         setBannerFailed(false);
@@ -273,359 +282,403 @@ export function GroupDialogTabPanels({
             value={activeTab}
             onValueChange={onChangeTab}
             tabs={tabs}
+            keptTabs={visitedTabs}
         >
             <EntityDialogTabContent
                 value="overview"
                 className="flex flex-col gap-4 pt-3"
             >
-                {bannerUrl && !bannerFailed ? (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        className="bg-muted h-auto w-full overflow-hidden rounded-md p-0"
-                        aria-label={t('dialog.group.overview.preview_banner', {
-                            value: groupTitle
-                        })}
-                        onClick={() => onPreviewImage(bannerUrl, groupTitle)}
-                    >
-                        <FadeInImage
-                            src={bannerUrl}
-                            alt={group.name || 'Group banner'}
-                            className="aspect-[6/1] w-full object-cover"
-                            onError={() => setBannerFailed(true)}
-                        />
-                    </Button>
-                ) : (
-                    <GroupBannerFallback />
-                )}
-
-                {group.description ? (
-                    <TranslatableText
-                        source={group.description}
-                        entityId={group.id || ''}
-                        density="button"
-                    >
-                        {({ action, meta, error, text }) => (
-                            <GroupOverviewSection
-                                title={t('dialog.group.overview.description')}
-                                action={action}
-                            >
-                                {meta}
-                                <div className="text-muted-foreground max-h-32 overflow-auto text-sm whitespace-pre-wrap">
-                                    {text}
-                                </div>
-                                {error}
-                            </GroupOverviewSection>
-                        )}
-                    </TranslatableText>
-                ) : null}
-
-                <GroupOverviewSection title={t('dialog.group.info.instances')}>
-                    <GroupInstanceRows
-                        instances={activeInstances}
-                        currentUserId={currentUserId}
-                    />
-                </GroupOverviewSection>
-
-                {announcement?.id || announcement?.title ? (
-                    <TranslatableText
-                        source={announcement.text || ''}
-                        entityId={announcement.id || group.id || ''}
-                        density="button"
-                    >
-                        {({ action, meta, error, text }) => (
-                            <GroupOverviewSection
-                                title={t('dialog.group.info.announcement')}
-                                action={action}
-                            >
-                                <GroupAnnouncementPanel
-                                    announcement={announcement}
-                                    group={group}
-                                    onPreviewImage={onPreviewImage}
-                                >
-                                    <div className="min-w-0 flex-1">
-                                        {meta}
-                                        <pre className="text-muted-foreground max-h-40 min-w-0 overflow-auto font-sans text-xs whitespace-pre-wrap">
-                                            {text || '\u2014'}
-                                        </pre>
-                                        {error}
-                                    </div>
-                                </GroupAnnouncementPanel>
-                            </GroupOverviewSection>
-                        )}
-                    </TranslatableText>
-                ) : null}
-
-                {group.rules ? (
-                    <TranslatableText
-                        source={group.rules}
-                        entityId={group.id || ''}
-                        density="button"
-                    >
-                        {({ action, meta, error, text }) => (
-                            <GroupOverviewSection
-                                title={t('dialog.group.info.rules')}
-                                action={action}
-                            >
-                                {meta}
-                                <pre className="text-muted-foreground max-h-40 overflow-auto font-sans text-sm whitespace-pre-wrap">
-                                    {text}
-                                </pre>
-                                {error}
-                            </GroupOverviewSection>
-                        )}
-                    </TranslatableText>
-                ) : null}
-
-                <GroupOverviewSection
-                    title={t('dialog.group.overview.recent_events')}
-                    action={
+                <EntityDialogFreezeWhenHidden active={activeTab === 'overview'}>
+                    {bannerUrl && !bannerFailed ? (
                         <Button
                             type="button"
-                            size="xs"
-                            variant="outline"
-                            onClick={() => onChangeTab('events')}
+                            variant="ghost"
+                            className="bg-muted h-auto w-full overflow-hidden rounded-md p-0"
+                            aria-label={t(
+                                'dialog.group.overview.preview_banner',
+                                {
+                                    value: groupTitle
+                                }
+                            )}
+                            onClick={() =>
+                                onPreviewImage(bannerUrl, groupTitle)
+                            }
                         >
-                            {t('dialog.group.overview.open_events')}
+                            <FadeInImage
+                                src={bannerUrl}
+                                alt={group.name || 'Group banner'}
+                                className="aspect-[6/1] w-full object-cover"
+                                onError={() => setBannerFailed(true)}
+                            />
                         </Button>
-                    }
-                >
-                    <GroupEventSummary
-                        events={groupEvents}
-                        status={groupEventsStatus}
-                        error={groupEventsError}
-                        group={group}
-                        onOpenEvents={() => onChangeTab('events')}
-                        onToggleFollow={onToggleEventFollow}
-                    />
-                </GroupOverviewSection>
+                    ) : (
+                        <GroupBannerFallback />
+                    )}
 
-                <GroupOverviewSection title={t('dialog.group.overview.basics')}>
-                    <EntityInfoGrid className="px-0">
-                        <EntityInfoBlock
-                            label={t('dialog.group.info.members')}
-                            value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`}
+                    {group.description ? (
+                        <TranslatableText
+                            source={group.description}
+                            entityId={group.id || ''}
+                            density="button"
+                        >
+                            {({ action, meta, error, text }) => (
+                                <GroupOverviewSection
+                                    title={t(
+                                        'dialog.group.overview.description'
+                                    )}
+                                    action={action}
+                                >
+                                    {meta}
+                                    <div className="text-muted-foreground max-h-32 overflow-auto text-sm whitespace-pre-wrap">
+                                        {text}
+                                    </div>
+                                    {error}
+                                </GroupOverviewSection>
+                            )}
+                        </TranslatableText>
+                    ) : null}
+
+                    <GroupOverviewSection
+                        title={t('dialog.group.info.instances')}
+                    >
+                        <GroupInstanceRows
+                            instances={activeInstances}
+                            currentUserId={currentUserId}
                         />
-                        <EntityInfoBlock
-                            label={t('dialog.group.info.created_at')}
-                            value={
-                                group.createdAt || group.created_at
-                                    ? formatDateFilter(
-                                          group.createdAt || group.created_at,
-                                          'long'
-                                      )
-                                    : '—'
-                            }
-                        />
-                        <EntityInfoBlock
-                            label={t('dialog.group.info.last_visited')}
-                            value={
-                                previousInstances[0]?.created_at ||
-                                previousInstances[0]?.createdAt
-                                    ? formatDateFilter(
-                                          previousInstances[0]?.created_at ||
-                                              previousInstances[0]?.createdAt,
-                                          'long'
-                                      )
-                                    : '—'
-                            }
-                            onClick={
-                                previousInstances.length
-                                    ? () => onChangeTab('instance-history')
-                                    : undefined
-                            }
-                        />
-                        <EntityInfoBlock
-                            label={t('dialog.group.action.join_state')}
-                            value={joinState || '—'}
-                        />
-                        <EntityInfoBlock
-                            label={t('dialog.group.label.membership')}
-                            value={
-                                memberStatus || group.membershipStatus || '—'
-                            }
-                        />
-                        <EntityInfoBlock
-                            label={t('dialog.group.label.languages')}
-                            value={
-                                languages.map(languageName).join(', ') || '—'
-                            }
-                        />
-                        <EntityInfoBlock
-                            label={t('dialog.group.label.privacy')}
-                            value={group.privacy || '—'}
-                        />
-                        {links.length ? (
-                            <EntityInfoBlock
-                                label={t('dialog.group.info.links')}
-                                full
+                    </GroupOverviewSection>
+
+                    {announcement?.id || announcement?.title ? (
+                        <TranslatableText
+                            source={announcement.text || ''}
+                            entityId={announcement.id || group.id || ''}
+                            density="button"
+                        >
+                            {({ action, meta, error, text }) => (
+                                <GroupOverviewSection
+                                    title={t('dialog.group.info.announcement')}
+                                    action={action}
+                                >
+                                    <GroupAnnouncementPanel
+                                        announcement={announcement}
+                                        group={group}
+                                        onPreviewImage={onPreviewImage}
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            {meta}
+                                            <pre className="text-muted-foreground max-h-40 min-w-0 overflow-auto font-sans text-xs whitespace-pre-wrap">
+                                                {text || '\u2014'}
+                                            </pre>
+                                            {error}
+                                        </div>
+                                    </GroupAnnouncementPanel>
+                                </GroupOverviewSection>
+                            )}
+                        </TranslatableText>
+                    ) : null}
+
+                    {group.rules ? (
+                        <TranslatableText
+                            source={group.rules}
+                            entityId={group.id || ''}
+                            density="button"
+                        >
+                            {({ action, meta, error, text }) => (
+                                <GroupOverviewSection
+                                    title={t('dialog.group.info.rules')}
+                                    action={action}
+                                >
+                                    {meta}
+                                    <pre className="text-muted-foreground max-h-40 overflow-auto font-sans text-sm whitespace-pre-wrap">
+                                        {text}
+                                    </pre>
+                                    {error}
+                                </GroupOverviewSection>
+                            )}
+                        </TranslatableText>
+                    ) : null}
+
+                    <GroupOverviewSection
+                        title={t('dialog.group.overview.recent_events')}
+                        action={
+                            <Button
+                                type="button"
+                                size="xs"
+                                variant="outline"
+                                onClick={() => onChangeTab('events')}
                             >
-                                <div className="flex flex-wrap gap-1.5">
-                                    {links.map((link) => (
-                                        <Button
-                                            key={link}
-                                            type="button"
-                                            variant="link"
-                                            size="xs"
-                                            className="h-auto max-w-full min-w-0 justify-start p-0 text-left break-all whitespace-normal"
-                                            onClick={() => onOpenLink(link)}
-                                        >
-                                            <ExternalLinkIcon data-icon="inline-start" />
-                                            <span className="min-w-0 break-all">
-                                                {link}
-                                            </span>
-                                        </Button>
-                                    ))}
-                                </div>
-                            </EntityInfoBlock>
-                        ) : null}
-                        <EntityInfoBlock
-                            label="URL"
-                            value={groupUrl || '—'}
-                            mono
-                            wide
-                            onClick={
-                                groupUrl ? commands.onCopyGroupUrl : undefined
-                            }
+                                {t('dialog.group.overview.open_events')}
+                            </Button>
+                        }
+                    >
+                        <GroupEventSummary
+                            events={groupEvents}
+                            status={groupEventsStatus}
+                            error={groupEventsError}
+                            group={group}
+                            onOpenEvents={() => onChangeTab('events')}
+                            onToggleFollow={onToggleEventFollow}
                         />
-                        <EntityInfoBlock
-                            label={t('dialog.group.info.id')}
-                            value={group.id}
-                            mono
-                            wide
-                        />
-                        <EntityInfoBlock
-                            label={t('dialog.group.label.owner_2')}
-                            value={ownerLabel || '—'}
-                            wide
-                            onClick={group.ownerId ? onOpenOwner : undefined}
-                        />
-                        {tags.length ? (
+                    </GroupOverviewSection>
+
+                    <GroupOverviewSection
+                        title={t('dialog.group.overview.basics')}
+                    >
+                        <EntityInfoGrid className="px-0">
                             <EntityInfoBlock
-                                label={t('dialog.avatar.info.tags')}
-                                full
-                            >
-                                <div className="flex flex-wrap gap-1.5">
-                                    {tags.map((tag) => (
-                                        <Badge key={tag} variant="outline">
-                                            {tag}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </EntityInfoBlock>
-                        ) : null}
-                        {roles.length ? (
+                                label={t('dialog.group.info.members')}
+                                value={`${group.memberCount || 0} (${group.onlineMemberCount || 0})`}
+                            />
                             <EntityInfoBlock
-                                label={t('dialog.group.info.roles')}
-                                full
-                            >
-                                <div className="flex flex-wrap gap-1.5">
-                                    {roles.map((role) => (
-                                        <Badge
-                                            key={role.id || role.name}
-                                            variant="outline"
-                                        >
-                                            {role.name || 'Role'}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </EntityInfoBlock>
-                        ) : null}
-                    </EntityInfoGrid>
-                </GroupOverviewSection>
+                                label={t('dialog.group.info.created_at')}
+                                value={
+                                    group.createdAt || group.created_at
+                                        ? formatDateFilter(
+                                              group.createdAt ||
+                                                  group.created_at,
+                                              'long'
+                                          )
+                                        : '—'
+                                }
+                            />
+                            <EntityInfoBlock
+                                label={t('dialog.group.info.last_visited')}
+                                value={
+                                    previousInstances[0]?.created_at ||
+                                    previousInstances[0]?.createdAt
+                                        ? formatDateFilter(
+                                              previousInstances[0]
+                                                  ?.created_at ||
+                                                  previousInstances[0]
+                                                      ?.createdAt,
+                                              'long'
+                                          )
+                                        : '—'
+                                }
+                                onClick={
+                                    previousInstances.length
+                                        ? () => onChangeTab('instance-history')
+                                        : undefined
+                                }
+                            />
+                            <EntityInfoBlock
+                                label={t('dialog.group.action.join_state')}
+                                value={joinState || '—'}
+                            />
+                            <EntityInfoBlock
+                                label={t('dialog.group.label.membership')}
+                                value={
+                                    memberStatus ||
+                                    group.membershipStatus ||
+                                    '—'
+                                }
+                            />
+                            <EntityInfoBlock
+                                label={t('dialog.group.label.languages')}
+                                value={
+                                    languages.map(languageName).join(', ') ||
+                                    '—'
+                                }
+                            />
+                            <EntityInfoBlock
+                                label={t('dialog.group.label.privacy')}
+                                value={group.privacy || '—'}
+                            />
+                            {links.length ? (
+                                <EntityInfoBlock
+                                    label={t('dialog.group.info.links')}
+                                    full
+                                >
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {links.map((link) => (
+                                            <Button
+                                                key={link}
+                                                type="button"
+                                                variant="link"
+                                                size="xs"
+                                                className="h-auto max-w-full min-w-0 justify-start p-0 text-left break-all whitespace-normal"
+                                                onClick={() => onOpenLink(link)}
+                                            >
+                                                <ExternalLinkIcon data-icon="inline-start" />
+                                                <span className="min-w-0 break-all">
+                                                    {link}
+                                                </span>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </EntityInfoBlock>
+                            ) : null}
+                            <EntityInfoBlock
+                                label="URL"
+                                value={groupUrl || '—'}
+                                mono
+                                wide
+                                onClick={
+                                    groupUrl
+                                        ? commands.onCopyGroupUrl
+                                        : undefined
+                                }
+                            />
+                            <EntityInfoBlock
+                                label={t('dialog.group.info.id')}
+                                value={group.id}
+                                mono
+                                wide
+                            />
+                            <EntityInfoBlock
+                                label={t('dialog.group.label.owner_2')}
+                                value={ownerLabel || '—'}
+                                wide
+                                onClick={
+                                    group.ownerId ? onOpenOwner : undefined
+                                }
+                            />
+                            {tags.length ? (
+                                <EntityInfoBlock
+                                    label={t('dialog.avatar.info.tags')}
+                                    full
+                                >
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {tags.map((tag) => (
+                                            <Badge key={tag} variant="outline">
+                                                {tag}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </EntityInfoBlock>
+                            ) : null}
+                            {roles.length ? (
+                                <EntityInfoBlock
+                                    label={t('dialog.group.info.roles')}
+                                    full
+                                >
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {roles.map((role) => (
+                                            <Badge
+                                                key={role.id || role.name}
+                                                variant="outline"
+                                            >
+                                                {role.name || 'Role'}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </EntityInfoBlock>
+                            ) : null}
+                        </EntityInfoGrid>
+                    </GroupOverviewSection>
+                </EntityDialogFreezeWhenHidden>
             </EntityDialogTabContent>
             <EntityDialogTabContent
                 value="events"
                 className="flex flex-col gap-3 pt-3"
             >
-                <GroupEventsTab
-                    events={groupEvents}
-                    status={groupEventsStatus}
-                    error={groupEventsError}
-                    group={group}
-                    canManage={canManageCalendar}
-                    onRefresh={onRefreshEvents}
-                    onToggleFollow={onToggleEventFollow}
-                    onCreate={onCreateEvent}
-                    onEdit={onEditEvent}
-                    onDelete={onDeleteEvent}
-                />
+                <EntityDialogFreezeWhenHidden active={activeTab === 'events'}>
+                    <GroupEventsTab
+                        events={groupEvents}
+                        status={groupEventsStatus}
+                        error={groupEventsError}
+                        group={group}
+                        canManage={canManageCalendar}
+                        onRefresh={onRefreshEvents}
+                        onToggleFollow={onToggleEventFollow}
+                        onCreate={onCreateEvent}
+                        onEdit={onEditEvent}
+                        onDelete={onDeleteEvent}
+                    />
+                </EntityDialogFreezeWhenHidden>
             </EntityDialogTabContent>
             <EntityDialogTabContent
                 value="instance-history"
                 className="flex min-h-0 flex-col"
             >
-                <PreviousInstancesPanel
-                    title={t('dialog.previous_instances.header')}
-                    instances={previousInstances}
-                    variant="group"
-                    onRowsChange={onPreviousInstancesChange}
-                    className="flex-1"
-                />
+                <EntityDialogFreezeWhenHidden
+                    active={activeTab === 'instance-history'}
+                >
+                    <PreviousInstancesPanel
+                        title={t('dialog.previous_instances.header')}
+                        instances={previousInstances}
+                        variant="group"
+                        onRowsChange={onPreviousInstancesChange}
+                        className="flex-1"
+                    />
+                </EntityDialogFreezeWhenHidden>
             </EntityDialogTabContent>
             <EntityDialogTabContent
                 value="posts"
                 className="flex flex-col gap-2"
             >
-                <div className="flex items-center gap-2">
-                    <div className="text-muted-foreground text-sm">
-                        {filteredPosts.length}/{posts.length}{' '}
-                        {t('dialog.group.posts.header')}
+                <EntityDialogFreezeWhenHidden active={activeTab === 'posts'}>
+                    <div className="flex items-center gap-2">
+                        <div className="text-muted-foreground text-sm">
+                            {filteredPosts.length}/{posts.length}{' '}
+                            {t('dialog.group.posts.header')}
+                        </div>
+                        <Input
+                            value={search.posts}
+                            onChange={(event) =>
+                                onSearchPostsChange(event.target.value)
+                            }
+                            placeholder={t(
+                                'dialog.group.posts.search_placeholder'
+                            )}
+                            className="ml-auto h-8 max-w-64"
+                        />
                     </div>
-                    <Input
-                        value={search.posts}
-                        onChange={(event) =>
-                            onSearchPostsChange(event.target.value)
-                        }
-                        placeholder={t('dialog.group.posts.search_placeholder')}
-                        className="ml-auto h-8 max-w-64"
+                    <RowList
+                        rows={filteredPosts}
+                        group={group}
+                        kind="posts"
+                        loading={remoteStatus.posts === 'running'}
+                        error={remoteErrors.posts}
+                        canManagePosts={canManagePosts}
+                        onPreviewImage={onPreviewRowImage}
+                        onEditPost={onEditPost}
+                        onDeletePost={onDeletePost}
                     />
-                </div>
-                <RowList
-                    rows={filteredPosts}
-                    group={group}
-                    kind="posts"
-                    loading={remoteStatus.posts === 'running'}
-                    error={remoteErrors.posts}
-                    canManagePosts={canManagePosts}
-                    onPreviewImage={onPreviewRowImage}
-                    onEditPost={onEditPost}
-                    onDeletePost={onDeletePost}
-                />
+                </EntityDialogFreezeWhenHidden>
             </EntityDialogTabContent>
             <EntityDialogTabContent value="members">
-                <GroupMembersPanel
-                    active={activeTab === 'members'}
-                    group={group}
-                    members={members}
-                    onExport={onExportMembers}
-                    onLoadMore={onLoadMoreMembers}
-                    onQueryChange={onSearchMembersChange}
-                    onRefresh={onRefreshMembers}
-                />
+                <EntityDialogFreezeWhenHidden active={activeTab === 'members'}>
+                    <GroupMembersPanel
+                        active={activeTab === 'members'}
+                        group={group}
+                        members={members}
+                        onExport={onExportMembers}
+                        onLoadMore={onLoadMoreMembers}
+                        onQueryChange={onSearchMembersChange}
+                        onRefresh={onRefreshMembers}
+                    />
+                </EntityDialogFreezeWhenHidden>
             </EntityDialogTabContent>
             <EntityDialogTabContent
                 value="photos"
                 className="flex flex-col gap-2"
             >
-                <GroupGalleryPanel
-                    group={group}
-                    rows={photos}
-                    loading={remoteStatus.photos === 'running'}
-                    error={remoteErrors.photos ?? ''}
-                    currentUserId={currentUserId}
-                    onPreviewImage={onPreviewRowImage}
-                    onGalleriesChanged={onGalleriesChanged}
-                    onImagesChanged={onPhotosChanged}
-                />
+                <EntityDialogFreezeWhenHidden active={activeTab === 'photos'}>
+                    <GroupGalleryPanel
+                        group={group}
+                        rows={photos}
+                        loading={remoteStatus.photos === 'running'}
+                        error={remoteErrors.photos ?? ''}
+                        currentUserId={currentUserId}
+                        onPreviewImage={onPreviewRowImage}
+                        onGalleriesChanged={onGalleriesChanged}
+                        onImagesChanged={onPhotosChanged}
+                    />
+                </EntityDialogFreezeWhenHidden>
             </EntityDialogTabContent>
             {group.storeId ? (
                 <EntityDialogTabContent value="store">
-                    <EconomyStoreListings storeId={group.storeId} />
+                    <EntityDialogFreezeWhenHidden
+                        active={activeTab === 'store'}
+                    >
+                        <EconomyStoreListings storeId={group.storeId} />
+                    </EntityDialogFreezeWhenHidden>
                 </EntityDialogTabContent>
             ) : null}
             <EntityDialogTabContent value="json">
-                <EntityRawJson value={group} />
+                <EntityDialogFreezeWhenHidden active={activeTab === 'json'}>
+                    <EntityRawJson value={group} />
+                </EntityDialogFreezeWhenHidden>
             </EntityDialogTabContent>
         </EntityDialogTabs>
     );
