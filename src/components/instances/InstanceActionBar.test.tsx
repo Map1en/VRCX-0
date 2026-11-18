@@ -113,6 +113,16 @@ vi.mock('react-i18next', async (importOriginal) => {
     };
 });
 
+vi.mock('@/components/MountOnIntent', () => ({
+    MountOnIntent: ({
+        children,
+        render
+    }: {
+        children: React.ReactElement;
+        render: (child: React.ReactElement) => React.ReactNode;
+    }) => render(children)
+}));
+
 vi.mock('@/ui/shadcn/tooltip', async () => {
     const ReactRuntime = await import('react');
     type MockRender =

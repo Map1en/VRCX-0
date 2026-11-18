@@ -1,6 +1,7 @@
 import { EyeOffIcon, UsersIcon, type LucideIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { shallow } from 'zustand/shallow';
 
 import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
@@ -12,6 +13,7 @@ import {
 } from '@/components/layout/ToolbarControls';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import { useStableCommands } from '@/lib/useStableCommands';
 import { cn } from '@/lib/utils';
 import type {
     InstanceCreateOption,
@@ -19,6 +21,7 @@ import type {
 } from '@/platform/tauri/bindings';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { isRecord } from '@/shared/utils/record';
+import { structuralEqual } from '@/shared/utils/structuralEqual';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenuCheckboxItem,
@@ -93,6 +96,152 @@ function toggle(values: string[], value: string, checked: boolean) {
         : values.filter((item) => item !== value);
 }
 
+type WorldInstanceRowProps = {
+    instance: WorldDialogInstanceRow;
+    tags: string[];
+    worldId: string;
+    worldName: string;
+    worldCapacity: number;
+    currentUserId: string | null;
+    worldDialogShortName: string;
+    visibleInstanceUserIds: ReadonlySet<string>;
+    showHistory: boolean;
+    onShowHistory: () => void;
+};
+
+const WorldInstanceRow = memo(
+    function WorldInstanceRow({
+        instance,
+        tags,
+        worldId,
+        worldName,
+        worldCapacity,
+        currentUserId,
+        worldDialogShortName,
+        visibleInstanceUserIds,
+        showHistory,
+        onShowHistory
+    }: WorldInstanceRowProps) {
+        const instanceRecord = record(instance);
+        const instanceRef = record(instance.ref);
+        const instanceGroup = record(instance.group);
+        const instanceWorld = record(instanceRecord.world);
+        const location = resolveLaunchLocation({ id: worldId }, instance);
+        const shortName = normalizeLocationText(instance.shortName);
+        const launchToken =
+            shortName || normalizeLocationText(instance.secureName);
+        const { playerCount, capacity } = worldInstanceOccupancy(
+            instance,
+            worldCapacity
+        );
+        const isClosed = Boolean(
+            instanceRef.closedAt || instanceRecord.closedAt
+        );
+        return (
+            <div
+                className={cn(
+                    'group/row border-border/40 hover:bg-muted/25 border-b px-3 py-2 text-sm transition-colors last:border-b-0',
+                    isClosed && 'opacity-60'
+                )}
+            >
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 flex-1 items-start gap-1.5">
+                        <WorldInstanceRowTitle
+                            location={location}
+                            displayName={normalizeLocationText(
+                                instanceRef.displayName ||
+                                    instanceRecord.displayName
+                            )}
+                            description={normalizeLocationText(
+                                instanceRef.description
+                            )}
+                            tags={tags}
+                            languageSource={{
+                                ...instanceRef,
+                                ...instanceRecord
+                            }}
+                            locationWorldProps={{
+                                locationObject: {
+                                    ...instanceRef,
+                                    ...instance,
+                                    tag: location,
+                                    location,
+                                    shortName,
+                                    launchToken
+                                },
+                                currentUserId,
+                                worldDialogShortName,
+                                grouphint:
+                                    normalizeLocationText(
+                                        instanceRecord.groupName
+                                    ) ||
+                                    normalizeLocationText(instanceGroup.name),
+                                playerCount,
+                                capacity,
+                                showWorldName: false,
+                                showPlayerSummary: false,
+                                hint:
+                                    worldName ||
+                                    normalizeLocationText(
+                                        instanceRecord.worldName
+                                    ) ||
+                                    normalizeLocationText(instanceWorld.name)
+                            }}
+                        />
+                        {instance.isCurrentInstance ? (
+                            <CurrentInstanceBadge className="shrink-0" />
+                        ) : (
+                            <InstanceVisitedBadge
+                                location={location}
+                                className="shrink-0"
+                            />
+                        )}
+                    </div>
+                    <InstanceActionBar
+                        className="text-muted-foreground group-hover/row:text-foreground min-w-0 flex-wrap justify-start sm:justify-end"
+                        target={{
+                            location,
+                            shortName: launchToken,
+                            worldName: normalizeLocationText(
+                                worldName ||
+                                    instanceRecord.worldName ||
+                                    instanceWorld.name
+                            )
+                        }}
+                        instance={instance}
+                        friendCount={
+                            Number(instanceRecord.friendCount) || undefined
+                        }
+                        playerCount={playerCount}
+                        capacity={capacity}
+                        instanceInfoPlacement="start"
+                        instanceCountAlign="right"
+                        instanceSummaryOrder="markers-first"
+                        showHistory={showHistory}
+                        historyTooltip="Visit history"
+                        onHistory={onShowHistory}
+                    />
+                </div>
+                <div className="pl-6.5">
+                    <InstanceUserTiles
+                        instance={instance}
+                        instanceLocation={location}
+                        visibleUserIds={visibleInstanceUserIds}
+                        showInstanceDuration
+                    />
+                </div>
+            </div>
+        );
+    },
+    (
+        { instance: prevInstance, tags: prevTags, ...prev },
+        { instance: nextInstance, tags: nextTags, ...next }
+    ) =>
+        shallow(prev, next) &&
+        structuralEqual(prevInstance, nextInstance) &&
+        structuralEqual(prevTags, nextTags)
+);
+
 export function WorldDialogInstancesPanel({
     world,
     rows,
@@ -123,6 +272,9 @@ export function WorldDialogInstancesPanel({
         EMPTY_WORLD_INSTANCE_FILTER
     );
     const { languageName } = useLanguageNames();
+    const { onShowHistory: showInstanceHistory } = useStableCommands({
+        onShowHistory
+    });
 
     useEffect(() => {
         let cancelled = false;
@@ -345,22 +497,7 @@ export function WorldDialogInstancesPanel({
             >
                 {visibleRows.length ? (
                     visibleRows.map((instance) => {
-                        const instanceRecord = record(instance);
                         const instanceRef = record(instance.ref);
-                        const instanceGroup = record(instance.group);
-                        const instanceWorld = record(instanceRecord.world);
-                        const location = resolveLaunchLocation(world, instance);
-                        const shortName = normalizeLocationText(
-                            instance.shortName
-                        );
-                        const launchToken =
-                            shortName ||
-                            normalizeLocationText(instance.secureName);
-                        const { playerCount, capacity } =
-                            worldInstanceOccupancy(instance, world.capacity);
-                        const isClosed = Boolean(
-                            instanceRef.closedAt || instanceRecord.closedAt
-                        );
                         const categoryId = normalizeLocationText(
                             instanceRef.categoryId
                         );
@@ -379,106 +516,19 @@ export function WorldDialogInstancesPanel({
                             )
                         ];
                         return (
-                            <div
+                            <WorldInstanceRow
                                 key={instance.id}
-                                className={cn(
-                                    'group/row border-border/40 hover:bg-muted/25 border-b px-3 py-2 text-sm transition-colors last:border-b-0',
-                                    isClosed && 'opacity-60'
-                                )}
-                            >
-                                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                    <div className="flex min-w-0 flex-1 items-start gap-1.5">
-                                        <WorldInstanceRowTitle
-                                            location={location}
-                                            displayName={normalizeLocationText(
-                                                instanceRef.displayName ||
-                                                    instanceRecord.displayName
-                                            )}
-                                            description={normalizeLocationText(
-                                                instanceRef.description
-                                            )}
-                                            tags={tags}
-                                            languageSource={{
-                                                ...instanceRef,
-                                                ...instanceRecord
-                                            }}
-                                            locationWorldProps={{
-                                                locationObject: {
-                                                    ...instanceRef,
-                                                    ...instance,
-                                                    tag: location,
-                                                    location,
-                                                    shortName,
-                                                    launchToken
-                                                },
-                                                currentUserId,
-                                                worldDialogShortName,
-                                                grouphint:
-                                                    normalizeLocationText(
-                                                        instanceRecord.groupName
-                                                    ) ||
-                                                    normalizeLocationText(
-                                                        instanceGroup.name
-                                                    ),
-                                                playerCount,
-                                                capacity,
-                                                showWorldName: false,
-                                                showPlayerSummary: false,
-                                                hint:
-                                                    world.name ||
-                                                    normalizeLocationText(
-                                                        instanceRecord.worldName
-                                                    ) ||
-                                                    normalizeLocationText(
-                                                        instanceWorld.name
-                                                    )
-                                            }}
-                                        />
-                                        {instance.isCurrentInstance ? (
-                                            <CurrentInstanceBadge className="shrink-0" />
-                                        ) : (
-                                            <InstanceVisitedBadge
-                                                location={location}
-                                                className="shrink-0"
-                                            />
-                                        )}
-                                    </div>
-                                    <InstanceActionBar
-                                        className="text-muted-foreground group-hover/row:text-foreground min-w-0 flex-wrap justify-start sm:justify-end"
-                                        target={{
-                                            location,
-                                            shortName: launchToken,
-                                            worldName: normalizeLocationText(
-                                                world.name ||
-                                                    instanceRecord.worldName ||
-                                                    instanceWorld.name
-                                            )
-                                        }}
-                                        instance={instance}
-                                        friendCount={
-                                            Number(
-                                                instanceRecord.friendCount
-                                            ) || undefined
-                                        }
-                                        playerCount={playerCount}
-                                        capacity={capacity}
-                                        instanceInfoPlacement="start"
-                                        instanceCountAlign="right"
-                                        instanceSummaryOrder="markers-first"
-                                        showHistory={showHistory}
-                                        historyTooltip="Visit history"
-                                        onHistory={onShowHistory}
-                                    />
-                                </div>
-                                <div className="pl-6.5">
-                                    <InstanceUserTiles
-                                        instance={instance}
-                                        instanceLocation={location}
-                                        visibleUserIds={visibleInstanceUserIds}
-                                        showInstanceDuration
-                                    />
-                                </div>
-                            </div>
+                                instance={instance}
+                                tags={tags}
+                                worldId={world.id}
+                                worldName={world.name}
+                                worldCapacity={world.capacity}
+                                currentUserId={currentUserId}
+                                worldDialogShortName={worldDialogShortName}
+                                visibleInstanceUserIds={visibleInstanceUserIds}
+                                showHistory={showHistory}
+                                onShowHistory={showInstanceHistory}
+                            />
                         );
                     })
                 ) : rows.length ? (
