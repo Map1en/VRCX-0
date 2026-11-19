@@ -55,6 +55,9 @@ export function useScrollViewportMetrics({
     );
 
     const updateViewportMetrics = useCallback(() => {
+        if (viewportRef.current?.checkVisibility?.() === false) {
+            return;
+        }
         const nextMetrics = readViewportMetrics(viewportRef.current);
         pendingScrollTopRef.current = nextMetrics.scrollTop;
         updateMetricsIfChanged(setViewportMetrics, nextMetrics);

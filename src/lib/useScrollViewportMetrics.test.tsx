@@ -50,4 +50,26 @@ describe('useScrollViewportMetrics', () => {
             width: 800
         });
     });
+
+    it('keeps the last measured size while the viewport is hidden', () => {
+        let visible = true;
+        let width = 800;
+        const viewport = document.createElement('div');
+        Object.defineProperties(viewport, {
+            clientWidth: { get: () => width },
+            clientHeight: { get: () => (visible ? 600 : 0) },
+            checkVisibility: { value: () => visible }
+        });
+        const { result } = renderHook(() => useScrollViewportMetrics());
+        act(() => result.current.viewportRef(viewport));
+        const shownMetrics = result.current.viewportMetrics;
+
+        visible = false;
+        width = 0;
+        act(() => {
+            window.dispatchEvent(new Event('resize'));
+        });
+
+        expect(result.current.viewportMetrics).toBe(shownMetrics);
+    });
 });

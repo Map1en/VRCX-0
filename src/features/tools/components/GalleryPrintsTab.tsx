@@ -21,7 +21,6 @@ import {
 import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
-import { TabsContent } from '@/ui/shadcn/tabs';
 import {
     ToggleGroup,
     ToggleGroupItem,
@@ -250,236 +249,218 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
     }
 
     return (
-        <TabsContent
-            value="prints"
-            className="mt-2 flex min-h-0 flex-1 data-hidden:hidden"
-        >
-            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-                <MediaLibraryToolbar
-                    leading={
-                        <ToggleGroup
-                            value={[favoriteFilter]}
-                            onValueChange={(next) => {
-                                const selected = PRINT_FAVORITE_FILTERS.find(
-                                    (filter) => filter === next[0]
-                                );
-                                if (selected) {
-                                    setFavoriteFilter(selected);
-                                }
-                            }}
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+            <MediaLibraryToolbar
+                leading={
+                    <ToggleGroup
+                        value={[favoriteFilter]}
+                        onValueChange={(next) => {
+                            const selected = PRINT_FAVORITE_FILTERS.find(
+                                (filter) => filter === next[0]
+                            );
+                            if (selected) {
+                                setFavoriteFilter(selected);
+                            }
+                        }}
+                        variant="outline"
+                        size="sm"
+                    >
+                        {PRINT_FAVORITE_FILTERS.map((filter, index) => (
+                            <Fragment key={filter}>
+                                {index > 0 ? <ToggleGroupSeparator /> : null}
+                                <ToggleGroupItem value={filter}>
+                                    {t(`view.tools.prints_filter.${filter}`)}
+                                </ToggleGroupItem>
+                            </Fragment>
+                        ))}
+                    </ToggleGroup>
+                }
+                actions={
+                    <>
+                        <Button
                             variant="outline"
                             size="sm"
+                            disabled={uploadDisabled}
+                            onClick={() => onBeginUpload('prints')}
                         >
-                            {PRINT_FAVORITE_FILTERS.map((filter, index) => (
-                                <Fragment key={filter}>
-                                    {index > 0 ? (
-                                        <ToggleGroupSeparator />
-                                    ) : null}
-                                    <ToggleGroupItem value={filter}>
-                                        {t(
-                                            `view.tools.prints_filter.${filter}`
-                                        )}
-                                    </ToggleGroupItem>
-                                </Fragment>
-                            ))}
-                        </ToggleGroup>
-                    }
-                    actions={
-                        <>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={uploadDisabled}
-                                onClick={() => onBeginUpload('prints')}
-                            >
-                                <UploadIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.upload')}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={uploadDisabled}
-                                onClick={() => onPasteUpload('prints')}
-                            >
-                                <ClipboardPasteIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.paste_upload')}
-                            </Button>
-                        </>
-                    }
-                />
-                {noticeMessage ? (
-                    <Alert
-                        variant={hasWarningNotice ? 'destructive' : 'default'}
-                        className="mb-2"
-                    >
-                        {hasWarningNotice ? (
-                            <AlertTriangleIcon className="size-4" />
-                        ) : null}
-                        <AlertDescription>{noticeMessage}</AlertDescription>
-                    </Alert>
-                ) : null}
-                <div
-                    ref={tileGrid.viewportRef}
-                    className="min-h-0 flex-1 overflow-y-auto pr-1"
+                            <UploadIcon data-icon="inline-start" />
+                            {t('dialog.gallery_icons.upload')}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={uploadDisabled}
+                            onClick={() => onPasteUpload('prints')}
+                        >
+                            <ClipboardPasteIcon data-icon="inline-start" />
+                            {t('dialog.gallery_icons.paste_upload')}
+                        </Button>
+                    </>
+                }
+            />
+            {noticeMessage ? (
+                <Alert
+                    variant={hasWarningNotice ? 'destructive' : 'default'}
+                    className="mb-2"
                 >
-                    {loading ? (
-                        <LoadingState />
-                    ) : visiblePrints.length > 0 ? (
-                        <VirtualTileGridRows
-                            columnCount={tileGrid.columnCount}
-                            gap={gridDensityConfig.tileGridGap}
-                            getKey={getPrintKey}
-                            totalHeight={tileGrid.totalHeight}
-                            visibleRows={tileGrid.visibleRows}
-                            renderItem={(print) => {
-                                const printId = print.id;
-                                const imageUrl = convertFileUrlToImageUrl(
-                                    print?.files?.image || '',
-                                    512
-                                );
-                                const isMutating =
-                                    mutatingKey === `prints:${printId}` ||
-                                    favoriteMutatingId === printId ||
-                                    bulkRunning;
-                                const isFavorite =
-                                    favoritePrintIds.has(printId);
+                    {hasWarningNotice ? (
+                        <AlertTriangleIcon className="size-4" />
+                    ) : null}
+                    <AlertDescription>{noticeMessage}</AlertDescription>
+                </Alert>
+            ) : null}
+            <div
+                ref={tileGrid.viewportRef}
+                className="min-h-0 flex-1 overflow-y-auto pr-1"
+            >
+                {loading ? (
+                    <LoadingState />
+                ) : visiblePrints.length > 0 ? (
+                    <VirtualTileGridRows
+                        columnCount={tileGrid.columnCount}
+                        gap={gridDensityConfig.tileGridGap}
+                        getKey={getPrintKey}
+                        totalHeight={tileGrid.totalHeight}
+                        visibleRows={tileGrid.visibleRows}
+                        renderItem={(print) => {
+                            const printId = print.id;
+                            const imageUrl = convertFileUrlToImageUrl(
+                                print?.files?.image || '',
+                                512
+                            );
+                            const isMutating =
+                                mutatingKey === `prints:${printId}` ||
+                                favoriteMutatingId === printId ||
+                                bulkRunning;
+                            const isFavorite = favoritePrintIds.has(printId);
 
-                                return (
-                                    <MediaAssetTile
-                                        imageUrl={imageUrl}
-                                        fadeIn={false}
-                                        alt={print.note || printId}
-                                        aspectClass="aspect-[2048/1440]"
-                                        imageFit="contain"
-                                        imagePosition="top"
-                                        hideContent
-                                        selectable
-                                        selected={selection.selectedKeysSet.has(
-                                            printId
-                                        )}
-                                        selectionActive={selection.hasSelection}
-                                        selectLabel={`${t('common.actions.select')} ${print.note || printId}`}
-                                        onToggleSelect={(checked, shift) =>
-                                            selection.selectItem(
-                                                printId,
-                                                checked,
-                                                { shift }
-                                            )
-                                        }
-                                        badges={
-                                            isFavorite
-                                                ? [
-                                                      {
-                                                          key: 'favorite',
-                                                          label: t(
-                                                              'view.tools.prints_favorites.favorite_badge'
-                                                          ),
-                                                          variant: 'secondary'
-                                                      }
-                                                  ]
-                                                : undefined
-                                        }
-                                        placeholderIcon={ImageIcon}
-                                        onPreview={() =>
-                                            onPreview({
-                                                id: printId,
-                                                url: imageUrl,
-                                                title:
-                                                    print.note ||
-                                                    t(
-                                                        'dialog.gallery_icons.prints'
-                                                    )
-                                            })
-                                        }
-                                        menuLabel={t('accessibility.more')}
-                                        menuActions={[
-                                            {
-                                                key: isFavorite
-                                                    ? 'unfavorite'
-                                                    : 'favorite',
-                                                label: t(
-                                                    isFavorite
-                                                        ? 'view.tools.prints_favorites.unfavorite'
-                                                        : 'view.tools.prints_favorites.favorite'
-                                                ),
-                                                icon: isFavorite
-                                                    ? StarOffIcon
-                                                    : StarIcon,
-                                                disabled: isMutating,
-                                                onSelect: () => {
-                                                    void handleFavoriteToggle(
-                                                        printId,
-                                                        !isFavorite
-                                                    );
-                                                }
-                                            },
-                                            {
-                                                key: 'delete',
-                                                label: isFavorite
-                                                    ? t(
-                                                          'view.tools.gallery_selection.delete_locked_favorite'
-                                                      )
-                                                    : t(
-                                                          'common.actions.delete'
+                            return (
+                                <MediaAssetTile
+                                    imageUrl={imageUrl}
+                                    fadeIn={false}
+                                    alt={print.note || printId}
+                                    aspectClass="aspect-[2048/1440]"
+                                    imageFit="contain"
+                                    imagePosition="top"
+                                    hideContent
+                                    selectable
+                                    selected={selection.selectedKeysSet.has(
+                                        printId
+                                    )}
+                                    selectionActive={selection.hasSelection}
+                                    selectLabel={`${t('common.actions.select')} ${print.note || printId}`}
+                                    onToggleSelect={(checked, shift) =>
+                                        selection.selectItem(printId, checked, {
+                                            shift
+                                        })
+                                    }
+                                    badges={
+                                        isFavorite
+                                            ? [
+                                                  {
+                                                      key: 'favorite',
+                                                      label: t(
+                                                          'view.tools.prints_favorites.favorite_badge'
                                                       ),
-                                                icon: Trash2Icon,
-                                                destructive: true,
-                                                disabled:
-                                                    isMutating || isFavorite,
-                                                onSelect: () =>
-                                                    onDeletePrint(printId)
+                                                      variant: 'secondary'
+                                                  }
+                                              ]
+                                            : undefined
+                                    }
+                                    placeholderIcon={ImageIcon}
+                                    onPreview={() =>
+                                        onPreview({
+                                            id: printId,
+                                            url: imageUrl,
+                                            title:
+                                                print.note ||
+                                                t('dialog.gallery_icons.prints')
+                                        })
+                                    }
+                                    menuLabel={t('accessibility.more')}
+                                    menuActions={[
+                                        {
+                                            key: isFavorite
+                                                ? 'unfavorite'
+                                                : 'favorite',
+                                            label: t(
+                                                isFavorite
+                                                    ? 'view.tools.prints_favorites.unfavorite'
+                                                    : 'view.tools.prints_favorites.favorite'
+                                            ),
+                                            icon: isFavorite
+                                                ? StarOffIcon
+                                                : StarIcon,
+                                            disabled: isMutating,
+                                            onSelect: () => {
+                                                void handleFavoriteToggle(
+                                                    printId,
+                                                    !isFavorite
+                                                );
                                             }
-                                        ]}
-                                    />
-                                );
-                            }}
-                        />
-                    ) : (
-                        <EmptyState
-                            icon={ImageIcon}
-                            title={t('empty_state.prints_title')}
-                            description={t('empty_state.prints_description')}
+                                        },
+                                        {
+                                            key: 'delete',
+                                            label: isFavorite
+                                                ? t(
+                                                      'view.tools.gallery_selection.delete_locked_favorite'
+                                                  )
+                                                : t('common.actions.delete'),
+                                            icon: Trash2Icon,
+                                            destructive: true,
+                                            disabled: isMutating || isFavorite,
+                                            onSelect: () =>
+                                                onDeletePrint(printId)
+                                        }
+                                    ]}
+                                />
+                            );
+                        }}
+                    />
+                ) : (
+                    <EmptyState
+                        icon={ImageIcon}
+                        title={t('empty_state.prints_title')}
+                        description={t('empty_state.prints_description')}
+                    >
+                        <Button
+                            type="button"
+                            variant="link"
+                            onClick={() => onRefresh('prints')}
                         >
-                            <Button
-                                type="button"
-                                variant="link"
-                                onClick={() => onRefresh('prints')}
-                            >
-                                {t('dialog.gallery_icons.refresh')}
-                            </Button>
-                        </EmptyState>
-                    )}
-                </div>
-                <GallerySelectionBar
-                    selectedCount={selectedPrintIds.length}
-                    deletableCount={deletablePrintIds.length}
-                    isAllSelected={selection.isAllSelected}
-                    actionsDisabled={bulkRunning}
-                    favoriteActions={{
-                        onFavorite: () =>
-                            onBulkSetFavorite({
-                                printIds: selectedPrintIds,
-                                favorite: true
-                            }),
-                        onUnfavorite: () =>
-                            onBulkSetFavorite({
-                                printIds: selectedPrintIds,
-                                favorite: false
-                            })
-                    }}
-                    onSelectAll={selection.toggleSelectAll}
-                    onClearSelection={selection.clearSelection}
-                    onDelete={() =>
-                        onBulkDelete({
-                            tab: 'prints',
-                            assetIds: deletablePrintIds,
-                            lockedCount:
-                                selectedPrintIds.length -
-                                deletablePrintIds.length
-                        })
-                    }
-                />
+                            {t('dialog.gallery_icons.refresh')}
+                        </Button>
+                    </EmptyState>
+                )}
             </div>
-        </TabsContent>
+            <GallerySelectionBar
+                selectedCount={selectedPrintIds.length}
+                deletableCount={deletablePrintIds.length}
+                isAllSelected={selection.isAllSelected}
+                actionsDisabled={bulkRunning}
+                favoriteActions={{
+                    onFavorite: () =>
+                        onBulkSetFavorite({
+                            printIds: selectedPrintIds,
+                            favorite: true
+                        }),
+                    onUnfavorite: () =>
+                        onBulkSetFavorite({
+                            printIds: selectedPrintIds,
+                            favorite: false
+                        })
+                }}
+                onSelectAll={selection.toggleSelectAll}
+                onClearSelection={selection.clearSelection}
+                onDelete={() =>
+                    onBulkDelete({
+                        tab: 'prints',
+                        assetIds: deletablePrintIds,
+                        lockedCount:
+                            selectedPrintIds.length - deletablePrintIds.length
+                    })
+                }
+            />
+        </div>
     );
 }

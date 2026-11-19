@@ -9,7 +9,6 @@ import { isProfileMediaFileUsableWithoutVrcPlus } from '@/shared/utils/currentUs
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { Button } from '@/ui/shadcn/button';
 import { DropdownMenuGroup, DropdownMenuItem } from '@/ui/shadcn/dropdown-menu';
-import { TabsContent } from '@/ui/shadcn/tabs';
 
 import {
     UPLOAD_ASPECT_RATIOS,
@@ -97,166 +96,153 @@ export function GalleryFileTab({
     });
 
     return (
-        <TabsContent
-            value={tab}
-            className="mt-2 flex min-h-0 flex-1 data-hidden:hidden"
-        >
-            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-                <MediaLibraryToolbar
-                    actions={
-                        <>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={uploadBusy}
-                                onClick={() => onBeginUpload(tab)}
-                            >
-                                <UploadIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.upload')}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={uploadBusy}
-                                onClick={() => onPasteUpload(tab)}
-                            >
-                                <ClipboardPasteIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.paste_upload')}
-                            </Button>
-                            {tab === 'gallery' ? (
-                                <ToolbarOverflowMenu>
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuItem
-                                            variant="destructive"
-                                            disabled={
-                                                !bannerCustomUrl ||
-                                                mediaProfileLoading ||
-                                                Boolean(mediaProfileError) ||
-                                                Boolean(mutatingKey)
-                                            }
-                                            onClick={() =>
-                                                onClearProfileField(
-                                                    'banner',
-                                                    ''
-                                                )
-                                            }
-                                        >
-                                            <XIcon data-icon="inline-start" />
-                                            {t(
-                                                'dialog.gallery_icons.clear_banner'
-                                            )}
-                                        </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                </ToolbarOverflowMenu>
-                            ) : null}
-                            {tab === 'icons' ? (
-                                <ToolbarOverflowMenu>
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuItem
-                                            variant="destructive"
-                                            disabled={
-                                                !userIcon ||
-                                                mediaProfileLoading ||
-                                                Boolean(mediaProfileError) ||
-                                                Boolean(mutatingKey)
-                                            }
-                                            onClick={() =>
-                                                onClearProfileField(
-                                                    'userIcon',
-                                                    ''
-                                                )
-                                            }
-                                        >
-                                            <XIcon data-icon="inline-start" />
-                                            {t(
-                                                'dialog.gallery_icons.clear_profile_icon'
-                                            )}
-                                        </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                </ToolbarOverflowMenu>
-                            ) : null}
-                        </>
-                    }
-                />
-                {hasLockedFiles && !loading ? (
-                    <VrcPlusLockedNotice className="mb-2" />
-                ) : null}
-                <div
-                    ref={tileGrid.viewportRef}
-                    className="min-h-0 flex-1 overflow-y-auto pr-1"
-                >
-                    {loading ? (
-                        <LoadingState />
-                    ) : mediaProfileError ? (
-                        <EmptyState title={mediaProfileError} />
-                    ) : files.length > 0 ? (
-                        <VirtualTileGridRows
-                            columnCount={tileGrid.columnCount}
-                            gap={gridDensityConfig.tileGridGap}
-                            getKey={getFileKey}
-                            totalHeight={tileGrid.totalHeight}
-                            visibleRows={tileGrid.visibleRows}
-                            renderItem={(file) => (
-                                <GalleryFileCard
-                                    tab={tab}
-                                    definition={definition}
-                                    file={file}
-                                    bannerCustomUrl={bannerCustomUrl}
-                                    userIcon={userIcon}
-                                    locked={isLocked(file)}
-                                    mutatingKey={mutatingKey}
-                                    currentUserId={currentUserId}
-                                    selected={selection.selectedKeysSet.has(
-                                        file.id
-                                    )}
-                                    selectionActive={selection.hasSelection}
-                                    onToggleSelect={(checked, shift) =>
-                                        selection.selectItem(file.id, checked, {
-                                            shift
-                                        })
-                                    }
-                                    onPreview={onPreview}
-                                    onSetProfileField={onSetProfileField}
-                                    onDeleteFile={onDeleteFile}
-                                />
-                            )}
-                        />
-                    ) : (
-                        <EmptyState
-                            icon={UploadIcon}
-                            title={t('empty_state.gallery_images_title')}
-                            description={t(
-                                'empty_state.gallery_images_description'
-                            )}
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+            <MediaLibraryToolbar
+                actions={
+                    <>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={uploadBusy}
+                            onClick={() => onBeginUpload(tab)}
                         >
-                            <Button
-                                type="button"
-                                variant="link"
-                                disabled={uploadBusy}
-                                onClick={() => onBeginUpload(tab)}
-                            >
-                                {t('dialog.gallery_icons.upload')}
-                            </Button>
-                        </EmptyState>
-                    )}
-                </div>
-                <GallerySelectionBar
-                    selectedCount={selectedFileIds.length}
-                    deletableCount={deletableFileIds.length}
-                    isAllSelected={selection.isAllSelected}
-                    actionsDisabled={bulkRunning}
-                    onSelectAll={selection.toggleSelectAll}
-                    onClearSelection={selection.clearSelection}
-                    onDelete={() =>
-                        onBulkDelete({
-                            tab,
-                            assetIds: deletableFileIds,
-                            lockedCount:
-                                selectedFileIds.length - deletableFileIds.length
-                        })
-                    }
-                />
+                            <UploadIcon data-icon="inline-start" />
+                            {t('dialog.gallery_icons.upload')}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={uploadBusy}
+                            onClick={() => onPasteUpload(tab)}
+                        >
+                            <ClipboardPasteIcon data-icon="inline-start" />
+                            {t('dialog.gallery_icons.paste_upload')}
+                        </Button>
+                        {tab === 'gallery' ? (
+                            <ToolbarOverflowMenu>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        disabled={
+                                            !bannerCustomUrl ||
+                                            mediaProfileLoading ||
+                                            Boolean(mediaProfileError) ||
+                                            Boolean(mutatingKey)
+                                        }
+                                        onClick={() =>
+                                            onClearProfileField('banner', '')
+                                        }
+                                    >
+                                        <XIcon data-icon="inline-start" />
+                                        {t('dialog.gallery_icons.clear_banner')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </ToolbarOverflowMenu>
+                        ) : null}
+                        {tab === 'icons' ? (
+                            <ToolbarOverflowMenu>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        disabled={
+                                            !userIcon ||
+                                            mediaProfileLoading ||
+                                            Boolean(mediaProfileError) ||
+                                            Boolean(mutatingKey)
+                                        }
+                                        onClick={() =>
+                                            onClearProfileField('userIcon', '')
+                                        }
+                                    >
+                                        <XIcon data-icon="inline-start" />
+                                        {t(
+                                            'dialog.gallery_icons.clear_profile_icon'
+                                        )}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </ToolbarOverflowMenu>
+                        ) : null}
+                    </>
+                }
+            />
+            {hasLockedFiles && !loading ? (
+                <VrcPlusLockedNotice className="mb-2" />
+            ) : null}
+            <div
+                ref={tileGrid.viewportRef}
+                className="min-h-0 flex-1 overflow-y-auto pr-1"
+            >
+                {loading ? (
+                    <LoadingState />
+                ) : mediaProfileError ? (
+                    <EmptyState title={mediaProfileError} />
+                ) : files.length > 0 ? (
+                    <VirtualTileGridRows
+                        columnCount={tileGrid.columnCount}
+                        gap={gridDensityConfig.tileGridGap}
+                        getKey={getFileKey}
+                        totalHeight={tileGrid.totalHeight}
+                        visibleRows={tileGrid.visibleRows}
+                        renderItem={(file) => (
+                            <GalleryFileCard
+                                tab={tab}
+                                definition={definition}
+                                file={file}
+                                bannerCustomUrl={bannerCustomUrl}
+                                userIcon={userIcon}
+                                locked={isLocked(file)}
+                                mutatingKey={mutatingKey}
+                                currentUserId={currentUserId}
+                                selected={selection.selectedKeysSet.has(
+                                    file.id
+                                )}
+                                selectionActive={selection.hasSelection}
+                                onToggleSelect={(checked, shift) =>
+                                    selection.selectItem(file.id, checked, {
+                                        shift
+                                    })
+                                }
+                                onPreview={onPreview}
+                                onSetProfileField={onSetProfileField}
+                                onDeleteFile={onDeleteFile}
+                            />
+                        )}
+                    />
+                ) : (
+                    <EmptyState
+                        icon={UploadIcon}
+                        title={t('empty_state.gallery_images_title')}
+                        description={t(
+                            'empty_state.gallery_images_description'
+                        )}
+                    >
+                        <Button
+                            type="button"
+                            variant="link"
+                            disabled={uploadBusy}
+                            onClick={() => onBeginUpload(tab)}
+                        >
+                            {t('dialog.gallery_icons.upload')}
+                        </Button>
+                    </EmptyState>
+                )}
             </div>
-        </TabsContent>
+            <GallerySelectionBar
+                selectedCount={selectedFileIds.length}
+                deletableCount={deletableFileIds.length}
+                isAllSelected={selection.isAllSelected}
+                actionsDisabled={bulkRunning}
+                onSelectAll={selection.toggleSelectAll}
+                onClearSelection={selection.clearSelection}
+                onDelete={() =>
+                    onBulkDelete({
+                        tab,
+                        assetIds: deletableFileIds,
+                        lockedCount:
+                            selectedFileIds.length - deletableFileIds.length
+                    })
+                }
+            />
+        </div>
     );
 }

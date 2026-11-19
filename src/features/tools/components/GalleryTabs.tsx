@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 
-import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { FreezeWhenHidden } from '@/components/FreezeWhenHidden';
+import { useVisitedTabs } from '@/lib/useVisitedTabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import {
     FILE_TABS,
@@ -14,6 +16,9 @@ import {
     GalleryPrintsTab,
     type GalleryPrintsTabState
 } from './GalleryPrintsTab';
+
+const GALLERY_TAB_CONTENT_CLASS_NAME =
+    'mt-2 flex min-h-0 flex-1 data-hidden:hidden';
 
 export function GalleryTabs({
     activeTab,
@@ -29,6 +34,7 @@ export function GalleryTabs({
     printsTab: GalleryPrintsTabState;
 }) {
     const { t } = useTranslation();
+    const visitedTabs = useVisitedTabs(activeTab, fileTab.currentUserId ?? '');
 
     return (
         <Tabs
@@ -57,14 +63,30 @@ export function GalleryTabs({
             </TabsList>
 
             {(['gallery', 'icons'] satisfies FileAssetTab[]).map((tab) => (
-                <GalleryFileTab
+                <TabsContent
                     key={tab}
-                    tab={tab}
-                    definition={FILE_TABS[tab]}
-                    fileTab={fileTab}
-                />
+                    value={tab}
+                    keepMounted={visitedTabs.has(tab)}
+                    className={GALLERY_TAB_CONTENT_CLASS_NAME}
+                >
+                    <FreezeWhenHidden active={activeTab === tab}>
+                        <GalleryFileTab
+                            tab={tab}
+                            definition={FILE_TABS[tab]}
+                            fileTab={fileTab}
+                        />
+                    </FreezeWhenHidden>
+                </TabsContent>
             ))}
-            <GalleryPrintsTab printsTab={printsTab} />
+            <TabsContent
+                value="prints"
+                keepMounted={visitedTabs.has('prints')}
+                className={GALLERY_TAB_CONTENT_CLASS_NAME}
+            >
+                <FreezeWhenHidden active={activeTab === 'prints'}>
+                    <GalleryPrintsTab printsTab={printsTab} />
+                </FreezeWhenHidden>
+            </TabsContent>
         </Tabs>
     );
 }
