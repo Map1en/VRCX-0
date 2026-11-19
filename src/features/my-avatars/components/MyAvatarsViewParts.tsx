@@ -28,7 +28,7 @@ import { MountOnIntent } from '@/components/MountOnIntent';
 import { cn } from '@/lib/utils';
 import { openAvatarDialog } from '@/services/dialogService';
 import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
-import { HintTooltip } from '@/ui/hint-tooltip';
+import { HintTooltip, IntentTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -51,7 +51,6 @@ import {
     ToggleGroupItem,
     ToggleGroupSeparator
 } from '@/ui/shadcn/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     MY_AVATAR_TAG_BADGE_CLASS_NAME,
@@ -289,18 +288,8 @@ export function MyAvatarTagList({
                 </Badge>
             ))}
             {hiddenTags.length ? (
-                <MountOnIntent
-                    trigger="hover"
-                    render={(child) => (
-                        <Tooltip>
-                            <TooltipTrigger render={child} />
-                            <TooltipContent>
-                                {hiddenTags
-                                    .map((entry) => entry.tag)
-                                    .join(', ')}
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
+                <IntentTooltip
+                    content={hiddenTags.map((entry) => entry.tag).join(', ')}
                 >
                     <Badge
                         variant="outline"
@@ -311,7 +300,7 @@ export function MyAvatarTagList({
                     >
                         +{hiddenTags.length}
                     </Badge>
-                </MountOnIntent>
+                </IntentTooltip>
             ) : null}
         </div>
     );

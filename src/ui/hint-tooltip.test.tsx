@@ -9,7 +9,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { HintTooltip } from '@/ui/hint-tooltip';
+import { HintTooltip, IntentTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -67,5 +67,23 @@ describe('HintTooltip', () => {
         await waitFor(() => {
             expect(screen.getByRole('menuitem', { name: 'Item' })).toBeTruthy();
         });
+    });
+
+    it('shows rich content on hover without renaming the trigger', async () => {
+        render(
+            <IntentTooltip
+                contentClassName="custom-content"
+                content={<strong>Full date</strong>}
+            >
+                <span>3 days ago</span>
+            </IntentTooltip>
+        );
+
+        const trigger = screen.getByText('3 days ago');
+        expect(trigger.getAttribute('aria-label')).toBeNull();
+        fireEvent.pointerEnter(trigger, { pointerType: 'mouse' });
+
+        const content = await screen.findByText('Full date');
+        expect(content.closest('.custom-content')).not.toBeNull();
     });
 });

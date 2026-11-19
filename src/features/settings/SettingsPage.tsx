@@ -23,6 +23,7 @@ import {
 } from '@/components/layout/PageScaffold';
 import { ToolbarSearch } from '@/components/layout/ToolbarControls';
 import { useSettingsSearch } from '@/lib/useSettingsSearch';
+import { useVisitedTabs } from '@/lib/useVisitedTabs';
 import { cn } from '@/lib/utils';
 import type { SettingsManifestEntry } from '@/shared/constants/settingsManifest';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
@@ -71,18 +72,6 @@ const MemoSettingsIntegrationsTab = memo(SettingsIntegrationsTab);
 const MemoSettingsAdvancedTab = memo(SettingsAdvancedTab);
 const MemoSettingsFeedbackTab = memo(SettingsFeedbackTab);
 
-function useVisitedSettingsTabs(activeTab: string) {
-    const [visited, setVisited] = useState<ReadonlySet<string>>(
-        () => new Set([activeTab])
-    );
-    if (!visited.has(activeTab)) {
-        const next = new Set([...visited, activeTab]);
-        setVisited(next);
-        return next;
-    }
-    return visited;
-}
-
 export function SettingsPage() {
     return (
         <SettingsPageStateProvider>
@@ -100,7 +89,7 @@ function SettingsPageContent() {
     const searching = query.trim().length > 0;
     const results = useSettingsSearch(query);
     const activeTab = shell.activeSettingsTab;
-    const keptTabs = useVisitedSettingsTabs(activeTab);
+    const keptTabs = useVisitedTabs(activeTab, '');
     const visibleTab = searching ? '' : activeTab;
     const tabsVisibility = useMemo(
         () => ({ activeTab: visibleTab, keptTabs }),

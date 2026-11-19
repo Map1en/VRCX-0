@@ -30,7 +30,6 @@ import {
 import { LanguageCodeBadge } from '@/components/language/LanguageCodeBadge';
 import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { MountOnIntent } from '@/components/MountOnIntent';
 import { MutualFriendAvatars } from '@/components/mutual-friends/MutualFriendAvatars';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
@@ -40,10 +39,9 @@ import { getNameColour, openExternalLink } from '@/services/entityMediaService';
 import { TRUST_COLOR_ENTRIES } from '@/shared/constants/trustColors';
 import type { UserNameColourStyle } from '@/shared/utils/entityMedia';
 import { usePreferencesStore } from '@/state/preferencesStore';
-import { HintTooltip } from '@/ui/hint-tooltip';
+import { HintTooltip, IntentTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { resolvePlatformMode, resolveStatusMeta } from '../playerListDisplay';
 import { playerGroupRoleOrder } from '../playerListGroupRoles';
@@ -144,31 +142,19 @@ function MutualFriendsCell({ row }: { row: AppRow<PlayerListRow> }) {
         .map((friend) => friend.displayName)
         .join(t('user_hover_card.name_separator'));
     return (
-        <MountOnIntent
-            trigger="hover"
-            render={(child) => (
-                <Tooltip>
-                    <TooltipTrigger render={child} />
-                    <TooltipContent>
-                        {mutuals.community
-                            ? t(
-                                  'view.player_list.mutual_friends.cell_tooltip_circle',
-                                  {
-                                      names,
-                                      count: mutuals.count,
-                                      circle: mutuals.community.label
-                                  }
-                              )
-                            : t(
-                                  'view.player_list.mutual_friends.cell_tooltip',
-                                  {
-                                      names,
-                                      count: mutuals.count
-                                  }
-                              )}
-                    </TooltipContent>
-                </Tooltip>
-            )}
+        <IntentTooltip
+            content={
+                mutuals.community
+                    ? t('view.player_list.mutual_friends.cell_tooltip_circle', {
+                          names,
+                          count: mutuals.count,
+                          circle: mutuals.community.label
+                      })
+                    : t('view.player_list.mutual_friends.cell_tooltip', {
+                          names,
+                          count: mutuals.count
+                      })
+            }
         >
             <span className="flex min-w-0 items-center gap-1.5">
                 <MutualFriendAvatars friends={mutuals.friends} />
@@ -182,7 +168,7 @@ function MutualFriendsCell({ row }: { row: AppRow<PlayerListRow> }) {
                 ) : null}
                 <span className="text-sm tabular-nums">{mutuals.count}</span>
             </span>
-        </MountOnIntent>
+        </IntentTooltip>
     );
 }
 
@@ -376,17 +362,9 @@ function BioLinksCell({ row }: { row: AppRow<PlayerListRow> }) {
                       const linkLabel = String(link ?? '');
 
                       return (
-                          <MountOnIntent
+                          <IntentTooltip
                               key={`${linkLabel}:${index}`}
-                              trigger="hover"
-                              render={(child) => (
-                                  <Tooltip>
-                                      <TooltipTrigger render={child} />
-                                      <TooltipContent>
-                                          {linkLabel}
-                                      </TooltipContent>
-                                  </Tooltip>
-                              )}
+                              content={linkLabel}
                           >
                               <Button
                                   type="button"
@@ -407,7 +385,7 @@ function BioLinksCell({ row }: { row: AppRow<PlayerListRow> }) {
                                       }
                                   />
                               </Button>
-                          </MountOnIntent>
+                          </IntentTooltip>
                       );
                   })
                 : null}

@@ -6,7 +6,6 @@ import { EconomyStoreListings } from '@/components/economy/EconomyStoreListings'
 import { FreezeWhenHidden } from '@/components/FreezeWhenHidden';
 import { useLanguageNames } from '@/components/language/useLanguageNames';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { MountOnIntent } from '@/components/MountOnIntent';
 import { TranslatableText } from '@/components/translation/TranslatableText';
 import type {
     GroupAnnouncementRecord,
@@ -15,11 +14,11 @@ import type {
 import { formatDateFilter } from '@/lib/dateTime';
 import { useVisitedTabs } from '@/lib/useVisitedTabs';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { IntentTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Skeleton } from '@/ui/shadcn/skeleton';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     EntityDialogTabContent,
@@ -133,24 +132,14 @@ function GroupAnnouncementPanel({
             </div>
             <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                 {roleNames.length ? (
-                    <MountOnIntent
-                        trigger="hover"
-                        render={(child) => (
-                            <Tooltip>
-                                <TooltipTrigger render={child} />
-                                <TooltipContent>
-                                    {roleNames.join(', ')}
-                                </TooltipContent>
-                            </Tooltip>
-                        )}
-                    >
+                    <IntentTooltip content={roleNames.join(', ')}>
                         <Badge variant="outline" className="max-w-full">
                             <EyeIcon data-icon="inline-start" />
                             <span className="truncate">
                                 {roleNames.join(', ')}
                             </span>
                         </Badge>
-                    </MountOnIntent>
+                    </IntentTooltip>
                 ) : null}
                 {authorId || authorLabel ? (
                     authorId ? (

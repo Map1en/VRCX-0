@@ -3,14 +3,13 @@ import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLanguageNames } from '@/components/language/useLanguageNames';
-import { MountOnIntent } from '@/components/MountOnIntent';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { useNowMs } from '@/lib/useNowMs';
 import { cn } from '@/lib/utils';
+import { IntentTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { InstanceCalendarEventMarker } from './InstanceCalendarEventMarker';
 import {
@@ -62,54 +61,50 @@ function InstanceInfoTooltipContent({
     const languages = instanceLanguageRows(instance, languageName);
 
     return (
-        <TooltipContent className="max-w-sm text-xs">
-            <div className="flex flex-col gap-1.5">
-                {instance?.closedAt ? (
-                    <div>
-                        {t('dialog.instance.label.closed_at')}{' '}
-                        {formatDateFilter(instance.closedAt, 'long')}
-                    </div>
-                ) : null}
-                {joinedAtMs ? (
-                    <InstanceOpenDuration joinedAtMs={joinedAtMs} />
-                ) : null}
+        <div className="flex flex-col gap-1.5">
+            {instance?.closedAt ? (
                 <div>
-                    <span className="text-platform-pc">PC: </span>
-                    {platformCount(instance, 'standalonewindows')}
-                    <span className="text-platform-quest ml-2">
-                        {t('dialog.instance.label.android')}{' '}
-                    </span>
-                    {platformCount(instance, 'android')}
+                    {t('dialog.instance.label.closed_at')}{' '}
+                    {formatDateFilter(instance.closedAt, 'long')}
                 </div>
-                <div>
-                    {t('dialog.instance.label.ios')}{' '}
-                    {platformCount(instance, 'ios')}
-                </div>
-                {languages.length ? (
-                    <div>
-                        {t('dialog.instance.label.languages')}{' '}
-                        {languages.map(instanceLanguageRowText).join(' · ')}
-                    </div>
-                ) : null}
-                {instance?.gameServerVersion ? (
-                    <div>
-                        {t('dialog.instance.label.game_version')}{' '}
-                        {String(instance.gameServerVersion)}
-                    </div>
-                ) : null}
-                {instance?.queueEnabled ? (
-                    <div>
-                        {t('dialog.instance.label.instance_queuing_enabled')}
-                    </div>
-                ) : null}
-                {disabledContent ? (
-                    <div>
-                        {t('dialog.instance.label.disabled_content')}{' '}
-                        {disabledContent}
-                    </div>
-                ) : null}
+            ) : null}
+            {joinedAtMs ? (
+                <InstanceOpenDuration joinedAtMs={joinedAtMs} />
+            ) : null}
+            <div>
+                <span className="text-platform-pc">PC: </span>
+                {platformCount(instance, 'standalonewindows')}
+                <span className="text-platform-quest ml-2">
+                    {t('dialog.instance.label.android')}{' '}
+                </span>
+                {platformCount(instance, 'android')}
             </div>
-        </TooltipContent>
+            <div>
+                {t('dialog.instance.label.ios')}{' '}
+                {platformCount(instance, 'ios')}
+            </div>
+            {languages.length ? (
+                <div>
+                    {t('dialog.instance.label.languages')}{' '}
+                    {languages.map(instanceLanguageRowText).join(' · ')}
+                </div>
+            ) : null}
+            {instance?.gameServerVersion ? (
+                <div>
+                    {t('dialog.instance.label.game_version')}{' '}
+                    {String(instance.gameServerVersion)}
+                </div>
+            ) : null}
+            {instance?.queueEnabled ? (
+                <div>{t('dialog.instance.label.instance_queuing_enabled')}</div>
+            ) : null}
+            {disabledContent ? (
+                <div>
+                    {t('dialog.instance.label.disabled_content')}{' '}
+                    {disabledContent}
+                </div>
+            ) : null}
+        </div>
     );
 }
 
@@ -129,20 +124,17 @@ function InstanceInfoTooltip({
     }
 
     return (
-        <MountOnIntent
-            trigger="hover"
-            render={(child) => (
-                <Tooltip>
-                    <TooltipTrigger render={child} />
-                    <InstanceInfoTooltipContent
-                        instance={instance}
-                        joinedAtMs={joinedAtMs}
-                    />
-                </Tooltip>
-            )}
+        <IntentTooltip
+            contentClassName="max-w-sm text-xs"
+            content={
+                <InstanceInfoTooltipContent
+                    instance={instance}
+                    joinedAtMs={joinedAtMs}
+                />
+            }
         >
             {children}
-        </MountOnIntent>
+        </IntentTooltip>
     );
 }
 
@@ -240,17 +232,9 @@ export function InstanceActionSummary({
         ) : null;
     const closeInstanceButton =
         closeInstanceControl && !options.disableActionTooltip ? (
-            <MountOnIntent
-                trigger="hover"
-                render={(child) => (
-                    <Tooltip>
-                        <TooltipTrigger render={child} />
-                        <TooltipContent>{closeInstanceLabel}</TooltipContent>
-                    </Tooltip>
-                )}
-            >
+            <IntentTooltip content={closeInstanceLabel}>
                 <span>{closeInstanceControl}</span>
-            </MountOnIntent>
+            </IntentTooltip>
         ) : (
             closeInstanceControl
         );

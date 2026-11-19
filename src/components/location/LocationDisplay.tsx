@@ -4,10 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 import { LocationPendingText } from '@/components/location/LocationPendingText';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
-import { MountOnIntent } from '@/components/MountOnIntent';
 import { cn } from '@/lib/utils';
+import { IntentTooltip } from '@/ui/hint-tooltip';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 function LocationTooltip({
     disabled,
@@ -22,19 +21,7 @@ function LocationTooltip({
         return children;
     }
 
-    return (
-        <MountOnIntent
-            trigger="hover"
-            render={(child) => (
-                <Tooltip>
-                    <TooltipTrigger render={child} />
-                    <TooltipContent>{content}</TooltipContent>
-                </Tooltip>
-            )}
-        >
-            {children}
-        </MountOnIntent>
-    );
+    return <IntentTooltip content={content}>{children}</IntentTooltip>;
 }
 
 export function LocationDisplay({
