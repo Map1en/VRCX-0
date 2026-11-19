@@ -17,12 +17,14 @@ import type {
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
+import { DeferredDropdownMenu } from '@/components/DeferredDropdownMenu';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import {
     toolbarFilterTrigger,
     ToolbarViewMenu
 } from '@/components/layout/ToolbarControls';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { MountOnIntent } from '@/components/MountOnIntent';
 import { cn } from '@/lib/utils';
 import { openAvatarDialog } from '@/services/dialogService';
 import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
@@ -30,13 +32,11 @@ import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
-    DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+    DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import {
@@ -116,19 +116,11 @@ type GridSettingsMenuProps = {
 
 function PlatformBadge({ children, label }: PlatformBadgeProps) {
     return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <span
-                        aria-label={label}
-                        className="text-content-primary inline-flex items-center"
-                    >
-                        {children}
-                    </span>
-                }
-            />
-            <TooltipContent>{label}</TooltipContent>
-        </Tooltip>
+        <HintTooltip label={label}>
+            <span className="text-content-primary inline-flex items-center">
+                {children}
+            </span>
+        </HintTooltip>
     );
 }
 
@@ -213,44 +205,53 @@ export function MyAvatarNameCell({
                     />
                 )}
             </span>
-            <HoverCard>
-                <HoverCardTrigger
-                    delay={400}
-                    closeDelay={100}
-                    render={
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="h-auto min-w-0 p-0 text-left text-sm font-medium hover:bg-transparent"
-                            onClick={() => openAvatarDetails(avatar)}
+            <MountOnIntent
+                trigger="hover"
+                render={(child) => (
+                    <HoverCard>
+                        <HoverCardTrigger
+                            delay={400}
+                            closeDelay={100}
+                            render={child}
+                        />
+                        <HoverCardContent
+                            side="right"
+                            sideOffset={8}
+                            className="w-64"
                         >
-                            <span className="truncate">{name}</span>
-                        </Button>
-                    }
-                />
-                <HoverCardContent side="right" sideOffset={8} className="w-64">
-                    <div className="bg-muted aspect-[4/3] w-full overflow-hidden rounded-md">
-                        {thumbnailUrl ? (
-                            <FadeInImage
-                                src={thumbnailUrl}
-                                alt=""
-                                className="size-full object-cover"
-                                loading="lazy"
-                            />
-                        ) : (
-                            <div className="flex size-full items-center justify-center">
-                                <PersonStandingIcon
-                                    aria-hidden="true"
-                                    className="text-muted-foreground size-6"
-                                />
+                            <div className="bg-muted aspect-[4/3] w-full overflow-hidden rounded-md">
+                                {thumbnailUrl ? (
+                                    <FadeInImage
+                                        src={thumbnailUrl}
+                                        alt=""
+                                        className="size-full object-cover"
+                                        loading="lazy"
+                                    />
+                                ) : (
+                                    <div className="flex size-full items-center justify-center">
+                                        <PersonStandingIcon
+                                            aria-hidden="true"
+                                            className="text-muted-foreground size-6"
+                                        />
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                    <p className="mt-2 line-clamp-2 text-sm font-medium break-words">
-                        {name}
-                    </p>
-                </HoverCardContent>
-            </HoverCard>
+                            <p className="mt-2 line-clamp-2 text-sm font-medium break-words">
+                                {name}
+                            </p>
+                        </HoverCardContent>
+                    </HoverCard>
+                )}
+            >
+                <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-auto min-w-0 p-0 text-left text-sm font-medium hover:bg-transparent"
+                    onClick={() => openAvatarDetails(avatar)}
+                >
+                    <span className="truncate">{name}</span>
+                </Button>
+            </MountOnIntent>
             {isPublic ? (
                 <Globe2Icon
                     aria-label={publicLabel}
@@ -288,24 +289,29 @@ export function MyAvatarTagList({
                 </Badge>
             ))}
             {hiddenTags.length ? (
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <Badge
-                                variant="outline"
-                                className={cn(
-                                    MY_AVATAR_TAG_BADGE_CLASS_NAME,
-                                    'shrink-0 tabular-nums'
-                                )}
-                            >
-                                +{hiddenTags.length}
-                            </Badge>
-                        }
-                    />
-                    <TooltipContent>
-                        {hiddenTags.map((entry) => entry.tag).join(', ')}
-                    </TooltipContent>
-                </Tooltip>
+                <MountOnIntent
+                    trigger="hover"
+                    render={(child) => (
+                        <Tooltip>
+                            <TooltipTrigger render={child} />
+                            <TooltipContent>
+                                {hiddenTags
+                                    .map((entry) => entry.tag)
+                                    .join(', ')}
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                >
+                    <Badge
+                        variant="outline"
+                        className={cn(
+                            MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                            'shrink-0 tabular-nums'
+                        )}
+                    >
+                        +{hiddenTags.length}
+                    </Badge>
+                </MountOnIntent>
             ) : null}
         </div>
     );
@@ -344,27 +350,25 @@ export function AvatarActionsDropdown({
     const avatarActionsLabel = t('view.my_avatars.action.open_avatar_actions');
 
     return (
-        <DropdownMenu>
-            <HintTooltip label={avatarActionsLabel}>
-                <DropdownMenuTrigger
-                    render={
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            disabled={isUpdating}
-                            onPointerDown={(event) => event.stopPropagation()}
-                            onClick={(event) => event.stopPropagation()}
-                        >
-                            {isUpdating ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : (
-                                <MoreHorizontalIcon data-icon="inline-start" />
-                            )}
-                        </Button>
-                    }
-                />
-            </HintTooltip>
+        <DeferredDropdownMenu
+            label={avatarActionsLabel}
+            trigger={
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    disabled={isUpdating}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    {isUpdating ? (
+                        <Spinner data-icon="inline-start" />
+                    ) : (
+                        <MoreHorizontalIcon data-icon="inline-start" />
+                    )}
+                </Button>
+            }
+        >
             <DropdownMenuContent
                 align="end"
                 className="bg-popover! w-max max-w-[90vw] min-w-52"
@@ -380,7 +384,7 @@ export function AvatarActionsDropdown({
                     onAction={onAction}
                 />
             </DropdownMenuContent>
-        </DropdownMenu>
+        </DeferredDropdownMenu>
     );
 }
 

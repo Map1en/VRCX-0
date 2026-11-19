@@ -15,31 +15,29 @@ import type { CSSProperties, ElementType, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarPlatformDots } from '@/components/avatars/AvatarPlatformDots';
+import { DeferredContextMenu } from '@/components/DeferredContextMenu';
+import { DeferredDropdownMenu } from '@/components/DeferredDropdownMenu';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { MountOnIntent } from '@/components/MountOnIntent';
 import { TileShell } from '@/components/tile/TileShell';
 import { cn } from '@/lib/utils';
 import { TILE_CHECK } from '@/shared/constants/selectableTile';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
-    ContextMenu,
     ContextMenuContent,
     ContextMenuGroup,
     ContextMenuItem,
     ContextMenuLabel,
-    ContextMenuSeparator,
-    ContextMenuTrigger
+    ContextMenuSeparator
 } from '@/ui/shadcn/context-menu';
 import {
-    DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+    DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
 import {
     HoverCard,
@@ -233,198 +231,195 @@ export function MyAvatarGridCard({
     };
 
     return (
-        <ContextMenu>
-            <ContextMenuTrigger
-                render={
-                    <div className="group/card relative h-full min-w-0">
-                        <TileShell
-                            selected={isActive}
-                            className={cn(
-                                'h-full w-full flex-col items-stretch p-0 text-left font-normal whitespace-normal',
-                                disabled && 'cursor-not-allowed opacity-60'
-                            )}
-                            render={
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    aria-disabled={!canWear}
-                                    tabIndex={disabled ? -1 : undefined}
-                                    onClick={() => {
-                                        if (!canWear) {
-                                            return;
-                                        }
-                                        onAction('wear', avatar);
-                                    }}
-                                />
-                            }
-                        >
-                            <div className="bg-muted relative size-full overflow-hidden">
-                                {avatar?.thumbnailImageUrl ? (
-                                    <FadeInImage
-                                        src={avatar.thumbnailImageUrl}
-                                        alt={avatar?.name || 'Avatar'}
-                                        className="h-full w-full object-cover"
-                                        loading="lazy"
-                                        fallback={
-                                            <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-6">
-                                                <PersonStandingIcon />
-                                            </div>
-                                        }
-                                    />
-                                ) : (
-                                    <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-6">
-                                        <PersonStandingIcon />
-                                    </div>
-                                )}
-                                <div className="absolute top-1 left-1 flex max-w-[calc(100%-2rem)] flex-col items-start gap-1">
-                                    {isActive ? (
-                                        <span className={TILE_CHECK}>
-                                            <CheckIcon className="size-3" />
-                                        </span>
-                                    ) : null}
-                                    {tags.length ? (
-                                        <HoverCard>
-                                            <HoverCardTrigger
-                                                delay={200}
-                                                closeDelay={100}
-                                                render={
-                                                    <div
-                                                        className="flex max-w-full min-w-0 flex-nowrap gap-1 overflow-hidden"
-                                                        aria-label={t(
-                                                            'dialog.avatar.info.tags'
-                                                        )}
-                                                    >
-                                                        {visibleTags.map(
-                                                            (entry) => (
-                                                                <Badge
-                                                                    key={`${avatar.id}:${entry.tag}`}
-                                                                    variant="secondary"
-                                                                    className={cn(
-                                                                        MY_AVATAR_TAG_BADGE_CLASS_NAME,
-                                                                        'max-w-16 min-w-0 shrink truncate shadow-sm'
-                                                                    )}
-                                                                    style={{
-                                                                        ...resolveMyAvatarGridTagBadgeStyle(
-                                                                            entry
-                                                                        ),
-                                                                        fontSize: `${densityConfig.tagFontSize}px`
-                                                                    }}
-                                                                >
-                                                                    {entry.tag}
-                                                                </Badge>
-                                                            )
-                                                        )}
-                                                        {hiddenTagCount ? (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={cn(
-                                                                    MY_AVATAR_TAG_BADGE_CLASS_NAME,
-                                                                    'bg-background/80 text-foreground/90 shrink-0 shadow-sm'
-                                                                )}
-                                                                style={{
-                                                                    fontSize: `${densityConfig.tagFontSize}px`
-                                                                }}
-                                                            >
-                                                                +
-                                                                {hiddenTagCount}
-                                                            </Badge>
-                                                        ) : null}
-                                                    </div>
-                                                }
-                                            />
-                                            <HoverCardContent
-                                                side="bottom"
-                                                align="start"
-                                                className="flex w-64 flex-wrap gap-1.5"
-                                            >
-                                                {tags.map((entry) => (
-                                                    <Badge
-                                                        key={`${avatar.id}:hover:${entry.tag}`}
-                                                        variant="secondary"
-                                                        className={cn(
-                                                            MY_AVATAR_TAG_BADGE_CLASS_NAME,
-                                                            'max-w-full truncate'
-                                                        )}
-                                                        style={resolveMyAvatarGridTagBadgeStyle(
-                                                            entry
-                                                        )}
-                                                    >
-                                                        {entry.tag}
-                                                    </Badge>
-                                                ))}
-                                            </HoverCardContent>
-                                        </HoverCard>
-                                    ) : null}
-                                    {canWear && !tags.length ? (
-                                        <div className="bg-background/85 text-foreground max-w-full -translate-y-1 rounded-sm px-1.5 py-0 text-xs font-medium opacity-0 shadow-sm transition-[opacity,transform] ease-out group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100 group-hover/card:translate-y-0 group-hover/card:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-opacity">
-                                            {t(
-                                                'view.my_avatars.label.click_to_wear'
-                                            )}
+        <DeferredContextMenu
+            trigger={
+                <div className="group/card relative h-full min-w-0">
+                    <TileShell
+                        selected={isActive}
+                        className={cn(
+                            'h-full w-full flex-col items-stretch p-0 text-left font-normal whitespace-normal',
+                            disabled && 'cursor-not-allowed opacity-60'
+                        )}
+                        render={
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                aria-disabled={!canWear}
+                                tabIndex={disabled ? -1 : undefined}
+                                onClick={() => {
+                                    if (!canWear) {
+                                        return;
+                                    }
+                                    onAction('wear', avatar);
+                                }}
+                            />
+                        }
+                    >
+                        <div className="bg-muted relative size-full overflow-hidden">
+                            {avatar?.thumbnailImageUrl ? (
+                                <FadeInImage
+                                    src={avatar.thumbnailImageUrl}
+                                    alt={avatar?.name || 'Avatar'}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                    fallback={
+                                        <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-6">
+                                            <PersonStandingIcon />
                                         </div>
-                                    ) : null}
-                                </div>
-                                <AvatarPlatformDots
-                                    unityPackages={avatar?.unityPackages}
-                                    className="absolute top-1 right-1"
-                                />
-                                <div
-                                    className="absolute right-0 bottom-0 left-0 flex min-w-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
-                                    style={overlayStyle}
-                                >
-                                    <span
-                                        className="block truncate font-semibold text-white"
-                                        style={avatarNameStyle}
-                                    >
-                                        {avatarName}
-                                    </span>
-                                </div>
-                            </div>
-                        </TileShell>
-                        <DropdownMenu>
-                            <HintTooltip label={avatarActionsLabel}>
-                                <DropdownMenuTrigger
-                                    render={
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            size="icon-xs"
-                                            className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-focus-within/card:opacity-100 group-hover/card:opacity-100 data-popup-open:opacity-100"
-                                            disabled={isUpdating}
-                                            onPointerDown={(event) =>
-                                                event.stopPropagation()
-                                            }
-                                            onClick={(event) =>
-                                                event.stopPropagation()
-                                            }
-                                        >
-                                            {isUpdating ? (
-                                                <Spinner data-icon="inline-start" />
-                                            ) : (
-                                                <MoreHorizontalIcon data-icon="inline-start" />
-                                            )}
-                                        </Button>
                                     }
                                 />
-                            </HintTooltip>
-                            <DropdownMenuContent
-                                align="end"
-                                className="bg-popover! w-max max-w-[90vw] min-w-52"
+                            ) : (
+                                <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-6">
+                                    <PersonStandingIcon />
+                                </div>
+                            )}
+                            <div className="absolute top-1 left-1 flex max-w-[calc(100%-2rem)] flex-col items-start gap-1">
+                                {isActive ? (
+                                    <span className={TILE_CHECK}>
+                                        <CheckIcon className="size-3" />
+                                    </span>
+                                ) : null}
+                                {tags.length ? (
+                                    <MountOnIntent
+                                        trigger="hover"
+                                        render={(child) => (
+                                            <HoverCard>
+                                                <HoverCardTrigger
+                                                    delay={200}
+                                                    closeDelay={100}
+                                                    render={child}
+                                                />
+                                                <HoverCardContent
+                                                    side="bottom"
+                                                    align="start"
+                                                    className="flex w-64 flex-wrap gap-1.5"
+                                                >
+                                                    {tags.map((entry) => (
+                                                        <Badge
+                                                            key={`${avatar.id}:hover:${entry.tag}`}
+                                                            variant="secondary"
+                                                            className={cn(
+                                                                MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                                                                'max-w-full truncate'
+                                                            )}
+                                                            style={resolveMyAvatarGridTagBadgeStyle(
+                                                                entry
+                                                            )}
+                                                        >
+                                                            {entry.tag}
+                                                        </Badge>
+                                                    ))}
+                                                </HoverCardContent>
+                                            </HoverCard>
+                                        )}
+                                    >
+                                        <div
+                                            className="flex max-w-full min-w-0 flex-nowrap gap-1 overflow-hidden"
+                                            aria-label={t(
+                                                'dialog.avatar.info.tags'
+                                            )}
+                                        >
+                                            {visibleTags.map((entry) => (
+                                                <Badge
+                                                    key={`${avatar.id}:${entry.tag}`}
+                                                    variant="secondary"
+                                                    className={cn(
+                                                        MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                                                        'max-w-16 min-w-0 shrink truncate shadow-sm'
+                                                    )}
+                                                    style={{
+                                                        ...resolveMyAvatarGridTagBadgeStyle(
+                                                            entry
+                                                        ),
+                                                        fontSize: `${densityConfig.tagFontSize}px`
+                                                    }}
+                                                >
+                                                    {entry.tag}
+                                                </Badge>
+                                            ))}
+                                            {hiddenTagCount ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                                                        'bg-background/80 text-foreground/90 shrink-0 shadow-sm'
+                                                    )}
+                                                    style={{
+                                                        fontSize: `${densityConfig.tagFontSize}px`
+                                                    }}
+                                                >
+                                                    +{hiddenTagCount}
+                                                </Badge>
+                                            ) : null}
+                                        </div>
+                                    </MountOnIntent>
+                                ) : null}
+                                {canWear && !tags.length ? (
+                                    <div className="bg-background/85 text-foreground max-w-full -translate-y-1 rounded-sm px-1.5 py-0 text-xs font-medium opacity-0 shadow-sm transition-[opacity,transform] ease-out group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100 group-hover/card:translate-y-0 group-hover/card:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-opacity">
+                                        {t(
+                                            'view.my_avatars.label.click_to_wear'
+                                        )}
+                                    </div>
+                                ) : null}
+                            </div>
+                            <AvatarPlatformDots
+                                unityPackages={avatar?.unityPackages}
+                                className="absolute top-1 right-1"
+                            />
+                            <div
+                                className="absolute right-0 bottom-0 left-0 flex min-w-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
+                                style={overlayStyle}
                             >
-                                <AvatarActionMenuItems
-                                    avatar={avatar}
-                                    isActive={isActive}
-                                    disabled={disabled}
-                                    Item={DropdownMenuItem}
-                                    Group={DropdownMenuGroup}
-                                    Label={DropdownMenuLabel}
-                                    Separator={DropdownMenuSeparator}
-                                    onAction={onAction}
-                                />
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                }
-            />
+                                <span
+                                    className="block truncate font-semibold text-white"
+                                    style={avatarNameStyle}
+                                >
+                                    {avatarName}
+                                </span>
+                            </div>
+                        </div>
+                    </TileShell>
+                    <DeferredDropdownMenu
+                        label={avatarActionsLabel}
+                        trigger={
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="icon-xs"
+                                className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-focus-within/card:opacity-100 group-hover/card:opacity-100 data-popup-open:opacity-100"
+                                disabled={isUpdating}
+                                onPointerDown={(event) =>
+                                    event.stopPropagation()
+                                }
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                {isUpdating ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <MoreHorizontalIcon data-icon="inline-start" />
+                                )}
+                            </Button>
+                        }
+                    >
+                        <DropdownMenuContent
+                            align="end"
+                            className="bg-popover! w-max max-w-[90vw] min-w-52"
+                        >
+                            <AvatarActionMenuItems
+                                avatar={avatar}
+                                isActive={isActive}
+                                disabled={disabled}
+                                Item={DropdownMenuItem}
+                                Group={DropdownMenuGroup}
+                                Label={DropdownMenuLabel}
+                                Separator={DropdownMenuSeparator}
+                                onAction={onAction}
+                            />
+                        </DropdownMenuContent>
+                    </DeferredDropdownMenu>
+                </div>
+            }
+        >
             <ContextMenuContent className="bg-popover! w-max max-w-[90vw] min-w-52">
                 <AvatarActionMenuItems
                     avatar={avatar}
@@ -437,6 +432,6 @@ export function MyAvatarGridCard({
                     onAction={onAction}
                 />
             </ContextMenuContent>
-        </ContextMenu>
+        </DeferredContextMenu>
     );
 }

@@ -15,15 +15,14 @@ import {
     getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
+import { DeferredContextMenu } from '@/components/DeferredContextMenu';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
-    ContextMenu,
     ContextMenuContent,
     ContextMenuGroup,
     ContextMenuItem,
     ContextMenuLabel,
-    ContextMenuSeparator,
-    ContextMenuTrigger
+    ContextMenuSeparator
 } from '@/ui/shadcn/context-menu';
 import { Table, TableBody } from '@/ui/shadcn/table';
 
@@ -85,90 +84,83 @@ export function MyAvatarsTableView({
                             <DataTableHeader table={table} className="z-20" />
                             <TableBody>
                                 {table.getRowModel().rows.map((row) => (
-                                    <ContextMenu
+                                    <DeferredContextMenu
                                         key={row.original?.id || row.id}
-                                    >
-                                        <ContextMenuTrigger
-                                            render={
-                                                <DataTableRow
-                                                    data-state={
-                                                        row.original?.id ===
-                                                        currentAvatarId
-                                                            ? 'selected'
-                                                            : undefined
+                                        trigger={
+                                            <DataTableRow
+                                                data-state={
+                                                    row.original?.id ===
+                                                    currentAvatarId
+                                                        ? 'selected'
+                                                        : undefined
+                                                }
+                                                className="group cursor-pointer"
+                                                tabIndex={0}
+                                                aria-label={t(
+                                                    'view.my_avatars.dynamic.open_value',
+                                                    {
+                                                        value:
+                                                            row.original
+                                                                ?.name ||
+                                                            row.original?.id ||
+                                                            t(
+                                                                'view.my_avatars.label.avatar'
+                                                            )
                                                     }
-                                                    className="group cursor-pointer"
-                                                    tabIndex={0}
-                                                    aria-label={t(
-                                                        'view.my_avatars.dynamic.open_value',
-                                                        {
-                                                            value:
-                                                                row.original
-                                                                    ?.name ||
-                                                                row.original
-                                                                    ?.id ||
-                                                                t(
-                                                                    'view.my_avatars.label.avatar'
-                                                                )
-                                                        }
-                                                    )}
-                                                    onKeyDown={(event) => {
-                                                        if (
-                                                            isInteractiveRowEvent(
-                                                                event
-                                                            )
-                                                        ) {
-                                                            return;
-                                                        }
-                                                        if (
-                                                            event.key !==
-                                                                'Enter' &&
-                                                            event.key !== ' '
-                                                        ) {
-                                                            return;
-                                                        }
-                                                        event.preventDefault();
-                                                        openAvatarDetails(
-                                                            row.original
-                                                        );
-                                                    }}
-                                                    onClick={(event) => {
-                                                        if (
-                                                            isInteractiveRowEvent(
-                                                                event
-                                                            )
-                                                        ) {
-                                                            return;
-                                                        }
-                                                        openAvatarDetails(
-                                                            row.original
-                                                        );
-                                                    }}
+                                                )}
+                                                onKeyDown={(event) => {
+                                                    if (
+                                                        isInteractiveRowEvent(
+                                                            event
+                                                        )
+                                                    ) {
+                                                        return;
+                                                    }
+                                                    if (
+                                                        event.key !== 'Enter' &&
+                                                        event.key !== ' '
+                                                    ) {
+                                                        return;
+                                                    }
+                                                    event.preventDefault();
+                                                    openAvatarDetails(
+                                                        row.original
+                                                    );
+                                                }}
+                                                onClick={(event) => {
+                                                    if (
+                                                        isInteractiveRowEvent(
+                                                            event
+                                                        )
+                                                    ) {
+                                                        return;
+                                                    }
+                                                    openAvatarDetails(
+                                                        row.original
+                                                    );
+                                                }}
+                                            >
+                                                <DataTableColumnSortableContext
+                                                    table={table}
                                                 >
-                                                    <DataTableColumnSortableContext
-                                                        table={table}
-                                                    >
-                                                        {row
-                                                            .getVisibleCells()
-                                                            .map((cell) => (
-                                                                <ResizableTableCell
-                                                                    key={
-                                                                        cell.id
-                                                                    }
-                                                                    cell={cell}
-                                                                    className={
-                                                                        cell
-                                                                            .column
-                                                                            .columnDef
-                                                                            .meta
-                                                                            ?.tableCellClassName
-                                                                    }
-                                                                />
-                                                            ))}
-                                                    </DataTableColumnSortableContext>
-                                                </DataTableRow>
-                                            }
-                                        />
+                                                    {row
+                                                        .getVisibleCells()
+                                                        .map((cell) => (
+                                                            <ResizableTableCell
+                                                                key={cell.id}
+                                                                cell={cell}
+                                                                className={
+                                                                    cell.column
+                                                                        .columnDef
+                                                                        .meta
+                                                                        ?.tableCellClassName
+                                                                }
+                                                            />
+                                                        ))}
+                                                </DataTableColumnSortableContext>
+                                            </DataTableRow>
+                                        }
+                                    >
                                         <ContextMenuContent className="bg-popover! w-max max-w-[90vw] min-w-52">
                                             <AvatarActionMenuItems
                                                 avatar={row.original}
@@ -196,7 +188,7 @@ export function MyAvatarsTableView({
                                                 }}
                                             />
                                         </ContextMenuContent>
-                                    </ContextMenu>
+                                    </DeferredContextMenu>
                                 ))}
                             </TableBody>
                         </Table>
