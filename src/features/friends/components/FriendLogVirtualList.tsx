@@ -1,4 +1,4 @@
-import { useMemo, type ComponentProps } from 'react';
+import { memo, useMemo, type ComponentProps, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTable } from '@/components/data-table/appTable';
@@ -23,6 +23,60 @@ import { getFriendLogRowKey, type FriendLogRow } from '../friendLogRows';
 import { FriendLogDateCell, FriendLogDeleteAction } from './FriendLogColumns';
 import { FriendLogTypeIndicator, renderUserCell } from './FriendLogViewParts';
 
+type FriendLogDeleteActionProps = Omit<
+    ComponentProps<typeof FriendLogDeleteAction>,
+    'row'
+>;
+
+const FriendLogVirtualListRow = memo(function FriendLogVirtualListRow({
+    row,
+    displayName,
+    columnIds,
+    layout,
+    deleteAction
+}: {
+    row: FriendLogRow;
+    displayName: string;
+    columnIds: readonly string[];
+    layout: CSSProperties;
+    deleteAction: FriendLogDeleteActionProps;
+}) {
+    const { t } = useTranslation();
+    return (
+        <div
+            data-friend-history-row=""
+            {...getLogFilterRowAttributes({
+                userId: row.userId || '',
+                userName: displayName,
+                type: row.type,
+                typeLabel: t(`view.friend_log.filters.${row.type}`)
+            })}
+            className="grid h-[var(--vrcx-0-table-row-height)] items-center border-b border-[var(--vrcx-0-table-divider)] hover:bg-[var(--vrcx-0-table-row-hover-surface)]"
+            style={layout}
+        >
+            {columnIds.map((columnId) => (
+                <div
+                    key={columnId}
+                    className="min-w-0 truncate px-[var(--vrcx-0-table-cell-padding-inline)]"
+                >
+                    {columnId === 'created_at' ? (
+                        <FriendLogDateCell row={row} />
+                    ) : columnId === 'type' ? (
+                        <FriendLogTypeIndicator type={row.type} />
+                    ) : columnId === 'displayName' ? (
+                        renderUserCell({
+                            ...row,
+                            resolvedDisplayName: displayName
+                        })
+                    ) : columnId === 'action' ? (
+                        <FriendLogDeleteAction {...deleteAction} row={row} />
+                    ) : null}
+                </div>
+            ))}
+        </div>
+    );
+});
+
 export function FriendLogVirtualList({
     rows,
     table,
@@ -42,7 +96,7 @@ export function FriendLogVirtualList({
     table: AppTable<FriendLogRow>;
     filterCommands: LogFilterCommands;
     resolveDisplayName(row: FriendLogRow): string;
-    deleteAction: Omit<ComponentProps<typeof FriendLogDeleteAction>, 'row'>;
+    deleteAction: FriendLogDeleteActionProps;
     resetKey: string;
     hasMore: boolean;
     loadingOlder: boolean;
@@ -64,7 +118,44 @@ export function FriendLogVirtualList({
     );
     const headers = table.getHeaderGroups().flatMap((group) => group.headers);
     const columns = table.getVisibleLeafColumns();
-    const layout = getColumnGridLayout(columns, 'displayName');
+    const columnIds = useMemo(
+        () => columns.map((column) => column.id),
+        [columns]
+    );
+    const { gridTemplateColumns, minWidth } = getColumnGridLayout(
+        columns,
+        'displayName'
+    );
+    const layout = useMemo(
+        () => ({ gridTemplateColumns, minWidth }),
+        [gridTemplateColumns, minWidth]
+    );
+    const {
+        currentUserId,
+        deletingRowKey,
+        handleDeleteRow,
+        loadStatus,
+        rowsOwnerUserId,
+        shiftHeld
+    } = deleteAction;
+    const rowDeleteAction = useMemo(
+        () => ({
+            currentUserId,
+            deletingRowKey,
+            handleDeleteRow,
+            loadStatus,
+            rowsOwnerUserId,
+            shiftHeld
+        }),
+        [
+            currentUserId,
+            deletingRowKey,
+            handleDeleteRow,
+            loadStatus,
+            rowsOwnerUserId,
+            shiftHeld
+        ]
+    );
     const labels: Record<string, string> = {
         created_at: t('table.friendLog.date'),
         type: t('table.friendLog.type'),
@@ -143,45 +234,13 @@ export function FriendLogVirtualList({
                         </div>
                     }
                     renderRow={({ row }) => (
-                        <div
-                            data-friend-history-row=""
-                            {...getLogFilterRowAttributes({
-                                userId: row.userId || '',
-                                userName: resolveDisplayName(row),
-                                type: row.type,
-                                typeLabel: t(
-                                    `view.friend_log.filters.${row.type}`
-                                )
-                            })}
-                            className="grid h-[var(--vrcx-0-table-row-height)] items-center border-b border-[var(--vrcx-0-table-divider)] hover:bg-[var(--vrcx-0-table-row-hover-surface)]"
-                            style={layout}
-                        >
-                            {columns.map((column) => (
-                                <div
-                                    key={column.id}
-                                    className="min-w-0 truncate px-[var(--vrcx-0-table-cell-padding-inline)]"
-                                >
-                                    {column.id === 'created_at' ? (
-                                        <FriendLogDateCell row={row} />
-                                    ) : column.id === 'type' ? (
-                                        <FriendLogTypeIndicator
-                                            type={row.type}
-                                        />
-                                    ) : column.id === 'displayName' ? (
-                                        renderUserCell({
-                                            ...row,
-                                            resolvedDisplayName:
-                                                resolveDisplayName(row)
-                                        })
-                                    ) : column.id === 'action' ? (
-                                        <FriendLogDeleteAction
-                                            {...deleteAction}
-                                            row={row}
-                                        />
-                                    ) : null}
-                                </div>
-                            ))}
-                        </div>
+                        <FriendLogVirtualListRow
+                            row={row}
+                            displayName={resolveDisplayName(row)}
+                            columnIds={columnIds}
+                            layout={layout}
+                            deleteAction={rowDeleteAction}
+                        />
                     )}
                     footer={footer}
                     emptyState={footer}

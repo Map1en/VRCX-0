@@ -1,6 +1,7 @@
 import { useState, type MutableRefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useStableCommands } from '@/lib/useStableCommands';
 import friendLogHistoryRepository from '@/repositories/friendLogHistoryRepository';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -109,8 +110,10 @@ export function useFriendLogRowActions({
         }
     }
 
+    const stableCommands = useStableCommands({ handleDeleteRow });
+
     return {
         deletingRowKey,
-        handleDeleteRow
+        handleDeleteRow: stableCommands.handleDeleteRow
     };
 }

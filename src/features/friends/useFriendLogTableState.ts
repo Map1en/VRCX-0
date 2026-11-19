@@ -5,6 +5,7 @@ import {
     getTablePageSizePreference,
     getTablePageSizesPreference
 } from '@/services/preferencesService';
+import { structuralEqual } from '@/shared/utils/structuralEqual';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 import {
@@ -101,11 +102,16 @@ export function useFriendLogTableState({
                           resolvedConfiguredPageSize
                       )
                     : resolvedConfiguredPageSize;
-                setPageSizes(resolvedPageSizes);
-                setPagination((current) => ({
-                    ...current,
-                    pageSize: resolvedActivePageSize
-                }));
+                setPageSizes((current) =>
+                    structuralEqual(current, resolvedPageSizes)
+                        ? current
+                        : resolvedPageSizes
+                );
+                setPagination((current) =>
+                    current.pageSize === resolvedActivePageSize
+                        ? current
+                        : { ...current, pageSize: resolvedActivePageSize }
+                );
             })
             .catch(() => {});
         return () => {
@@ -118,7 +124,11 @@ export function useFriendLogTableState({
             return;
         }
         const resolvedPageSizes = sanitizePageSizes(tablePageSizesPreference);
-        setPageSizes(resolvedPageSizes);
+        setPageSizes((current) =>
+            structuralEqual(current, resolvedPageSizes)
+                ? current
+                : resolvedPageSizes
+        );
         setPagination((current) => {
             const pageSize = resolvePageSize(
                 current.pageSize,
@@ -166,10 +176,9 @@ export function useFriendLogTableState({
     }, [columnOrder, columnOrderLocked, columnVisibility]);
 
     useEffect(() => {
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0
-        }));
+        setPagination((current) =>
+            current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
+        );
     }, [searchQuery, selectedTypes, hideUnfriends, dateFrom, dateTo]);
 
     useEffect(() => {

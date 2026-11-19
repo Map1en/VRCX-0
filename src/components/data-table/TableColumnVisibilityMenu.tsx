@@ -3,6 +3,7 @@ import type { TFunction } from 'i18next';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DeferredContextMenu } from '@/components/DeferredContextMenu';
 import { ToolbarViewMenu } from '@/components/layout/ToolbarControls';
 import {
     ContextMenu,
@@ -318,8 +319,7 @@ export function TableColumnContextMenu<TData extends RowData>({
     children: ReactElement;
 }) {
     return (
-        <ContextMenu>
-            <ContextMenuTrigger render={children} />
+        <DeferredContextMenu trigger={children}>
             <ContextMenuContent className="w-56">
                 <ColumnContextMenuItems
                     column={column}
@@ -331,6 +331,6 @@ export function TableColumnContextMenu<TData extends RowData>({
                     onResetLayout={onResetLayout}
                 />
             </ContextMenuContent>
-        </ContextMenu>
+        </DeferredContextMenu>
     );
 }

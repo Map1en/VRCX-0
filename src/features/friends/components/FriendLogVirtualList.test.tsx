@@ -16,12 +16,15 @@ import type { FriendLogRow } from '../friendLogRows';
 import { useFriendLogColumns } from './FriendLogColumns';
 import { FriendLogVirtualList } from './FriendLogVirtualList';
 
+const renderedUserCells = vi.hoisted((): string[] => []);
+
 vi.mock('./FriendLogViewParts', () => ({
     FriendLogTypeIndicator: ({ type }: { type: string }) => <span>{type}</span>,
     SortButton: () => <button>Sort</button>,
-    renderUserCell: (row: FriendLogRow) => (
-        <span>{row.resolvedDisplayName}</span>
-    )
+    renderUserCell: (row: FriendLogRow) => {
+        renderedUserCells.push(row.resolvedDisplayName ?? '');
+        return <span>{row.resolvedDisplayName}</span>;
+    }
 }));
 
 const rows: FriendLogRow[] = Array.from({ length: 160 }, (_, index) => ({
@@ -36,7 +39,11 @@ const onDelete = vi.fn(async () => {});
 const onlyUser = vi.fn();
 const resolveDisplayName = vi.fn((row: FriendLogRow) => row.displayName);
 
-function Harness() {
+function Harness({
+    resolveName = resolveDisplayName
+}: {
+    resolveName?: (row: FriendLogRow) => string;
+}) {
     const deleteAction = {
         currentUserId: 'usr_owner',
         rowsOwnerUserId: 'usr_owner',
@@ -52,7 +59,7 @@ function Harness() {
             rows={rows}
             table={table}
             filterCommands={{ onlyUser }}
-            resolveDisplayName={resolveDisplayName}
+            resolveDisplayName={resolveName}
             deleteAction={deleteAction}
             resetKey="normal"
             hasMore={false}
@@ -69,6 +76,7 @@ function Harness() {
 afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    renderedUserCells.length = 0;
 });
 
 describe('Friend History virtual rows', () => {
@@ -126,5 +134,22 @@ describe('Friend History virtual rows', () => {
         );
 
         expect(onlyUser).toHaveBeenCalledWith('usr_0', 'Name 0');
+    });
+
+    it('re-renders only rows whose resolved name changed when the page re-renders', () => {
+        const view = render(<Harness />);
+        renderedUserCells.length = 0;
+
+        view.rerender(<Harness resolveName={(row) => row.displayName} />);
+        expect(renderedUserCells).toEqual([]);
+
+        view.rerender(
+            <Harness
+                resolveName={(row) =>
+                    row.userId === 'usr_1' ? 'Renamed' : row.displayName
+                }
+            />
+        );
+        expect(renderedUserCells).toEqual(['Renamed']);
     });
 });
