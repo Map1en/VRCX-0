@@ -4,9 +4,10 @@ import {
     Trash2Icon,
     TriangleAlertIcon
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DeferredDropdownMenu } from '@/components/DeferredDropdownMenu';
 import { useMinuteNowMs } from '@/lib/useMinuteNowMs';
 import { cn } from '@/lib/utils';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
@@ -15,20 +16,17 @@ import {
     selectMarkAllSeenRowState,
     useVrcNotificationStore
 } from '@/state/vrcNotificationStore';
-import { HintTooltip } from '@/ui/hint-tooltip';
+import { IntentTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
-    DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+    DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
 import { HoverCard, HoverCardTrigger } from '@/ui/shadcn/hover-card';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     NotificationActionMenuText,
@@ -97,7 +95,7 @@ function useExpiryCountdown(
     return remainingMs;
 }
 
-export function NotificationDrawerRow({
+export const NotificationDrawerRow = memo(function NotificationDrawerRow({
     notification,
     isUnseen,
     currentUserId,
@@ -203,25 +201,20 @@ export function NotificationDrawerRow({
                                 {markAllSeenState === 'active' ? (
                                     <Spinner className="text-muted-foreground size-3 shrink-0 -translate-y-0.5" />
                                 ) : markAllSeenState === 'failed' ? (
-                                    <Tooltip>
-                                        <TooltipTrigger
-                                            render={
-                                                <span className="flex shrink-0 -translate-y-0.5 text-amber-500">
-                                                    <TriangleAlertIcon className="size-3" />
-                                                    <span className="sr-only">
-                                                        {t(
-                                                            'side_panel.notification_center.mark_read_failed'
-                                                        )}
-                                                    </span>
-                                                </span>
-                                            }
-                                        />
-                                        <TooltipContent>
-                                            {t(
-                                                'side_panel.notification_center.mark_read_failed'
-                                            )}
-                                        </TooltipContent>
-                                    </Tooltip>
+                                    <IntentTooltip
+                                        content={t(
+                                            'side_panel.notification_center.mark_read_failed'
+                                        )}
+                                    >
+                                        <span className="flex shrink-0 -translate-y-0.5 text-amber-500">
+                                            <TriangleAlertIcon className="size-3" />
+                                            <span className="sr-only">
+                                                {t(
+                                                    'side_panel.notification_center.mark_read_failed'
+                                                )}
+                                            </span>
+                                        </span>
+                                    </IntentTooltip>
                                 ) : showUnreadDot && !nested ? (
                                     <span className="bg-primary size-2 rounded-full">
                                         <span className="sr-only">
@@ -319,22 +312,18 @@ export function NotificationDrawerRow({
                                     )}
                                 >
                                     {hasMenu ? (
-                                        <DropdownMenu>
-                                            <HintTooltip
-                                                label={moreActionsLabel}
-                                            >
-                                                <DropdownMenuTrigger
-                                                    render={
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon-xs"
-                                                        >
-                                                            <MoreHorizontalIcon data-icon="icon" />
-                                                        </Button>
-                                                    }
-                                                />
-                                            </HintTooltip>
+                                        <DeferredDropdownMenu
+                                            label={moreActionsLabel}
+                                            trigger={
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon-xs"
+                                                >
+                                                    <MoreHorizontalIcon data-icon="icon" />
+                                                </Button>
+                                            }
+                                        >
                                             <DropdownMenuContent
                                                 align="end"
                                                 className="w-56"
@@ -406,7 +395,7 @@ export function NotificationDrawerRow({
                                                     </>
                                                 ) : null}
                                             </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        </DeferredDropdownMenu>
                                     ) : null}
                                 </div>
                             </div>
@@ -469,18 +458,11 @@ export function NotificationDrawerRow({
                             inlineActions.length > 0 ? (
                                 <div className="mt-2 flex items-center gap-2">
                                     {relativeTime ? (
-                                        <Tooltip>
-                                            <TooltipTrigger
-                                                render={
-                                                    <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
-                                                        {relativeTime}
-                                                    </span>
-                                                }
-                                            />
-                                            <TooltipContent>
-                                                {absoluteTime}
-                                            </TooltipContent>
-                                        </Tooltip>
+                                        <IntentTooltip content={absoluteTime}>
+                                            <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
+                                                {relativeTime}
+                                            </span>
+                                        </IntentTooltip>
                                     ) : null}
                                     <div className="min-w-0 flex-1 truncate text-xs">
                                         <NotificationLocationLine
@@ -563,4 +545,4 @@ export function NotificationDrawerRow({
             />
         </HoverCard>
     );
-}
+});

@@ -2,6 +2,7 @@ import { ChevronRightIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useStableCommands } from '@/lib/useStableCommands';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 import type {
     NotificationBucket,
@@ -56,6 +57,7 @@ export function NotificationDrawerList({
     onNavigateToTable
 }: NotificationDrawerListProps) {
     const { t } = useTranslation();
+    const stableHandlers = useStableCommands(handlers);
     const groups = useMemo(() => {
         const entries: NotificationDrawerEntry[] = [];
         for (const bucket of notificationBuckets(categories)) {
@@ -86,7 +88,7 @@ export function NotificationDrawerList({
                 nested={nested}
                 currentUserId={currentUserId}
                 canInviteFromCurrentLocation={canInviteFromCurrentLocation}
-                handlers={handlers}
+                handlers={stableHandlers}
             />
         );
     }

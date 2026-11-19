@@ -12,6 +12,22 @@ vi.mock('../useNotificationActorImage', () => ({
     useNotificationActorImage: () => ''
 }));
 
+const rowRenders = vi.hoisted(() => ({ ids: [] as string[] }));
+
+vi.mock('./notificationDrawerRowUtils', async (importOriginal) => {
+    const actual =
+        await importOriginal<typeof import('./notificationDrawerRowUtils')>();
+    return {
+        ...actual,
+        getNotificationTypeLabel: (
+            ...args: Parameters<typeof actual.getNotificationTypeLabel>
+        ) => {
+            rowRenders.ids.push(String(args[0]?.id));
+            return actual.getNotificationTypeLabel(...args);
+        }
+    };
+});
+
 afterEach(cleanup);
 
 function handlers() {
@@ -168,5 +184,40 @@ describe('NotificationDrawerList', () => {
         expect(second.getAttribute('aria-expanded')).toBe('false');
         expect(screen.getByText('reply not_reply_1')).toBeTruthy();
         expect(screen.queryByText('reply not_reply_3')).toBeNull();
+    });
+
+    it('re-renders only the changed row when the drawer re-renders with new handlers and rows', () => {
+        const first = activity('n1', 1, 'friendRequest', 'a');
+        const second = activity('n2', 2, 'friendRequest', 'b');
+        const categories = (
+            rows: NotificationRow[]
+        ): NotificationCategories => ({
+            friend: { unseen: rows, recent: [] },
+            group: { unseen: [], recent: [] },
+            other: { unseen: [], recent: [] }
+        });
+        const view = render(
+            <NotificationDrawerList
+                categories={categories([first, second])}
+                canInviteFromCurrentLocation={false}
+                handlers={handlers()}
+                onNavigateToTable={vi.fn()}
+            />
+        );
+        rowRenders.ids.length = 0;
+
+        view.rerender(
+            <NotificationDrawerList
+                categories={categories([
+                    first,
+                    { ...second, message: 'edited' }
+                ])}
+                canInviteFromCurrentLocation={false}
+                handlers={handlers()}
+                onNavigateToTable={vi.fn()}
+            />
+        );
+
+        expect(rowRenders.ids).toEqual(['n2']);
     });
 });

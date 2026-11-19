@@ -16,6 +16,7 @@ import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
 import { formatDateFilter } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { useNowMs } from '@/lib/useNowMs';
+import { useStableCommands } from '@/lib/useStableCommands';
 import { getNotificationTs } from '@/shared/utils/notificationCategory';
 import { Button } from '@/ui/shadcn/button';
 
@@ -107,6 +108,7 @@ export function NotificationFeed({
     table: AppTable<NotificationRecord>;
 }) {
     const { t } = useTranslation();
+    const stableHandlers = useStableCommands(handlers);
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const scrolledAwayRef = useRef(false);
     const days = useMemo(() => groupByDay(rows), [rows]);
@@ -123,7 +125,7 @@ export function NotificationFeed({
                 nested={nested}
                 currentUserId={currentUserId}
                 canInviteFromCurrentLocation={canInviteFromCurrentLocation}
-                handlers={handlers}
+                handlers={stableHandlers}
             />
         );
     }

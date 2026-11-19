@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+import { IntentTooltip } from '@/ui/hint-tooltip';
 
 import {
     getNotificationActionScopeLabel,
@@ -17,12 +17,9 @@ export function NotificationActionScopeTooltip({
 }) {
     const { t } = useTranslation();
     return (
-        <Tooltip>
-            <TooltipTrigger render={children} />
-            <TooltipContent>
-                {getNotificationActionScopeLabel(scope, t)}
-            </TooltipContent>
-        </Tooltip>
+        <IntentTooltip content={getNotificationActionScopeLabel(scope, t)}>
+            {children}
+        </IntentTooltip>
     );
 }
 

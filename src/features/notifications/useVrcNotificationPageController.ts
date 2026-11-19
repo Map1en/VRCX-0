@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
 import {
@@ -70,21 +70,17 @@ export function useVrcNotificationPageController() {
 
     const pageRows = table.getRowModel().rows.map((row) => row.original);
 
-    const handlers = useMemo<NotificationFeedHandlers>(
-        () => ({
-            onAcceptFriendRequest: actions.acceptFriendRequest,
-            onAcceptRequestInvite: actions.acceptRequestInvite,
-            onDeleteNotification: actions.deleteNotification,
-            onHideNotification: actions.hideNotification,
-            onMarkSeen: actions.markSeen,
-            onOpenImagePreview: actions.openNotificationImagePreview,
-            onOpenLink: actions.openNotificationLink,
-            onSendInviteResponseWithMessage:
-                actions.sendInviteResponseWithMessage,
-            onSendNotificationResponse: actions.sendNotificationResponse
-        }),
-        [actions]
-    );
+    const handlers: NotificationFeedHandlers = {
+        onAcceptFriendRequest: actions.acceptFriendRequest,
+        onAcceptRequestInvite: actions.acceptRequestInvite,
+        onDeleteNotification: actions.deleteNotification,
+        onHideNotification: actions.hideNotification,
+        onMarkSeen: actions.markSeen,
+        onOpenImagePreview: actions.openNotificationImagePreview,
+        onOpenLink: actions.openNotificationLink,
+        onSendInviteResponseWithMessage: actions.sendInviteResponseWithMessage,
+        onSendNotificationResponse: actions.sendNotificationResponse
+    };
 
     return {
         actions,

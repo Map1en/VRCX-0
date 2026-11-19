@@ -1,7 +1,8 @@
 import { CheckCheckIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DeferredDropdownMenu } from '@/components/DeferredDropdownMenu';
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import {
@@ -14,18 +15,15 @@ import { cn } from '@/lib/utils';
 import type { NotificationRow as NotificationRecord } from '@/repositories/notificationPersistenceRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { getDismissResponse } from '@/shared/utils/notificationResponse';
-import { HintTooltip } from '@/ui/hint-tooltip';
+import { IntentTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
-    DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+    DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { useNotificationActionPending } from '../notificationActionPending';
 import { openSender, shouldShowDeleteLog } from '../notificationCenterUtils';
@@ -59,7 +57,7 @@ export type NotificationFeedHandlers = NotificationRowActionHandlers & {
     onOpenLink(link: unknown): void;
 };
 
-export function NotificationRow({
+export const NotificationRow = memo(function NotificationRow({
     notification,
     currentUserId,
     canInviteFromCurrentLocation,
@@ -289,16 +287,11 @@ export function NotificationRow({
                 </NotificationText>
                 <div className="mt-0.5 flex items-center gap-2">
                     <div className="flex min-w-0 flex-1 items-center gap-x-3">
-                        <Tooltip>
-                            <TooltipTrigger
-                                render={
-                                    <span className="text-muted-foreground/60 shrink-0 text-xs tabular-nums">
-                                        {clockLabel}
-                                    </span>
-                                }
-                            />
-                            <TooltipContent>{absoluteLabel}</TooltipContent>
-                        </Tooltip>
+                        <IntentTooltip content={absoluteLabel}>
+                            <span className="text-muted-foreground/60 shrink-0 text-xs tabular-nums">
+                                {clockLabel}
+                            </span>
+                        </IntentTooltip>
                         {expiresLabel ? (
                             <span className="text-muted-foreground shrink-0 text-[11px] leading-4 tabular-nums">
                                 {expiresLabel}
@@ -352,20 +345,18 @@ export function NotificationRow({
                     )}
                 >
                     {hasMenu ? (
-                        <DropdownMenu>
-                            <HintTooltip label={moreActionsLabel}>
-                                <DropdownMenuTrigger
-                                    render={
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                        >
-                                            <MoreHorizontalIcon data-icon="icon" />
-                                        </Button>
-                                    }
-                                />
-                            </HintTooltip>
+                        <DeferredDropdownMenu
+                            label={moreActionsLabel}
+                            trigger={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                >
+                                    <MoreHorizontalIcon data-icon="icon" />
+                                </Button>
+                            }
+                        >
                             <DropdownMenuContent align="end">
                                 <DropdownMenuGroup>
                                     {showMenuMarkRead ? (
@@ -429,7 +420,7 @@ export function NotificationRow({
                                     </>
                                 ) : null}
                             </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DeferredDropdownMenu>
                     ) : null}
                 </span>
                 {view.media && !mediaFailed ? (
@@ -454,4 +445,4 @@ export function NotificationRow({
             </div>
         </div>
     );
-}
+});

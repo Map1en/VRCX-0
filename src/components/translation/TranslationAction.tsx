@@ -1,9 +1,9 @@
 import { LanguagesIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { IntentTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { TranslationStatus } from './types';
 
@@ -43,24 +43,19 @@ export function TranslationAction({
 
     if (density === 'icon') {
         return (
-            <Tooltip>
-                <TooltipTrigger
-                    render={
-                        <Button
-                            type="button"
-                            size="icon-xs"
-                            variant="ghost"
-                            disabled={isLoading}
-                            aria-busy={isLoading}
-                            aria-label={label}
-                            onClick={onClick}
-                        >
-                            {glyph}
-                        </Button>
-                    }
-                />
-                <TooltipContent>{label}</TooltipContent>
-            </Tooltip>
+            <IntentTooltip content={label}>
+                <Button
+                    type="button"
+                    size="icon-xs"
+                    variant="ghost"
+                    disabled={isLoading}
+                    aria-busy={isLoading}
+                    aria-label={label}
+                    onClick={onClick}
+                >
+                    {glyph}
+                </Button>
+            </IntentTooltip>
         );
     }
 
