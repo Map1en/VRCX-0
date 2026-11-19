@@ -222,6 +222,32 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                                 t('common.error.failed_to_load_data')
                             }
                         />
+<<<<<<< HEAD
+                    )
+                ) : hasRows ? (
+                    <GameLogTableShell
+                        table={table}
+                        rows={rowsState.rows}
+                        pageCount={pageCount}
+                        pageSizes={tableState.pageSizes}
+                        setPagination={tableState.setPagination}
+                    />
+                ) : (
+                    <GameLogEmptyState
+                        icon={emptyIcon}
+                        title={t(emptyTitleKey)}
+                        description={
+                            filters.favoritesOnly &&
+                            !rowsState.isFavoritesLoaded
+                                ? t(
+                                      'view.game_log.description.favorites_are_still_hydrating'
+                                  )
+                                : t(emptyDescriptionKey)
+                        }
+                    />
+                )}
+            </PageBody>
+=======
                     ) : filters.viewMode === 'sessions' ? (
                         hasSessions ? (
                             <GameLogSessionAffinityContext
@@ -266,6 +292,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                     )}
                 </PageBody>
             </GameLogFilterCommandsContext>
+>>>>>>> 8c88c5b0c9d6bec0a5241580c3343dc29fdc9c4d
             <PreviousInstancesTableDialog
                 open={previousInstancesDialog.open}
                 onOpenChange={previousInstancesDialog.setOpen}
