@@ -1,8 +1,9 @@
 import { DownloadIcon, Loader2Icon, RefreshCwIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { AppRow, AppTable } from '@/components/data-table/appTable';
 import {
     DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
@@ -45,6 +46,8 @@ import {
 } from './groupModerationRows';
 import {
     getGroupModerationColumnIds,
+    GroupModerationRowContext,
+    GroupModerationSelectionContext,
     useGroupModerationColumns
 } from './useGroupModerationColumns';
 import { useGroupModerationTable } from './useGroupModerationTable';
@@ -77,6 +80,51 @@ export interface GroupModerationServerControl {
     onLoadMore: () => void;
     loadedCount: number;
 }
+
+const GroupModerationTableRow = memo(
+    function GroupModerationTableRow({
+        row,
+        table,
+        selected,
+        actionKey
+    }: {
+        row: AppRow<EntityRecord>;
+        table: AppTable<EntityRecord>;
+        columnsKey: string;
+        selected: boolean;
+        actionKey: string;
+    }) {
+        return (
+            <GroupModerationRowContext value={{ selected, actionKey }}>
+                <DataTableRow
+                    data-state={selected ? 'selected' : undefined}
+                    className={cn(
+                        'border-l-2 border-l-transparent',
+                        selected &&
+                            SELECTED_ROW_ACCENT_CLASS[
+                                moderationStatusTone(
+                                    moderationRowStatus(row.original)
+                                )
+                            ]
+                    )}
+                >
+                    <DataTableColumnSortableContext table={table}>
+                        {row.getVisibleCells().map((cell) => (
+                            <ResizableTableCell key={cell.id} cell={cell} />
+                        ))}
+                    </DataTableColumnSortableContext>
+                </DataTableRow>
+            </GroupModerationRowContext>
+        );
+    },
+    (prev, next) =>
+        prev.row.original === next.row.original &&
+        prev.table.store === next.table.store &&
+        prev.table.options.columns === next.table.options.columns &&
+        prev.columnsKey === next.columnsKey &&
+        prev.selected === next.selected &&
+        prev.actionKey === next.actionKey
+);
 
 export function GroupModerationTabPanel({
     actionKey,
@@ -129,14 +177,12 @@ export function GroupModerationTabPanel({
     }, [group, rows, search, server]);
 
     const columns = useGroupModerationColumns({
-        actionKey,
         group,
         onOpenUser,
         onRunAction,
         onToggleAllVisible,
         onToggleRow,
         selectable,
-        selectedIds: selectedIds || null,
         sortable,
         tab: tab.value
     });
@@ -152,6 +198,10 @@ export function GroupModerationTabPanel({
             rows: filteredRows,
             tableId: `group-moderation:${tab.value}`
         });
+    const columnsKey = table
+        .getVisibleLeafColumns()
+        .map((column) => column.id)
+        .join('|');
 
     useEffect(() => {
         setPagination((current) => ({ ...current, pageIndex: 0 }));
@@ -309,74 +359,60 @@ export function GroupModerationTabPanel({
             {!loading && !error ? (
                 <DataTableSurface>
                     <DataTableScrollArea>
-                        <DataTableColumnDndProvider table={table}>
-                            <Table
-                                className="table-fixed"
-                                style={getDataTableSizingStyle(table)}
-                            >
-                                <DataTableColumnSizeColGroup table={table} />
-                                <DataTableHeader table={table} />
-                                <TableBody>
-                                    {table.getRowModel().rows.length ? (
-                                        table.getRowModel().rows.map((row) => {
-                                            const userId = moderationRowUserId(
-                                                row.original
-                                            );
-                                            const isSelected = Boolean(
-                                                selectable &&
-                                                userId &&
-                                                selectedIds?.has(userId)
-                                            );
-                                            return (
-                                                <DataTableRow
-                                                    key={row.id}
-                                                    data-state={
-                                                        isSelected
-                                                            ? 'selected'
-                                                            : undefined
-                                                    }
-                                                    className={cn(
-                                                        'border-l-2 border-l-transparent',
-                                                        isSelected &&
-                                                            SELECTED_ROW_ACCENT_CLASS[
-                                                                moderationStatusTone(
-                                                                    moderationRowStatus(
-                                                                        row.original
-                                                                    )
+                        <GroupModerationSelectionContext value={selectedIds}>
+                            <DataTableColumnDndProvider table={table}>
+                                <Table
+                                    className="table-fixed"
+                                    style={getDataTableSizingStyle(table)}
+                                >
+                                    <DataTableColumnSizeColGroup
+                                        table={table}
+                                    />
+                                    <DataTableHeader table={table} />
+                                    <TableBody>
+                                        {table.getRowModel().rows.length ? (
+                                            table
+                                                .getRowModel()
+                                                .rows.map((row) => {
+                                                    const userId =
+                                                        moderationRowUserId(
+                                                            row.original
+                                                        );
+                                                    return (
+                                                        <GroupModerationTableRow
+                                                            key={row.id}
+                                                            row={row}
+                                                            table={table}
+                                                            columnsKey={
+                                                                columnsKey
+                                                            }
+                                                            selected={Boolean(
+                                                                selectable &&
+                                                                userId &&
+                                                                selectedIds?.has(
+                                                                    userId
                                                                 )
-                                                            ]
-                                                    )}
-                                                >
-                                                    <DataTableColumnSortableContext
-                                                        table={table}
-                                                    >
-                                                        {row
-                                                            .getVisibleCells()
-                                                            .map((cell) => (
-                                                                <ResizableTableCell
-                                                                    key={
-                                                                        cell.id
-                                                                    }
-                                                                    cell={cell}
-                                                                />
-                                                            ))}
-                                                    </DataTableColumnSortableContext>
-                                                </DataTableRow>
-                                            );
-                                        })
-                                    ) : (
-                                        <DataTableEmptyRow
-                                            colSpan={
-                                                table.getVisibleLeafColumns()
-                                                    .length || 1
-                                            }
-                                        >
-                                            {emptyMessage}
-                                        </DataTableEmptyRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </DataTableColumnDndProvider>
+                                                            )}
+                                                            actionKey={
+                                                                actionKey
+                                                            }
+                                                        />
+                                                    );
+                                                })
+                                        ) : (
+                                            <DataTableEmptyRow
+                                                colSpan={
+                                                    table.getVisibleLeafColumns()
+                                                        .length || 1
+                                                }
+                                            >
+                                                {emptyMessage}
+                                            </DataTableEmptyRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </DataTableColumnDndProvider>
+                        </GroupModerationSelectionContext>
                     </DataTableScrollArea>
                 </DataTableSurface>
             ) : null}

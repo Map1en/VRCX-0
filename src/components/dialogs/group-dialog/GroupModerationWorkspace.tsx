@@ -2,6 +2,7 @@ import { UploadIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FreezeWhenHidden } from '@/components/FreezeWhenHidden';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
 import type { GroupMemberSort } from '@/platform/tauri/bindings';
@@ -262,48 +263,55 @@ export function GroupModerationWorkspace({
                             open
                         />
                     ) : (
-                        <GroupModerationTabPanel
+                        <FreezeWhenHidden
                             key={tab.value}
-                            actionKey={actions.actionKey}
-                            error={error}
-                            group={group}
-                            loading={loading}
-                            onOpenUser={openModerationUserDialog}
-                            onReload={reload}
-                            onRunAction={actions.runAction}
-                            onToggleAllVisible={batch.toggleSelectedVisible}
-                            onToggleRow={batch.toggleSelectedRow}
-                            rows={rows}
-                            selectable={
-                                tab.value === 'bans' || tab.value === 'members'
-                            }
-                            selectedIds={batch.selectedIds || undefined}
-                            server={
-                                tab.value === 'members'
-                                    ? membersServerControl
-                                    : undefined
-                            }
-                            tab={tab}
-                            toolbarExtra={
-                                tab.value === 'bans' &&
-                                hasGroupPermission(
-                                    group,
-                                    'group-bans-manage'
-                                ) ? (
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setBanImportOpen(true)}
-                                    >
-                                        <UploadIcon data-icon="inline-start" />
-                                        {t(
-                                            'dialog.group_member_moderation.import_bans'
-                                        )}
-                                    </Button>
-                                ) : null
-                            }
-                        />
+                            active={activeTab === tab.value}
+                        >
+                            <GroupModerationTabPanel
+                                actionKey={actions.actionKey}
+                                error={error}
+                                group={group}
+                                loading={loading}
+                                onOpenUser={openModerationUserDialog}
+                                onReload={reload}
+                                onRunAction={actions.runAction}
+                                onToggleAllVisible={batch.toggleSelectedVisible}
+                                onToggleRow={batch.toggleSelectedRow}
+                                rows={rows}
+                                selectable={
+                                    tab.value === 'bans' ||
+                                    tab.value === 'members'
+                                }
+                                selectedIds={batch.selectedIds || undefined}
+                                server={
+                                    tab.value === 'members'
+                                        ? membersServerControl
+                                        : undefined
+                                }
+                                tab={tab}
+                                toolbarExtra={
+                                    tab.value === 'bans' &&
+                                    hasGroupPermission(
+                                        group,
+                                        'group-bans-manage'
+                                    ) ? (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                                setBanImportOpen(true)
+                                            }
+                                        >
+                                            <UploadIcon data-icon="inline-start" />
+                                            {t(
+                                                'dialog.group_member_moderation.import_bans'
+                                            )}
+                                        </Button>
+                                    ) : null
+                                }
+                            />
+                        </FreezeWhenHidden>
                     )
                 )}
             </Tabs>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { createContext, use, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumn, AppColumnDef } from '@/components/data-table/appTable';
@@ -15,9 +15,10 @@ import {
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
 import { formatDateFilter } from '@/lib/dateTime';
+import { useStableCommands } from '@/lib/useStableCommands';
+import { IntentTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { GroupModerationTabValue } from './groupDialogUtils';
 import {
@@ -65,30 +66,131 @@ export function getGroupModerationColumnIds(selectable: boolean): string[] {
         : [...GROUP_MODERATION_BASE_COLUMN_IDS];
 }
 
+export const GroupModerationSelectionContext = createContext<
+    ReadonlySet<string> | undefined
+>(undefined);
+
+export const GroupModerationRowContext = createContext({
+    selected: false,
+    actionKey: ''
+});
+
+function SelectAllCheckbox({
+    visibleUserIds,
+    onToggleAllVisible
+}: {
+    visibleUserIds: string[];
+    onToggleAllVisible?: (userIds: string[], checked: boolean) => void;
+}) {
+    const { t } = useTranslation();
+    const selectedIds = use(GroupModerationSelectionContext);
+    const allSelected =
+        visibleUserIds.length > 0 &&
+        visibleUserIds.every((userId) => selectedIds?.has(userId));
+    return (
+        <Checkbox
+            checked={allSelected}
+            disabled={!visibleUserIds.length}
+            aria-label={t('dialog.group_member_moderation.select_all')}
+            onCheckedChange={(checked) =>
+                onToggleAllVisible?.(visibleUserIds, Boolean(checked))
+            }
+        />
+    );
+}
+
+function RowSelectCheckbox({
+    record,
+    onToggleRow
+}: {
+    record: EntityRecord;
+    onToggleRow?: (userId: string, checked: boolean) => void;
+}) {
+    const { selected } = use(GroupModerationRowContext);
+    const userId = moderationRowUserId(record);
+    return (
+        <Checkbox
+            checked={selected}
+            disabled={!userId}
+            aria-label={moderationRowLabel(record)}
+            onCheckedChange={(checked) =>
+                userId && onToggleRow?.(userId, Boolean(checked))
+            }
+        />
+    );
+}
+
+function RowActions({
+    record,
+    tab,
+    onRunAction
+}: {
+    record: EntityRecord;
+    tab: GroupModerationTabValue;
+    onRunAction: (action: GroupModerationAction, row: EntityRecord) => void;
+}) {
+    const { t } = useTranslation();
+    const { actionKey } = use(GroupModerationRowContext);
+    const userId = moderationRowUserId(record);
+    const actions = getGroupModerationActions(tab, record, t);
+    if (!actions.length) {
+        return null;
+    }
+    return (
+        <div className="flex justify-end gap-2">
+            {actions.map((action) => {
+                const nextActionKey = `${tab}:${action.key}:${userId}`;
+                const isRunning = actionKey === nextActionKey;
+                return (
+                    <Button
+                        key={action.key}
+                        type="button"
+                        size="sm"
+                        variant={
+                            DANGER_ACTION_KEYS.has(action.key)
+                                ? 'destructive'
+                                : action.destructive
+                                  ? 'outline'
+                                  : 'secondary'
+                        }
+                        className="transition-transform duration-[140ms] ease-out active:scale-[0.97]"
+                        disabled={Boolean(actionKey)}
+                        onClick={() => onRunAction(action, record)}
+                    >
+                        {isRunning ? '...' : action.label}
+                    </Button>
+                );
+            })}
+        </div>
+    );
+}
+
 export function useGroupModerationColumns({
-    actionKey,
     group,
     onOpenUser,
     onRunAction,
     onToggleAllVisible,
     onToggleRow,
     selectable,
-    selectedIds,
     sortable,
     tab
 }: {
-    actionKey: string;
     group: GroupProfileRecord;
     onOpenUser: (row: EntityRecord) => void;
     onRunAction: (action: GroupModerationAction, row: EntityRecord) => void;
     onToggleAllVisible?: (userIds: string[], checked: boolean) => void;
     onToggleRow?: (userId: string, checked: boolean) => void;
     selectable: boolean;
-    selectedIds: ReadonlySet<string> | null;
     sortable: boolean;
     tab: GroupModerationTabValue;
 }): AppColumnDef<EntityRecord>[] {
     const { t } = useTranslation();
+    const commands = useStableCommands({
+        onOpenUser,
+        onRunAction,
+        onToggleAllVisible,
+        onToggleRow
+    });
 
     return useMemo<AppColumnDef<EntityRecord>[]>(() => {
         const columns: AppColumnDef<EntityRecord>[] = [];
@@ -106,48 +208,23 @@ export function useGroupModerationColumns({
                 enableSorting: false,
                 enableHiding: false,
                 enableResizing: false,
-                header: ({ table }) => {
-                    const visibleUserIds = table
-                        .getRowModel()
-                        .rows.map((row) => moderationRowUserId(row.original))
-                        .filter(Boolean);
-                    const allSelected =
-                        visibleUserIds.length > 0 &&
-                        visibleUserIds.every((userId) =>
-                            selectedIds?.has(userId)
-                        );
-                    return (
-                        <Checkbox
-                            checked={allSelected}
-                            disabled={!visibleUserIds.length}
-                            aria-label={t(
-                                'dialog.group_member_moderation.select_all'
-                            )}
-                            onCheckedChange={(checked) =>
-                                onToggleAllVisible?.(
-                                    visibleUserIds,
-                                    Boolean(checked)
-                                )
-                            }
-                        />
-                    );
-                },
-                cell: ({ row }) => {
-                    const userId = moderationRowUserId(row.original);
-                    return (
-                        <Checkbox
-                            checked={Boolean(
-                                userId && selectedIds?.has(userId)
-                            )}
-                            disabled={!userId}
-                            aria-label={moderationRowLabel(row.original)}
-                            onCheckedChange={(checked) =>
-                                userId &&
-                                onToggleRow?.(userId, Boolean(checked))
-                            }
-                        />
-                    );
-                }
+                header: ({ table }) => (
+                    <SelectAllCheckbox
+                        visibleUserIds={table
+                            .getRowModel()
+                            .rows.map((row) =>
+                                moderationRowUserId(row.original)
+                            )
+                            .filter(Boolean)}
+                        onToggleAllVisible={commands.onToggleAllVisible}
+                    />
+                ),
+                cell: ({ row }) => (
+                    <RowSelectCheckbox
+                        record={row.original}
+                        onToggleRow={commands.onToggleRow}
+                    />
+                )
             });
         }
 
@@ -174,7 +251,7 @@ export function useGroupModerationColumns({
                         type="button"
                         variant="ghost"
                         className="h-auto w-full min-w-0 justify-start truncate p-0 text-left font-medium hover:bg-transparent"
-                        onClick={() => onOpenUser(row.original)}
+                        onClick={() => commands.onOpenUser(row.original)}
                     >
                         {label}
                     </Button>
@@ -203,18 +280,14 @@ export function useGroupModerationColumns({
                     );
                 }
                 return (
-                    <Tooltip>
-                        <TooltipTrigger
-                            render={
-                                <span className="text-muted-foreground block truncate text-xs">
-                                    {detail}
-                                </span>
-                            }
-                        />
-                        <TooltipContent className="max-w-xs whitespace-normal">
+                    <IntentTooltip
+                        content={detail}
+                        contentClassName="max-w-xs whitespace-normal"
+                    >
+                        <span className="text-muted-foreground block truncate text-xs">
                             {detail}
-                        </TooltipContent>
-                    </Tooltip>
+                        </span>
+                    </IntentTooltip>
                 );
             }
         });
@@ -290,56 +363,15 @@ export function useGroupModerationColumns({
                     {t('dialog.group.label.actions')}
                 </DataTableHeaderLabel>
             ),
-            cell: ({ row }) => {
-                const userId = moderationRowUserId(row.original);
-                const actions = getGroupModerationActions(tab, row.original, t);
-                if (!actions.length) {
-                    return null;
-                }
-                return (
-                    <div className="flex justify-end gap-2">
-                        {actions.map((action) => {
-                            const nextActionKey = `${tab}:${action.key}:${userId}`;
-                            const isRunning = actionKey === nextActionKey;
-                            return (
-                                <Button
-                                    key={action.key}
-                                    type="button"
-                                    size="sm"
-                                    variant={
-                                        DANGER_ACTION_KEYS.has(action.key)
-                                            ? 'destructive'
-                                            : action.destructive
-                                              ? 'outline'
-                                              : 'secondary'
-                                    }
-                                    className="transition-transform duration-[140ms] ease-out active:scale-[0.97]"
-                                    disabled={Boolean(actionKey)}
-                                    onClick={() =>
-                                        onRunAction(action, row.original)
-                                    }
-                                >
-                                    {isRunning ? '...' : action.label}
-                                </Button>
-                            );
-                        })}
-                    </div>
-                );
-            }
+            cell: ({ row }) => (
+                <RowActions
+                    record={row.original}
+                    tab={tab}
+                    onRunAction={commands.onRunAction}
+                />
+            )
         });
 
         return columns;
-    }, [
-        actionKey,
-        group,
-        onOpenUser,
-        onRunAction,
-        onToggleAllVisible,
-        onToggleRow,
-        selectable,
-        selectedIds,
-        sortable,
-        t,
-        tab
-    ]);
+    }, [commands, group, selectable, sortable, t, tab]);
 }
