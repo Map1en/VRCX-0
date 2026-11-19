@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from 'react';
 
 import {
+    GALLERY_GRID_SECTION_HEADER_HEIGHT,
+    type ScreenshotGallerySection
+} from '@/components/media/useScreenshotGalleryGrid';
+import {
     getVisibleKnownSizeRows,
     positionKnownSizeRows
 } from '@/lib/knownSizeVirtualRows';
@@ -14,6 +18,13 @@ type TileGridRow<T> = {
     key: string;
     height: number;
     items: T[];
+    section?: ScreenshotGallerySection;
+};
+
+export type TileGridSection<T> = {
+    key: string;
+    label: string;
+    items: readonly T[];
 };
 
 function measureTileGrid({
@@ -47,38 +58,56 @@ function measureTileGrid({
 }
 
 function buildTileGridRows<T>({
-    items,
+    sections,
     columnCount,
     tileHeight,
     gap
 }: {
-    items: readonly T[];
+    sections: readonly TileGridSection<T>[];
     columnCount: number;
     tileHeight: number;
     gap: number;
 }) {
     const rows: TileGridRow<T>[] = [];
-    for (let index = 0; index < items.length; index += columnCount) {
-        const rowItems = items.slice(index, index + columnCount);
-        const isLastRow = index + columnCount >= items.length;
-        rows.push({
-            key: `tile-row:${index}`,
-            height: tileHeight + (isLastRow ? 0 : gap),
-            items: rowItems
-        });
+    for (const section of sections) {
+        if (section.label) {
+            rows.push({
+                key: `tile-section:${section.key}`,
+                height: GALLERY_GRID_SECTION_HEADER_HEIGHT,
+                items: [],
+                section: {
+                    key: section.key,
+                    label: section.label,
+                    count: section.items.length
+                }
+            });
+        }
+        const { items } = section;
+        for (let index = 0; index < items.length; index += columnCount) {
+            const isLastRow = index + columnCount >= items.length;
+            rows.push({
+                key: `tile-row:${section.key}:${index}`,
+                height: tileHeight + (isLastRow ? 0 : gap),
+                items: items.slice(index, index + columnCount)
+            });
+        }
     }
     return positionKnownSizeRows(rows);
 }
 
+type TileGridSource<T> =
+    | { items: readonly T[]; sections?: never }
+    | { items?: never; sections: readonly TileGridSection<T>[] };
+
 export function useVirtualTileGrid<T>({
     items,
+    sections,
     minTileWidth,
     gap,
     aspectRatio,
     extraHeight = 0,
     resetKey
-}: {
-    items: readonly T[];
+}: TileGridSource<T> & {
     minTileWidth: number;
     gap: number;
     aspectRatio: number;
@@ -102,12 +131,12 @@ export function useVirtualTileGrid<T>({
     const positionedRows = useMemo(
         () =>
             buildTileGridRows({
-                items,
+                sections: sections ?? [{ key: '', label: '', items }],
                 columnCount,
                 tileHeight,
                 gap
             }),
-        [columnCount, gap, items, tileHeight]
+        [columnCount, gap, items, sections, tileHeight]
     );
 
     const visibleRows = useMemo(

@@ -69,6 +69,7 @@ import {
 import { screenshotDayKey } from '../screenshotTimeline';
 import { useClearSelectionOnEscape } from '../useClearSelectionOnEscape';
 import type { useScreenshotBrowseSelection } from '../useScreenshotBrowseSelection';
+import type { TileGridSection } from '../useVirtualTileGrid';
 import { GallerySelectionBar } from './GallerySelectionBar';
 import { ScreenshotAlbumGrid } from './ScreenshotAlbumGrid';
 import { EmptyState } from './ScreenshotMetadataParts';
@@ -90,7 +91,7 @@ export type ScreenshotAlbumKind = 'world' | 'person';
 
 export type ScreenshotGalleryAlbums = {
     worlds: readonly ScreenshotFacet[];
-    people: readonly ScreenshotFacet[];
+    people: readonly TileGridSection<ScreenshotFacet>[];
     onOpen: (kind: ScreenshotAlbumKind, facet: ScreenshotFacet) => void;
 };
 
@@ -666,12 +667,20 @@ export function ScreenshotGalleryView({
     const activeFolder =
         folderTree?.folders.find((folder) => folder.path === selectedFolder) ||
         root;
-    const albumFacets =
+    const worldSections = useMemo(
+        () => [{ key: 'worlds', label: '', items: albums.worlds }],
+        [albums.worlds]
+    );
+    const albumSections =
         albumKind === 'world'
-            ? albums.worlds
+            ? worldSections
             : albumKind === 'person'
               ? albums.people
               : [];
+    const albumCount = albumSections.reduce(
+        (total, section) => total + section.items.length,
+        0
+    );
     const activeFolderPath =
         isLoadedImageList || albumKind
             ? ''
@@ -847,7 +856,7 @@ export function ScreenshotGalleryView({
                                       albumKind === 'world'
                                           ? 'dialog.screenshot_metadata.world_album_count'
                                           : 'dialog.screenshot_metadata.people_album_count',
-                                      { count: albumFacets.length }
+                                      { count: albumCount }
                                   )
                                 : t('dialog.screenshot_metadata.image_count', {
                                       count: images.length
@@ -930,7 +939,7 @@ export function ScreenshotGalleryView({
                 </div>
                 {albumKind ? (
                     <ScreenshotAlbumGrid
-                        facets={albumFacets}
+                        sections={albumSections}
                         resetKey={albumKind}
                         onOpen={(facet) => albums.onOpen(albumKind, facet)}
                     />

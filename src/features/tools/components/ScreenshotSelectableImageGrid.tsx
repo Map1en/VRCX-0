@@ -24,7 +24,7 @@ import {
 } from '../screenshotTimeline';
 import { ScreenshotTimelineScrubber } from './ScreenshotTimelineScrubber';
 
-function ScreenshotGridSectionHeader({
+export function ScreenshotGridSectionHeader({
     section,
     className,
     top

@@ -51,6 +51,7 @@ import {
     parseScreenshotFilterParam,
     resolvePathAfterScreenshotDelete,
     SCREENSHOT_FAVORITES_FOLDER,
+    SCREENSHOT_PEOPLE_FOLDER,
     screenshotFilterFromScope,
     screenshotScopeFromFilter,
     type ScreenshotSearchScope
@@ -62,6 +63,7 @@ import { useScreenshotFavorites } from './useScreenshotFavorites';
 import { useScreenshotGalleryController } from './useScreenshotGalleryController';
 import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigation';
 import { useScreenshotMetadataSearch } from './useScreenshotMetadataSearch';
+import { useScreenshotPeopleSections } from './useScreenshotPeopleSections';
 import { useScreenshotSearchFacets } from './useScreenshotSearchFacets';
 import { useScreenshotZipExport } from './useScreenshotZipExport';
 
@@ -184,6 +186,10 @@ export function ScreenshotMetadataPage() {
     const { peopleFacets, worldFacets } = useScreenshotSearchFacets(
         Boolean(screenshotCacheStatus?.available),
         lastScanAt
+    );
+    const peopleSections = useScreenshotPeopleSections(
+        peopleFacets,
+        selectedGalleryFolder === SCREENSHOT_PEOPLE_FOLDER
     );
     useEffect(() => {
         if (lastScanAt) {
@@ -998,7 +1004,7 @@ export function ScreenshotMetadataPage() {
                     }}
                     albums={{
                         worlds: worldFacets,
-                        people: peopleFacets,
+                        people: peopleSections,
                         onOpen: openScreenshotAlbum
                     }}
                 />

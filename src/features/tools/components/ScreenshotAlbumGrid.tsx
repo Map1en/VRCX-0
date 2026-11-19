@@ -7,7 +7,10 @@ import type { ScreenshotFacet } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
-import { useVirtualTileGrid } from '../useVirtualTileGrid';
+import {
+    useVirtualTileGrid,
+    type TileGridSection
+} from '../useVirtualTileGrid';
 import { EmptyState } from './ScreenshotMetadataParts';
 import { VirtualTileGridRows } from './VirtualTileGridRows';
 
@@ -74,17 +77,17 @@ function getFacetKey(facet: ScreenshotFacet) {
 }
 
 export function ScreenshotAlbumGrid({
-    facets,
+    sections,
     resetKey,
     onOpen
 }: {
-    facets: readonly ScreenshotFacet[];
+    sections: readonly TileGridSection<ScreenshotFacet>[];
     resetKey: string;
     onOpen: (facet: ScreenshotFacet) => void;
 }) {
     const { t } = useTranslation();
     const tileGrid = useVirtualTileGrid({
-        items: facets,
+        sections,
         minTileWidth: ALBUM_TILE_MIN_WIDTH,
         gap: ALBUM_TILE_GAP,
         aspectRatio: ALBUM_COVER_ASPECT_RATIO,
@@ -92,7 +95,7 @@ export function ScreenshotAlbumGrid({
         resetKey
     });
 
-    if (!facets.length) {
+    if (!sections.some((section) => section.items.length)) {
         return (
             <EmptyState
                 title={t('dialog.screenshot_metadata.empty_albums')}

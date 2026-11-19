@@ -40,7 +40,7 @@ describe('ScreenshotAlbumGrid', () => {
 
         const view = render(
             <ScreenshotAlbumGrid
-                facets={facets}
+                sections={[{ key: 'worlds', label: '', items: facets }]}
                 resetKey="world"
                 onOpen={() => {}}
             />
@@ -54,5 +54,41 @@ describe('ScreenshotAlbumGrid', () => {
             '.absolute.inset-x-0'
         );
         expect(rows[1]?.style.top).toBe('179px');
+    });
+
+    it('renders a header above each people section', () => {
+        vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+            800
+        );
+        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(
+            800
+        );
+        const person = (id: string): ScreenshotFacet => ({
+            id,
+            name: id,
+            count: 1,
+            lastCapturedAtMs: 0,
+            coverPath: ''
+        });
+
+        render(
+            <ScreenshotAlbumGrid
+                sections={[
+                    {
+                        key: 'friends',
+                        label: 'Friends',
+                        items: [person('usr_a')]
+                    },
+                    { key: 'others', label: 'Others', items: [person('usr_b')] }
+                ]}
+                resetKey="person"
+                onOpen={() => {}}
+            />
+        );
+
+        const text = document.body.textContent ?? '';
+        expect(text.indexOf('Friends')).toBeLessThan(text.indexOf('usr_a'));
+        expect(text.indexOf('usr_a')).toBeLessThan(text.indexOf('Others'));
+        expect(text.indexOf('Others')).toBeLessThan(text.indexOf('usr_b'));
     });
 });
