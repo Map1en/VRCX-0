@@ -11,7 +11,7 @@ import {
     UsersIcon,
     type LucideIcon
 } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDefaultLayout } from 'react-resizable-panels';
 
@@ -28,6 +28,7 @@ import {
     type ScreenshotGridSort
 } from '@/components/media/screenshotGridPreferences';
 import { formatScreenshotDay } from '@/lib/dateTime';
+import { useStableCommands } from '@/lib/useStableCommands';
 import { cn } from '@/lib/utils';
 import {
     commands,
@@ -287,7 +288,17 @@ function folderContainsSelected(
     );
 }
 
-function FolderTreeNode({
+const FolderTreeNode = memo(
+    FolderTreeNodeView,
+    (prev, next) =>
+        prev.node === next.node &&
+        prev.onSelectFolder === next.onSelectFolder &&
+        (prev.selectedFolder === next.selectedFolder ||
+            (!folderContainsSelected(prev.node, prev.selectedFolder) &&
+                !folderContainsSelected(next.node, next.selectedFolder)))
+);
+
+function FolderTreeNodeView({
     node,
     selectedFolder,
     onSelectFolder
@@ -631,6 +642,9 @@ export function ScreenshotGalleryView({
     onSortChange: (value: ScreenshotGridSort) => void;
 }) {
     const { i18n, t } = useTranslation();
+    const { onSelectFolder: selectFolder } = useStableCommands({
+        onSelectFolder
+    });
     const isFavoritesFolder = selectedFolder === SCREENSHOT_FAVORITES_FOLDER;
     const isTimelineFolder = selectedFolder === SCREENSHOT_TIMELINE_FOLDER;
     const albumKind: ScreenshotAlbumKind | null =
@@ -793,7 +807,7 @@ export function ScreenshotGalleryView({
                             <FolderTreeNode
                                 node={root}
                                 selectedFolder={selectedFolder}
-                                onSelectFolder={onSelectFolder}
+                                onSelectFolder={selectFolder}
                             />
                         </div>
                     ) : (
@@ -917,6 +931,7 @@ export function ScreenshotGalleryView({
                 {albumKind ? (
                     <ScreenshotAlbumGrid
                         facets={albumFacets}
+                        resetKey={albumKind}
                         onOpen={(facet) => albums.onOpen(albumKind, facet)}
                     />
                 ) : (

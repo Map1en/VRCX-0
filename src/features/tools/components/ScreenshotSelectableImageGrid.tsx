@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -14,6 +14,7 @@ import {
     useScreenshotGalleryGrid,
     type ScreenshotGallerySection
 } from '@/components/media/useScreenshotGalleryGrid';
+import { useStableCommands } from '@/lib/useStableCommands';
 import { cn } from '@/lib/utils';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
@@ -46,6 +47,58 @@ function ScreenshotGridSectionHeader({
         </div>
     );
 }
+
+const SelectableScreenshotTile = memo(function SelectableScreenshotTile({
+    compact,
+    item,
+    title,
+    selected,
+    selectionActive,
+    favorite,
+    onOpen,
+    onToggleSelect,
+    onToggleFavorite
+}: {
+    compact: boolean;
+    item: ScreenshotLibraryImage;
+    title: string | undefined;
+    selected: boolean;
+    selectionActive: boolean;
+    favorite: boolean;
+    onOpen: (path: string) => void;
+    onToggleSelect: (path: string, checked: boolean, shift: boolean) => void;
+    onToggleFavorite: ((path: string, favorite: boolean) => void) | undefined;
+}) {
+    const { t } = useTranslation();
+    return (
+        <ScreenshotThumbnailCard
+            compact={compact}
+            fadeIn={false}
+            item={item}
+            onOpen={onOpen}
+            title={title}
+            selectable
+            selected={selected}
+            selectionActive={selectionActive}
+            selectLabel={`${t('common.actions.select')} ${item.fileName}`}
+            onToggleSelect={(checked, shift) =>
+                onToggleSelect(item.path, checked, shift)
+            }
+            favorite={favorite}
+            favoriteLabel={t(
+                favorite
+                    ? 'dialog.screenshot_metadata.unfavorite'
+                    : 'dialog.screenshot_metadata.favorite'
+            )}
+            onToggleFavorite={
+                onToggleFavorite
+                    ? (nextFavorite) =>
+                          onToggleFavorite(item.path, nextFavorite)
+                    : undefined
+            }
+        />
+    );
+});
 
 export function ScreenshotSelectableImageGrid({
     density,
@@ -81,7 +134,6 @@ export function ScreenshotSelectableImageGrid({
         label: string;
     };
 }) {
-    const { t } = useTranslation();
     const {
         gridColumnCount,
         gridGap,
@@ -116,6 +168,11 @@ export function ScreenshotSelectableImageGrid({
         [visibleRows]
     );
     const titleMap = useScreenshotThumbnailTitleMap(visibleItems);
+    const tileCommands = useStableCommands({
+        onOpen,
+        onToggleSelect,
+        onToggleFavorite
+    });
 
     return (
         <div className="flex min-h-0 flex-1">
@@ -152,47 +209,26 @@ export function ScreenshotSelectableImageGrid({
                                 >
                                     {row.items.map(
                                         (item: ScreenshotLibraryImage) => (
-                                            <ScreenshotThumbnailCard
-                                                compact={compactCard}
-                                                fadeIn={false}
+                                            <SelectableScreenshotTile
                                                 key={item.path}
+                                                compact={compactCard}
                                                 item={item}
-                                                onOpen={onOpen}
                                                 title={titleMap.get(item.path)}
-                                                selectable
                                                 selected={selectedKeysSet.has(
                                                     item.path
                                                 )}
                                                 selectionActive={hasSelection}
-                                                selectLabel={`${t('common.actions.select')} ${item.fileName}`}
-                                                onToggleSelect={(
-                                                    checked,
-                                                    shift
-                                                ) =>
-                                                    onToggleSelect(
-                                                        item.path,
-                                                        checked,
-                                                        shift
-                                                    )
-                                                }
-                                                favorite={favoritePaths?.has(
-                                                    item.path
-                                                )}
-                                                favoriteLabel={t(
+                                                favorite={
                                                     favoritePaths?.has(
                                                         item.path
-                                                    )
-                                                        ? 'dialog.screenshot_metadata.unfavorite'
-                                                        : 'dialog.screenshot_metadata.favorite'
-                                                )}
+                                                    ) === true
+                                                }
+                                                onOpen={tileCommands.onOpen}
+                                                onToggleSelect={
+                                                    tileCommands.onToggleSelect
+                                                }
                                                 onToggleFavorite={
-                                                    onToggleFavorite
-                                                        ? (favorite) =>
-                                                              onToggleFavorite(
-                                                                  item.path,
-                                                                  favorite
-                                                              )
-                                                        : undefined
+                                                    tileCommands.onToggleFavorite
                                                 }
                                             />
                                         )

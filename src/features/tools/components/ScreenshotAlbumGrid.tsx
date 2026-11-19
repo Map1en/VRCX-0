@@ -7,7 +7,9 @@ import type { ScreenshotFacet } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
+import { useVirtualTileGrid } from '../useVirtualTileGrid';
 import { EmptyState } from './ScreenshotMetadataParts';
+import { VirtualTileGridRows } from './VirtualTileGridRows';
 
 function ScreenshotAlbumCard({
     facet,
@@ -62,14 +64,33 @@ function ScreenshotAlbumCard({
     );
 }
 
+const ALBUM_TILE_MIN_WIDTH = 180;
+const ALBUM_TILE_GAP = 12;
+const ALBUM_COVER_ASPECT_RATIO = 16 / 9;
+const ALBUM_CAPTION_HEIGHT = 60;
+
+function getFacetKey(facet: ScreenshotFacet) {
+    return facet.id;
+}
+
 export function ScreenshotAlbumGrid({
     facets,
+    resetKey,
     onOpen
 }: {
     facets: readonly ScreenshotFacet[];
+    resetKey: string;
     onOpen: (facet: ScreenshotFacet) => void;
 }) {
     const { t } = useTranslation();
+    const tileGrid = useVirtualTileGrid({
+        items: facets,
+        minTileWidth: ALBUM_TILE_MIN_WIDTH,
+        gap: ALBUM_TILE_GAP,
+        aspectRatio: ALBUM_COVER_ASPECT_RATIO,
+        extraHeight: ALBUM_CAPTION_HEIGHT,
+        resetKey
+    });
 
     if (!facets.length) {
         return (
@@ -83,16 +104,20 @@ export function ScreenshotAlbumGrid({
     }
 
     return (
-        <div className="min-h-0 flex-1 overflow-auto p-0.5 pr-1">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
-                {facets.map((facet) => (
-                    <ScreenshotAlbumCard
-                        key={facet.id}
-                        facet={facet}
-                        onOpen={onOpen}
-                    />
-                ))}
-            </div>
+        <div
+            ref={tileGrid.viewportRef}
+            className="min-h-0 flex-1 overflow-auto pr-1"
+        >
+            <VirtualTileGridRows
+                columnCount={tileGrid.columnCount}
+                gap={ALBUM_TILE_GAP}
+                getKey={getFacetKey}
+                totalHeight={tileGrid.totalHeight}
+                visibleRows={tileGrid.visibleRows}
+                renderItem={(facet) => (
+                    <ScreenshotAlbumCard facet={facet} onOpen={onOpen} />
+                )}
+            />
         </div>
     );
 }

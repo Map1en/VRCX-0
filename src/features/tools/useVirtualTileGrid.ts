@@ -20,12 +20,14 @@ function measureTileGrid({
     width,
     minTileWidth,
     gap,
-    aspectRatio
+    aspectRatio,
+    extraHeight
 }: {
     width: number;
     minTileWidth: number;
     gap: number;
     aspectRatio: number;
+    extraHeight: number;
 }) {
     const safeWidth = Math.max(0, width);
     const columnCount = Math.max(
@@ -38,7 +40,8 @@ function measureTileGrid({
     );
     const tileHeight = Math.ceil(
         Math.max(0, tileWidth - TILE_BORDER_HEIGHT) / aspectRatio +
-            TILE_BORDER_HEIGHT
+            TILE_BORDER_HEIGHT +
+            extraHeight
     );
     return { columnCount, tileHeight };
 }
@@ -72,12 +75,14 @@ export function useVirtualTileGrid<T>({
     minTileWidth,
     gap,
     aspectRatio,
+    extraHeight = 0,
     resetKey
 }: {
     items: readonly T[];
     minTileWidth: number;
     gap: number;
     aspectRatio: number;
+    extraHeight?: number;
     resetKey: string;
 }) {
     const { resetScrollTop, viewportMetrics, viewportRef } =
@@ -86,7 +91,8 @@ export function useVirtualTileGrid<T>({
         width: viewportMetrics.width - TILE_GRID_HORIZONTAL_INSET,
         minTileWidth,
         gap,
-        aspectRatio
+        aspectRatio,
+        extraHeight
     });
 
     useEffect(() => {
