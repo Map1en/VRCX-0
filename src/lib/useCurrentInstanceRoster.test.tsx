@@ -277,4 +277,63 @@ describe('useCurrentInstanceRoster', () => {
         await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
         expect(result.current.playerRows).toEqual([]);
     });
+
+    it('keeps the loaded roster and ready status when a refresh returns the same instance', async () => {
+        mocks.loadCurrentInstanceRoster.mockResolvedValue(
+            snapshot('wrld_test:1', 'Player One')
+        );
+        const statuses: string[] = [];
+        const { result, rerender } = renderHook(
+            ({ revision }: { revision: number }) => {
+                const roster = useCurrentInstanceRoster({
+                    ...props('wrld_test:1'),
+                    refreshRevision: revision,
+                    tailSyncRevision: '0'
+                });
+                statuses.push(roster.loadStatus);
+                return roster;
+            },
+            { initialProps: { revision: 0 } }
+        );
+        await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+        const { context, playerRows } = result.current;
+        statuses.length = 0;
+
+        rerender({ revision: 1 });
+        await waitFor(() =>
+            expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalledTimes(2)
+        );
+        await act(async () => {});
+
+        expect(statuses).not.toContain('running');
+        expect(result.current.context).toBe(context);
+        expect(result.current.playerRows).toBe(playerRows);
+        expect(mocks.recordGameRuntimePresence).toHaveBeenCalledTimes(2);
+    });
+
+    it('shows loading again when refreshing a different instance', async () => {
+        mocks.loadCurrentInstanceRoster.mockResolvedValueOnce(
+            snapshot('wrld_test:1', 'Player One')
+        );
+        const next = deferred<Snapshot>();
+        mocks.loadCurrentInstanceRoster.mockReturnValueOnce(next.promise);
+        const { result, rerender } = renderHook(
+            ({ location }: { location: string }) =>
+                useCurrentInstanceRoster({
+                    ...props(location),
+                    refreshRevision: 0,
+                    tailSyncRevision: '0'
+                }),
+            { initialProps: { location: 'wrld_test:1' } }
+        );
+        await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+        rerender({ location: 'wrld_test:2' });
+
+        expect(result.current.loadStatus).toBe('running');
+        await act(async () => {
+            next.resolve(snapshot('wrld_test:2', 'Player Two'));
+        });
+        expect(result.current.loadStatus).toBe('ready');
+    });
 });

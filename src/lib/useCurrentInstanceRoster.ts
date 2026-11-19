@@ -11,9 +11,21 @@ import { loadCurrentInstanceRoster } from '@/services/currentInstanceRosterServi
 import { recordGameRuntimePresence } from '@/services/domainIngestionService';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
+import { structuralEqual } from '@/shared/utils/structuralEqual';
 
 type CurrentUserSnapshot = Record<string, unknown>;
 type CurrentInstanceRosterLoadStatus = 'error' | 'idle' | 'ready' | 'running';
+type CurrentInstanceRosterStatus = {
+    loadStatus: CurrentInstanceRosterLoadStatus;
+    detail: string;
+    location: string;
+};
+
+const EMPTY_PLAYER_ROWS: CurrentInstanceRosterPlayer[] = [];
+
+function keepIfEqual<T>(next: NoInfer<T>) {
+    return (current: T): T => (structuralEqual(current, next) ? current : next);
+}
 
 function createRuntimeContext({
     playerListLocation,
@@ -59,15 +71,17 @@ export function useCurrentInstanceRoster({
     refreshRevision?: number;
     tailSyncRevision?: string | null;
 }) {
-    const [loadStatus, setLoadStatus] =
-        useState<CurrentInstanceRosterLoadStatus>('idle');
-    const [detail, setDetail] = useState('');
+    const [{ loadStatus, detail }, setStatus] =
+        useState<CurrentInstanceRosterStatus>({
+            loadStatus: 'idle',
+            detail: '',
+            location: ''
+        });
     const [context, setContext] = useState<CurrentInstanceRosterContext>(() =>
         createRuntimeContext({ source: 'none' })
     );
-    const [playerRows, setPlayerRows] = useState<CurrentInstanceRosterPlayer[]>(
-        []
-    );
+    const [playerRows, setPlayerRows] =
+        useState<CurrentInstanceRosterPlayer[]>(EMPTY_PLAYER_ROWS);
     const currentUserDisplayName = normalizeString(
         currentUserSnapshot?.displayName || currentUserSnapshot?.username
     );
@@ -76,52 +90,69 @@ export function useCurrentInstanceRoster({
         let active = true;
 
         if (!isGameRunning) {
-            setLoadStatus('idle');
-            setDetail('');
-            setContext(
-                createRuntimeContext({
-                    playerListLocation,
-                    playerListWorldId
-                })
+            setStatus(
+                keepIfEqual({ loadStatus: 'idle', detail: '', location: '' })
             );
-            setPlayerRows([]);
+            setContext(
+                keepIfEqual(
+                    createRuntimeContext({
+                        playerListLocation,
+                        playerListWorldId
+                    })
+                )
+            );
+            setPlayerRows(EMPTY_PLAYER_ROWS);
             return () => {
                 active = false;
             };
         }
 
         if (!playerListLocation) {
-            setLoadStatus('idle');
-            setDetail('Waiting for the current runtime location.');
-            setContext(
-                createRuntimeContext({
-                    playerListLocation: '',
-                    playerListWorldId
+            setStatus(
+                keepIfEqual({
+                    loadStatus: 'idle',
+                    detail: 'Waiting for the current runtime location.',
+                    location: ''
                 })
             );
-            setPlayerRows([]);
+            setContext(
+                keepIfEqual(
+                    createRuntimeContext({
+                        playerListLocation: '',
+                        playerListWorldId
+                    })
+                )
+            );
+            setPlayerRows(EMPTY_PLAYER_ROWS);
             return () => {
                 active = false;
             };
         }
 
         if (playerListLocation === 'traveling') {
-            setLoadStatus('idle');
-            setDetail('');
-            setContext(
-                createRuntimeContext({
-                    playerListLocation: 'traveling',
-                    playerListWorldId: ''
-                })
+            setStatus(
+                keepIfEqual({ loadStatus: 'idle', detail: '', location: '' })
             );
-            setPlayerRows([]);
+            setContext(
+                keepIfEqual(
+                    createRuntimeContext({
+                        playerListLocation: 'traveling',
+                        playerListWorldId: ''
+                    })
+                )
+            );
+            setPlayerRows(EMPTY_PLAYER_ROWS);
             return () => {
                 active = false;
             };
         }
 
-        setLoadStatus('running');
-        setDetail('');
+        setStatus((current) =>
+            current.loadStatus === 'ready' &&
+            current.location === playerListLocation
+                ? current
+                : { loadStatus: 'running', detail: '', location: '' }
+        );
 
         loadCurrentInstanceRoster({
             currentLocation: playerListLocation
@@ -166,13 +197,16 @@ export function useCurrentInstanceRoster({
                     currentWorldName: nextContext.worldName,
                     endpoint: currentUserEndpoint
                 });
-                setContext(nextContext);
-                setPlayerRows(players);
-                setLoadStatus('ready');
-                setDetail(
-                    result.context.playerFactsKnown
-                        ? 'Current instance roster is ready.'
-                        : 'Waiting for current game-log player events.'
+                setContext(keepIfEqual(nextContext));
+                setPlayerRows(keepIfEqual(players));
+                setStatus(
+                    keepIfEqual({
+                        loadStatus: 'ready',
+                        detail: result.context.playerFactsKnown
+                            ? 'Current instance roster is ready.'
+                            : 'Waiting for current game-log player events.',
+                        location: playerListLocation
+                    })
                 );
             })
             .catch((error: unknown) => {
@@ -180,13 +214,16 @@ export function useCurrentInstanceRoster({
                     return;
                 }
 
-                setLoadStatus('error');
-                setPlayerRows([]);
-                setDetail(
-                    userFacingErrorMessage(
-                        error,
-                        'Failed to reconstruct current players for the current instance.'
-                    )
+                setPlayerRows(EMPTY_PLAYER_ROWS);
+                setStatus(
+                    keepIfEqual({
+                        loadStatus: 'error',
+                        detail: userFacingErrorMessage(
+                            error,
+                            'Failed to reconstruct current players for the current instance.'
+                        ),
+                        location: ''
+                    })
                 );
             });
 

@@ -7,11 +7,11 @@ import {
     LockIcon,
     UsersIcon
 } from 'lucide-react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AppTable } from '@/components/data-table/appTable';
+import type { AppRow, AppTable } from '@/components/data-table/appTable';
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import {
     DataTableColumnDndProvider,
@@ -35,6 +35,7 @@ import { openUserDialog, openWorldDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
+import { structuralEqual } from '@/shared/utils/structuralEqual';
 import { Button } from '@/ui/shadcn/button';
 import { Table, TableBody } from '@/ui/shadcn/table';
 
@@ -316,7 +317,6 @@ export function PlayerListRows({
     emptyTitle?: string;
     emptyDescription?: string;
 }) {
-    const { t } = useTranslation();
     if (!hasRows) {
         return (
             <PlayerListEmptyRow
@@ -327,42 +327,77 @@ export function PlayerListRows({
         );
     }
 
-    return table.getRowModel().rows.map((row) => (
-        <DataTableRow
-            key={row.id}
-            className={cn(
-                'cursor-pointer border-l-2 border-l-transparent',
-                row.original?.moderationSeverity === 'blocked' &&
-                    'border-l-destructive bg-destructive/10 hover:bg-destructive/15',
-                row.original?.moderationSeverity === 'muted' &&
-                    'border-l-muted-foreground/50 bg-muted/40 hover:bg-muted/60'
-            )}
-            tabIndex={0}
-            aria-label={t('accessibility.open_player', {
-                player:
-                    row.original?.displayName ||
-                    row.original?.userId ||
-                    t('accessibility.player')
-            })}
-            onKeyDown={(event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') {
-                    return;
-                }
-                event.preventDefault();
-                onOpenPlayer(row.original);
-            }}
-            onClick={() => {
-                onOpenPlayer(row.original);
-            }}
-        >
-            <DataTableColumnSortableContext table={table}>
-                {row.getVisibleCells().map((cell) => (
-                    <ResizableTableCell key={cell.id} cell={cell} />
-                ))}
-            </DataTableColumnSortableContext>
-        </DataTableRow>
-    ));
+    const columnsKey = table
+        .getVisibleLeafColumns()
+        .map((column) => column.id)
+        .join('|');
+    return table
+        .getRowModel()
+        .rows.map((row) => (
+            <PlayerListTableRow
+                key={row.id}
+                row={row}
+                table={table}
+                columnsKey={columnsKey}
+                onOpenPlayer={onOpenPlayer}
+            />
+        ));
 }
+
+const PlayerListTableRow = memo(
+    function PlayerListTableRow({
+        row,
+        table,
+        onOpenPlayer
+    }: {
+        row: AppRow<PlayerListRow>;
+        table: PlayerListTable;
+        columnsKey: string;
+        onOpenPlayer: (row: PlayerListRow) => void;
+    }) {
+        const { t } = useTranslation();
+        return (
+            <DataTableRow
+                className={cn(
+                    'cursor-pointer border-l-2 border-l-transparent',
+                    row.original?.moderationSeverity === 'blocked' &&
+                        'border-l-destructive bg-destructive/10 hover:bg-destructive/15',
+                    row.original?.moderationSeverity === 'muted' &&
+                        'border-l-muted-foreground/50 bg-muted/40 hover:bg-muted/60'
+                )}
+                tabIndex={0}
+                aria-label={t('accessibility.open_player', {
+                    player:
+                        row.original?.displayName ||
+                        row.original?.userId ||
+                        t('accessibility.player')
+                })}
+                onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                    }
+                    event.preventDefault();
+                    onOpenPlayer(row.original);
+                }}
+                onClick={() => {
+                    onOpenPlayer(row.original);
+                }}
+            >
+                <DataTableColumnSortableContext table={table}>
+                    {row.getVisibleCells().map((cell) => (
+                        <ResizableTableCell key={cell.id} cell={cell} />
+                    ))}
+                </DataTableColumnSortableContext>
+            </DataTableRow>
+        );
+    },
+    (prev, next) =>
+        prev.table.store === next.table.store &&
+        prev.table.options.columns === next.table.options.columns &&
+        prev.columnsKey === next.columnsKey &&
+        prev.onOpenPlayer === next.onOpenPlayer &&
+        structuralEqual(prev.row.original, next.row.original)
+);
 
 function PlayerListEmptyRow({
     table,

@@ -177,10 +177,10 @@ export function DataTableColumnDndProvider<TData extends RowData>({
                 ? {
                       enabled: true,
                       items: reorderableColumnIds,
-                      table
+                      tableStore: table.store
                   }
                 : dataTableColumnDndDefaultState,
-        [canReorder, reorderableColumnIds, table]
+        [canReorder, reorderableColumnIds, table.store]
     );
 
     if (!canReorder) {
@@ -227,7 +227,7 @@ export function DataTableColumnSortableContext<TData extends RowData>({
 }) {
     const columnDnd = useDataTableColumnDnd();
 
-    if (!columnDnd.enabled || columnDnd.table !== table) {
+    if (!columnDnd.enabled || columnDnd.tableStore !== table.store) {
         return children;
     }
 
