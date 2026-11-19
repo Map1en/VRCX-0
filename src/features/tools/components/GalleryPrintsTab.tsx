@@ -362,6 +362,9 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                                                       label: t(
                                                           'view.tools.prints_favorites.favorite_badge'
                                                       ),
+                                                      icon: (
+                                                          <StarIcon className="fill-current text-amber-400" />
+                                                      ),
                                                       variant: 'secondary'
                                                   }
                                               ]

@@ -36,6 +36,7 @@ import {
 export type MediaAssetBadge = {
     key?: string;
     label: string;
+    icon?: ReactNode;
     variant?: ComponentProps<typeof Badge>['variant'];
 };
 
@@ -315,8 +316,9 @@ export function MediaAssetTile({
                             key={badge.key || badge.label}
                             variant={badge.variant || 'outline'}
                             className="bg-background/80"
+                            aria-label={badge.icon ? badge.label : undefined}
                         >
-                            {badge.label}
+                            {badge.icon ?? badge.label}
                         </Badge>
                     ))}
                 </div>
