@@ -110,7 +110,7 @@ fn trust_level_change_preserves_new_level_in_overlay_content() {
     );
     assert_eq!(
         entries[0].content.body.source_text(),
-        "Trust rank: Trusted User"
+        "Trust rank is now Trusted User"
     );
 }
 
@@ -388,7 +388,7 @@ fn instance_closed_names_the_closed_instance() {
     assert_eq!(entries.len(), 1);
     assert_eq!(
         entries[0].content.summary,
-        "Instance Closed Instance closed: Closed World public"
+        "Instance Closed Closed World public closed"
     );
 }
 

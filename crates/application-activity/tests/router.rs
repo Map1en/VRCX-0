@@ -443,7 +443,7 @@ fn saved_group_instance_scan_seeds_then_delivers_the_new_parsed_location() {
     assert_eq!(entry.content.title.source_text(), "Test Group");
     assert_eq!(
         entry.content.body.source_text(),
-        "Created a new instance: Test World groupPlus(Test Group)"
+        "Created a new instance Test World groupPlus(Test Group)"
     );
     let deliveries = sink.deliveries.lock().unwrap();
     assert_eq!(deliveries.len(), 1);
