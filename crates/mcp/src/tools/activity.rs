@@ -16,10 +16,10 @@ use vrcx_0_core::location::is_real_instance;
 use crate::server::VrcxMcpServer;
 
 use super::common::{
-    application_query_result, deserialize_optional_bool, map_application_query_error,
-    ms_to_rfc3339_z, require_current_user_id, resolve_optional_target_or_result, rfc3339_z,
-    structured_result, time_window_bounds_ms, TargetResolutionOutcome, TimeWindowParams,
-    WithResolution,
+    application_query_result, deserialize_lenient_enum, deserialize_optional_bool,
+    map_application_query_error, ms_to_rfc3339_z, require_current_user_id,
+    resolve_optional_target_or_result, rfc3339_z, structured_result, time_window_bounds_ms,
+    TargetResolutionOutcome, TimeWindowParams, WithResolution,
 };
 use vrcx_0_core::OwnerId;
 
@@ -646,12 +646,27 @@ impl From<CoreActivityBucket> for ActivityTimelineRow {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 enum CopresenceGroupByParam {
     #[default]
     Friend,
     FriendWorld,
+}
+
+impl<'de> Deserialize<'de> for CopresenceGroupByParam {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserialize_lenient_enum(
+            deserializer,
+            &["friend", "friend_world"],
+            |token| match token {
+                "friend" | "friends" | "person" | "people" | "user" | "users" => Some(Self::Friend),
+                "friendworld" | "friendsworld" | "friendworlds" | "friendandworld" | "world"
+                | "worlds" | "perworld" => Some(Self::FriendWorld),
+                _ => None,
+            },
+        )
+    }
 }
 
 impl From<CopresenceGroupByParam> for social_aggregates::CopresenceGroupBy {
@@ -710,14 +725,28 @@ impl From<ActivityTimelineBucketParam> for ActivityTimeBucket {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 enum ActivityBucketParam {
     #[default]
-    #[serde(alias = "hourOfDay")]
     HourOfDay,
-    #[serde(alias = "dayOfWeek", alias = "weekday")]
     DayOfWeek,
+}
+
+impl<'de> Deserialize<'de> for ActivityBucketParam {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserialize_lenient_enum(
+            deserializer,
+            &["hour_of_day", "day_of_week"],
+            |token| match token {
+                "hourofday" | "hour" | "hours" | "hourly" => Some(Self::HourOfDay),
+                "dayofweek" | "weekday" | "weekdays" | "day" | "days" | "daily" => {
+                    Some(Self::DayOfWeek)
+                }
+                _ => None,
+            },
+        )
+    }
 }
 
 impl From<ActivityBucketParam> for social_aggregates::ActivityBucket {

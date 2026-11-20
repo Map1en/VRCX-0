@@ -28,6 +28,33 @@ where
     }
 }
 
+pub(super) fn enum_token(value: &str) -> String {
+    value
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .map(|character| character.to_ascii_lowercase())
+        .collect()
+}
+
+pub(super) fn deserialize_lenient_enum<'de, D, T>(
+    deserializer: D,
+    expected: &'static [&'static str],
+    parse: impl FnOnce(&str) -> Option<T>,
+) -> Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Default,
+{
+    let Some(raw) = Option::<String>::deserialize(deserializer)? else {
+        return Ok(T::default());
+    };
+    let token = enum_token(&raw);
+    if token.is_empty() {
+        return Ok(T::default());
+    }
+    parse(&token).ok_or_else(|| serde::de::Error::unknown_variant(raw.trim(), expected))
+}
+
 #[derive(Clone, Debug, Default)]
 pub(super) struct TimeWindowParams {
     pub(super) from: Option<String>,

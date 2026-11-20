@@ -21,19 +21,73 @@ use vrcx_0_persistence::{
 };
 
 #[test]
-fn activity_bucket_accepts_camel_case_aliases() {
-    assert!(matches!(
-        serde_json::from_str::<ActivityBucketParam>(r#""hourOfDay""#).unwrap(),
+fn activity_bucket_accepts_loose_spellings() {
+    for raw in [
+        "hour_of_day",
+        "hourOfDay",
+        "Hour of day",
+        "hour-of-day",
+        "hour",
+        "HOURLY",
+    ] {
+        assert_eq!(
+            serde_json::from_value::<ActivityBucketParam>(serde_json::json!(raw)).unwrap(),
+            ActivityBucketParam::HourOfDay,
+            "{raw}"
+        );
+    }
+    for raw in [
+        "day_of_week",
+        "dayOfWeek",
+        "day of week",
+        "Weekday",
+        "weekdays",
+        "day",
+    ] {
+        assert_eq!(
+            serde_json::from_value::<ActivityBucketParam>(serde_json::json!(raw)).unwrap(),
+            ActivityBucketParam::DayOfWeek,
+            "{raw}"
+        );
+    }
+    assert_eq!(
+        serde_json::from_value::<ActivityBucketParam>(serde_json::Value::Null).unwrap(),
         ActivityBucketParam::HourOfDay
-    ));
-    assert!(matches!(
-        serde_json::from_str::<ActivityBucketParam>(r#""dayOfWeek""#).unwrap(),
-        ActivityBucketParam::DayOfWeek
-    ));
-    assert!(matches!(
-        serde_json::from_str::<ActivityBucketParam>(r#""weekday""#).unwrap(),
-        ActivityBucketParam::DayOfWeek
-    ));
+    );
+    let error = serde_json::from_value::<ActivityBucketParam>(serde_json::json!("month"))
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("unknown variant `month`"), "{error}");
+}
+
+#[test]
+fn copresence_group_by_accepts_loose_spellings() {
+    for raw in ["friend", "Friends", "person"] {
+        assert_eq!(
+            serde_json::from_value::<CopresenceGroupByParam>(serde_json::json!(raw)).unwrap(),
+            CopresenceGroupByParam::Friend,
+            "{raw}"
+        );
+    }
+    for raw in [
+        "friend_world",
+        "friendWorld",
+        "friend world",
+        "friend, world",
+        "world",
+    ] {
+        assert_eq!(
+            serde_json::from_value::<CopresenceGroupByParam>(serde_json::json!(raw)).unwrap(),
+            CopresenceGroupByParam::FriendWorld,
+            "{raw}"
+        );
+    }
+    assert!(
+        serde_json::from_value::<CopresenceGroupByParam>(serde_json::json!("instance"))
+            .unwrap_err()
+            .to_string()
+            .contains("unknown variant")
+    );
 }
 
 #[test]

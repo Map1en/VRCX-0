@@ -11,7 +11,7 @@ use crate::server::VrcxMcpServer;
 use crate::{McpFriendMemo, McpLocalModeration};
 
 use super::common::{
-    map_application_query_error, not_found_summary, require_current_user_id,
+    enum_token, map_application_query_error, not_found_summary, require_current_user_id,
     resolve_optional_target_or_result, resolve_target_or_result, structured_result,
     TargetResolutionOutcome, TimeWindowParams, WithResolution,
 };
@@ -626,7 +626,7 @@ impl From<FriendChangeKindParam> for social_aggregates::FriendChangeKind {
         }
     }
 }
-#[derive(Clone, Copy, Debug, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, schemars::JsonSchema)]
 enum FriendLogTypeParam {
     Friend,
     Unfriend,
@@ -636,7 +636,43 @@ enum FriendLogTypeParam {
     TrustLevel,
 }
 
+const FRIEND_LOG_TYPE_NAMES: &[&str] = &[
+    "Friend",
+    "Unfriend",
+    "FriendRequest",
+    "CancelFriendRequest",
+    "DisplayName",
+    "TrustLevel",
+];
+
 impl FriendLogTypeParam {
+    fn from_token(token: &str) -> Option<Self> {
+        match token {
+            "friend" | "friends" | "friended" | "added" => Some(Self::Friend),
+            "unfriend" | "unfriended" | "removed" => Some(Self::Unfriend),
+            "friendrequest" | "friendrequests" | "request" | "requests" => {
+                Some(Self::FriendRequest)
+            }
+            "cancelfriendrequest"
+            | "cancelledfriendrequest"
+            | "canceledfriendrequest"
+            | "cancelrequest" => Some(Self::CancelFriendRequest),
+            "displayname" | "displaynames" | "namechange" | "rename" => Some(Self::DisplayName),
+            "trustlevel" | "trust" | "rank" => Some(Self::TrustLevel),
+            _ => None,
+        }
+    }
+
+    fn parse(raw: &str) -> Result<Self, String> {
+        Self::from_token(&enum_token(raw)).ok_or_else(|| {
+            format!(
+                "unknown variant `{}`, expected one of {}",
+                raw.trim(),
+                FRIEND_LOG_TYPE_NAMES.join(", ")
+            )
+        })
+    }
+
     fn as_str(self) -> &'static str {
         match self {
             Self::Friend => "Friend",
@@ -649,6 +685,40 @@ impl FriendLogTypeParam {
     }
 }
 
+fn deserialize_friend_log_types<'de, D>(
+    deserializer: D,
+) -> Result<Option<Vec<FriendLogTypeParam>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let names = match serde_json::Value::deserialize(deserializer)? {
+        serde_json::Value::Null => Vec::new(),
+        serde_json::Value::String(value) => {
+            value.split([',', ';', '|']).map(str::to_owned).collect()
+        }
+        serde_json::Value::Array(values) => values
+            .into_iter()
+            .map(|value| match value {
+                serde_json::Value::String(value) => Ok(value),
+                _ => Err(serde::de::Error::custom(
+                    "types entries must be friend log type strings",
+                )),
+            })
+            .collect::<Result<_, _>>()?,
+        _ => {
+            return Err(serde::de::Error::custom(
+                "types must be an array of friend log type strings",
+            ))
+        }
+    };
+    let types = names
+        .iter()
+        .filter(|name| !name.trim().is_empty())
+        .map(|name| FriendLogTypeParam::parse(name).map_err(serde::de::Error::custom))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok((!types.is_empty()).then_some(types))
+}
+
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct FriendLogParams {
@@ -656,6 +726,7 @@ struct FriendLogParams {
     #[serde(alias = "targetUserId", alias = "target_user_id")]
     target: Option<String>,
     /// Relationship event types to include. Omit to include every type.
+    #[serde(default, deserialize_with = "deserialize_friend_log_types")]
     types: Option<Vec<FriendLogTypeParam>>,
     time_window: Option<TimeWindowParams>,
     limit: Option<i64>,

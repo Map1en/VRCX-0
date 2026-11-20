@@ -190,3 +190,63 @@ fn friend_note_cursor_round_trips_without_display_name() {
         ("2026-06-02T00:00:00Z".into(), "usr_b".into())
     );
 }
+
+fn parse_friend_log_types(
+    types: serde_json::Value,
+) -> Result<Option<Vec<FriendLogTypeParam>>, String> {
+    serde_json::from_value::<FriendLogParams>(serde_json::json!({ "types": types }))
+        .map(|params| params.types)
+        .map_err(|error| error.to_string())
+}
+
+#[test]
+fn friend_log_types_accept_strings_and_loose_spellings() {
+    assert_eq!(
+        parse_friend_log_types(serde_json::json!(["Friend", "Unfriend"])).unwrap(),
+        Some(vec![
+            FriendLogTypeParam::Friend,
+            FriendLogTypeParam::Unfriend
+        ])
+    );
+    assert_eq!(
+        parse_friend_log_types(serde_json::json!("Friend")).unwrap(),
+        Some(vec![FriendLogTypeParam::Friend])
+    );
+    assert_eq!(
+        parse_friend_log_types(serde_json::json!(
+            "friend, unfriend; display name|trust_level"
+        ))
+        .unwrap(),
+        Some(vec![
+            FriendLogTypeParam::Friend,
+            FriendLogTypeParam::Unfriend,
+            FriendLogTypeParam::DisplayName,
+            FriendLogTypeParam::TrustLevel,
+        ])
+    );
+    assert_eq!(
+        parse_friend_log_types(serde_json::json!([
+            "friend request",
+            "cancel_friend_request"
+        ]))
+        .unwrap(),
+        Some(vec![
+            FriendLogTypeParam::FriendRequest,
+            FriendLogTypeParam::CancelFriendRequest,
+        ])
+    );
+    assert_eq!(parse_friend_log_types(serde_json::json!("")).unwrap(), None);
+    assert_eq!(
+        parse_friend_log_types(serde_json::Value::Null).unwrap(),
+        None
+    );
+    assert_eq!(
+        serde_json::from_value::<FriendLogParams>(serde_json::json!({}))
+            .unwrap()
+            .types,
+        None
+    );
+
+    let error = parse_friend_log_types(serde_json::json!("Blocked")).unwrap_err();
+    assert!(error.contains("unknown variant `Blocked`"), "{error}");
+}
