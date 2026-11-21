@@ -7575,6 +7575,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "Зайти",
             "toast": {
                 "failed_to_send_self_invite": "Не удалось отправить самоприглашение",
                 "failed_to_refresh_instance": "Не удалось обновить инстанс",

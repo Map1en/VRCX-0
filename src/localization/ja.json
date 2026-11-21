@@ -7587,6 +7587,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "入る",
             "toast": {
                 "failed_to_send_self_invite": "自分への招待の送信に失敗しました",
                 "failed_to_refresh_instance": "インスタンスを更新できませんでした",

@@ -7614,6 +7614,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "加入",
             "toast": {
                 "failed_to_send_self_invite": "发送自我邀请失败",
                 "failed_to_refresh_instance": "刷新房间失败",

@@ -7529,6 +7529,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "참가",
             "toast": {
                 "failed_to_send_self_invite": "셀프 초대를 보내지 못했습니다.",
                 "failed_to_refresh_instance": "인스턴스를 새로고침하지 못했습니다.",

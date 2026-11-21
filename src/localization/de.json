@@ -7538,6 +7538,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "Beitreten",
             "toast": {
                 "failed_to_send_self_invite": "Selbsteinladung konnte nicht gesendet werden",
                 "failed_to_refresh_instance": "Instanz konnte nicht aktualisiert werden",

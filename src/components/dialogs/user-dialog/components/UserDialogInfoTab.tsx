@@ -2,11 +2,12 @@ import {
     ChevronRightIcon,
     CrownIcon,
     ExternalLinkIcon,
+    ImageIcon,
     PencilIcon,
     SparklesIcon,
     UsersRoundIcon
 } from 'lucide-react';
-import { memo, type ReactNode } from 'react';
+import { memo, type ReactNode, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { shallow } from 'zustand/shallow';
 
@@ -32,7 +33,9 @@ import { TranslatableText } from '@/components/translation/TranslatableText';
 import type { EntityRecord } from '@/domain/entities/shared';
 import type { UserProfileEntity } from '@/domain/entities/user';
 import { formatDateTime } from '@/lib/dateTime';
+import { useWorldSummaries } from '@/lib/useWorldSummaries';
 import { cn } from '@/lib/utils';
+import { openWorldDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
     openExternalLink
@@ -357,67 +360,128 @@ function UserDialogPresenceSection({
         locationInstanceUsers = []
     } = presence || {};
 
+    const isInstanceLocation = visiblePresenceLocation.includes(':');
+    const worldId = isInstanceLocation
+        ? parseLocation(visiblePresenceLocation).worldId
+        : '';
+    const worldIds = useMemo(() => (worldId ? [worldId] : []), [worldId]);
+    const worldSummary = useWorldSummaries(worldIds).get(worldId);
+    const worldThumbnailUrl = convertFileUrlToImageUrl(
+        worldSummary?.thumbnailUrl,
+        256
+    );
+    const worldTitle = locationWorldTitle || worldSummary?.name || worldId;
+
     if (!visiblePresenceLocation) {
         return null;
     }
 
+    function openPresenceWorld() {
+        openWorldDialog({
+            worldId: visiblePresenceLocation,
+            title: worldTitle || undefined
+        });
+    }
+
     return (
         <InfoPanel title={t('dialog.user.info.current_status')}>
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                {visiblePresenceLocation.includes(':') ? (
-                    <>
-                        <LocationWorld
-                            className="min-w-0"
-                            locationObject={{
-                                ...locationInstance,
-                                tag: visiblePresenceLocation,
-                                location: visiblePresenceLocation,
-                                userId: locationOwnerId,
-                                playerCount: locationPlayerCount,
-                                capacity:
-                                    locationInstance?.capacity ??
-                                    locationInstance?.recommendedCapacity
-                            }}
-                            currentUserId={currentUserId}
-                            grouphint={locationInstance?.groupName || ''}
-                            endpoint={currentEndpoint}
-                            hint={locationWorldTitle}
-                            instanceClickAction="world"
-                            showPlayerSummary={false}
-                        />
-                        <InstanceActionBar
-                            className="min-w-0 flex-wrap"
-                            target={{
-                                location: visiblePresenceLocation,
-                                shortName:
-                                    locationInstance?.shortName ||
-                                    parseLocation(visiblePresenceLocation)
-                                        .shortName ||
-                                    '',
-                                worldName: locationWorldTitle
-                            }}
-                            instance={locationInstance}
-                            friendCount={locationFriendCount}
-                            playerCount={locationPlayerCount}
-                            capacity={
-                                locationInstance?.capacity ??
-                                locationInstance?.recommendedCapacity
-                            }
-                            refreshTooltip={t(
-                                'dialog.user.info.refresh_instance_info'
-                            )}
-                            disableTooltip
-                            disableInstanceInfoTooltip={false}
-                            showHistory={Boolean(previousInstances.length)}
-                            onRefresh={() =>
-                                actions?.onRefreshLocation?.(
-                                    visiblePresenceLocation
-                                )
-                            }
-                            onHistory={actions?.onShowInstanceHistory}
-                        />
-                    </>
-                ) : (
+            {isInstanceLocation ? (
+                <InstanceActionBar
+                    target={{
+                        location: visiblePresenceLocation,
+                        shortName:
+                            locationInstance?.shortName ||
+                            parseLocation(visiblePresenceLocation).shortName ||
+                            '',
+                        worldName: locationWorldTitle
+                    }}
+                    instance={locationInstance}
+                    friendCount={locationFriendCount}
+                    playerCount={locationPlayerCount}
+                    capacity={
+                        locationInstance?.capacity ??
+                        locationInstance?.recommendedCapacity
+                    }
+                    refreshTooltip={t('dialog.user.info.refresh_instance_info')}
+                    disableInstanceInfoTooltip={false}
+                    instanceCountAlign="left"
+                    actionVariant="prominent"
+                    showHistory={Boolean(previousInstances.length)}
+                    onRefresh={() =>
+                        actions?.onRefreshLocation?.(visiblePresenceLocation)
+                    }
+                    onHistory={actions?.onShowInstanceHistory}
+                    renderLayout={({ summary, actions: instanceActions }) => (
+                        <div className="flex min-w-0 gap-3">
+                            <button
+                                type="button"
+                                aria-label={worldTitle}
+                                className="bg-muted focus-visible:ring-ring/50 flex h-18 w-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md transition-[filter] outline-none hover:brightness-110 focus-visible:ring-3"
+                                onClick={openPresenceWorld}
+                            >
+                                {worldThumbnailUrl ? (
+                                    <FadeInImage
+                                        src={worldThumbnailUrl}
+                                        alt=""
+                                        className="size-full object-cover"
+                                        fallback={
+                                            <ImageIcon className="text-muted-foreground size-6 opacity-50" />
+                                        }
+                                    />
+                                ) : (
+                                    <ImageIcon className="text-muted-foreground size-6 opacity-50" />
+                                )}
+                            </button>
+                            <div className="flex min-h-18 min-w-0 flex-1 flex-col justify-between gap-1.5">
+                                <div className="flex min-w-0 flex-col gap-1">
+                                    <button
+                                        type="button"
+                                        className="text-foreground/90 hover:text-foreground line-clamp-1 cursor-pointer text-left text-sm font-medium break-words transition-colors outline-none focus-visible:underline"
+                                        title={worldTitle}
+                                        onClick={openPresenceWorld}
+                                    >
+                                        {worldTitle}
+                                    </button>
+                                    <div className="text-muted-foreground flex min-w-0 items-center gap-3 text-xs">
+                                        <LocationWorld
+                                            className="min-w-0 shrink"
+                                            locationObject={{
+                                                ...locationInstance,
+                                                tag: visiblePresenceLocation,
+                                                location:
+                                                    visiblePresenceLocation,
+                                                userId: locationOwnerId,
+                                                playerCount:
+                                                    locationPlayerCount,
+                                                capacity:
+                                                    locationInstance?.capacity ??
+                                                    locationInstance?.recommendedCapacity
+                                            }}
+                                            currentUserId={currentUserId}
+                                            grouphint={
+                                                locationInstance?.groupName ||
+                                                ''
+                                            }
+                                            endpoint={currentEndpoint}
+                                            hint={locationWorldTitle}
+                                            instanceClickAction="world"
+                                            showPlayerSummary={false}
+                                            showWorldName={false}
+                                        />
+                                        <span className="shrink-0">
+                                            {summary}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    {instanceActions}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                />
+            ) : (
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                     <Location
                         location={visiblePresenceLocation}
                         hint={locationWorldTitle}
@@ -425,8 +489,8 @@ function UserDialogPresenceSection({
                         enableContextMenu
                         showLaunchActions
                     />
-                )}
-            </div>
+                </div>
+            )}
             {locationInstanceUsers.length ? (
                 <div className="max-h-60 min-h-10 overflow-auto rounded-md">
                     <EntityList

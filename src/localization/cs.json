@@ -7581,6 +7581,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "Připojit se",
             "toast": {
                 "failed_to_send_self_invite": "Nepodařilo se odeslat pozvánku sobě",
                 "failed_to_refresh_instance": "Nepodařilo se obnovit instanci",

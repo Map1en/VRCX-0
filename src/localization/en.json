@@ -7630,6 +7630,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "Join",
             "toast": {
                 "failed_to_send_self_invite": "Failed to send self-invite",
                 "failed_to_refresh_instance": "Failed to refresh instance",

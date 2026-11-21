@@ -7543,6 +7543,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "Entrar",
             "toast": {
                 "failed_to_send_self_invite": "Falha ao enviar convite para si mesmo",
                 "failed_to_refresh_instance": "Falha ao atualizar instância",

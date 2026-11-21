@@ -7605,6 +7605,7 @@
             }
         },
         "instance_action_bar": {
+            "join": "加入",
             "toast": {
                 "failed_to_send_self_invite": "傳送自我邀請失敗",
                 "failed_to_refresh_instance": "重新整理房間失敗",
