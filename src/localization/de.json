@@ -1324,6 +1324,7 @@
             "favorites_section": "Favoriten",
             "group_by_instance": "Gruppen gleicher Instanzen anzeigen",
             "split_favorite_friends": "Favoriten nach Gruppe aufteilen",
+            "compact_rows": "Kompakte Freundesliste",
             "show_grouped_friends": "Freunde derselben Instanz auch in anderen Listen anzeigen",
             "same_instance_above_favorites": "Gleiche Instanz über Favoriten anzeigen",
             "sort_secondary": "Dann nach",

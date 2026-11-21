@@ -1338,6 +1338,7 @@
             "favorites_section": "Избранное",
             "group_by_instance": "Показывать группы по инстансам",
             "split_favorite_friends": "Разделять избранных друзей по группам",
+            "compact_rows": "Компактный список друзей",
             "show_grouped_friends": "Показывать друзей из одного инстанса и в других списках",
             "same_instance_above_favorites": "Показывать группу одного инстанса выше избранного",
             "sort_secondary": "Тогда к",

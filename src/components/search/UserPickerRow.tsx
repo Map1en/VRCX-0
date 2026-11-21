@@ -1,8 +1,9 @@
-import { CheckIcon, UserIcon } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { FadeInImage } from '@/components/media/FadeInImage';
+import { UserListItemText } from '@/components/UserListItemText';
+import { UserStatusAvatar } from '@/components/UserStatusAvatar';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
 
@@ -29,36 +30,20 @@ export function UserPickerRow({
     const imageUrl = option?.user ? userImage(option.user, 64) : '';
 
     return (
-        <span className="flex w-full items-center p-1.5 text-left text-sm">
-            <span className="bg-muted mr-2.5 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border">
-                {imageUrl ? (
-                    <FadeInImage
-                        src={imageUrl}
-                        alt=""
-                        loading="lazy"
-                        className="size-full object-cover"
-                        fallback={
-                            <UserIcon className="text-muted-foreground size-4" />
-                        }
-                    />
-                ) : (
-                    <UserIcon className="text-muted-foreground size-4" />
-                )}
-            </span>
-            <span className="min-w-0 flex-1 overflow-hidden">
-                <span className="block truncate leading-5 font-medium">
-                    {option?.label || option?.value}
-                </span>
-                {Number.isFinite(option?.degree) ? (
-                    <span className="text-muted-foreground block truncate text-xs">
-                        {option?.degree} {t('view.charts.label.connections')}
-                    </span>
-                ) : null}
-            </span>
+        <span className="flex w-full items-center gap-2.5 px-2 py-1.5 text-left">
+            <UserStatusAvatar imageUrl={imageUrl} />
+            <UserListItemText
+                displayName={option?.label || option?.value}
+                subline={
+                    Number.isFinite(option?.degree)
+                        ? `${option?.degree} ${t('view.charts.label.connections')}`
+                        : undefined
+                }
+            />
             {showSelection ? (
                 <CheckIcon
                     className={cn(
-                        'ml-auto size-4',
+                        'ml-auto size-4 shrink-0',
                         selected ? 'opacity-100' : 'opacity-0'
                     )}
                 />

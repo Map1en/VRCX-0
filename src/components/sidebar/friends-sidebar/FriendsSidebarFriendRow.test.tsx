@@ -17,8 +17,8 @@ vi.mock('@/components/user-hover-card/UserHoverCard', () => ({
     UserHoverCard: ({ children }: PropsWithChildren) => children
 }));
 
-vi.mock('@/components/UserDetailTile', () => ({
-    UserDetailContent: ({
+vi.mock('./SidebarUserRowContent', () => ({
+    SidebarUserRowContent: ({
         avatarFrame,
         subline,
         statusDotClassName

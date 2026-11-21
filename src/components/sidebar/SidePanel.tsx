@@ -67,6 +67,7 @@ const defaultPrefs: SidePanelPreferences = {
     isHideFriendsInSameInstance: true,
     isSameInstanceAboveFavorites: false,
     isSidebarDivideByFriendGroup: false,
+    sidebarCompactRows: false,
     sidebarSortMethod1: 'Sort by Status',
     sidebarSortMethod2: 'Sort Alphabetically',
     sidebarSortMethod3: '',
@@ -162,6 +163,10 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                     'isSidebarDivideByFriendGroup',
                     defaultPrefs.isSidebarDivideByFriendGroup
                 ),
+                configRepository.getBool(
+                    'sidebarCompactRows',
+                    defaultPrefs.sidebarCompactRows
+                ),
                 configRepository.getString(
                     'sidebarSortMethod1',
                     defaultPrefs.sidebarSortMethod1
@@ -183,6 +188,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                         isHideFriendsInSameInstance,
                         isSameInstanceAboveFavorites,
                         isSidebarDivideByFriendGroup,
+                        sidebarCompactRows,
                         sidebarSortMethod1,
                         sidebarSortMethod2,
                         sidebarSortMethod3,
@@ -205,6 +211,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             isSidebarDivideByFriendGroup: Boolean(
                                 isSidebarDivideByFriendGroup
                             ),
+                            sidebarCompactRows: Boolean(sidebarCompactRows),
                             sidebarSortMethod1: toSidePanelSortMethod(
                                 sidebarSortMethod1 || ''
                             ),

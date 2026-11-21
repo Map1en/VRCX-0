@@ -506,7 +506,7 @@ function UserDialogPresenceSection({
                 </div>
             )}
             {locationInstanceUsers.length ? (
-                <div className="-mx-1.5 max-h-60 min-h-10 overflow-auto rounded-md">
+                <div className="-mx-2 max-h-60 min-h-10 overflow-auto rounded-md">
                     <EntityList
                         rows={locationInstanceUsers}
                         kind="user"

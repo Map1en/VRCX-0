@@ -6,8 +6,8 @@ import { Badge } from '@/ui/shadcn/badge';
 
 import { StaticSidebarLocation } from './FriendsSidebarLocation';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
+import { sidebarFriendRowHeight } from './SidebarUserRowContent';
 
-const FRIEND_ROW_SIZE = 53;
 const SECTION_HEADER_ROW_SIZE = 38;
 const SECTION_HEADER_TOP_GAP = 16;
 const INSTANCE_HEADER_ROW_SIZE = 26;
@@ -17,7 +17,8 @@ const SIDEBAR_FOOTER_ROW_SIZE = 16;
 
 export function estimateFriendSidebarRowSize(
     row: SidebarVirtualRow,
-    index: number
+    index: number,
+    compact = false
 ) {
     switch (row?.type) {
         case 'section':
@@ -34,7 +35,7 @@ export function estimateFriendSidebarRowSize(
         case 'footer':
             return SIDEBAR_FOOTER_ROW_SIZE;
         default:
-            return FRIEND_ROW_SIZE;
+            return sidebarFriendRowHeight(compact);
     }
 }
 

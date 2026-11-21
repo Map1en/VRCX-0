@@ -1258,6 +1258,7 @@
             "favorites_section": "즐겨찾기",
             "group_by_instance": "같은 인스턴스의 친구 묶어 보기",
             "split_favorite_friends": "즐겨찾기 친구를 그룹별로 표시",
+            "compact_rows": "친구 목록 간결하게 표시",
             "show_grouped_friends": "같은 인스턴스의 친구를 다른 목록에도 표시",
             "same_instance_above_favorites": "같은 인스턴스를 즐겨찾기 위에 표시",
             "sort_secondary": "2차 정렬",

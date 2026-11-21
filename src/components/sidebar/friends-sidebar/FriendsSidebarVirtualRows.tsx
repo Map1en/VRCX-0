@@ -15,6 +15,7 @@ import { FriendRow } from './FriendsSidebarFriendRow';
 import { InstanceHeaderRow } from './FriendsSidebarHeaders';
 import type { SidebarFriendRecord } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
+import { sidebarAvatarSkeletonClassName } from './SidebarUserRowContent';
 import {
     isFriendsSidebarGroupKey,
     type FriendsSidebarGroupKey
@@ -49,6 +50,7 @@ type AppearanceView = {
     showInstanceIdInLocation?: boolean;
     showSidebarAvatarFrame?: boolean;
     showSidebarNameplate?: boolean;
+    sidebarCompactRows?: boolean;
     trustColor?: TrustColorMap;
 };
 
@@ -98,10 +100,20 @@ function SidebarMessageRow({
     );
 }
 
-function SidebarSkeletonRow() {
+function SidebarSkeletonRow({ compact = false }: { compact?: boolean }) {
     return (
-        <div className="flex items-center gap-2 rounded-md px-1.5 py-1.5">
-            <Skeleton className="size-8 shrink-0 rounded-full" />
+        <div
+            className={cn(
+                'flex items-center gap-2 rounded-md px-1.5',
+                compact ? 'py-1' : 'py-1.5'
+            )}
+        >
+            <Skeleton
+                className={cn(
+                    'shrink-0 rounded-full',
+                    sidebarAvatarSkeletonClassName(compact)
+                )}
+            />
             <div className="min-w-0 flex-1">
                 <Skeleton className="h-3.5 w-3/5" />
                 <Skeleton className="mt-2 h-3 w-4/5" />
@@ -179,7 +191,8 @@ const FriendVirtualRow = memo(function FriendVirtualRow({
                 showInstanceIdInLocation: appearance.showInstanceIdInLocation,
                 ageGatedInstancesVisible: appearance.ageGatedInstancesVisible,
                 showAvatarFrame: appearance.showSidebarAvatarFrame,
-                showNameplate: appearance.showSidebarNameplate
+                showNameplate: appearance.showSidebarNameplate,
+                compact: appearance.sidebarCompactRows
             }}
         />
     );
@@ -242,7 +255,9 @@ function FriendsSidebarVirtualRow({
                 <SidebarMessageRow className={row.className} text={row.text} />
             );
         case 'skeleton':
-            return <SidebarSkeletonRow />;
+            return (
+                <SidebarSkeletonRow compact={appearance.sidebarCompactRows} />
+            );
         case 'footer':
             return <div className="h-4" />;
         case 'friend':

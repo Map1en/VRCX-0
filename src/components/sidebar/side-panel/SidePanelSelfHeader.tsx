@@ -233,7 +233,7 @@ export function SidePanelSelfHeader() {
                                 onClick={openSelf}
                             >
                                 <UserStatusAvatar
-                                    className="size-10"
+                                    size="lg"
                                     imageUrl={imageUrl}
                                     statusDotClassName={resolveSidebarStatusDotClassName(
                                         selfRow,

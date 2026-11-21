@@ -15,6 +15,7 @@ export type SidePanelPreferences = Required<
         | 'sidebarFavoriteGroupOrder'
         | 'sidebarFavoriteGroups'
         | 'sidebarGroupByInstance'
+        | 'sidebarCompactRows'
     >
 > & {
     sidebarSortMethod1: SidePanelSortMethod;
@@ -26,7 +27,8 @@ export type SidePanelBooleanPreferenceKey =
     | 'isHideFriendsInSameInstance'
     | 'isSameInstanceAboveFavorites'
     | 'isSidebarDivideByFriendGroup'
-    | 'sidebarGroupByInstance';
+    | 'sidebarGroupByInstance'
+    | 'sidebarCompactRows';
 
 export type SidePanelSortPreferenceKey =
     | 'sidebarSortMethod1'

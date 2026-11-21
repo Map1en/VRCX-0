@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { FriendLocationTimer } from '@/components/friends/FriendInstanceTimer';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-import { UserDetailTile } from '@/components/UserDetailTile';
+import { UserListItem } from '@/components/UserListItem';
 import type { EntityRecord } from '@/domain/entities/shared';
 import {
     presenceOf,
@@ -149,12 +149,11 @@ export function EntityList({
 
                 if (kind === 'user') {
                     return (
-                        <UserDetailTile
+                        <UserListItem
                             key={rowKey}
                             userId={userId}
                             seed={row}
                             disabled={undisclosedMutualFriend}
-                            className="active:not-aria-[haspopup]:translate-y-0"
                             imageUrl={image}
                             statusDotClassName={dotClassName}
                             displayName={label || '\u2014'}
@@ -251,7 +250,7 @@ export function EntityList({
                         key={rowKey}
                         type="button"
                         variant="ghost"
-                        className="h-auto min-w-0 justify-start gap-2 px-1.5 py-1.5 text-left font-normal active:not-aria-[haspopup]:translate-y-0"
+                        className="h-auto min-w-0 justify-start gap-2.5 px-2 py-1.5 text-left font-normal active:not-aria-[haspopup]:translate-y-0"
                         onClick={() => openRow(row, kind)}
                     >
                         {content}

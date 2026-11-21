@@ -1321,6 +1321,7 @@
             "favorites_section": "收藏",
             "group_by_instance": "將同一房間的好友分組",
             "split_favorite_friends": "收藏好友依群組顯示",
+            "compact_rows": "緊湊好友列表",
             "show_grouped_friends": "同房好友也顯示在其他列表",
             "same_instance_above_favorites": "“同一房間”排在“收藏”前",
             "sort_secondary": "其次依據",

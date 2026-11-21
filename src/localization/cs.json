@@ -1338,6 +1338,7 @@
             "favorites_section": "Oblíbené",
             "group_by_instance": "Zobrazit skupiny podle instance",
             "split_favorite_friends": "Rozdělit oblíbené přátele podle skupin",
+            "compact_rows": "Kompaktní seznam přátel",
             "show_grouped_friends": "Zobrazit přátele ze stejné instance i v ostatních seznamech",
             "same_instance_above_favorites": "Zobrazit stejnou instanci nad oblíbenými",
             "sort_secondary": "Poté podle",

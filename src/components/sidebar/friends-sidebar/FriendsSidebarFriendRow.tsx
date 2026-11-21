@@ -15,8 +15,8 @@ import {
     useDecorationHover
 } from '@/components/ProfileDecorations';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
-import { UserDetailContent } from '@/components/UserDetailTile';
 import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
+import { cn } from '@/lib/utils';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { getNameColour, userImage } from '@/services/entityMediaService';
 import { TRUST_COLOR_DEFAULTS } from '@/shared/constants/trustColors';
@@ -56,6 +56,7 @@ import {
     resolveTrustNameColour,
     type SidebarFriendRecord
 } from './friendsSidebarModel';
+import { SidebarUserRowContent } from './SidebarUserRowContent';
 import { useSidebarMenuDoubleClick } from './useSidebarMenuDoubleClick';
 
 export function resolveFriendRowDisplay(
@@ -137,6 +138,7 @@ type FriendRowAppearance = {
     currentLocationStartedAt?: InstanceRosterTimestamp | null;
     showAvatarFrame?: boolean;
     showNameplate?: boolean;
+    compact?: boolean;
 };
 
 type FriendRowProps = {
@@ -189,7 +191,8 @@ export function FriendRow({
         ageGatedInstancesVisible = false,
         currentLocationStartedAt = null,
         showAvatarFrame = false,
-        showNameplate = false
+        showNameplate = false,
+        compact = false
     } = appearance || {};
     const decorationHover = useDecorationHover();
     const recentlyOnline = useRecentlyOnline(friend.id || '');
@@ -249,8 +252,10 @@ export function FriendRow({
             data-size="default"
             className={buttonVariants({
                 variant: 'ghost',
-                className:
-                    'relative isolate h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal'
+                className: cn(
+                    'relative isolate h-auto w-full min-w-0 justify-start gap-2 text-left font-normal',
+                    compact ? 'px-1.5 py-1' : 'p-1.5'
+                )
             })}
             data-pending-offline={isPendingOffline || undefined}
             onClick={sidebarWindowMode ? undefined : onOpen}
@@ -262,10 +267,10 @@ export function FriendRow({
                     active={decorationActive}
                 />
             ) : null}
-            <UserDetailContent
+            <SidebarUserRowContent
+                compact={compact}
                 imageUrl={imageUrl}
                 statusDotClassName={statusDotClassName}
-                avatarClassName="size-10"
                 avatarFrame={
                     iconFrameId ? (
                         <ProfileAvatarFrame

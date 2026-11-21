@@ -1324,6 +1324,7 @@
             "favorites_section": "Favoritos",
             "group_by_instance": "Agrupar amigos en la misma instancia",
             "split_favorite_friends": "Separar favoritos por grupo",
+            "compact_rows": "Lista de amigos compacta",
             "show_grouped_friends": "Mostrar también a los amigos de la misma instancia en otras listas",
             "same_instance_above_favorites": "Mostrar la misma instancia encima de Favoritos",
             "sort_secondary": "Luego por",

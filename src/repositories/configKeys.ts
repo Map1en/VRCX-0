@@ -41,6 +41,7 @@ export const ConfigKeys = defineConfigKeys({
     isHideFriendsInSameInstance: { type: 'bool', default: true },
     isSameInstanceAboveFavorites: { type: 'bool', default: false },
     isSidebarDivideByFriendGroup: { type: 'bool', default: false },
+    sidebarCompactRows: { type: 'bool', default: false },
     rightSidebarOpen: { type: 'bool', default: true },
     sidebarSortMethod1: { type: 'string', default: 'Sort by Status' },
     sidebarSortMethod2: { type: 'string', default: 'Sort Alphabetically' },

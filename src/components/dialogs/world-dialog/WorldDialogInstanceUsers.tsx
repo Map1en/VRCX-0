@@ -7,7 +7,7 @@ import {
     FriendInstanceTimer,
     FriendLocationTimer
 } from '@/components/friends/FriendInstanceTimer';
-import { UserDetailTile } from '@/components/UserDetailTile';
+import { UserListItem } from '@/components/UserListItem';
 import {
     presenceDotClassName,
     presenceLocationTag,
@@ -267,7 +267,7 @@ export function InstanceUserTiles({
                     subline = subtitle || undefined;
                 }
                 return (
-                    <UserDetailTile
+                    <UserListItem
                         key={`${userId || displayName || 'user'}:${index}`}
                         userId={userId}
                         seed={user}

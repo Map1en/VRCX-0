@@ -42,6 +42,7 @@ export type SidebarPreferences = {
     sidebarFavoriteGroupOrder?: string[];
     sidebarFavoriteGroups?: string[];
     sidebarGroupByInstance?: boolean;
+    sidebarCompactRows?: boolean;
     sidebarSortMethod1?: FriendSortMethod | '';
     sidebarSortMethod2?: FriendSortMethod | '';
     sidebarSortMethod3?: FriendSortMethod | '';

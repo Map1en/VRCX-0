@@ -1324,6 +1324,7 @@
             "favorites_section": "Favorites",
             "group_by_instance": "Group Friends in the Same Instance",
             "split_favorite_friends": "Split Favorites by Group",
+            "compact_rows": "Compact Friend List",
             "show_grouped_friends": "Also Show in Other Sections",
             "same_instance_above_favorites": "Place Same Instance Above Favorites",
             "sort_secondary": "Then by",

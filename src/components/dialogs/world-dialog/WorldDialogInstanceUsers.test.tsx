@@ -62,8 +62,8 @@ vi.mock(
     })
 );
 
-vi.mock('@/components/UserDetailTile', () => ({
-    UserDetailTile: ({
+vi.mock('@/components/UserListItem', () => ({
+    UserListItem: ({
         displayName,
         imageUrl,
         namePrefix,

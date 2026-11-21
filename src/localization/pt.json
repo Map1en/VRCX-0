@@ -1324,6 +1324,7 @@
             "favorites_section": "Favoritos",
             "group_by_instance": "Mostrar Grupos por Instância",
             "split_favorite_friends": "Separar Favoritos por Grupo",
+            "compact_rows": "Lista de Amigos Compacta",
             "show_grouped_friends": "Mostrar Amigos da Mesma Instância Também em Outras Listas",
             "same_instance_above_favorites": "Mostrar Mesma Instância Acima dos Favoritos",
             "sort_secondary": "Depois por",

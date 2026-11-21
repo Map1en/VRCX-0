@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/UserSelfEditDialogs';
@@ -767,8 +774,14 @@ export function FriendsSidebar({
         t
     ]);
 
+    const sidebarCompactRows = Boolean(prefs.sidebarCompactRows);
+    const estimateRowSize = useCallback(
+        (row: (typeof virtualRows)[number], index: number) =>
+            estimateFriendSidebarRowSize(row, index, sidebarCompactRows),
+        [sidebarCompactRows]
+    );
     const { getRowRef, viewportRef, virtualItems, totalSize } =
-        useVirtualSidebarRows(virtualRows, estimateFriendSidebarRowSize);
+        useVirtualSidebarRows(virtualRows, estimateRowSize);
     const visibleLocationMetadataEntries = useMemo(
         () =>
             virtualItems
@@ -802,6 +815,7 @@ export function FriendsSidebar({
             showInstanceIdInLocation,
             showSidebarAvatarFrame,
             showSidebarNameplate,
+            sidebarCompactRows,
             trustColor
         }),
         [
@@ -813,6 +827,7 @@ export function FriendsSidebar({
             showInstanceIdInLocation,
             showSidebarAvatarFrame,
             showSidebarNameplate,
+            sidebarCompactRows,
             trustColor
         ]
     );

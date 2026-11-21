@@ -1317,6 +1317,7 @@
             "favorites_section": "お気に入り",
             "group_by_instance": "同じインスタンスのフレンドをまとめる",
             "split_favorite_friends": "お気に入りをグループ別に表示",
+            "compact_rows": "フレンド一覧をコンパクト表示",
             "show_grouped_friends": "同じインスタンスのフレンドを他の一覧にも表示",
             "same_instance_above_favorites": "同じインスタンスをお気に入りより上に表示",
             "sort_secondary": "次の並べ替え基準",

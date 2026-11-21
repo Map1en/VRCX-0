@@ -274,6 +274,20 @@ export function SidePanelSettingsPopover({
                             }
                         />
                     </SettingRow>
+                    <SettingRow
+                        id="side-panel-compact-rows"
+                        label={t('side_panel.settings.compact_rows')}
+                    >
+                        <Switch
+                            checked={prefs.sidebarCompactRows}
+                            onCheckedChange={(value) =>
+                                onUpdateBoolPreference(
+                                    'sidebarCompactRows',
+                                    value
+                                )
+                            }
+                        />
+                    </SettingRow>
                     <Separator />
                     <Button
                         type="button"
