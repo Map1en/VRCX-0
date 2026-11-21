@@ -256,6 +256,7 @@ function WorldOverviewActions({
         <div className="flex flex-wrap items-center gap-2">
             <Button
                 type="button"
+                size="lg"
                 className="min-w-0 flex-1"
                 disabled={actionStatus === 'new-instance'}
                 onClick={onNewInstance}
@@ -561,7 +562,7 @@ export function WorldDialogOverviewSection({
                                         world.name ? onCopyWorldName : undefined
                                     }
                                 >
-                                    <span className="line-clamp-2 min-w-0 break-all">
+                                    <span className="line-clamp-2 min-w-0 text-balance break-words">
                                         {world.name || 'World'}
                                     </span>
                                 </Button>

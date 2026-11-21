@@ -261,74 +261,83 @@ export function GroupDialogHeaderSection({
                 </Button>
             }
         >
-            <div className="flex min-w-0 items-start gap-2">
-                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <CardTitle className="flex min-w-0 flex-wrap items-center gap-1.5 text-lg leading-tight">
-                        {group.name ? (
-                            <Tooltip>
-                                <TooltipTrigger
-                                    render={
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            className="h-auto min-w-0 flex-1 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal hover:bg-transparent"
-                                            onClick={onCopyGroupName}
-                                        >
-                                            <span className="line-clamp-2 min-w-0 break-words">
-                                                {groupTitle}
-                                            </span>
-                                        </Button>
-                                    }
-                                />
-                                <TooltipContent>
-                                    {t('common.actions.copy')}
-                                </TooltipContent>
-                            </Tooltip>
-                        ) : (
-                            <span className="min-w-0 break-words">
-                                {groupTitle}
-                            </span>
-                        )}
-                    </CardTitle>
-                    {languageRows.length ? (
-                        <div className="flex min-w-0 flex-wrap items-center gap-1">
-                            <GroupTitleLanguages
-                                languages={languageRows}
-                                limit={2}
-                            />
-                        </div>
-                    ) : null}
-                    {subtitle ? (
-                        <div className="text-muted-foreground font-mono text-xs break-all">
-                            {subtitle}
-                        </div>
-                    ) : null}
-                    {group.ownerId ? (
+            <div className="flex min-w-0 flex-col gap-1.5">
+                <CardTitle className="flex min-w-0 flex-wrap items-center gap-1.5 text-lg leading-tight">
+                    {group.name ? (
                         <Tooltip>
                             <TooltipTrigger
                                 render={
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        className="text-muted-foreground hover:text-foreground h-auto max-w-full justify-start gap-1 p-0 text-xs font-normal hover:bg-transparent"
-                                        onClick={onOpenOwner}
+                                        className="h-auto min-w-0 flex-1 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal hover:bg-transparent"
+                                        onClick={onCopyGroupName}
                                     >
-                                        <UserIcon data-icon="inline-start" />
-                                        <span className="truncate">
-                                            {t('dialog.group.label.owner')}{' '}
-                                            {ownerLinkLabel}
+                                        <span className="line-clamp-2 min-w-0 text-balance break-words">
+                                            {groupTitle}
                                         </span>
                                     </Button>
                                 }
                             />
                             <TooltipContent>
-                                {t(
-                                    'dialog.group.action.open_group_owner_profile'
-                                )}
+                                {t('common.actions.copy')}
                             </TooltipContent>
                         </Tooltip>
-                    ) : null}
-                </div>
+                    ) : (
+                        <span className="min-w-0 break-words">
+                            {groupTitle}
+                        </span>
+                    )}
+                </CardTitle>
+                {languageRows.length ? (
+                    <div className="flex min-w-0 flex-wrap items-center gap-1">
+                        <GroupTitleLanguages
+                            languages={languageRows}
+                            limit={2}
+                        />
+                    </div>
+                ) : null}
+                {subtitle ? (
+                    <div className="text-muted-foreground font-mono text-xs break-all">
+                        {subtitle}
+                    </div>
+                ) : null}
+                {group.ownerId ? (
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-muted-foreground hover:text-foreground h-auto max-w-full justify-start gap-1 p-0 text-xs font-normal hover:bg-transparent"
+                                    onClick={onOpenOwner}
+                                >
+                                    <UserIcon data-icon="inline-start" />
+                                    <span className="truncate">
+                                        {t('dialog.group.label.owner')}{' '}
+                                        {ownerLinkLabel}
+                                    </span>
+                                </Button>
+                            }
+                        />
+                        <TooltipContent>
+                            {t('dialog.group.action.open_group_owner_profile')}
+                        </TooltipContent>
+                    </Tooltip>
+                ) : null}
+            </div>
+            <div className="flex items-center gap-2">
+                <Button
+                    type="button"
+                    size="lg"
+                    className="min-w-0 flex-1"
+                    variant={primaryAction.variant}
+                    disabled={primaryAction.disabled}
+                    onClick={primaryAction.onClick}
+                >
+                    <PrimaryIcon data-icon="inline-start" />
+                    <span className="truncate">{primaryAction.label}</span>
+                </Button>
                 {group.id ? (
                     <SavedGroupFavoriteButton groupId={group.id} />
                 ) : null}
@@ -600,17 +609,6 @@ export function GroupDialogHeaderSection({
                     </Badge>
                 ) : null}
             </div>
-
-            <Button
-                type="button"
-                className="w-full"
-                variant={primaryAction.variant}
-                disabled={primaryAction.disabled}
-                onClick={primaryAction.onClick}
-            >
-                <PrimaryIcon data-icon="inline-start" />
-                <span className="truncate">{primaryAction.label}</span>
-            </Button>
 
             <Separator />
 

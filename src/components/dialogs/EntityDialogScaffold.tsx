@@ -269,7 +269,7 @@ function EntityMemoTextarea({
     return (
         <div className="box-border flex w-full cursor-default items-center p-1.5 text-sm">
             <div className="min-w-0 flex-1">
-                <span className="block truncate leading-5 font-medium">
+                <span className="text-muted-foreground block truncate text-xs leading-5 font-medium">
                     {label}
                 </span>
                 <Textarea
@@ -612,7 +612,7 @@ function EntityInfoBlock({
             {onClick ? (
                 <ChevronRightIcon
                     data-icon="inline-end"
-                    className="text-muted-foreground mt-0.5 ml-2 shrink-0 opacity-70 transition-transform group-hover/info-item:translate-x-0.5"
+                    className="text-muted-foreground mt-0.5 ml-2 shrink-0 opacity-40 transition-[opacity,transform] group-hover/info-item:translate-x-0.5 group-hover/info-item:opacity-80 group-focus-visible/info-item:opacity-80"
                 />
             ) : null}
         </Component>

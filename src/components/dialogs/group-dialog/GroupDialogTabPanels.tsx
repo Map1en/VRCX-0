@@ -64,7 +64,9 @@ function GroupOverviewSection({
     return (
         <section className="bg-card/40 flex min-w-0 flex-col gap-2 rounded-md border p-3">
             <div className="flex min-w-0 items-center justify-between gap-2">
-                <div className="truncate text-sm font-medium">{title}</div>
+                <div className="text-muted-foreground truncate text-xs font-medium">
+                    {title}
+                </div>
                 {action}
             </div>
             <div className="min-w-0">{children}</div>

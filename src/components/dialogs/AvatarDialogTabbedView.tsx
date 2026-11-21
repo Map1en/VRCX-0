@@ -267,7 +267,7 @@ function AvatarDialogOverviewSection({
                                 className="h-auto min-w-0 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal hover:bg-transparent disabled:pointer-events-none disabled:opacity-100"
                                 onClick={avatar.name ? onTitleClick : undefined}
                             >
-                                <span className="line-clamp-2 min-w-0 break-words">
+                                <span className="line-clamp-2 min-w-0 text-balance break-words">
                                     {avatar.name || avatarFallbackLabel}
                                 </span>
                             </Button>
