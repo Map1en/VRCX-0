@@ -1,14 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLinkIcon, UserIcon, UsersRoundIcon } from 'lucide-react';
+import { ExternalLinkIcon, UserIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    EntityAvatar,
+    entityAvatarFrameClassName
+} from '@/components/EntityAvatar';
 import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { useInstancePopulation } from '@/components/location/useInstancePopulation';
-import { FadeInImage } from '@/components/media/FadeInImage';
 import { normalizeSidebarFilterQuery } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { handleSidebarRowArrowNavigation } from '@/components/sidebar/sidebarRowArrowNavigation';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
@@ -143,12 +146,6 @@ function WorldRoomItem({
     const groupName = group?.name || '';
     const groupIconUrl = convertFileUrlToImageUrl(group?.iconUrl, 128);
     const showGroupName = Boolean(groupId && groupName);
-    const groupIconFallback = (
-        <UsersRoundIcon
-            aria-hidden="true"
-            className="text-muted-foreground size-4"
-        />
-    );
     const userCount = room.occupants ?? population?.nUsers ?? null;
     const capacity =
         room.occupants === null
@@ -215,23 +212,11 @@ function WorldRoomItem({
                 }
             >
                 {groupId ? (
-                    <span className="bg-muted flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border">
-                        {groupIconUrl ? (
-                            <FadeInImage
-                                src={groupIconUrl}
-                                alt=""
-                                loading="lazy"
-                                className="size-full object-cover"
-                                fallback={groupIconFallback}
-                            />
-                        ) : (
-                            groupIconFallback
-                        )}
-                    </span>
+                    <EntityAvatar kind="group" imageUrl={groupIconUrl} />
                 ) : (
                     <WorldRoomsCover
                         worldId={parsedLocation.worldId}
-                        className="size-9 rounded-md border"
+                        className={entityAvatarFrameClassName()}
                     />
                 )}
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -388,7 +373,7 @@ export function WorldRoomsSidebar({
             case 'skeleton':
                 return (
                     <div className="flex items-center gap-2 rounded-md px-1.5 py-1.5">
-                        <Skeleton className="size-8 shrink-0 rounded-md" />
+                        <Skeleton className="size-10 shrink-0 rounded-[10px]" />
                         <div className="min-w-0 flex-1">
                             <Skeleton className="h-3.5 w-2/3" />
                             <Skeleton className="mt-2 h-3 w-4/5" />

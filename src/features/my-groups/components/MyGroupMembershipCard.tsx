@@ -1,8 +1,7 @@
-import { UsersRoundIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { groupIdForRow } from '@/components/dialogs/user-dialog/userDialogGroupRows';
-import { FadeInImage } from '@/components/media/FadeInImage';
+import { EntityAvatar } from '@/components/EntityAvatar';
 import { TileShell } from '@/components/tile/TileShell';
 import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
@@ -56,21 +55,7 @@ export function MyGroupMembershipCard({
                     })
                 }
             >
-                <span className="bg-muted flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border">
-                    {iconUrl ? (
-                        <FadeInImage
-                            src={iconUrl}
-                            alt=""
-                            className="size-full object-cover"
-                            loading="lazy"
-                            fallback={
-                                <UsersRoundIcon className="text-muted-foreground size-4" />
-                            }
-                        />
-                    ) : (
-                        <UsersRoundIcon className="text-muted-foreground size-4" />
-                    )}
-                </span>
+                <EntityAvatar kind="group" imageUrl={iconUrl} />
                 <span className="min-w-0 flex-1">
                     <span className="object-row__title block truncate text-sm leading-tight">
                         {group.name || groupId}

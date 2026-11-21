@@ -5,13 +5,13 @@ import {
     EyeOffIcon,
     LogOutIcon,
     MoreHorizontalIcon,
-    UsersIcon,
-    UsersRoundIcon
+    UsersIcon
 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { groupIdForRow } from '@/components/dialogs/user-dialog/userDialogGroupRows';
+import { EntityAvatar } from '@/components/EntityAvatar';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TileShell } from '@/components/tile/TileShell';
 import { cn } from '@/lib/utils';
@@ -171,21 +171,12 @@ export function MyGroupCard({
                     ) : null}
                 </div>
                 <div className="flex h-14 min-w-0 items-center gap-2 px-2.5 py-2">
-                    <span className="bg-muted relative z-10 flex size-11 shrink-0 -translate-y-4 items-center justify-center overflow-hidden rounded-md border">
-                        {iconUrl ? (
-                            <FadeInImage
-                                src={iconUrl}
-                                alt=""
-                                className="size-full object-cover"
-                                loading="lazy"
-                                fallback={
-                                    <UsersRoundIcon className="text-muted-foreground size-4" />
-                                }
-                            />
-                        ) : (
-                            <UsersRoundIcon className="text-muted-foreground size-4" />
-                        )}
-                    </span>
+                    <EntityAvatar
+                        kind="group"
+                        imageUrl={iconUrl}
+                        size="xl"
+                        className="z-10 -translate-y-4"
+                    />
                     <span className="min-w-0 flex-1">
                         <span className="object-row__title block truncate text-sm leading-tight">
                             {group.name || groupId}
