@@ -6,7 +6,6 @@ import {
     GemIcon,
     GlobeIcon,
     PencilIcon,
-    StickyNoteIcon,
     UserPlusIcon,
     UserRoundIcon
 } from 'lucide-react';
@@ -23,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguageNames } from '@/components/language/useLanguageNames';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import type { UserBadgeRecord } from '@/domain/entities/user';
+import { formatDateTime } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import type { RecentActionType } from '@/services/recentActionService';
@@ -173,8 +173,10 @@ function resolveProfileBackgroundStyle(
         const url = resolveUserDialogBackgroundTextureUrl(profile);
         if (url) {
             const overlay = 'color-mix(in oklch, var(--card) 55%, transparent)';
+            const lowerOverlay =
+                'color-mix(in oklch, var(--card) 82%, transparent)';
             return {
-                backgroundImage: `linear-gradient(${overlay}, ${overlay}), url("${url}")`,
+                backgroundImage: `linear-gradient(${overlay} 0, ${overlay} 20rem, ${lowerOverlay} 34rem), url("${url}")`,
                 backgroundPosition: 'top center',
                 backgroundRepeat: 'no-repeat',
                 backgroundSize: 'cover'
@@ -205,7 +207,6 @@ export interface UserHeaderModel {
     isFriend: boolean;
     loadStatus: string;
     moderationState: ModerationState;
-    noteSummary: string;
     platform: ReturnType<typeof resolvePlatformMeta>;
     PlatformIcon: ComponentType | null;
     previousDisplayNames: ReturnType<typeof normalizePreviousDisplayNames>;
@@ -385,7 +386,7 @@ function UserDialogHeaderFacts({
         | 'onToggleSelfSharedConnections'
     >;
 }) {
-    const { t } = useTranslation();
+    const { i18n, t } = useTranslation();
     const {
         actionStatus = 'idle',
         isCurrentUser,
@@ -393,6 +394,16 @@ function UserDialogHeaderFacts({
         username,
         userUrl
     } = model;
+    const dateJoined = profile.date_joined
+        ? formatDateTime(
+              profile.date_joined,
+              { dateStyle: 'medium' },
+              {
+                  appLocale: i18n.resolvedLanguage || i18n.language,
+                  fallback: ''
+              }
+          )
+        : '';
     const {
         onCopyUserId,
         onCopyUsername,
@@ -410,14 +421,14 @@ function UserDialogHeaderFacts({
 
     return (
         <EntityFactList className="border-stroke-subtle border-t pt-3">
-            <HeaderPreferenceRow
-                label={t('dialog.user.info.avatar_cloning')}
-                checked={Boolean(profile.allowAvatarCopying)}
-                disabled={actionsDisabled}
-                onToggle={isCurrentUser ? onToggleSelfAvatarCopying : undefined}
-            />
             {isCurrentUser ? (
                 <>
+                    <HeaderPreferenceRow
+                        label={t('dialog.user.info.avatar_cloning')}
+                        checked={Boolean(profile.allowAvatarCopying)}
+                        disabled={actionsDisabled}
+                        onToggle={onToggleSelfAvatarCopying}
+                    />
                     <HeaderPreferenceRow
                         label={t('dialog.user.info.booping')}
                         checked={profile.isBoopingEnabled !== false}
@@ -484,6 +495,12 @@ function UserDialogHeaderFacts({
                     </EntityFactValue>
                 </EntityFactRow>
             ) : null}
+            {dateJoined ? (
+                <EntityFactRow
+                    label={t('dialog.user.info.date_joined')}
+                    value={dateJoined}
+                />
+            ) : null}
             {discordId ? (
                 <EntityFactRow label="Discord">
                     <EntityFactValue
@@ -533,7 +550,6 @@ export function UserDialogHeaderSection({
         isFriend,
         loadStatus,
         moderationState,
-        noteSummary,
         platform,
         PlatformIcon,
         previousDisplayNames,
@@ -955,21 +971,6 @@ export function UserDialogHeaderSection({
                                 );
                             })}
                         </HeaderMetaRow>
-                    ) : null}
-                    {noteSummary ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            title={noteSummary}
-                            aria-label={t('dialog.user.actions.edit_note_memo')}
-                            className="text-muted-foreground hover:text-foreground h-auto w-full min-w-0 justify-start gap-2 p-0 text-left text-xs font-normal hover:bg-transparent dark:hover:bg-transparent"
-                            onClick={onEditMemo}
-                        >
-                            <HeaderRowIcon icon={<StickyNoteIcon />} />
-                            <span className="min-w-0 flex-1 truncate">
-                                {noteSummary}
-                            </span>
-                        </Button>
                     ) : null}
                 </div>
             </div>

@@ -107,7 +107,6 @@ function createHeaderModel(effect?: InventoryItemRecord): UserHeaderModel {
             block: false,
             mute: false
         },
-        noteSummary: '',
         platform: {
             icon: null,
             label: 'PC'
@@ -219,6 +218,22 @@ describe('UserDialogHeaderSection nameplate', () => {
         act(() => notifyResize?.());
 
         expect(displayName.style.fontSize).toBe('15px');
+    });
+});
+
+describe('UserDialogHeaderSection facts', () => {
+    it('lists the account creation date with the identity facts', () => {
+        const headerModel = createHeaderModel();
+        headerModel.profile.date_joined = '2022-04-30';
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        expect(screen.getByText('dialog.user.info.date_joined')).toBeTruthy();
     });
 });
 
@@ -515,24 +530,6 @@ describe('UserDialogHeaderSection relationship', () => {
         expect(
             screen.getByText('dialog.user.relationship.chatbox_muted')
         ).toBeTruthy();
-    });
-
-    it('opens the note editor from the note summary', () => {
-        const headerModel = createHeaderModel();
-        headerModel.noteSummary = 'Met at the meetup';
-        const headerCommands = createHeaderCommands();
-        headerCommands.onEditMemo = vi.fn();
-
-        render(
-            <UserDialogHeaderSection
-                headerModel={headerModel}
-                headerCommands={headerCommands}
-            />
-        );
-
-        fireEvent.click(screen.getByText('Met at the meetup'));
-
-        expect(headerCommands.onEditMemo).toHaveBeenCalledOnce();
     });
 });
 

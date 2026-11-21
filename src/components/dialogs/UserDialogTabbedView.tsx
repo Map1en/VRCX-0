@@ -646,12 +646,6 @@ export function UserDialogTabbedView({
         isFriend,
         loadStatus,
         moderationState,
-        noteSummary: (
-            (hideUserMemos ? '' : memo) ||
-            (hideUserNotes ? '' : normalizedText(profile.note))
-        )
-            .replace(/\s+/g, ' ')
-            .trim(),
         platform,
         PlatformIcon,
         previousDisplayNames,

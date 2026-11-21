@@ -182,8 +182,8 @@ function InfoPanel({
                 className
             )}
         >
-            <CardHeader className="border-stroke-subtle border-b pb-3">
-                <CardTitle className="min-w-0 truncate text-sm">
+            <CardHeader>
+                <CardTitle className="text-muted-foreground min-w-0 truncate text-xs font-medium">
                     {title}
                 </CardTitle>
                 {action ? <CardAction>{action}</CardAction> : null}
@@ -203,7 +203,8 @@ function InfoStat({
     children,
     mono = false,
     onClick,
-    subtle = false
+    subtle = false,
+    className
 }: {
     label?: ReactNode;
     value?: string;
@@ -211,6 +212,7 @@ function InfoStat({
     mono?: boolean;
     onClick?: () => void;
     subtle?: boolean;
+    className?: string;
 }) {
     const body = (
         <>
@@ -246,7 +248,10 @@ function InfoStat({
             <Button
                 type="button"
                 variant="ghost"
-                className="group/info-stat h-auto w-full justify-start px-2 py-1.5 text-left"
+                className={cn(
+                    'group/info-stat -mx-2 h-auto justify-start px-2 py-1.5 text-left',
+                    className
+                )}
                 onClick={onClick}
             >
                 {body}
@@ -254,7 +259,16 @@ function InfoStat({
         );
     }
 
-    return <div className="flex min-w-0 items-start px-2 py-1.5">{body}</div>;
+    return (
+        <div
+            className={cn(
+                '-mx-2 flex min-w-0 items-start px-2 py-1.5',
+                className
+            )}
+        >
+            {body}
+        </div>
+    );
 }
 
 function InfoStatGrid({
@@ -296,13 +310,13 @@ function formatLocalizedActivityDate(
 
 function TextScroll({
     children,
-    className = 'h-52'
+    className
 }: {
     children?: ReactNode;
     className?: string;
 }) {
     return (
-        <div className={cn('overflow-auto', className)}>
+        <div className={cn('max-h-52 overflow-auto', className)}>
             <pre className="text-muted-foreground m-0 min-w-0 font-sans text-xs whitespace-pre-wrap">
                 {children || '\u2014'}
             </pre>
@@ -492,7 +506,7 @@ function UserDialogPresenceSection({
                 </div>
             )}
             {locationInstanceUsers.length ? (
-                <div className="max-h-60 min-h-10 overflow-auto rounded-md">
+                <div className="-mx-1.5 max-h-60 min-h-10 overflow-auto rounded-md">
                     <EntityList
                         rows={locationInstanceUsers}
                         kind="user"
@@ -520,35 +534,44 @@ function UserDialogNotesPanel({
         return null;
     }
 
+    const showBoth = showNote && showMemo;
+    const title = showBoth
+        ? t('dialog.user.info.notes_memo')
+        : showNote
+          ? t('dialog.user.info.note')
+          : t('dialog.user.info.memo');
+
     return (
-        <InfoPanel title={t('dialog.user.info.notes_memo')}>
+        <InfoPanel title={title}>
             <div
                 role="button"
                 tabIndex={0}
-                className="focus-visible:border-ring focus-visible:ring-ring/50 rounded-md p-2 text-left transition-colors outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3"
+                className="focus-visible:border-ring focus-visible:ring-ring/50 -mx-2 rounded-md p-2 text-left transition-colors outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3"
                 onClick={onEditMemo}
                 onKeyDown={(event) => handlePanelKeyDown(event, onEditMemo)}
             >
                 <div className="flex min-w-0 flex-col gap-3">
                     {showNote ? (
                         <div className="min-w-0">
-                            <span className="text-muted-foreground block truncate text-xs">
-                                {t('dialog.user.info.note')}
-                            </span>
-                            <AdaptiveTextBlock className="mt-1">
+                            {showBoth ? (
+                                <span className="text-muted-foreground mb-1 block truncate text-xs">
+                                    {t('dialog.user.info.note')}
+                                </span>
+                            ) : null}
+                            <AdaptiveTextBlock>
                                 {profile.note}
                             </AdaptiveTextBlock>
                         </div>
                     ) : null}
-                    {showNote && showMemo ? <Separator /> : null}
+                    {showBoth ? <Separator /> : null}
                     {showMemo ? (
                         <div className="min-w-0">
-                            <span className="text-muted-foreground block truncate text-xs">
-                                {t('dialog.user.info.memo')}
-                            </span>
-                            <AdaptiveTextBlock className="mt-1">
-                                {memo}
-                            </AdaptiveTextBlock>
+                            {showBoth ? (
+                                <span className="text-muted-foreground mb-1 block truncate text-xs">
+                                    {t('dialog.user.info.memo')}
+                                </span>
+                            ) : null}
+                            <AdaptiveTextBlock>{memo}</AdaptiveTextBlock>
                         </div>
                     ) : null}
                 </div>
@@ -625,9 +648,20 @@ function UserDialogProfileLinksPanel({
                             userId={profile?.id}
                         />
                     </InfoStat>
-                    <Separator />
                 </>
             ) : null}
+            {isCurrentUser ? null : (
+                <InfoStat
+                    label={t('dialog.user.info.avatar_cloning')}
+                    value={t(
+                        profile.allowAvatarCopying
+                            ? 'dialog.user.info.avatar_cloning_allow'
+                            : 'dialog.user.info.avatar_cloning_deny'
+                    )}
+                    subtle
+                />
+            )}
+            {avatarInfo || !isCurrentUser ? <Separator /> : null}
 
             <InfoStat label={t('dialog.user.info.represented_group')}>
                 {representedGroupStatus === 'running' ? (
@@ -683,7 +717,12 @@ function UserDialogProfileLinksPanel({
                             </span>
                             <span className="text-muted-foreground block truncate">
                                 {representedGroup.memberCount
-                                    ? `${representedGroup.memberCount} members`
+                                    ? t(
+                                          'host.tools_dialogs.group_moderation.member_count',
+                                          {
+                                              count: representedGroup.memberCount
+                                          }
+                                      )
                                     : ''}
                             </span>
                         </span>
@@ -719,6 +758,10 @@ export function UserDialogBioPanel({
 }: UserDialogBioSectionProps) {
     const { t } = useTranslation();
     const editLabel = t('dialog.user.actions.edit_profile');
+
+    if (!profile.bio?.trim() && !bioLinks.length && !onEditBio) {
+        return null;
+    }
 
     return (
         <TranslatableText
@@ -757,7 +800,7 @@ export function UserDialogBioPanel({
                 >
                     {meta}
                     <div className="min-w-0">
-                        <TextScroll className="h-52 min-w-0">{text}</TextScroll>
+                        <TextScroll className="min-w-0">{text}</TextScroll>
                         {error}
                     </div>
                     {bioLinks.length ? (
@@ -815,6 +858,7 @@ function UserRelationshipStat({
                 locale
             )}
             subtle
+            className={latest ? 'mx-0' : undefined}
         />
     );
     if (!latest) {
@@ -826,7 +870,7 @@ function UserRelationshipStat({
                 render={
                     <Button
                         variant="ghost"
-                        className="group/info-stat h-auto w-full justify-start p-0 text-left"
+                        className="group/info-stat -mx-2 h-auto justify-start p-0 text-left"
                     />
                 }
             >
@@ -1008,15 +1052,6 @@ export function UserDialogActivitySummaryPanel({
                 {isCurrentUser && profile.id ? (
                     <UserCreditsStat userId={profile.id} />
                 ) : null}
-                <InfoStat
-                    label={t('dialog.user.info.date_joined')}
-                    value={formatLocalizedActivityDate(
-                        profile.date_joined,
-                        dateLocale,
-                        true
-                    )}
-                    subtle
-                />
             </InfoStatGrid>
         </InfoPanel>
     );

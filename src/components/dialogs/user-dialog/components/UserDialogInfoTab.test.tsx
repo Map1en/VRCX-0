@@ -194,8 +194,7 @@ describe('UserDialogActivitySummaryPanel', () => {
             'dialog.user.info.activity_summary',
             'dialog.user.info.last_activity',
             'dialog.user.info.play_time',
-            'dialog.user.info.vrc_credits',
-            'dialog.user.info.date_joined'
+            'dialog.user.info.vrc_credits'
         ]);
         expect(screen.getByText(`${(2450).toLocaleString()}V`)).toBeTruthy();
     });
@@ -274,6 +273,25 @@ describe('UserDialogActivitySummaryPanel', () => {
 });
 
 describe('UserDialogBioPanel', () => {
+    it('keeps an empty bio panel only when it can be edited', () => {
+        const { rerender } = render(
+            <UserDialogBioPanel
+                profile={{ id: 'usr_test', bio: '  ' }}
+                bioLinks={[]}
+            />
+        );
+        expect(screen.queryByText('dialog.user.info.bio')).toBeNull();
+
+        rerender(
+            <UserDialogBioPanel
+                profile={{ id: 'usr_self', bio: '' }}
+                bioLinks={[]}
+                onEditBio={vi.fn()}
+            />
+        );
+        expect(screen.getByText('dialog.user.info.bio')).toBeTruthy();
+    });
+
     it('offers bio editing only when an edit handler is provided', () => {
         const onEditBio = vi.fn();
         const { rerender } = render(
