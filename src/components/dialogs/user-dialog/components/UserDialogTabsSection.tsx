@@ -306,7 +306,7 @@ export function UserDialogTabsSection({
                 tab.value === 'instance-history'
                     ? formatPreviousInstanceCount(count)
                     : String(count);
-            return Number.isFinite(count) && count >= 0
+            return Number.isFinite(count) && count > 0
                 ? {
                       ...tab,
                       label: (

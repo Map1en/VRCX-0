@@ -63,7 +63,8 @@ export function TranslationAction({
         <Button
             type="button"
             size="xs"
-            variant="outline"
+            variant="ghost"
+            className="text-muted-foreground"
             disabled={isLoading}
             aria-busy={isLoading}
             aria-label={label}

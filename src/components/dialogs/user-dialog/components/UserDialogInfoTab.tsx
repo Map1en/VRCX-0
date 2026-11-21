@@ -237,7 +237,7 @@ function InfoStat({
             {onClick ? (
                 <ChevronRightIcon
                     data-icon="inline-end"
-                    className="text-muted-foreground ml-2 shrink-0 opacity-70 transition-transform group-hover/info-stat:translate-x-0.5"
+                    className="text-muted-foreground ml-2 shrink-0 opacity-40 transition-[opacity,transform] group-hover/info-stat:translate-x-0.5 group-hover/info-stat:opacity-80 group-focus-visible/info-stat:opacity-80"
                 />
             ) : null}
         </>
@@ -249,7 +249,7 @@ function InfoStat({
                 type="button"
                 variant="ghost"
                 className={cn(
-                    'group/info-stat -mx-2 h-auto justify-start px-2 py-1.5 text-left',
+                    'group/info-stat -mx-2 h-auto justify-start px-2 py-1.5 text-left font-normal',
                     className
                 )}
                 onClick={onClick}
@@ -782,7 +782,8 @@ export function UserDialogBioPanel({
                                             <Button
                                                 type="button"
                                                 size="icon-xs"
-                                                variant="outline"
+                                                variant="ghost"
+                                                className="text-muted-foreground"
                                                 aria-label={editLabel}
                                                 onClick={onEditBio}
                                             >
@@ -870,14 +871,14 @@ function UserRelationshipStat({
                 render={
                     <Button
                         variant="ghost"
-                        className="group/info-stat -mx-2 h-auto justify-start p-0 text-left"
+                        className="group/info-stat -mx-2 h-auto justify-start p-0 text-left font-normal"
                     />
                 }
             >
                 <div className="min-w-0 flex-1">{stat}</div>
                 <ChevronRightIcon
                     aria-hidden="true"
-                    className="text-muted-foreground mr-2 shrink-0 opacity-70 transition-transform group-hover/info-stat:translate-x-0.5"
+                    className="text-muted-foreground mr-2 shrink-0 opacity-40 transition-[opacity,transform] group-hover/info-stat:translate-x-0.5 group-hover/info-stat:opacity-80 group-focus-visible/info-stat:opacity-80 group-aria-expanded/info-stat:opacity-80"
                 />
             </PopoverTrigger>
             <PopoverContent
@@ -974,7 +975,8 @@ export function UserDialogActivitySummaryPanel({
                                 <Button
                                     type="button"
                                     size="icon-xs"
-                                    variant="outline"
+                                    variant="ghost"
+                                    className="text-muted-foreground"
                                     aria-label={t('assistant.title')}
                                     onClick={() =>
                                         useAssistantChatStore

@@ -164,7 +164,7 @@ function EntityDialogTabs({
         <TabsList
             variant="underline"
             className={cn(
-                'relative flex h-11 min-h-11 w-full justify-start overflow-x-auto overflow-y-hidden rounded-none bg-transparent p-0',
+                'no-scrollbar relative flex h-11 min-h-11 w-full justify-start overflow-x-auto overflow-y-hidden rounded-none bg-transparent p-0',
                 actions ? 'min-w-0 flex-1' : 'border-b'
             )}
         >
@@ -172,7 +172,7 @@ function EntityDialogTabs({
                 <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="text-muted-foreground hover:text-foreground h-11 flex-none rounded-none border-0 bg-transparent px-3 shadow-none after:hidden data-active:bg-transparent data-active:shadow-none"
+                    className="text-muted-foreground hover:text-foreground h-11 flex-none rounded-none border-0 bg-transparent px-2.5 shadow-none after:hidden data-active:bg-transparent data-active:shadow-none"
                 >
                     {tab.label}
                 </TabsTrigger>
