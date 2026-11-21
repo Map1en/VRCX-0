@@ -5164,7 +5164,7 @@
                 "instance_creator": "房间创建者",
                 "languages_declared": "房主设定：{languages}",
                 "languages_current": "当前玩家：{languages}",
-                "filter_with_friends": "有好友在",
+                "filter_with_friends": "含好友",
                 "filter_hide_unavailable": "隐藏已关闭或已满",
                 "filter_category_all": "全部",
                 "filter_clear": "清除筛选",

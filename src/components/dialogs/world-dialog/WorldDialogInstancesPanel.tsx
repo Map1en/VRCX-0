@@ -22,7 +22,6 @@ import type {
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { isRecord } from '@/shared/utils/record';
 import { structuralEqual } from '@/shared/utils/structuralEqual';
-import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenuCheckboxItem,
     DropdownMenuGroup,
@@ -32,6 +31,7 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
+import { Toggle } from '@/ui/shadcn/toggle';
 
 import {
     InstanceUserTiles,
@@ -73,20 +73,14 @@ function WorldInstanceQuickFilter({
     onPressedChange: (pressed: boolean) => void;
 }) {
     return (
-        <Button
-            type="button"
-            variant="outline"
-            aria-pressed={pressed}
-            data-vrcx-0-control="toolbar"
-            className={cn(
-                'vrcx-0-toolbar-control',
-                pressed && 'vrcx-0-toolbar-control-active'
-            )}
-            onClick={() => onPressedChange(!pressed)}
+        <Toggle
+            pressed={pressed}
+            onPressedChange={onPressedChange}
+            className="text-muted-foreground hover:text-foreground data-pressed:text-foreground px-2.5"
         >
-            <Icon data-icon="inline-start" />
+            <Icon />
             {label}
-        </Button>
+        </Toggle>
     );
 }
 

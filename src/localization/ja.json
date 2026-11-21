@@ -5160,7 +5160,7 @@
                 "instance_creator": "インスタンス作成者",
                 "languages_declared": "ホストが設定：{languages}",
                 "languages_current": "現在のプレイヤー：{languages}",
-                "filter_with_friends": "フレンドがいる",
+                "filter_with_friends": "フレンドあり",
                 "filter_hide_unavailable": "終了・満員を隠す",
                 "filter_category_all": "すべて",
                 "filter_clear": "フィルターをクリア",
