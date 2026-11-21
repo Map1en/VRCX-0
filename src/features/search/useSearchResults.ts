@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
+import avatarSearchProviderRepository, {
+    AvatarProviderBlockedError
+} from '@/repositories/avatarSearchProviderRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
@@ -213,10 +215,15 @@ export function useSearchResults({
                 if (searchSequence.avatar === sequence) {
                     toast.add({
                         type: 'error',
-                        title: userFacingErrorMessage(
-                            error,
-                            t('view.search.toast.failed_to_search_avatars')
-                        )
+                        title:
+                            error instanceof AvatarProviderBlockedError
+                                ? t('view.search.toast.avatar_provider_blocked')
+                                : userFacingErrorMessage(
+                                      error,
+                                      t(
+                                          'view.search.toast.failed_to_search_avatars'
+                                      )
+                                  )
                     });
                 }
             } finally {

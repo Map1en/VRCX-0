@@ -1096,7 +1096,7 @@ export const commands = {
     appRuntimeBackgroundJobRecord: (input: RuntimeJobRecordInput) =>
         __TAURI_INVOKE<void>('app__runtime_background_job_record', { input }),
     appExternalApiAvatarSearchGet: (input: ExternalApiAvatarSearchInput) =>
-        __TAURI_INVOKE<ExternalApiExecuteResponse>(
+        __TAURI_INVOKE<ExternalApiAvatarSearchResponse>(
             'app__external_api_avatar_search_get',
             { input }
         ),
@@ -4125,6 +4125,13 @@ export type EntityKind = 'user' | 'world';
 export type ExternalApiAvatarSearchInput = {
     url?: string;
     vrcxId?: string;
+};
+
+export type ExternalApiAvatarSearchResponse = {
+    status: number;
+    data: string;
+    raw: JsonValue;
+    serverBlocked: boolean;
 };
 
 export type ExternalApiExecuteResponse = {

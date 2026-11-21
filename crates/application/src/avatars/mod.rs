@@ -2,6 +2,7 @@ mod feed_cleanup;
 mod moderation;
 mod my_avatars;
 mod ports;
+mod provider_block;
 mod remote_mutations;
 
 pub use feed_cleanup::{
@@ -18,6 +19,7 @@ pub use ports::{
     AvatarCacheStore, AvatarFeedCleanupStore, AvatarRemote, AvatarRemoteFuture,
     AvatarRemoteMutation, MyAvatarsStore,
 };
+pub use provider_block::cloudflare_block;
 pub use remote_mutations::{
     delete_avatar, execute_avatar_remote_mutation, save_avatar, select_avatar,
     AvatarRemoteMutationDeps, AvatarSelectionMutationOutcome,

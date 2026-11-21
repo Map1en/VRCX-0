@@ -1,15 +1,7 @@
-use std::sync::LazyLock;
-
-use regex::Regex;
 use vrcx_0_contracts::telemetry::TelemetryErrorDetail;
 
 use super::privacy::build_error_detail;
-
-const DEFAULT_PROVIDER_HOST: &str = "api.avtrdb.com";
-
-static CLOUDFLARE_ERROR_CODE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)error[\s-]*(?:code)?\W{0,4}(?:<[^>]*>\W{0,4})*(1\d{3})\b").unwrap()
-});
+use crate::avatars::cloudflare_block;
 
 pub(super) fn avatar_search_failure_detail(
     provider_url: &str,
@@ -17,7 +9,7 @@ pub(super) fn avatar_search_failure_detail(
     body: &str,
     app_version: &str,
 ) -> TelemetryErrorDetail {
-    let provider = provider_label(provider_url);
+    let provider = provider_host(provider_url);
     let block = cloudflare_block(body);
     let code = format!("http_{status}");
     let summary = match block.as_deref() {
@@ -34,23 +26,21 @@ pub(super) fn avatar_search_failure_detail(
     )
 }
 
-fn provider_label(url: &str) -> &'static str {
+fn provider_host(url: &str) -> String {
     let rest = url.split_once("://").map_or(url, |(_, rest)| rest);
-    let host = rest.split(['/', '?', '#', ':']).next().unwrap_or_default();
-    if host.eq_ignore_ascii_case(DEFAULT_PROVIDER_HOST) {
-        "avtrdb"
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    let host_port = authority
+        .rsplit_once('@')
+        .map_or(authority, |(_, host)| host);
+    let host = match host_port.strip_prefix('[') {
+        Some(ipv6) => ipv6.split(']').next().unwrap_or_default(),
+        None => host_port.split(':').next().unwrap_or_default(),
+    };
+    if host.is_empty() {
+        "unknown".into()
     } else {
-        "custom"
+        host.to_ascii_lowercase()
     }
-}
-
-fn cloudflare_block(body: &str) -> Option<String> {
-    if body.contains("cf-chl") || body.contains("challenge-platform") {
-        return Some("cf_challenge".into());
-    }
-    CLOUDFLARE_ERROR_CODE_PATTERN
-        .captures(body)
-        .map(|captures| format!("cf_{}", &captures[1]))
 }
 
 #[cfg(test)]
@@ -60,7 +50,7 @@ mod tests {
     const DEFAULT_URL: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx?search=miku&n=5000";
 
     #[test]
-    fn plain_text_cloudflare_error_code_is_classified() {
+    fn cloudflare_block_is_reported_with_provider_host() {
         let detail = avatar_search_failure_detail(DEFAULT_URL, 403, "error code: 1020", "2.40.0");
         assert_eq!(detail.kind, "rust_error");
         assert_eq!(detail.source.as_deref(), Some("avatar_search"));
@@ -68,15 +58,14 @@ mod tests {
         assert_eq!(detail.name.as_deref(), Some("cf_1020"));
         assert_eq!(
             detail.summary.as_deref(),
-            Some("provider=avtrdb; status=403; block=cf_1020")
+            Some("provider=api.avtrdb.com; status=403; block=cf_1020")
         );
         assert_eq!(detail.app_version.as_deref(), Some("2.40.0"));
     }
 
     #[test]
-    fn html_cloudflare_error_page_is_classified() {
-        let body = r#"<html><head><title>Attention Required! | Cloudflare</title></head><body>
-            <h1><span class="cf-error-type">Error</span> <span class="cf-error-code">1010</span></h1>
+    fn cloudflare_ray_id_is_not_reported() {
+        let body = r#"<html><body><span class="cf-error-type">Error</span> <span class="cf-error-code">1010</span>
             <span class="cf-footer-item">Cloudflare Ray ID: <strong>8a1b2c3d4e5f6a7b</strong></span></body></html>"#;
         let detail = avatar_search_failure_detail(DEFAULT_URL, 403, body, "2.40.0");
         assert_eq!(detail.name.as_deref(), Some("cf_1010"));
@@ -84,14 +73,6 @@ mod tests {
             .summary
             .unwrap_or_default()
             .contains("8a1b2c3d4e5f6a7b"));
-    }
-
-    #[test]
-    fn cloudflare_challenge_page_is_classified() {
-        let body = r#"<!DOCTYPE html><html><head><title>Just a moment...</title></head>
-            <body><script src="/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1"></script></body></html>"#;
-        let detail = avatar_search_failure_detail(DEFAULT_URL, 403, body, "2.40.0");
-        assert_eq!(detail.name.as_deref(), Some("cf_challenge"));
     }
 
     #[test]
@@ -106,19 +87,21 @@ mod tests {
         assert_eq!(detail.name, None);
         assert_eq!(
             detail.summary.as_deref(),
-            Some("provider=avtrdb; status=429")
+            Some("provider=api.avtrdb.com; status=429")
         );
     }
 
     #[test]
-    fn custom_provider_url_is_not_reported() {
+    fn custom_provider_reports_only_its_domain() {
         let detail = avatar_search_failure_detail(
-            "https://avatars.private.example:8443/vrcx_search.php?search=miku",
+            "https://user:secret@Avatars.Example.org:8443/vrcx_search.php?search=miku",
             403,
             "",
             "2.40.0",
         );
-        let summary = detail.summary.unwrap_or_default();
-        assert_eq!(summary, "provider=custom; status=403");
+        assert_eq!(
+            detail.summary.as_deref(),
+            Some("provider=avatars.example.org; status=403")
+        );
     }
 }

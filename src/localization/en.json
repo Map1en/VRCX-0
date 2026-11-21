@@ -1873,6 +1873,7 @@
                 "failed_to_search_worlds": "Failed to search worlds",
                 "failed_to_search_groups": "Failed to search groups",
                 "failed_to_search_avatars": "Failed to search avatars",
+                "avatar_provider_blocked": "The avatar provider’s server blocked this request. Try again later or switch providers.",
                 "failed_to_save_avatar_provider": "Failed to save avatar provider",
                 "failed_to_load_hot_worlds": "Failed to load hot worlds"
             }

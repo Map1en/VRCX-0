@@ -35,6 +35,13 @@ interface SearchInput {
     query: string;
 }
 
+export class AvatarProviderBlockedError extends Error {
+    constructor(status: number) {
+        super(`Avatar provider blocked the request (${status})`);
+        this.name = 'AvatarProviderBlockedError';
+    }
+}
+
 const DEFAULT_PROVIDER = 'https://api.avtrdb.com/v3/avatar/search/vrcx';
 const AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS = [
     'avatarRemoteDatabase',
@@ -295,6 +302,9 @@ async function search({
     });
     const json = parseResponse(response.data);
 
+    if (response.serverBlocked) {
+        throw new AvatarProviderBlockedError(response.status);
+    }
     if (response.status !== 200) {
         throw new Error(`Avatar search failed (${response.status})`);
     }

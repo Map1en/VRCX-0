@@ -1871,6 +1871,7 @@
                 "failed_to_search_worlds": "Welten konnten nicht durchsucht werden",
                 "failed_to_search_groups": "Gruppen konnten nicht durchsucht werden",
                 "failed_to_search_avatars": "Avatare konnten nicht durchsucht werden",
+                "avatar_provider_blocked": "Der Server des Avatar-Anbieters hat die Anfrage blockiert. Versuche es später erneut oder wähle einen anderen Anbieter.",
                 "failed_to_save_avatar_provider": "Avatar-Anbieter konnte nicht gespeichert werden",
                 "failed_to_load_hot_worlds": "Beliebte Welten konnten nicht geladen werden"
             }

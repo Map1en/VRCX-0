@@ -31,7 +31,9 @@ import { commands } from '@/platform/tauri/bindings';
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
 
 import avatarProfileRepository from './avatarProfileRepository';
-import avatarSearchProviderRepository from './avatarSearchProviderRepository';
+import avatarSearchProviderRepository, {
+    AvatarProviderBlockedError
+} from './avatarSearchProviderRepository';
 import configRepository from './configRepository';
 
 const DEFAULT_PROVIDER = 'https://api.avtrdb.com/v3/avatar/search/vrcx';
@@ -53,7 +55,8 @@ describe('AvatarSearchProviderRepository', () => {
         vi.mocked(commands.appExternalApiAvatarSearchGet).mockResolvedValue({
             status: 200,
             data: '[]',
-            raw: []
+            raw: [],
+            serverBlocked: false
         });
         vi.mocked(avatarProfileRepository.normalize).mockImplementation(
             (avatarInput: unknown) => {
@@ -154,7 +157,8 @@ describe('AvatarSearchProviderRepository', () => {
                     updatedAt: '2024-01-02T00:00:00Z'
                 }
             ]),
-            raw: { provider: true }
+            raw: { provider: true },
+            serverBlocked: false
         });
 
         const result = await avatarSearchProviderRepository.search({
@@ -192,6 +196,22 @@ describe('AvatarSearchProviderRepository', () => {
         expect(
             (result.avatars as NormalizedAvatar[]).map((avatar) => avatar.id)
         ).toEqual(['avtr_alpha', 'avtr_beta']);
+    });
+
+    it('rejects with a blocked error when the provider server blocks the request', async () => {
+        vi.mocked(commands.appExternalApiAvatarSearchGet).mockResolvedValue({
+            status: 403,
+            data: '<html>challenge-platform</html>',
+            raw: {},
+            serverBlocked: true
+        });
+
+        await expect(
+            avatarSearchProviderRepository.search({
+                provider: DEFAULT_PROVIDER,
+                query: 'alpha'
+            })
+        ).rejects.toBeInstanceOf(AvatarProviderBlockedError);
     });
 
     it('persists the default provider list when no provider list is configured', async () => {

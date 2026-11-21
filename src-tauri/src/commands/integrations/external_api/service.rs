@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_runtime_host_desktop::ExternalApiExecuteResponse;
+use vrcx_0_runtime_host_desktop::{ExternalApiAvatarSearchResponse, ExternalApiExecuteResponse};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -16,7 +16,7 @@ use super::types::{
 pub async fn app__external_api_avatar_search_get(
     state: State<'_, AppState>,
     input: ExternalApiAvatarSearchInput,
-) -> Result<ExternalApiExecuteResponse, AppError> {
+) -> Result<ExternalApiAvatarSearchResponse, AppError> {
     state
         .runtime_host()
         .external_api()

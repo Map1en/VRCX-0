@@ -123,6 +123,15 @@ pub struct ExternalApiExecuteResponse {
     pub raw: Value,
 }
 
+#[derive(Debug, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ExternalApiAvatarSearchResponse {
+    pub status: i32,
+    pub data: String,
+    pub raw: Value,
+    pub server_blocked: bool,
+}
+
 pub struct ExternalWebExecuteRequest {
     pub url: String,
     pub method: String,
