@@ -490,7 +490,7 @@ export function WorldDialogInstancesPanel({
             </div>
             <div
                 className={cn(
-                    'flex flex-col',
+                    'flex shrink-0 flex-col',
                     visibleRows.length &&
                         'bg-card ring-stroke-subtle overflow-hidden rounded-xl ring-1'
                 )}
