@@ -76,7 +76,7 @@ function WorldInstanceQuickFilter({
         <Toggle
             pressed={pressed}
             onPressedChange={onPressedChange}
-            className="text-muted-foreground hover:text-foreground data-pressed:text-foreground px-2.5"
+            className="text-muted-foreground hover:text-foreground data-pressed:text-foreground px-2.5 data-pressed:bg-(--state-pressed-surface)"
         >
             <Icon />
             {label}

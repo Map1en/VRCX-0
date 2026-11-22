@@ -1,4 +1,4 @@
-import { LockIcon, UnlockIcon } from 'lucide-react';
+import { CrownIcon, LockIcon, UnlockIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import type { SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,7 @@ import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import { translateAccessType } from '@/shared/utils/location';
 import { useLaunchStore } from '@/state/launchStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 
 export type InstanceLocationSummaryProps = {
@@ -270,9 +271,19 @@ export function InstanceLocationSummary({
                 <LockIcon className="text-muted-foreground ml-1.5 size-4 shrink-0" />
             ) : null}
             {ownerLabel ? (
-                <span className="text-muted-foreground ml-2 max-w-48 truncate text-xs">
-                    {t('dialog.world.instances.instance_creator')}: {ownerLabel}
-                </span>
+                <HintTooltip
+                    label={t('dialog.world.instances.instance_creator')}
+                >
+                    <span className="text-muted-foreground ml-2 flex max-w-48 min-w-0 items-center gap-1 text-xs">
+                        <CrownIcon
+                            aria-label={t(
+                                'dialog.world.instances.instance_creator'
+                            )}
+                            className="size-3.5 shrink-0"
+                        />
+                        <span className="min-w-0 truncate">{ownerLabel}</span>
+                    </span>
+                </HintTooltip>
             ) : null}
             {showPlayerSummary && playerSummary ? (
                 <span className="text-muted-foreground ml-2 shrink-0 text-xs">

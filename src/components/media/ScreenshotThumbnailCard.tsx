@@ -132,6 +132,7 @@ export function ScreenshotThumbnailCard({
     onOpen,
     title = '',
     worldNameHint = '',
+    hideWorldTitle = false,
     selectable = false,
     selected = false,
     selectionActive = false,
@@ -147,6 +148,7 @@ export function ScreenshotThumbnailCard({
     onOpen: (path: string) => void;
     title?: string;
     worldNameHint?: string;
+    hideWorldTitle?: boolean;
     selectable?: boolean;
     selected?: boolean;
     selectionActive?: boolean;
@@ -198,7 +200,10 @@ export function ScreenshotThumbnailCard({
                 }
             >
                 <div
-                    className={`bg-muted relative flex ${mediaHeight} items-center justify-center overflow-hidden`}
+                    className={cn(
+                        'bg-muted relative flex items-center justify-center overflow-hidden',
+                        hideWorldTitle ? 'min-h-0 flex-1' : mediaHeight
+                    )}
                 >
                     {thumbnailUrl ? (
                         <FadeInImage
@@ -235,29 +240,39 @@ export function ScreenshotThumbnailCard({
                             </div>
                         </>
                     )}
-                </div>
-                <div className="flex min-h-0 flex-1 flex-col gap-1 p-2">
-                    {worldTitle ? (
-                        <div
-                            className="truncate text-sm font-medium"
+                    {hideWorldTitle ? (
+                        <span
+                            className="absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-black/70 to-transparent px-2 pt-5 pb-1.5 text-xs font-medium text-white/90 tabular-nums"
                             title={item.fileName}
                         >
-                            {worldTitle}
-                        </div>
+                            {dateLabel}
+                        </span>
                     ) : null}
-                    <div
-                        className={cn(
-                            'flex items-center gap-1',
-                            worldTitle
-                                ? 'text-muted-foreground text-xs'
-                                : 'text-sm font-medium'
-                        )}
-                        title={item.fileName}
-                    >
-                        <CameraIcon data-icon="inline-start" />
-                        <span className="truncate">{dateLabel}</span>
-                    </div>
                 </div>
+                {hideWorldTitle ? null : (
+                    <div className="flex min-h-0 flex-1 flex-col gap-1 p-2">
+                        {worldTitle ? (
+                            <div
+                                className="truncate text-sm font-medium"
+                                title={item.fileName}
+                            >
+                                {worldTitle}
+                            </div>
+                        ) : null}
+                        <div
+                            className={cn(
+                                'flex items-center gap-1',
+                                worldTitle
+                                    ? 'text-muted-foreground text-xs'
+                                    : 'text-sm font-medium'
+                            )}
+                            title={item.fileName}
+                        >
+                            <CameraIcon data-icon="inline-start" />
+                            <span className="truncate">{dateLabel}</span>
+                        </div>
+                    </div>
+                )}
             </TileShell>
             {selectable ? (
                 <span

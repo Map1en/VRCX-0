@@ -8,6 +8,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
+import {
+    ToolbarActions,
+    ToolbarIconButton,
+    ToolbarSearch,
+    ToolbarStatus
+} from '@/components/layout/ToolbarControls';
 import { StaticLocation } from '@/components/location/StaticLocation';
 import { formatDateFilterOrFallback, formatDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -25,8 +31,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-import { Input } from '@/ui/shadcn/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     type PreviousInstanceRow,
@@ -66,6 +70,7 @@ function InstanceHistoryRowLocation({
             <PreviousInstanceWorldLocation
                 row={row}
                 currentUserId={currentUserId}
+                showWorldName={false}
             />
         );
     }
@@ -127,7 +132,7 @@ function InstanceHistoryListRow<TRow extends PreviousInstanceRow>({
                     <InstanceCreatorCell row={row} />
                 </div>
             ) : null}
-            <span className="pointer-events-none relative w-14 shrink-0 text-right tabular-nums">
+            <span className="pointer-events-none relative min-w-14 shrink-0 text-right whitespace-nowrap tabular-nums">
                 {rowDuration(row)}
             </span>
             <div className="relative flex shrink-0 items-center gap-0.5">
@@ -336,33 +341,25 @@ export function InstanceHistoryListPanel<TRow extends PreviousInstanceRow>({
                 enterClassName
             )}
         >
-            <div className="flex items-center gap-2">
-                <Input
+            <div className="flex flex-wrap items-center gap-2">
+                <ToolbarStatus className="mr-auto tabular-nums">
+                    {query ? `${visibleRows.length}/${rows.length}` : null}
+                </ToolbarStatus>
+                <ToolbarSearch
                     value={search}
-                    onChange={(event) => setSearch(event.target.value)}
+                    onValueChange={setSearch}
                     placeholder={t(
                         'dialog.previous_instances.search_placeholder'
                     )}
-                    className="max-w-sm"
                 />
                 {onOpenFullHistory ? (
-                    <Tooltip>
-                        <TooltipTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon-sm"
-                                    className="ml-auto"
-                                    aria-label={openFullLabel}
-                                    onClick={() => onOpenFullHistory(query)}
-                                >
-                                    <ArrowUpRightIcon className="size-4" />
-                                </Button>
-                            }
+                    <ToolbarActions>
+                        <ToolbarIconButton
+                            icon={ArrowUpRightIcon}
+                            label={openFullLabel}
+                            onClick={() => onOpenFullHistory(query)}
                         />
-                        <TooltipContent>{openFullLabel}</TooltipContent>
-                    </Tooltip>
+                    </ToolbarActions>
                 ) : null}
             </div>
             {visibleRows.length ? (

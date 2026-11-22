@@ -164,7 +164,8 @@ describe('LocationWorld', () => {
         expect(html).toContain('EU');
         expect(html).toContain('World Beta · Group Plus #98765');
         expect(html).toContain('(Group Beta)');
-        expect(html).toContain('Creator: Maple');
+        expect(html).toContain('aria-label="Creator"');
+        expect(html).toContain('>Maple</span>');
         expect(html).toContain('7/24');
     });
 

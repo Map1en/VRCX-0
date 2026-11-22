@@ -58,6 +58,7 @@ export function WorldSidebarPinButton({
                     ? t('dialog.world.instances.unpin_from_sidebar')
                     : t('dialog.world.instances.pin_to_sidebar')
             }
+            active={pinned}
             disabled={!worldId || !hydrated}
             onClick={toggle}
         />

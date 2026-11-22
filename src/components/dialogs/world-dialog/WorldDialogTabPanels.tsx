@@ -1,11 +1,15 @@
-import { ImageIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react';
+import { ImageIcon, SparklesIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { EconomyStoreListings } from '@/components/economy/EconomyStoreListings';
+import {
+    ToolbarActions,
+    ToolbarRefreshButton,
+    ToolbarStatus
+} from '@/components/layout/ToolbarControls';
 import { ScreenshotThumbnailCard } from '@/components/media/ScreenshotThumbnailCard';
 import { useScreenshotGalleryGrid } from '@/components/media/useScreenshotGalleryGrid';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
     Empty,
@@ -67,15 +71,12 @@ function WorldScreenshotsEmptyState({
 function WorldScreenshotsGrid({
     screenshots,
     worldId,
-    worldName,
     onOpenScreenshot
 }: {
     screenshots: WorldWorldScreenshots;
     worldId: string;
-    worldName: string;
     onOpenScreenshot: (path: string) => void;
 }) {
-    const { t } = useTranslation();
     const safeScreenshots = Array.isArray(screenshots) ? screenshots : [];
     const {
         gridColumnCount,
@@ -92,11 +93,6 @@ function WorldScreenshotsGrid({
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-2">
-            <Badge variant="outline" className="w-fit">
-                {t('dialog.screenshot_metadata.image_count', {
-                    count: safeScreenshots.length
-                })}
-            </Badge>
             <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto p-1">
                 <div className="relative" style={{ height: totalHeight }}>
                     {visibleRows.map((row) => (
@@ -116,7 +112,7 @@ function WorldScreenshotsGrid({
                                         compact
                                         item={item}
                                         onOpen={onOpenScreenshot}
-                                        worldNameHint={worldName}
+                                        hideWorldTitle
                                     />
                                 )
                             )}
@@ -238,21 +234,20 @@ export function WorldDialogTabPanels({
                 value="screenshots"
                 className="flex min-h-0 flex-col gap-3 pt-3"
             >
-                <div className="flex shrink-0 justify-end">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={screenshotsRefreshDisabled}
-                        onClick={onRefreshScreenshots}
-                    >
-                        {screenshotsRefreshDisabled ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCwIcon data-icon="inline-start" />
-                        )}
-                        {t('common.actions.refresh')}
-                    </Button>
+                <div className="flex shrink-0 items-center gap-2">
+                    <ToolbarStatus className="mr-auto tabular-nums">
+                        {Array.isArray(screenshots) && screenshots.length
+                            ? t('dialog.screenshot_metadata.image_count', {
+                                  count: screenshots.length
+                              })
+                            : null}
+                    </ToolbarStatus>
+                    <ToolbarActions>
+                        <ToolbarRefreshButton
+                            loading={screenshotsRefreshDisabled}
+                            onRefresh={onRefreshScreenshots}
+                        />
+                    </ToolbarActions>
                 </div>
                 {screenshotsError &&
                 Array.isArray(screenshots) &&
@@ -270,7 +265,6 @@ export function WorldDialogTabPanels({
                     <WorldScreenshotsGrid
                         screenshots={screenshots}
                         worldId={world.id}
-                        worldName={world.name || ''}
                         onOpenScreenshot={onOpenScreenshot}
                     />
                 ) : (

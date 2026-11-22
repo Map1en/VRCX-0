@@ -267,11 +267,13 @@ function useInstanceOwnerProfile(userId: string, endpoint: string) {
 export function PreviousInstanceWorldLocation({
     row,
     currentUserId,
-    endpoint = ''
+    endpoint = '',
+    showWorldName = true
 }: {
     row: PreviousInstanceRow;
     currentUserId?: string | null;
     endpoint?: string;
+    showWorldName?: boolean;
 }) {
     const locationObject = rowLocationObject(row);
     const ownerUserId = normalizeLocationText(
@@ -298,6 +300,7 @@ export function PreviousInstanceWorldLocation({
             instanceOwnerName={recordedOwnerName || owner.displayName}
             interactive={false}
             hint={row?.worldName || ''}
+            showWorldName={showWorldName}
             className="max-w-full"
         />
     );
