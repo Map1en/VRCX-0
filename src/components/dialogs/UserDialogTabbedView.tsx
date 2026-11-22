@@ -630,6 +630,7 @@ export function UserDialogTabbedView({
         actionStatus,
         appearanceVisibility,
         avatarOverrideState,
+        bioLinks,
         canInviteFromCurrentLocation,
         currentAvatarTarget,
         currentUserAccountStanding,
@@ -673,6 +674,10 @@ export function UserDialogTabbedView({
         },
         onCopyUserId: () => {
             copyUserText(normalizedText(profile.id), t('dialog.user.info.id'));
+        },
+        onOpenLink: openExternalLink,
+        onCopyLink: (url: string) => {
+            copyUserText(url, t('dialog.group.info.links'));
         },
         onCopyUserUrl: () => {
             copyUserText(userUrl, t('dialog.user.info.url'));
@@ -746,7 +751,6 @@ export function UserDialogTabbedView({
             tabs
         },
         info: {
-            bioLinks,
             currentAvatarDisplayName,
             hideUserMemos,
             hideUserNotes,

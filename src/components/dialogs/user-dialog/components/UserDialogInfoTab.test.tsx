@@ -275,17 +275,13 @@ describe('UserDialogActivitySummaryPanel', () => {
 describe('UserDialogBioPanel', () => {
     it('keeps an empty bio panel only when it can be edited', () => {
         const { rerender } = render(
-            <UserDialogBioPanel
-                profile={{ id: 'usr_test', bio: '  ' }}
-                bioLinks={[]}
-            />
+            <UserDialogBioPanel profile={{ id: 'usr_test', bio: '  ' }} />
         );
         expect(screen.queryByText('dialog.user.info.bio')).toBeNull();
 
         rerender(
             <UserDialogBioPanel
                 profile={{ id: 'usr_self', bio: '' }}
-                bioLinks={[]}
                 onEditBio={vi.fn()}
             />
         );
@@ -295,10 +291,7 @@ describe('UserDialogBioPanel', () => {
     it('offers bio editing only when an edit handler is provided', () => {
         const onEditBio = vi.fn();
         const { rerender } = render(
-            <UserDialogBioPanel
-                profile={{ id: 'usr_test', bio: 'hello' }}
-                bioLinks={[]}
-            />
+            <UserDialogBioPanel profile={{ id: 'usr_test', bio: 'hello' }} />
         );
         expect(
             screen.queryByRole('button', {
@@ -309,7 +302,6 @@ describe('UserDialogBioPanel', () => {
         rerender(
             <UserDialogBioPanel
                 profile={{ id: 'usr_self', bio: 'hello' }}
-                bioLinks={[]}
                 onEditBio={onEditBio}
             />
         );

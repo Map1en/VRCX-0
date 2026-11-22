@@ -1,4 +1,9 @@
-import { ChevronRightIcon, CopyIcon, MoreHorizontalIcon } from 'lucide-react';
+import {
+    ChevronRightIcon,
+    CopyIcon,
+    MoreHorizontalIcon,
+    ExternalLinkIcon
+} from 'lucide-react';
 import {
     type ComponentProps,
     type ComponentType,
@@ -12,6 +17,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { collapseAllNested, JsonView } from 'react-json-view-lite';
 
+import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -552,6 +558,63 @@ function EntityFactAction({
     );
 }
 
+function linkHost(link: string) {
+    try {
+        return new URL(link).host.replace(/^www\./, '');
+    } catch {
+        return link;
+    }
+}
+
+function linkPath(link: string) {
+    try {
+        const url = new URL(link);
+        const path = `${url.pathname}${url.search}`.replace(/^\/$/, '');
+        return path.length > 18 ? `${path.slice(0, 14)}\u2026` : path;
+    } catch {
+        return '';
+    }
+}
+
+function EntityLinkFactRow({
+    link,
+    onOpen,
+    onCopy
+}: {
+    link: string;
+    onOpen: (link: string) => void;
+    onCopy: (link: string) => void;
+}) {
+    const { t } = useTranslation();
+    return (
+        <EntityFactRow
+            label={
+                <span className="flex min-w-0 items-center gap-1.5">
+                    <BioLinkFavicon
+                        link={link}
+                        className="size-3.5"
+                        fallback={<ExternalLinkIcon className="size-3.5" />}
+                    />
+                    <span className="truncate">{linkHost(link)}</span>
+                </span>
+            }
+        >
+            <EntityFactValue display={linkPath(link)} title={link}>
+                <EntityFactAction
+                    label={t('common.actions.open_link')}
+                    icon={ExternalLinkIcon}
+                    onClick={() => onOpen(link)}
+                />
+                <EntityFactAction
+                    label={t('common.actions.copy')}
+                    icon={CopyIcon}
+                    onClick={() => onCopy(link)}
+                />
+            </EntityFactValue>
+        </EntityFactRow>
+    );
+}
+
 function EntityInfoSections({ children, className }: ClassNameAndChildren) {
     return (
         <div className={cn('flex min-w-0 flex-col gap-6', className)}>
@@ -666,6 +729,7 @@ export {
     EntityFactAction,
     EntityFactList,
     EntityFactRow,
+    EntityLinkFactRow,
     EntityFactValue,
     EntityInfoBlock,
     EntityInfoGrid,

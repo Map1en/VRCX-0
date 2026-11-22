@@ -79,6 +79,7 @@ function createHeaderModel(effect?: InventoryItemRecord): UserHeaderModel {
             profileEffect: true,
             nameplateEffect: true
         },
+        bioLinks: [],
         avatarOverrideState: {
             hideAvatar: false,
             showAvatar: false
@@ -138,6 +139,8 @@ function createHeaderCommands(): UserHeaderCommands {
         onCopyDisplayName: noop,
         onCopyUserId: noop,
         onCopyUserUrl: noop,
+        onCopyLink: noop,
+        onOpenLink: noop,
         onEditMemo: noop,
         onEditSelfProfile: noop,
         onEditSelfStatus: noop,
@@ -222,6 +225,20 @@ describe('UserDialogHeaderSection nameplate', () => {
 });
 
 describe('UserDialogHeaderSection facts', () => {
+    it('lists bio links as rail rows', () => {
+        const headerModel = createHeaderModel();
+        headerModel.bioLinks = ['https://x.com/example'];
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        expect(screen.getByText('x.com')).toBeTruthy();
+    });
+
     it('lists the account creation date with the identity facts', () => {
         const headerModel = createHeaderModel();
         headerModel.profile.date_joined = '2022-04-30';

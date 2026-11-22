@@ -1,7 +1,6 @@
 import {
     ChevronRightIcon,
     CrownIcon,
-    ExternalLinkIcon,
     ImageIcon,
     PencilIcon,
     SparklesIcon,
@@ -18,7 +17,6 @@ import { useAvatarImageInfo } from '@/components/feed/useAvatarImageInfo';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
-import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import {
     Timeline,
@@ -36,10 +34,7 @@ import { formatDateTime } from '@/lib/dateTime';
 import { useWorldSummaries } from '@/lib/useWorldSummaries';
 import { cn } from '@/lib/utils';
 import { openWorldDialog } from '@/services/dialogService';
-import {
-    convertFileUrlToImageUrl,
-    openExternalLink
-} from '@/services/entityMediaService';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import type { UserDialogPreviousInstance } from '@/services/userDialogSessionCacheService';
 import type { UserDialogRelationshipEvent } from '@/services/userDialogSessionCacheService';
 import { parseLocation } from '@/shared/utils/location';
@@ -125,7 +120,6 @@ export type UserDialogNotesSectionProps = {
 
 export type UserDialogBioSectionProps = {
     profile: UserProfileEntity;
-    bioLinks: string[];
     onEditBio?: () => void;
 };
 
@@ -753,13 +747,12 @@ function UserDialogProfileLinksPanel({
 
 export function UserDialogBioPanel({
     profile,
-    bioLinks,
     onEditBio
 }: UserDialogBioSectionProps) {
     const { t } = useTranslation();
     const editLabel = t('dialog.user.actions.edit_profile');
 
-    if (!profile.bio?.trim() && !bioLinks.length && !onEditBio) {
+    if (!profile.bio?.trim() && !onEditBio) {
         return null;
     }
 
@@ -804,33 +797,6 @@ export function UserDialogBioPanel({
                         <TextScroll className="min-w-0">{text}</TextScroll>
                         {error}
                     </div>
-                    {bioLinks.length ? (
-                        <div className="flex flex-wrap gap-1.5">
-                            {bioLinks.map((link) => (
-                                <Button
-                                    key={link}
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={t(
-                                        'dialog.user.info.open_bio_link',
-                                        {
-                                            link
-                                        }
-                                    )}
-                                    title={link}
-                                    onClick={() => openExternalLink(link)}
-                                >
-                                    <BioLinkFavicon
-                                        link={link}
-                                        fallback={
-                                            <ExternalLinkIcon data-icon="inline-start" />
-                                        }
-                                    />
-                                </Button>
-                            ))}
-                        </div>
-                    ) : null}
                 </InfoPanel>
             )}
         </TranslatableText>
@@ -1077,7 +1043,7 @@ export function UserDialogInfoTab({
     profileLinksSection,
     activitySummarySection
 }: UserDialogInfoTabProps) {
-    const { profile, bioLinks, onEditBio } = bioSection;
+    const { profile, onEditBio } = bioSection;
 
     return (
         <EntityDialogTabContent value="info" className="pt-3">
@@ -1094,11 +1060,7 @@ export function UserDialogInfoTab({
                         hideUserMemos={notesSection.hideUserMemos}
                         onEditMemo={notesSection.onEditMemo}
                     />
-                    <MemoBioPanel
-                        profile={profile}
-                        bioLinks={bioLinks}
-                        onEditBio={onEditBio}
-                    />
+                    <MemoBioPanel profile={profile} onEditBio={onEditBio} />
                 </div>
                 <div className="flex min-w-0 flex-col gap-4">
                     <MemoProfileLinksPanel

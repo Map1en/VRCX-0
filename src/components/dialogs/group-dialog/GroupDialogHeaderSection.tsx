@@ -32,7 +32,6 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
@@ -54,6 +53,7 @@ import {
     EntityFactList,
     EntityFactRow,
     EntityFactValue,
+    EntityLinkFactRow,
     EntityOverviewCard
 } from '../EntityDialogScaffold';
 import type { GroupActionStatus } from './groupDialogTypes';
@@ -135,24 +135,6 @@ function GroupRailMetric({
             </div>
         </div>
     );
-}
-
-function linkHost(link: string) {
-    try {
-        return new URL(link).host.replace(/^www\./, '');
-    } catch {
-        return link;
-    }
-}
-
-function linkPath(link: string) {
-    try {
-        const url = new URL(link);
-        const path = `${url.pathname}${url.search}`.replace(/^\/$/, '');
-        return path.length > 18 ? `${path.slice(0, 14)}\u2026` : path;
-    } catch {
-        return '';
-    }
 }
 
 export function GroupDialogHeaderSection({
@@ -691,39 +673,12 @@ export function GroupDialogHeaderSection({
                         </EntityFactValue>
                     </EntityFactRow>
                     {groupLinks.map((link) => (
-                        <EntityFactRow
+                        <EntityLinkFactRow
                             key={link}
-                            label={
-                                <span className="flex min-w-0 items-center gap-1.5">
-                                    <BioLinkFavicon
-                                        link={link}
-                                        className="size-3.5"
-                                        fallback={
-                                            <ExternalLinkIcon className="size-3.5" />
-                                        }
-                                    />
-                                    <span className="truncate">
-                                        {linkHost(link)}
-                                    </span>
-                                </span>
-                            }
-                        >
-                            <EntityFactValue
-                                display={linkPath(link)}
-                                title={link}
-                            >
-                                <EntityFactAction
-                                    label={t('common.actions.open_link')}
-                                    icon={ExternalLinkIcon}
-                                    onClick={() => onOpenLink(link)}
-                                />
-                                <EntityFactAction
-                                    label={t('common.actions.copy')}
-                                    icon={CopyIcon}
-                                    onClick={() => onCopyLink(link)}
-                                />
-                            </EntityFactValue>
-                        </EntityFactRow>
+                            link={link}
+                            onOpen={onOpenLink}
+                            onCopy={onCopyLink}
+                        />
                     ))}
                 </EntityFactList>
             ) : null}
