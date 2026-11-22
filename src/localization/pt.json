@@ -5215,7 +5215,17 @@
                 "friends_visited": "Amigos que Estiveram Aqui",
                 "friends_last_visited": "Última Visita de Amigo",
                 "persistent_data": "Dados Persistentes",
-                "cache_size": "Tamanho do Cache"
+                "cache_size": "Tamanho do Cache",
+                "sections": {
+                    "personal": "Você e Este Mundo",
+                    "stats": "Público",
+                    "release": "Versão e Publicação",
+                    "technical": "Dados Técnicos",
+                    "tags": "Tags e Restrições"
+                },
+                "favorite_rate": "Taxa de Favoritos {rate}%",
+                "capacity_value": "Recomendado {recommended} · Máx. {max}",
+                "video_domains_count": "{count} Domínios Permitidos"
             },
             "json": {
                 "header": "JSON"
@@ -5359,6 +5369,13 @@
                 "failed_to_update_value": "Falha ao atualizar {value}",
                 "value_copied": "{value} copiado",
                 "set_value_as_your_vrchat_home_world": "Definir {value} como seu mundo inicial do VRChat?"
+            },
+            "rail": {
+                "online": "Online",
+                "favorites": "Favoritos",
+                "visits": "Visitas",
+                "capacity": "Capacidade",
+                "last_visited": "Última Visita"
             }
         },
         "avatar": {

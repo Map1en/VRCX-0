@@ -5251,7 +5251,17 @@
                 "friends_visited": "Друзья, которые здесь были",
                 "friends_last_visited": "Последний визит друга",
                 "persistent_data": "Стойкие данные",
-                "cache_size": "Размер кэша"
+                "cache_size": "Размер кэша",
+                "sections": {
+                    "personal": "Вы и этот мир",
+                    "stats": "Аудитория",
+                    "release": "Версия и публикация",
+                    "technical": "Технические данные",
+                    "tags": "Теги и ограничения"
+                },
+                "favorite_rate": "Доля в избранном {rate}%",
+                "capacity_value": "Рекомендуется {recommended} · Макс. {max}",
+                "video_domains_count": "Разрешённых доменов: {count}"
             },
             "json": {
                 "header": "JSON"
@@ -5395,6 +5405,13 @@
                 "failed_to_update_value": "Не удалось обновить {value}",
                 "value_copied": "{value} скопировано",
                 "set_value_as_your_vrchat_home_world": "Сделать {value} домашним миром в VRChat?"
+            },
+            "rail": {
+                "online": "Онлайн",
+                "favorites": "В избранном",
+                "visits": "Посещения",
+                "capacity": "Вместимость",
+                "last_visited": "Последний визит"
             }
         },
         "avatar": {

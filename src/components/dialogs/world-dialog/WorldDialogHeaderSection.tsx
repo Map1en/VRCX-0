@@ -1,4 +1,5 @@
 import {
+    ArmchairIcon,
     CopyIcon,
     DatabaseIcon,
     DownloadIcon,
@@ -6,27 +7,33 @@ import {
     ExternalLinkIcon,
     FlagIcon,
     FolderOpenIcon,
+    FootprintsIcon,
     GlobeIcon,
     HistoryIcon,
     HomeIcon,
     ImageIcon,
     LinkIcon,
     LockIcon,
+    type LucideIcon,
     MessageSquareIcon,
     PencilIcon,
     RefreshCwIcon,
     SettingsIcon,
-    Trash2Icon
+    StarIcon,
+    Trash2Icon,
+    UsersIcon
 } from 'lucide-react';
-import { isValidElement, type ReactNode } from 'react';
+import { isValidElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TranslatableText } from '@/components/translation/TranslatableText';
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import { formatDateTime } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
@@ -53,43 +60,74 @@ import {
 } from './WorldDialogViewParts';
 import { WorldRatingMenuItems } from './WorldRatingMenuItems';
 
-function overviewValue(value: unknown) {
-    return value || value === 0 ? String(value) : '—';
+function WorldRailStat({
+    icon: Icon,
+    label,
+    value,
+    detail
+}: {
+    icon: LucideIcon;
+    label: string;
+    value: number | string | undefined;
+    detail?: string;
+}) {
+    const { i18n } = useTranslation();
+    if (!value) {
+        return null;
+    }
+    const display =
+        typeof value === 'number'
+            ? new Intl.NumberFormat(i18n.resolvedLanguage || i18n.language, {
+                  notation: 'compact',
+                  maximumFractionDigits: 1
+              }).format(value)
+            : value;
+    const exact = typeof value === 'number' ? value.toLocaleString() : value;
+
+    return (
+        <HintTooltip label={`${label} ${exact}${detail ? ` · ${detail}` : ''}`}>
+            <span className="flex min-w-0 cursor-default items-center gap-1.5">
+                <Icon
+                    aria-hidden="true"
+                    className="text-muted-foreground size-3.5 shrink-0"
+                />
+                <span className="shrink-0 font-medium tabular-nums">
+                    {display}
+                </span>
+                <span className="text-muted-foreground min-w-0 truncate text-xs">
+                    {label}
+                </span>
+            </span>
+        </HintTooltip>
+    );
 }
 
-function scoreValue(value: unknown) {
-    const displayValue = overviewValue(value);
-    return displayValue === '—' ? displayValue : `${displayValue}/10`;
-}
-
-function WorldOverviewMetric({
-    full = false,
+function WorldRailMeter({
     label,
     value
 }: {
-    full?: boolean;
-    label?: ReactNode;
-    value: unknown;
+    label: string;
+    value: number | undefined;
 }) {
-    const displayValue = overviewValue(value);
-    if (displayValue === '—') {
+    if (!value) {
         return null;
     }
+    const score = Math.min(10, Math.max(0, value));
 
     return (
-        <div
-            className={cn(
-                'flex min-w-0 items-baseline gap-1',
-                full && 'col-span-2'
-            )}
-        >
-            {label ? (
-                <span className="text-muted-foreground truncate">{label}</span>
-            ) : null}
-            <span className="text-foreground min-w-0 truncate font-medium tabular-nums">
-                {displayValue}
+        <HintTooltip label={`${label} ${score}/10`}>
+            <span className="flex min-w-0 cursor-default items-center gap-1.5 text-xs">
+                <span className="text-muted-foreground w-14 shrink-0 truncate">
+                    {label}
+                </span>
+                <span className="bg-muted relative h-1.5 min-w-8 flex-1 overflow-hidden rounded-full">
+                    <span
+                        className="bg-primary absolute inset-y-0 left-0 rounded-full"
+                        style={{ width: `${score * 10}%` }}
+                    />
+                </span>
             </span>
-        </div>
+        </HintTooltip>
     );
 }
 
@@ -448,7 +486,7 @@ export function WorldDialogOverviewSection({
     headerModel: WorldDialogHeaderModel;
     headerCommands: WorldDialogHeaderCommands;
 }) {
-    const { t } = useTranslation();
+    const { i18n, t } = useTranslation();
     const {
         detail,
         favoriteRate,
@@ -472,28 +510,22 @@ export function WorldDialogOverviewSection({
     } = commands;
     const { restrictions, warnings } = visibleTags;
     const isPrivateWorld = !world.isLabs && world.releaseStatus === 'private';
-    const favoritesText = world.favorites
-        ? `${world.favorites}${favoriteRate ? ` (${favoriteRate}%)` : ''}`
+    const lastVisitedAt = model.previousInstances[0]?.created_at;
+    const lastVisitedText = lastVisitedAt
+        ? formatDateTime(
+              lastVisitedAt,
+              { dateStyle: 'medium', timeStyle: 'short' },
+              {
+                  appLocale: i18n.resolvedLanguage || i18n.language,
+                  fallback: ''
+              }
+          )
         : '';
-    const capacityText =
-        world.recommendedCapacity && world.capacity
-            ? `${world.recommendedCapacity}/${world.capacity}`
-            : world.recommendedCapacity || world.capacity || '';
     const occupantSplitText = `${t('dialog.world.instances.public_count', {
         count: world.publicOccupants ?? 0
     })} · ${t('dialog.world.instances.private_count', {
         count: world.privateOccupants ?? 0
     })}`;
-    const platformText = platformRows
-        .map((platform) => {
-            const size = fileAnalysisSizeForPlatform(
-                world.fileAnalysis,
-                platform
-            );
-            const name = platformDisplayName(platform);
-            return size ? `${name} ${size}` : name;
-        })
-        .join(' · ');
 
     return (
         <EntityOverviewCard
@@ -625,36 +657,100 @@ export function WorldDialogOverviewSection({
                 </div>
             ) : null}
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                <WorldOverviewMetric
-                    label={t('dialog.world.info.players')}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                <WorldRailStat
+                    icon={UsersIcon}
+                    label={t('dialog.world.rail.online')}
                     value={world.occupants}
+                    detail={occupantSplitText}
                 />
-                <WorldOverviewMetric
-                    label={t('dialog.world.info.capacity')}
-                    value={capacityText}
+                <WorldRailStat
+                    icon={StarIcon}
+                    label={t('dialog.world.rail.favorites')}
+                    value={world.favorites}
+                    detail={
+                        favoriteRate
+                            ? t('dialog.world.info.favorite_rate', {
+                                  rate: favoriteRate
+                              })
+                            : undefined
+                    }
                 />
-                <WorldOverviewMetric full value={occupantSplitText} />
-                <WorldOverviewMetric
-                    label={t('dialog.world.info.favorites')}
-                    value={favoritesText}
-                />
-                <WorldOverviewMetric
-                    label={t('dialog.world.info.visits')}
+                <WorldRailStat
+                    icon={FootprintsIcon}
+                    label={t('dialog.world.rail.visits')}
                     value={world.visits}
                 />
-                <WorldOverviewMetric
-                    label={t('dialog.world.info.heat')}
-                    value={scoreValue(world.heat)}
+                <WorldRailStat
+                    icon={ArmchairIcon}
+                    label={t('dialog.world.rail.capacity')}
+                    value={
+                        world.recommendedCapacity && world.capacity
+                            ? `${world.recommendedCapacity}/${world.capacity}`
+                            : world.recommendedCapacity || world.capacity
+                    }
                 />
-                <WorldOverviewMetric
-                    label={t('dialog.world.info.popularity')}
-                    value={scoreValue(world.popularity)}
-                />
-                {platformRows.length ? (
-                    <WorldOverviewMetric full value={platformText} />
-                ) : null}
             </div>
+
+            {world.heat || world.popularity ? (
+                <div className="flex flex-col gap-1.5">
+                    <WorldRailMeter
+                        label={t('dialog.world.info.heat')}
+                        value={world.heat}
+                    />
+                    <WorldRailMeter
+                        label={t('dialog.world.info.popularity')}
+                        value={world.popularity}
+                    />
+                </div>
+            ) : null}
+
+            {lastVisitedText || platformRows.length ? (
+                <EntityFactList className="border-t pt-3">
+                    {lastVisitedText ? (
+                        <EntityFactRow
+                            label={t('dialog.world.rail.last_visited')}
+                            value={lastVisitedText}
+                        />
+                    ) : null}
+                    {platformRows.length ? (
+                        <EntityFactRow label={t('dialog.world.info.platform')}>
+                            <span className="text-muted-foreground/80 flex min-w-0 items-center gap-1">
+                                {platformRows.map((platform, index) => {
+                                    const name = platformDisplayName(platform);
+                                    const size = fileAnalysisSizeForPlatform(
+                                        world.fileAnalysis,
+                                        platform
+                                    );
+                                    return (
+                                        <span
+                                            key={platform}
+                                            className="flex shrink-0 items-center gap-1"
+                                        >
+                                            {index > 0 ? (
+                                                <span className="opacity-50">
+                                                    ·
+                                                </span>
+                                            ) : null}
+                                            <HintTooltip
+                                                label={
+                                                    size
+                                                        ? `${name} ${size}`
+                                                        : name
+                                                }
+                                            >
+                                                <span className="cursor-default">
+                                                    {name}
+                                                </span>
+                                            </HintTooltip>
+                                        </span>
+                                    );
+                                })}
+                            </span>
+                        </EntityFactRow>
+                    ) : null}
+                </EntityFactList>
+            ) : null}
 
             {world.description ? (
                 <TranslatableText

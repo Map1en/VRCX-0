@@ -5204,7 +5204,17 @@
                 "friends_visited": "来过的好友",
                 "friends_last_visited": "好友上次到访",
                 "persistent_data": "持久化数据",
-                "cache_size": "缓存大小"
+                "cache_size": "缓存大小",
+                "sections": {
+                    "personal": "我和这个世界",
+                    "stats": "人气",
+                    "release": "版本与发布",
+                    "technical": "技术信息",
+                    "tags": "标签与限制"
+                },
+                "favorite_rate": "收藏率 {rate}%",
+                "capacity_value": "推荐 {recommended} · 最大 {max}",
+                "video_domains_count": "允许 {count} 个域名"
             },
             "json": {
                 "header": "原始 JSON 信息"
@@ -5348,6 +5358,13 @@
                 "failed_to_update_value": "更新{value}失败",
                 "value_copied": "已复制{value}",
                 "set_value_as_your_vrchat_home_world": "要将 {value} 设为你的家吗？"
+            },
+            "rail": {
+                "online": "在线",
+                "favorites": "收藏",
+                "visits": "访问",
+                "capacity": "上限",
+                "last_visited": "上次来过"
             }
         },
         "avatar": {

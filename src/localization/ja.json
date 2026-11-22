@@ -5200,7 +5200,17 @@
                 "friends_visited": "参加したフレンド",
                 "friends_last_visited": "フレンドの最終参加",
                 "persistent_data": "永続データ",
-                "cache_size": "キャッシュサイズ"
+                "cache_size": "キャッシュサイズ",
+                "sections": {
+                    "personal": "あなたとこのワールド",
+                    "stats": "人気",
+                    "release": "バージョンと公開",
+                    "technical": "技術情報",
+                    "tags": "タグと制限"
+                },
+                "favorite_rate": "お気に入り率 {rate}%",
+                "capacity_value": "推奨 {recommended}・最大 {max}",
+                "video_domains_count": "許可ドメイン {count} 件"
             },
             "json": {
                 "header": "JSON"
@@ -5344,6 +5354,13 @@
                 "failed_to_update_value": "{value} の更新に失敗しました",
                 "value_copied": "{value} をコピーしました",
                 "set_value_as_your_vrchat_home_world": "{value} を VRChat のホームワールドに設定しますか？"
+            },
+            "rail": {
+                "online": "オンライン",
+                "favorites": "お気に入り",
+                "visits": "訪問",
+                "capacity": "定員",
+                "last_visited": "前回の訪問"
             }
         },
         "avatar": {

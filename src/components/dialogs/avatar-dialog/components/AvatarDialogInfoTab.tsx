@@ -89,7 +89,7 @@ export function AvatarDialogInfoTab({
         <EntityDialogTabContent value="info" forceMount>
             <EntityInfoGrid>
                 {detail ? (
-                    <Alert className="w-full">
+                    <Alert className="col-span-full">
                         <AlertDescription>
                             {isValidElement(detail)
                                 ? detail
@@ -119,7 +119,7 @@ export function AvatarDialogInfoTab({
                     label={t('table.import.author')}
                     onClick={avatar.authorId ? onOpenAuthor : undefined}
                 >
-                    <span className="block truncate text-xs">
+                    <span className="block truncate text-sm leading-snug font-medium">
                         {avatar.authorName || EMPTY_VALUE}
                     </span>
                 </EntityInfoBlock>

@@ -5204,7 +5204,17 @@
                 "friends_visited": "來過的好友",
                 "friends_last_visited": "好友上次造訪",
                 "persistent_data": "永久保存資料",
-                "cache_size": "快取大小"
+                "cache_size": "快取大小",
+                "sections": {
+                    "personal": "我與這個世界",
+                    "stats": "人氣",
+                    "release": "版本與發布",
+                    "technical": "技術資訊",
+                    "tags": "標籤與限制"
+                },
+                "favorite_rate": "收藏率 {rate}%",
+                "capacity_value": "建議 {recommended} · 上限 {max}",
+                "video_domains_count": "允許 {count} 個網域"
             },
             "json": {
                 "header": "原始資料"
@@ -5348,6 +5358,13 @@
                 "failed_to_update_value": "更新{value}失敗",
                 "value_copied": "已複製{value}",
                 "set_value_as_your_vrchat_home_world": "將 {value} 設為你的 VRChat 起始世界？"
+            },
+            "rail": {
+                "online": "線上",
+                "favorites": "收藏",
+                "visits": "造訪",
+                "capacity": "上限",
+                "last_visited": "上次來過"
             }
         },
         "avatar": {

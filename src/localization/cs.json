@@ -5257,7 +5257,17 @@
                 "friends_visited": "Přátelé, kteří tu byli",
                 "friends_last_visited": "Poslední návštěva přítele",
                 "persistent_data": "Trvalá data",
-                "cache_size": "Velikost mezipaměti"
+                "cache_size": "Velikost mezipaměti",
+                "sections": {
+                    "personal": "Vy a tento svět",
+                    "stats": "Publikum",
+                    "release": "Verze a vydání",
+                    "technical": "Technické údaje",
+                    "tags": "Štítky a omezení"
+                },
+                "favorite_rate": "Podíl oblíbených {rate} %",
+                "capacity_value": "Doporučeno {recommended} · Max. {max}",
+                "video_domains_count": "Povolené domény: {count}"
             },
             "json": {
                 "header": "JSON"
@@ -5401,6 +5411,13 @@
                 "failed_to_update_value": "Nepodařilo se aktualizovat {value}",
                 "value_copied": "{value} zkopírováno",
                 "set_value_as_your_vrchat_home_world": "Nastavit {value} jako váš domovský svět VRChat?"
+            },
+            "rail": {
+                "online": "Online",
+                "favorites": "Oblíbené",
+                "visits": "Návštěvy",
+                "capacity": "Kapacita",
+                "last_visited": "Naposledy navštíveno"
             }
         },
         "avatar": {

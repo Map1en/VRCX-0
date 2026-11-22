@@ -140,7 +140,6 @@ export interface WorldDialogTabModel {
 
 export interface WorldDialogTabCommands {
     onChangeTab: (tab: string) => void;
-    onOpenAuthor: () => void;
     onOpenScreenshot: (path: string) => void;
     onPreviousInstancesChange: Dispatch<SetStateAction<WorldPreviousInstances>>;
     onRefresh: () => void;
@@ -574,11 +573,6 @@ export function WorldDialogTabbedView({
     };
     const tabCommands: WorldDialogTabCommands = {
         onChangeTab: changeTab,
-        onOpenAuthor: () =>
-            openUserDialog({
-                userId: world.authorId,
-                title: world.authorName || undefined
-            }),
         onOpenScreenshot,
         onPreviousInstancesChange,
         onRefresh,

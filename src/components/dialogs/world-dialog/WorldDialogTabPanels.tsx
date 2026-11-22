@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { EconomyStoreListings } from '@/components/economy/EconomyStoreListings';
 import { ScreenshotThumbnailCard } from '@/components/media/ScreenshotThumbnailCard';
 import { useScreenshotGalleryGrid } from '@/components/media/useScreenshotGalleryGrid';
-import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
-import { openExternalLink } from '@/services/entityMediaService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -22,26 +20,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 import {
     EntityDialogTabContent,
     EntityDialogTabs,
-    EntityInfoBlock,
-    EntityInfoGrid,
-    EntityMemoTextarea,
     EntityRawJson
 } from '../EntityDialogScaffold';
 import { InstanceHistoryListPanel } from '../previous-instances-table/InstanceHistoryListPanel';
-import { formatPreviousInstanceCount } from '../previous-instances-table/previousInstancesRows';
+import { WorldInfoSections } from './WorldDialogInfoSections';
 import { WorldDialogInstancesPanel } from './WorldDialogInstancesPanel';
 import type {
     WorldDialogTabCommands,
     WorldDialogTabModel,
     WorldWorldScreenshots
 } from './WorldDialogTabbedView';
-import { friendVisitSummary } from './worldDialogUtils';
-import { platformDisplayName } from './WorldDialogViewParts';
-
-const WORLD_DATE_FALLBACKS = {
-    empty: '',
-    invalid: String
-};
 
 function WorldScreenshotsEmptyState({
     loading = false,
@@ -175,20 +163,12 @@ export function WorldDialogTabPanels({
     } = model;
     const {
         onChangeTab,
-        onOpenAuthor,
         onOpenScreenshot,
         onPreviousInstancesChange,
         onRefresh,
         onRefreshScreenshots,
         onSaveMemo
     } = commands;
-    const releaseStatusLabel = world.isLabs
-        ? t('dialog.world.tags.labs')
-        : world.releaseStatus === 'public'
-          ? t('dialog.world.tags.public')
-          : world.releaseStatus === 'private'
-            ? t('dialog.world.tags.private')
-            : '—';
     return (
         <EntityDialogTabs
             value={activeTab}
@@ -298,224 +278,21 @@ export function WorldDialogTabPanels({
                 )}
             </EntityDialogTabContent>
             <EntityDialogTabContent value="info" forceMount>
-                <EntityInfoGrid>
-                    <EntityMemoTextarea
-                        label={t('dialog.world.info.memo')}
-                        value={memo}
-                        placeholder={t('dialog.world.info.memo_placeholder')}
-                        onSave={onSaveMemo}
-                    />
-                    {previewUrl ? (
-                        <EntityInfoBlock
-                            label={t('dialog.world.info.youtube_preview')}
-                            wide
-                            onClick={() => openExternalLink(previewUrl)}
-                        >
-                            <span className="block truncate text-xs">
-                                {previewUrl}
-                            </span>
-                        </EntityInfoBlock>
-                    ) : null}
-                    <EntityInfoBlock
-                        label={t('dialog.world.label.author')}
-                        onClick={world.authorId ? onOpenAuthor : undefined}
-                    >
-                        <span className="block truncate text-xs">
-                            {world.authorName || '—'}
-                        </span>
-                    </EntityInfoBlock>
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.players')}
-                        value={world.occupants ? String(world.occupants) : '—'}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.favorites')}
-                        value={
-                            world.favorites
-                                ? `${world.favorites}${favoriteRate ? ` (${favoriteRate}%)` : ''}`
-                                : '—'
-                        }
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.visits')}
-                        value={world.visits ? String(world.visits) : '—'}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.capacity')}
-                        value={`${world.recommendedCapacity || '—'} (${world.capacity || '—'})`}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.created_at')}
-                        value={formatDateFilterOrFallback(
-                            world.createdAt || world.created_at,
-                            'long',
-                            WORLD_DATE_FALLBACKS
-                        )}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.last_updated')}
-                        value={formatDateFilterOrFallback(
-                            world.updatedAt || world.updated_at,
-                            'long',
-                            WORLD_DATE_FALLBACKS
-                        )}
-                    />
-                    {world.labsPublicationDate &&
-                    world.labsPublicationDate !== 'none' ? (
-                        <EntityInfoBlock
-                            label={t('dialog.world.info.labs_publication_date')}
-                            value={formatDateFilterOrFallback(
-                                world.labsPublicationDate,
-                                'long',
-                                WORLD_DATE_FALLBACKS
-                            )}
-                        />
-                    ) : null}
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.publication_date')}
-                        value={formatDateFilterOrFallback(
-                            world.publicationDate,
-                            'long',
-                            WORLD_DATE_FALLBACKS
-                        )}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.last_visited')}
-                        value={formatDateFilterOrFallback(
-                            lastVisitedInstance?.created_at,
-                            'long',
-                            WORLD_DATE_FALLBACKS
-                        )}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.visit_count')}
-                        value={
-                            previousInstances.length
-                                ? formatPreviousInstanceCount(
-                                      previousInstances.length
-                                  )
-                                : '—'
-                        }
-                        onClick={
-                            previousInstances.length
-                                ? () => onChangeTab('visit-history')
-                                : undefined
-                        }
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.time_spent')}
-                        value={
-                            totalVisitTime > 0
-                                ? timeToText(totalVisitTime)
-                                : '—'
-                        }
-                    />
-                    {friendVisits && friendVisits.friendCount > 0 ? (
-                        <>
-                            <EntityInfoBlock
-                                label={t('dialog.world.info.friends_visited')}
-                                wide
-                            >
-                                <span className="block truncate text-sm leading-snug font-medium">
-                                    {String(friendVisits.friendCount)}
-                                </span>
-                                <span className="text-muted-foreground block truncate text-xs leading-snug">
-                                    {friendVisitSummary(friendVisits)}
-                                </span>
-                            </EntityInfoBlock>
-                            <EntityInfoBlock
-                                label={t(
-                                    'dialog.world.info.friends_last_visited'
-                                )}
-                                value={formatDateFilterOrFallback(
-                                    friendVisits.lastVisitedAt,
-                                    'long',
-                                    WORLD_DATE_FALLBACKS
-                                )}
-                            />
-                        </>
-                    ) : null}
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.version')}
-                        value={world.version ? String(world.version) : '—'}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.heat')}
-                        value={world.heat ? String(world.heat) : '—'}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.popularity')}
-                        value={
-                            world.popularity ? String(world.popularity) : '—'
-                        }
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.persistent_data')}
-                        value={hasPersistData ? '✓' : '—'}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.cache_size')}
-                        value={world.$isCached ? world.$cacheSize || '—' : '—'}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.release_status')}
-                        value={releaseStatusLabel}
-                    />
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.platform')}
-                        full
-                    >
-                        <span className="block text-xs whitespace-normal">
-                            {world.platforms
-                                ?.map(platformDisplayName)
-                                .join(', ') || '—'}
-                        </span>
-                    </EntityInfoBlock>
-                    {Array.isArray(world.urlList) && world.urlList.length ? (
-                        <EntityInfoBlock
-                            label={t(
-                                'dialog.allowed_video_player_domains.header'
-                            )}
-                            full
-                        >
-                            <div className="flex flex-wrap gap-1.5">
-                                {world.urlList.map((url) => (
-                                    <Badge key={url} variant="outline">
-                                        {url}
-                                    </Badge>
-                                ))}
-                            </div>
-                        </EntityInfoBlock>
-                    ) : null}
-                    {authorTags.length ? (
-                        <EntityInfoBlock
-                            label={t('dialog.world.info.author_tags')}
-                            full
-                        >
-                            <div className="flex flex-wrap gap-1.5">
-                                {authorTags.map((tag) => (
-                                    <Badge key={tag} variant="outline">
-                                        {tag}
-                                    </Badge>
-                                ))}
-                            </div>
-                        </EntityInfoBlock>
-                    ) : null}
-                    {restrictions.length ? (
-                        <EntityInfoBlock
-                            label={t('dialog.world.info.restrictions')}
-                            full
-                        >
-                            <div className="flex flex-wrap gap-1.5">
-                                {restrictions.map((tag) => (
-                                    <Badge key={tag.key} variant="outline">
-                                        {tag.label}
-                                    </Badge>
-                                ))}
-                            </div>
-                        </EntityInfoBlock>
-                    ) : null}
-                </EntityInfoGrid>
+                <WorldInfoSections
+                    world={world}
+                    authorTags={authorTags}
+                    favoriteRate={favoriteRate}
+                    friendVisits={friendVisits}
+                    hasPersistData={hasPersistData}
+                    lastVisitedInstance={lastVisitedInstance}
+                    memo={memo}
+                    previousInstanceCount={previousInstances.length}
+                    previewUrl={previewUrl}
+                    restrictions={restrictions}
+                    totalVisitTime={totalVisitTime}
+                    onOpenVisitHistory={() => onChangeTab('visit-history')}
+                    onSaveMemo={onSaveMemo}
+                />
             </EntityDialogTabContent>
             {typeof world.storeId === 'string' && world.storeId ? (
                 <EntityDialogTabContent value="store">

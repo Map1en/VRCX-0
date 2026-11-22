@@ -5141,7 +5141,17 @@
                 "friends_visited": "방문한 친구",
                 "friends_last_visited": "친구 마지막 방문",
                 "persistent_data": "영구 데이터",
-                "cache_size": "캐시 크기"
+                "cache_size": "캐시 크기",
+                "sections": {
+                    "personal": "나와 이 월드",
+                    "stats": "인기",
+                    "release": "버전 및 공개",
+                    "technical": "기술 정보",
+                    "tags": "태그 및 제한"
+                },
+                "favorite_rate": "즐겨찾기 비율 {rate}%",
+                "capacity_value": "권장 {recommended} · 최대 {max}",
+                "video_domains_count": "허용 도메인 {count}개"
             },
             "json": {
                 "header": "JSON"
@@ -5285,6 +5295,13 @@
                 "failed_to_update_value": "{value} 항목을 업데이트하지 못했습니다.",
                 "value_copied": "{value} 복사됨",
                 "set_value_as_your_vrchat_home_world": "{value} 월드를 VRChat 홈 월드로 설정할까요?"
+            },
+            "rail": {
+                "online": "접속",
+                "favorites": "즐겨찾기",
+                "visits": "방문",
+                "capacity": "정원",
+                "last_visited": "마지막 방문"
             }
         },
         "avatar": {
