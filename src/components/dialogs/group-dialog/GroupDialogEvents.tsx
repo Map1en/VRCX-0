@@ -1,14 +1,19 @@
-import { CalendarIcon, CalendarPlusIcon, RefreshCwIcon } from 'lucide-react';
+import { CalendarIcon, CalendarPlusIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildEventSeries } from '@/components/hosts/tools-dialogs/groupCalendarModel';
 import { GroupEventRow } from '@/components/hosts/tools-dialogs/GroupEventRow';
 import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+import {
+    ToolbarActions,
+    ToolbarIconButton,
+    ToolbarRefreshButton,
+    ToolbarStatus
+} from '@/components/layout/ToolbarControls';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { LoadStatus } from '@/domain/shared/types';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
-import { Button } from '@/ui/shadcn/button';
 import {
     Empty,
     EmptyDescription,
@@ -224,39 +229,25 @@ export function GroupEventsTab({
 
     return (
         <div className="flex min-h-0 flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-muted-foreground text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+                <ToolbarStatus className="mr-auto tabular-nums">
                     {t('dialog.group_calendar.events_count_short', {
                         count: rows.length
                     })}
-                </div>
-                <div className="flex items-center gap-2">
+                </ToolbarStatus>
+                <ToolbarActions>
                     {canManage ? (
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
+                        <ToolbarIconButton
+                            icon={CalendarPlusIcon}
+                            label={t('dialog.group.actions.create_event')}
                             onClick={onCreate}
-                        >
-                            <CalendarPlusIcon data-icon="inline-start" />
-                            {t('dialog.group.actions.create_event')}
-                        </Button>
+                        />
                     ) : null}
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={loading}
-                        onClick={onRefresh}
-                    >
-                        {loading ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCwIcon data-icon="inline-start" />
-                        )}
-                        {t('common.actions.refresh')}
-                    </Button>
-                </div>
+                    <ToolbarRefreshButton
+                        loading={loading}
+                        onRefresh={onRefresh}
+                    />
+                </ToolbarActions>
             </div>
 
             {error ? (

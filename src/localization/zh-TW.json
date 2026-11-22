@@ -5627,7 +5627,8 @@
                 "no_active_instances": "沒有活躍房間",
                 "no_active_instances_description": "目前沒有列出此群組的公開房間或群組房間。",
                 "no_recent_events": "沒有最近的群組活動",
-                "preview_banner": "預覽 {value} 橫幅"
+                "preview_banner": "預覽 {value} 橫幅",
+                "open_instances": "目前有 {count} 個房間開放中"
             },
             "events": {
                 "header": "活動",
@@ -5821,6 +5822,26 @@
                 "join_state_invite": "僅限邀請",
                 "join_state_closed": "關閉",
                 "allow_join_prompt": "在群組房間中提示玩家加入群組"
+            },
+            "values": {
+                "privacy": {
+                    "default": "公開",
+                    "private": "私密"
+                },
+                "join_state": {
+                    "open": "自由加入",
+                    "request": "需申請",
+                    "invite": "僅限邀請",
+                    "closed": "已關閉"
+                },
+                "membership": {
+                    "member": "成員",
+                    "inactive": "未加入",
+                    "requested": "已申請",
+                    "invited": "已受邀",
+                    "banned": "已封鎖",
+                    "userblocked": "已封鎖"
+                }
             }
         },
         "favorite": {

@@ -5573,7 +5573,8 @@
                 "no_active_instances": "활성 인스턴스 없음",
                 "no_active_instances_description": "현재 이 그룹에 열린 공개 또는 그룹 인스턴스가 없습니다.",
                 "no_recent_events": "최근 그룹 이벤트 없음",
-                "preview_banner": "{value} 배너 미리보기"
+                "preview_banner": "{value} 배너 미리보기",
+                "open_instances": "지금 열린 인스턴스 {count}개"
             },
             "events": {
                 "header": "이벤트",
@@ -5768,6 +5769,26 @@
                 "join_state_invite": "초대 전용",
                 "join_state_closed": "가입 불가",
                 "allow_join_prompt": "그룹 인스턴스에 있는 사람에게 가입 안내 표시"
+            },
+            "values": {
+                "privacy": {
+                    "default": "공개",
+                    "private": "비공개"
+                },
+                "join_state": {
+                    "open": "자유 가입",
+                    "request": "가입 신청",
+                    "invite": "초대 전용",
+                    "closed": "모집 중단"
+                },
+                "membership": {
+                    "member": "멤버",
+                    "inactive": "미가입",
+                    "requested": "신청함",
+                    "invited": "초대받음",
+                    "banned": "차단됨",
+                    "userblocked": "차단함"
+                }
             }
         },
         "favorite": {

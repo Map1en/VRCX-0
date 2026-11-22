@@ -5636,7 +5636,8 @@
                 "no_active_instances": "没有房间",
                 "no_active_instances_description": "此群组目前没有可进入的房间",
                 "no_recent_events": "此群组最近没有组织活动",
-                "preview_banner": "预览 {value} 横幅"
+                "preview_banner": "预览 {value} 横幅",
+                "open_instances": "现在有 {count} 个房间开着"
             },
             "events": {
                 "header": "活动",
@@ -5830,6 +5831,26 @@
                 "join_state_invite": "仅限邀请",
                 "join_state_closed": "关闭",
                 "allow_join_prompt": "在群组房间中提示玩家加入群组"
+            },
+            "values": {
+                "privacy": {
+                    "default": "公开",
+                    "private": "私密"
+                },
+                "join_state": {
+                    "open": "自由加入",
+                    "request": "需申请",
+                    "invite": "仅限邀请",
+                    "closed": "已关闭"
+                },
+                "membership": {
+                    "member": "成员",
+                    "inactive": "未加入",
+                    "requested": "已申请",
+                    "invited": "已受邀",
+                    "banned": "已封禁",
+                    "userblocked": "已屏蔽"
+                }
             }
         },
         "favorite": {

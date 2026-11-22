@@ -80,7 +80,6 @@ const group: GroupProfileRecord = {
 const noop = () => {};
 const tabCommands: GroupDialogTabCommands = {
     onChangeTab: noop,
-    onCopyGroupUrl: noop,
     onCreateEvent: noop,
     onDeleteEvent: noop,
     onDeletePost: noop,
@@ -90,12 +89,11 @@ const tabCommands: GroupDialogTabCommands = {
     onPhotosChanged: noop,
     onExportMembers: noop,
     onLoadMoreMembers: noop,
-    onOpenLink: noop,
-    onOpenOwner: noop,
     onPreviousInstancesChange: noop,
     onPreviewImage: noop,
     onPreviewRowImage: noop,
     onRefreshEvents: noop,
+    onRefreshInstances: noop,
     onRefreshMembers: noop,
     onSearchMembersChange: noop,
     onSearchPostsChange: noop,
@@ -116,8 +114,6 @@ function tabModel(activeTab: string, postsSearch = ''): GroupDialogTabModel {
         groupEventsError: '',
         groupEventsStatus: 'idle',
         groupTitle: 'Test Group',
-        groupUrl: '',
-        joinState: '',
         members: {
             rows: [],
             staffRows: [],
@@ -131,8 +127,6 @@ function tabModel(activeTab: string, postsSearch = ''): GroupDialogTabModel {
             isSearching: false,
             searchStatus: ''
         },
-        memberStatus: '',
-        ownerLabel: '',
         photos: [],
         posts: [],
         previousInstances: [],

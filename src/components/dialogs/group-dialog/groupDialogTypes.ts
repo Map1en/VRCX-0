@@ -108,11 +108,7 @@ export type GroupDialogTabModel = {
     groupEventsError: string;
     groupEventsStatus: LoadStatus;
     groupTitle: string;
-    groupUrl: string;
-    joinState: string;
     members: GroupDialogMembersModel;
-    memberStatus: string;
-    ownerLabel: string;
     photos: GroupGalleryPhotoRow[];
     posts: GroupPostRecord[];
     previousInstances: GroupPreviousInstanceRow[];
@@ -124,7 +120,6 @@ export type GroupDialogTabModel = {
 
 export type GroupDialogTabCommands = {
     onChangeTab: (tab: string) => void;
-    onCopyGroupUrl: () => void;
     onCreateEvent: () => void;
     onDeleteEvent: (event: GroupCalendarEventRecord) => void;
     onDeletePost: (post: GroupPostRecord) => void;
@@ -134,14 +129,13 @@ export type GroupDialogTabCommands = {
     onPhotosChanged: () => void;
     onExportMembers: (scope: 'loaded' | 'all') => void;
     onLoadMoreMembers: () => void;
-    onOpenLink: (url: string) => void;
-    onOpenOwner: () => void;
     onPreviousInstancesChange: Dispatch<
         SetStateAction<GroupPreviousInstanceRow[]>
     >;
     onPreviewImage: (url: string, title: string) => void;
     onPreviewRowImage: (url: string, title: string) => void;
     onRefreshEvents: () => void;
+    onRefreshInstances: () => void;
     onRefreshMembers: () => void;
     onSearchMembersChange: (value: string) => void;
     onSearchPostsChange: (value: string) => void;

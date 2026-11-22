@@ -58,7 +58,6 @@ import {
     normalizeGroupEvent,
     resolveGroupDialogTab
 } from './groupDialogUtils';
-import { shouldShowGroupBadgeValue } from './GroupDialogViewParts';
 import { GroupEventEditorDialog } from './GroupEventEditorDialog';
 import { staffRoleIdsOf } from './GroupMembersPanel';
 import { GroupPostEditorDialog } from './GroupPostEditorDialog';
@@ -172,7 +171,25 @@ export function GroupDialogTabbedView({
     const groupEventsRequestRef = useRef(0);
     const groupFollowingRequestRef = useRef(0);
     const followingEventIdsRef = useRef<Set<string>>(new Set());
-    const tabs = getGroupDialogTabs(t, Boolean(group.storeId));
+    const tabs = getGroupDialogTabs(
+        t,
+        Boolean(group.storeId),
+        activeInstances.length > 0
+    ).map((tab) =>
+        tab.value === 'instances'
+            ? {
+                  ...tab,
+                  label: (
+                      <span className="inline-flex items-baseline gap-1.5">
+                          <span>{tab.label}</span>
+                          <span className="text-muted-foreground text-[11px] leading-none font-medium tabular-nums">
+                              {activeInstances.length}
+                          </span>
+                      </span>
+                  )
+              }
+            : tab
+    );
     const posts =
         remoteStatus.posts === 'ready'
             ? remoteData.posts
@@ -541,10 +558,6 @@ export function GroupDialogTabbedView({
     const ownerLinkLabel = isGroupOwner
         ? 'You'
         : ownerLabel || group.ownerId || 'Owner';
-    const showPrivacyBadge = shouldShowGroupBadgeValue(group.privacy);
-    const showMembershipBadge = shouldShowGroupBadgeValue(
-        group.membershipStatus
-    );
 
     function copyGroupText(text: string, label: string) {
         return copyTextToClipboard(text, {
@@ -695,9 +708,7 @@ export function GroupDialogTabbedView({
         memberStatus,
         memberVisibility,
         ownerLinkLabel,
-        postsLoading: remoteStatus.posts === 'running',
-        showMembershipBadge,
-        showPrivacyBadge
+        postsLoading: remoteStatus.posts === 'running'
     };
     const headerCommands = useStableCommands({
         onBlockToggle: () => onBlock(!isBlocked),
@@ -716,6 +727,9 @@ export function GroupDialogTabbedView({
         onJoin,
         onLeave,
         onOpenGroupPage: () => openExternalLink(groupUrl),
+        onOpenLink: openExternalLink,
+        onCopyLink: (url: string) =>
+            copyGroupText(url, t('dialog.group.info.links')),
         onOpenModeration: () => {
             recordToolOpen('group-moderation');
             closeDialog();
@@ -743,11 +757,7 @@ export function GroupDialogTabbedView({
         groupEventsError,
         groupEventsStatus,
         groupTitle,
-        groupUrl,
-        joinState,
         members: groupMembers.model,
-        memberStatus,
-        ownerLabel,
         photos,
         posts,
         previousInstances,
@@ -758,8 +768,7 @@ export function GroupDialogTabbedView({
     };
     const tabCommands: GroupDialogTabCommands = {
         onChangeTab: changeTab,
-        onCopyGroupUrl: () =>
-            copyGroupText(groupUrl, t('dialog.group.info.url')),
+        onRefreshInstances: onRefresh,
         onCreateEvent: eventEditor.openCreate,
         onDeleteEvent: (event) => {
             void eventEditor.remove(getEventId(event), event.title || '');
@@ -777,8 +786,6 @@ export function GroupDialogTabbedView({
         onLoadMoreMembers: () => {
             void groupMembers.loadMore();
         },
-        onOpenLink: openExternalLink,
-        onOpenOwner: openGroupOwner,
         onPreviousInstancesChange,
         onPreviewImage: previewImage,
         onPreviewRowImage: previewRowImage,

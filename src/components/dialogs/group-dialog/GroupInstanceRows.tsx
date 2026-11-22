@@ -180,6 +180,27 @@ function normalizeGroupInstance(
     };
 }
 
+export function isGroupInstanceFull(instance: GroupDialogInstanceRow) {
+    const playerCount = firstKnownValue(
+        instance.playerCount,
+        instance.userCount,
+        instance.occupants,
+        getInstanceUsers(instance).length
+    );
+    const capacity = firstKnownValue(
+        instance.capacity,
+        instance.ref.capacity,
+        nestedRecord(instance.ref.world).capacity,
+        nestedRecord(instance.world).capacity
+    );
+    return (
+        typeof playerCount === 'number' &&
+        typeof capacity === 'number' &&
+        capacity > 0 &&
+        playerCount >= capacity
+    );
+}
+
 export function GroupInstanceRows({
     instances,
     currentUserId
@@ -211,7 +232,7 @@ export function GroupInstanceRows({
     }
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="bg-card ring-stroke-subtle flex flex-col overflow-hidden rounded-xl ring-1">
             {rows.map((instance, index) => {
                 const location = getInstanceLocation(instance);
                 const parsedLocation = parseLocation(location);
@@ -246,7 +267,7 @@ export function GroupInstanceRows({
                 return (
                     <div
                         key={`${location || getInstanceTitle(instance) || 'instance'}:${index}`}
-                        className="bg-muted/10 hover:bg-muted/25 rounded-md border px-2.5 py-2 text-sm transition-colors"
+                        className="border-stroke-subtle border-b px-3 py-2 text-sm transition-colors last:border-b-0 hover:bg-(--state-hover-surface)"
                     >
                         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden pr-1">

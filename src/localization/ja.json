@@ -5632,7 +5632,8 @@
                 "no_active_instances": "アクティブなインスタンスはありません",
                 "no_active_instances_description": "このグループには現在、パブリックまたはグループのインスタンスがありません。",
                 "no_recent_events": "最近のグループイベントはありません",
-                "preview_banner": "{value} のバナーをプレビュー"
+                "preview_banner": "{value} のバナーをプレビュー",
+                "open_instances": "{count} 件のインスタンスが開いています"
             },
             "events": {
                 "header": "イベント",
@@ -5826,6 +5827,26 @@
                 "join_state_invite": "招待のみ",
                 "join_state_closed": "締め切り",
                 "allow_join_prompt": "グループインスタンスにいる人へ参加を促す"
+            },
+            "values": {
+                "privacy": {
+                    "default": "公開",
+                    "private": "非公開"
+                },
+                "join_state": {
+                    "open": "誰でも参加可",
+                    "request": "承認制",
+                    "invite": "招待制",
+                    "closed": "募集停止"
+                },
+                "membership": {
+                    "member": "メンバー",
+                    "inactive": "未参加",
+                    "requested": "申請中",
+                    "invited": "招待済み",
+                    "banned": "BAN済み",
+                    "userblocked": "ブロック中"
+                }
             }
         },
         "favorite": {

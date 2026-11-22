@@ -6,10 +6,14 @@ import type { EntityDialogTab } from '../EntityDialogScaffold';
 
 export function getGroupDialogTabs(
     t: TFunction,
-    hasStore: boolean
+    hasStore: boolean,
+    hasInstances: boolean
 ): EntityDialogTab[] {
     return [
         { value: 'overview', label: t('dialog.group.overview.header') },
+        ...(hasInstances
+            ? [{ value: 'instances', label: t('dialog.group.info.instances') }]
+            : []),
         { value: 'events', label: t('dialog.group.events.header') },
         { value: 'posts', label: t('dialog.group.posts.header') },
         { value: 'members', label: t('dialog.group.members.header') },

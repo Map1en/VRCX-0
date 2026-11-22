@@ -5651,7 +5651,8 @@
                 "no_active_instances": "No hay instancias activas",
                 "no_active_instances_description": "Actualmente no hay instancias públicas ni de grupo listadas para este grupo.",
                 "no_recent_events": "No hay eventos de grupo recientes",
-                "preview_banner": "Previsualizar el banner de {value}"
+                "preview_banner": "Previsualizar el banner de {value}",
+                "open_instances": "{count} instancias abiertas ahora"
             },
             "events": {
                 "header": "Eventos",
@@ -5845,6 +5846,26 @@
                 "join_state_invite": "Solo con invitación",
                 "join_state_closed": "Cerrado",
                 "allow_join_prompt": "Invitar a unirse a quienes estén en instancias del grupo"
+            },
+            "values": {
+                "privacy": {
+                    "default": "Pública",
+                    "private": "Privada"
+                },
+                "join_state": {
+                    "open": "Abierta",
+                    "request": "Por solicitud",
+                    "invite": "Solo por invitación",
+                    "closed": "Cerrada"
+                },
+                "membership": {
+                    "member": "Miembro",
+                    "inactive": "No miembro",
+                    "requested": "Solicitado",
+                    "invited": "Invitado",
+                    "banned": "Expulsado",
+                    "userblocked": "Bloqueado"
+                }
             }
         },
         "favorite": {

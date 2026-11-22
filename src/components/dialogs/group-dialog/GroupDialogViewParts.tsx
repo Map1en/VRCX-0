@@ -1,6 +1,7 @@
+import { GlobeIcon } from 'lucide-react';
+
 import { useLanguageNames } from '@/components/language/useLanguageNames';
 import type { GroupProfileRecord } from '@/domain/entities/group';
-import { Badge } from '@/ui/shadcn/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { normalizeProfileLanguageRows } from '../user-dialog/userProfileFields';
@@ -17,70 +18,48 @@ export function normalizeGroupLanguages(
 type LanguageRow = ReturnType<typeof normalizeProfileLanguageRows>[number];
 
 export function GroupTitleLanguages({
-    languages,
-    limit = Infinity
+    languages
 }: {
     languages: LanguageRow[];
-    limit?: number;
 }) {
     const { languageName, languageDetail } = useLanguageNames();
     if (!languages.length) {
         return null;
     }
 
-    const visibleLanguages = Number.isFinite(limit)
-        ? languages.slice(0, limit)
-        : languages;
-    const hiddenLanguages = Number.isFinite(limit)
-        ? languages.slice(limit)
-        : [];
-    const hiddenLabel = hiddenLanguages
-        .map((language) => languageDetail(language.key, language.value))
-        .join(', ');
-
     return (
-        <span className="inline-flex max-w-full min-w-0 flex-wrap items-center gap-1">
-            {visibleLanguages.map((language) => {
-                const key = language.key || language.value;
-                const label = languageName(key);
-                return (
-                    <Tooltip key={`${key}:${language.value}`}>
-                        <TooltipTrigger
-                            render={
-                                <Badge
-                                    variant="outline"
-                                    className="shrink-0 text-xs"
-                                >
-                                    {label}
-                                </Badge>
-                            }
-                        />
-                        <TooltipContent>
-                            {languageDetail(key, language.value)}
-                        </TooltipContent>
-                    </Tooltip>
-                );
-            })}
-            {hiddenLanguages.length ? (
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <Badge
-                                variant="outline"
-                                className="shrink-0 text-xs"
-                            >
-                                +{hiddenLanguages.length}
-                            </Badge>
-                        }
-                    />
-                    <TooltipContent>{hiddenLabel}</TooltipContent>
-                </Tooltip>
-            ) : null}
+        <span className="text-muted-foreground flex min-w-0 items-center gap-2 text-xs">
+            <GlobeIcon
+                aria-hidden="true"
+                className="size-3.5 shrink-0 opacity-70"
+            />
+            <span className="flex min-w-0 flex-wrap items-center gap-y-0.5">
+                {languages.map((language, index) => {
+                    const key = language.key || language.value;
+                    return (
+                        <span
+                            key={`${key}:${language.value}`}
+                            className="inline-flex shrink-0 items-center"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger
+                                    render={
+                                        <span className="cursor-default">
+                                            {languageName(key)}
+                                        </span>
+                                    }
+                                />
+                                <TooltipContent>
+                                    {languageDetail(key, language.value)}
+                                </TooltipContent>
+                            </Tooltip>
+                            {index < languages.length - 1 ? (
+                                <span className="mx-1 opacity-50">·</span>
+                            ) : null}
+                        </span>
+                    );
+                })}
+            </span>
         </span>
     );
-}
-
-export function shouldShowGroupBadgeValue(value: string) {
-    const normalizedValue = value.trim().toLowerCase();
-    return Boolean(normalizedValue && normalizedValue !== 'default');
 }

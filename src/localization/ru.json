@@ -5637,7 +5637,8 @@
                 "no_active_instances": "Нет активных инстансов",
                 "no_active_instances_description": "Сейчас для этой группы не указано ни одного публичного или группового инстанса.",
                 "no_recent_events": "Никаких последних групповых событий не произошло",
-                "preview_banner": "Предпросмотр баннера {value}"
+                "preview_banner": "Предпросмотр баннера {value}",
+                "open_instances": "Сейчас открыто инстансов: {count}"
             },
             "events": {
                 "header": "Мероприятия",
@@ -5831,6 +5832,26 @@
                 "join_state_invite": "Только по приглашению",
                 "join_state_closed": "Закрыто",
                 "allow_join_prompt": "Предлагать вступить тем, кто находится в инстансах группы"
+            },
+            "values": {
+                "privacy": {
+                    "default": "Публичная",
+                    "private": "Приватная"
+                },
+                "join_state": {
+                    "open": "Открытая",
+                    "request": "По заявке",
+                    "invite": "Только по приглашению",
+                    "closed": "Закрыта"
+                },
+                "membership": {
+                    "member": "Участник",
+                    "inactive": "Не участник",
+                    "requested": "Заявка отправлена",
+                    "invited": "Приглашён",
+                    "banned": "Заблокирован",
+                    "userblocked": "Заблокировано"
+                }
             }
         },
         "favorite": {

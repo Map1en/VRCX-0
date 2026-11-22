@@ -13,10 +13,13 @@ import {
     DataTableRow
 } from '@/components/data-table/DataTableView';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
+import {
+    ToolbarSearch,
+    ToolbarStatus
+} from '@/components/layout/ToolbarControls';
 import { StaticLocation } from '@/components/location/StaticLocation';
 import { formatDateFilterOrFallback } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
@@ -165,19 +168,21 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                     </p>
                 </div>
             ) : null}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                    <Input
-                        value={search}
-                        onChange={(event) => onSearchChange(event.target.value)}
-                        placeholder={t(
-                            'dialog.previous_instances.search_placeholder'
-                        )}
-                        className="max-w-sm"
-                    />
-                </div>
+            <div className="flex flex-wrap items-center gap-2">
+                <ToolbarStatus className="mr-auto tabular-nums">
+                    {showHeader
+                        ? null
+                        : `${filteredCountText}/${totalCountText}`}
+                </ToolbarStatus>
+                <ToolbarSearch
+                    value={search}
+                    onValueChange={onSearchChange}
+                    placeholder={t(
+                        'dialog.previous_instances.search_placeholder'
+                    )}
+                />
                 <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground text-sm">
+                    <span className="text-muted-foreground text-xs">
                         {t('dialog.previous_instances.label.rows')}
                     </span>
                     <Select

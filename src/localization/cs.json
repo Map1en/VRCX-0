@@ -5643,7 +5643,8 @@
                 "no_active_instances": "Žádné aktivní instance",
                 "no_active_instances_description": "Pro tuto skupinu momentálně nejsou uvedeny žádné veřejné ani skupinové instance.",
                 "no_recent_events": "Žádné nedávné události skupiny",
-                "preview_banner": "Náhled banneru {value}"
+                "preview_banner": "Náhled banneru {value}",
+                "open_instances": "Právě otevřené instance: {count}"
             },
             "events": {
                 "header": "Události",
@@ -5837,6 +5838,26 @@
                 "join_state_invite": "Jen na pozvánku",
                 "join_state_closed": "Uzavřeno",
                 "allow_join_prompt": "Nabízet připojení lidem v instancích skupiny"
+            },
+            "values": {
+                "privacy": {
+                    "default": "Veřejná",
+                    "private": "Soukromá"
+                },
+                "join_state": {
+                    "open": "Otevřená",
+                    "request": "Na žádost",
+                    "invite": "Jen na pozvánku",
+                    "closed": "Uzavřená"
+                },
+                "membership": {
+                    "member": "Člen",
+                    "inactive": "Nečlen",
+                    "requested": "Požádáno",
+                    "invited": "Pozván",
+                    "banned": "Zablokován",
+                    "userblocked": "Blokováno"
+                }
             }
         },
         "favorite": {
