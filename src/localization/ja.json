@@ -2236,7 +2236,7 @@
             },
             "responses": {
                 "acknowledge_and_dismiss": "閉じる",
-                "unsubscribe_announcements": "購読を解除"
+                "unsubscribe_announcements": "お知らせを受け取らない"
             }
         },
         "friend_list": {
