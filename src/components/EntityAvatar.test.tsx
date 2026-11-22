@@ -17,4 +17,16 @@ describe('EntityAvatar', () => {
 
         expect(container.querySelector(`svg.${icon}`)).not.toBeNull();
     });
+
+    it('keeps worlds landscape and other entities square', () => {
+        const { container, rerender } = render(<EntityAvatar kind="world" />);
+        expect(
+            container.querySelector('[data-kind="world"]')?.className
+        ).toContain('w-[53px]');
+
+        rerender(<EntityAvatar kind="avatar" />);
+        expect(
+            container.querySelector('[data-kind="avatar"]')?.className
+        ).toContain('w-10');
+    });
 });

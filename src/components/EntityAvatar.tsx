@@ -12,8 +12,16 @@ export type EntityAvatarKind = 'group' | 'world' | 'avatar';
 export type EntityAvatarSize = 'lg' | 'xl';
 
 const SIZE_CLASS_NAMES: Record<EntityAvatarSize, string> = {
-    lg: 'size-10 rounded-[10px]',
-    xl: 'size-12 rounded-xl'
+    lg: 'h-10 rounded-[10px]',
+    xl: 'h-12 rounded-xl'
+};
+
+const WIDTH_CLASS_NAMES: Record<
+    EntityAvatarSize,
+    { square: string; landscape: string }
+> = {
+    lg: { square: 'w-10', landscape: 'w-[53px]' },
+    xl: { square: 'w-12', landscape: 'w-16' }
 };
 
 const FALLBACK_ICONS: Record<EntityAvatarKind, LucideIcon> = {
@@ -22,10 +30,14 @@ const FALLBACK_ICONS: Record<EntityAvatarKind, LucideIcon> = {
     avatar: PersonStandingIcon
 };
 
-export function entityAvatarFrameClassName(size: EntityAvatarSize = 'lg') {
+export function entityAvatarFrameClassName(
+    kind: EntityAvatarKind,
+    size: EntityAvatarSize = 'lg'
+) {
     return cn(
         'bg-muted after:ring-foreground/10 relative flex shrink-0 items-center justify-center overflow-hidden after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-1 after:ring-inset',
-        SIZE_CLASS_NAMES[size]
+        SIZE_CLASS_NAMES[size],
+        WIDTH_CLASS_NAMES[size][kind === 'world' ? 'landscape' : 'square']
     );
 }
 
@@ -51,7 +63,7 @@ export function EntityAvatar({
     return (
         <span
             data-kind={kind}
-            className={cn(entityAvatarFrameClassName(size), className)}
+            className={cn(entityAvatarFrameClassName(kind, size), className)}
         >
             {imageUrl ? (
                 <FadeInImage
