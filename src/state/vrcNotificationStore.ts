@@ -51,11 +51,15 @@ type NotificationStateSnapshot = {
     categories: NotificationCategories;
     unseenCount: number;
     pendingInviteCount: number;
+    recentDismissibleCount: number;
     detail: string;
 };
 type NotificationDerivedState = Pick<
     NotificationStateSnapshot,
-    'categories' | 'unseenCount' | 'pendingInviteCount'
+    | 'categories'
+    | 'unseenCount'
+    | 'pendingInviteCount'
+    | 'recentDismissibleCount'
 >;
 const NOTIFICATION_ROWS_MAX_ENTRIES = 2000;
 
@@ -138,6 +142,7 @@ type VrcNotificationStore = {
     categories: NotificationCategories;
     unseenCount: number;
     pendingInviteCount: number;
+    recentDismissibleCount: number;
     isCenterOpen: boolean;
     loadStatus: LoadStatus;
     detail: string;
@@ -173,6 +178,7 @@ function buildNotificationDerivedState(
     const recentCutoff = Date.now() - RECENT_WINDOW_MS;
     let unseenCount = 0;
     let pendingInviteCount = 0;
+    let recentDismissibleCount = 0;
 
     for (const notification of rows) {
         if (isPendingInvite(notification)) {
@@ -187,15 +193,41 @@ function buildNotificationDerivedState(
             unseenCount += 1;
             continue;
         }
-        if (
-            !isNotificationExpired(notification) &&
-            getNotificationTs(notification) > recentCutoff
-        ) {
+        if (isRecentNotification(notification, recentCutoff)) {
             bucket.recent.push(notification);
+            if (getDismissResponse(notification.responses)) {
+                recentDismissibleCount += 1;
+            }
         }
     }
 
-    return { categories, unseenCount, pendingInviteCount };
+    return {
+        categories,
+        unseenCount,
+        pendingInviteCount,
+        recentDismissibleCount
+    };
+}
+
+function isRecentNotification(
+    notification: NotificationRow,
+    recentCutoff: number
+): boolean {
+    return (
+        !isNotificationExpired(notification) &&
+        getNotificationTs(notification) > recentCutoff
+    );
+}
+
+function isRecentDismissible(
+    notification: NotificationRow,
+    recentCutoff: number
+): boolean {
+    return (
+        !isUnseenNotification(notification) &&
+        isRecentNotification(notification, recentCutoff) &&
+        getDismissResponse(notification.responses) !== null
+    );
 }
 
 function notificationRowsCapacity(currentLength: number): number {
@@ -428,12 +460,17 @@ function withoutFailedIds(failedIds: string[], idSet: Set<string>): string[] {
 export function selectCanMarkAllSeen(
     state: Pick<
         VrcNotificationStore,
-        'unseenCount' | 'pendingInviteCount' | 'markAllSeenProgress'
+        | 'unseenCount'
+        | 'pendingInviteCount'
+        | 'recentDismissibleCount'
+        | 'markAllSeenProgress'
     >
 ): boolean {
     return (
         state.markAllSeenProgress === null &&
-        (state.unseenCount > 0 || state.pendingInviteCount > 0)
+        (state.unseenCount > 0 ||
+            state.pendingInviteCount > 0 ||
+            state.recentDismissibleCount > 0)
     );
 }
 
@@ -463,6 +500,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
         categories: createEmptyCategories(),
         unseenCount: 0,
         pendingInviteCount: 0,
+        recentDismissibleCount: 0,
         isCenterOpen: false,
         loadStatus: 'idle',
         detail: '',
@@ -476,6 +514,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     categories: createEmptyCategories(),
                     unseenCount: 0,
                     pendingInviteCount: 0,
+                    recentDismissibleCount: 0,
                     loadStatus: 'idle',
                     detail: 'No current user session is available.'
                 });
@@ -524,6 +563,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     categories: createEmptyCategories(),
                     unseenCount: 0,
                     pendingInviteCount: 0,
+                    recentDismissibleCount: 0,
                     loadStatus: 'error',
                     detail: message
                 });
@@ -734,8 +774,13 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
         },
         async markAllSeen() {
             const scope = captureNotificationScope();
-            const readableRows = get().rows.filter(canMarkNotificationRead);
-            if (!scope || get().markAllSeenProgress || !readableRows.length) {
+            const recentCutoff = Date.now() - RECENT_WINDOW_MS;
+            const targetRows = get().rows.filter(
+                (notification) =>
+                    canMarkNotificationRead(notification) ||
+                    isRecentDismissible(notification, recentCutoff)
+            );
+            if (!scope || get().markAllSeenProgress || !targetRows.length) {
                 return { failedCount: 0 };
             }
 
@@ -744,10 +789,12 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 response: NotificationResponse;
             }[] = [];
             const readRows: NotificationRow[] = [];
-            for (const notification of readableRows) {
-                const response = isUnseenNotification(notification)
-                    ? getDismissResponse(notification.responses)
-                    : null;
+            for (const notification of targetRows) {
+                const response =
+                    isUnseenNotification(notification) ||
+                    isRecentDismissible(notification, recentCutoff)
+                        ? getDismissResponse(notification.responses)
+                        : null;
                 if (response) {
                     dismissTargets.push({ notification, response });
                 } else {
@@ -837,7 +884,11 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                             get().expireNotifications(id);
                         }
                     } catch (error) {
-                        failedDismissRows.push(target.notification);
+                        if (isUnseenNotification(target.notification)) {
+                            failedDismissRows.push(target.notification);
+                        } else {
+                            failedIds.push(id);
+                        }
                         console.warn(
                             'Failed to dismiss VRChat notification:',
                             error
@@ -884,6 +935,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 categories: createEmptyCategories(),
                 unseenCount: 0,
                 pendingInviteCount: 0,
+                recentDismissibleCount: 0,
                 isCenterOpen: false,
                 loadStatus: 'idle',
                 detail: '',

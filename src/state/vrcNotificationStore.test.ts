@@ -1004,6 +1004,90 @@ describe('vrcNotificationStore', () => {
         );
     });
 
+    it('dismisses recent seen notifications that still offer a dismiss response', async () => {
+        const dismissResponse = {
+            type: 'delete',
+            icon: 'check',
+            text: 'Acknowledge and dismiss this notification'
+        };
+        const recentSeen = {
+            id: 'notif_recent_seen',
+            type: 'group.announcement',
+            version: 2,
+            seen: true,
+            responses: [dismissResponse],
+            created_at: new Date().toISOString()
+        };
+        const oldSeen = {
+            ...recentSeen,
+            id: 'notif_old_seen',
+            created_at: '2020-01-01T00:00:00.000Z'
+        };
+        const recentWithoutDismiss = {
+            id: 'notif_recent_plain',
+            type: 'group.announcement',
+            version: 2,
+            seen: true,
+            created_at: new Date().toISOString()
+        };
+        const store = useVrcNotificationStore.getState();
+        store.upsertNotification(recentSeen);
+        store.upsertNotification(oldSeen);
+        store.upsertNotification(recentWithoutDismiss);
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
+        expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
+        expect(selectCanMarkAllSeen(useVrcNotificationStore.getState())).toBe(
+            true
+        );
+
+        await expect(
+            useVrcNotificationStore.getState().markAllSeen()
+        ).resolves.toEqual({ failedCount: 0 });
+
+        expect(
+            notificationActionMocks.sendNotificationButtonResponse
+        ).toHaveBeenCalledTimes(1);
+        expect(
+            notificationActionMocks.sendNotificationButtonResponse
+        ).toHaveBeenCalledWith(
+            expect.objectContaining({
+                notification: expect.objectContaining({ id: recentSeen.id }),
+                response: dismissResponse
+            })
+        );
+        expect(commandMocks.markSeenBatch).not.toHaveBeenCalled();
+    });
+
+    it('reports a failed dismissal of a seen notification without marking it read', async () => {
+        const recentSeen = {
+            id: 'notif_recent_seen',
+            type: 'group.announcement',
+            version: 2,
+            seen: true,
+            responses: [{ type: 'delete', icon: 'check', text: 'Dismiss' }],
+            created_at: new Date().toISOString()
+        };
+        useVrcNotificationStore.getState().upsertNotification(recentSeen);
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([
+            recentSeen
+        ]);
+        notificationActionMocks.sendNotificationButtonResponse.mockRejectedValue(
+            new Error('Too many requests')
+        );
+
+        await expect(
+            useVrcNotificationStore.getState().markAllSeen()
+        ).resolves.toEqual({ failedCount: 1 });
+
+        expect(commandMocks.markSeenBatch).not.toHaveBeenCalled();
+        expect(
+            selectMarkAllSeenRowState(
+                useVrcNotificationStore.getState(),
+                recentSeen.id
+            )
+        ).toBe('failed');
+    });
+
     it('keeps mark-all-seen running once and marks failed dismissals read instead', async () => {
         const announcement = {
             id: 'notif_announcement',
