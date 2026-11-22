@@ -5127,14 +5127,20 @@
                 "future_proofing": "Future Proofing",
                 "labs": "Labs",
                 "cache": "Cache",
-                "restrictions_count_one": "{count} restriction",
-                "restrictions_count_other": "{count} restrictions",
                 "content_horror": "Horror",
                 "content_gore": "Gore",
                 "content_violence": "Violence",
                 "content_adult": "Adult",
                 "content_sex": "Sexual",
-                "pedestals": "Pedestals"
+                "pedestals": "Pedestals",
+                "emoji_disabled": "Emoji disabled",
+                "stickers_disabled": "Stickers disabled",
+                "pedestals_disabled": "Pedestals disabled",
+                "prints_disabled": "Prints disabled",
+                "drones_disabled": "Drones disabled",
+                "props_disabled": "Items disabled",
+                "third_person_view_disabled": "Third-person view disabled",
+                "debug_allowed": "Debugging allowed"
             },
             "actions": {
                 "delete_cache_tooltip": "Delete world from cache",
@@ -5229,7 +5235,8 @@
                 },
                 "favorite_rate": "{rate}% favorite rate",
                 "capacity_value": "Recommended {recommended} · Max {max}",
-                "video_domains_count": "{count} allowed domains"
+                "video_domains_count": "{count} allowed domains",
+                "attributes": "Other attributes"
             },
             "json": {
                 "header": "JSON"

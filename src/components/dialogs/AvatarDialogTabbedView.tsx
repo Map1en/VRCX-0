@@ -694,14 +694,11 @@ export function AvatarDialogTabbedView({
                         detail={detail}
                         tags={{
                             localTags,
-                            contentTags,
                             authorTags,
                             otherTags
                         }}
                         platformInfo={platformInfo}
                         fileAnalysis={fileAnalysis}
-                        hasImposter={hasImposter}
-                        imposterVersion={imposterVersion}
                         listings={listings}
                         avatarUrl={avatarUrl}
                         onOpenAuthor={openAvatarAuthor}

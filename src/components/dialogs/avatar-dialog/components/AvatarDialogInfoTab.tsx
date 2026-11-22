@@ -15,7 +15,6 @@ import {
     EntityInfoSections,
     EntityMemoTextarea
 } from '../../EntityDialogScaffold';
-import { contentTagLabel } from '../../world-dialog/worldDialogUtils';
 import type {
     AvatarPlatformInfo,
     AvatarTagGroups,
@@ -33,25 +32,14 @@ const PLATFORM_ROWS = [
     { key: 'ios', label: 'ios_performance', analysisKey: 'ios' }
 ] as const;
 
-function getAttributes(
-    avatar: AvatarViewRecord,
-    hasImposter: boolean,
-    imposterVersion: string,
-    t: TFunction
-): string[] {
+function getAttributes(avatar: AvatarViewRecord, t: TFunction): string[] {
     const styles = [avatar.styles?.primary, avatar.styles?.secondary]
         .filter(Boolean)
         .join(' / ');
     return [
-        hasImposter
-            ? `${t('dialog.avatar.tags.impostor')}${imposterVersion ? ` v${imposterVersion}` : ''}`
-            : '',
         styles ? `${t('view.favorite.avatars.styles')} ${styles}` : '',
         avatar.unityPackageUrl || avatar.unityPackage?.url
             ? t('dialog.avatar.tags.future_proofing')
-            : '',
-        avatar.tags.some((tag) => /quest/i.test(tag))
-            ? t('dialog.avatar.tags.fallback')
             : ''
     ].filter(Boolean);
 }
@@ -63,8 +51,6 @@ export function AvatarDialogInfoTab({
     tags,
     platformInfo,
     fileAnalysis,
-    hasImposter,
-    imposterVersion,
     listings,
     avatarUrl,
     onOpenAuthor,
@@ -77,8 +63,6 @@ export function AvatarDialogInfoTab({
     tags: AvatarTagGroups;
     platformInfo: AvatarPlatformInfo;
     fileAnalysis: PlatformFileAnalysis;
-    hasImposter: boolean;
-    imposterVersion: string;
     listings: EconomyListingRecord[];
     avatarUrl: string;
     onOpenAuthor(): void;
@@ -87,18 +71,14 @@ export function AvatarDialogInfoTab({
 }) {
     const { t } = useTranslation();
 
-    const { localTags, contentTags, authorTags, otherTags } = tags;
-    const attributes = getAttributes(avatar, hasImposter, imposterVersion, t);
+    const { localTags, authorTags, otherTags } = tags;
+    const attributes = getAttributes(avatar, t);
     const createdAt = avatar.created_at || avatar.createdAt;
     const updatedAt = avatar.updated_at || avatar.updatedAt;
     const platformRows = PLATFORM_ROWS.filter(
         ({ key }) => platformInfo?.[key]?.platform
     );
-    const hasTags =
-        attributes.length ||
-        contentTags.length ||
-        authorTags.length ||
-        otherTags.length;
+    const hasTags = attributes.length || authorTags.length || otherTags.length;
 
     return (
         <EntityDialogTabContent value="info" forceMount>
@@ -224,18 +204,6 @@ export function AvatarDialogInfoTab({
                                 full
                             >
                                 <AvatarDialogTagList tags={attributes} />
-                            </EntityInfoBlock>
-                        ) : null}
-                        {contentTags.length ? (
-                            <EntityInfoBlock
-                                label={t('dialog.avatar.info.tags')}
-                                full
-                            >
-                                <AvatarDialogTagList
-                                    tags={contentTags.map((tag) =>
-                                        contentTagLabel(tag, t)
-                                    )}
-                                />
                             </EntityInfoBlock>
                         ) : null}
                         {authorTags.length ? (

@@ -5108,14 +5108,20 @@
                 "future_proofing": "将来互換",
                 "labs": "ラボ",
                 "cache": "キャッシュ",
-                "restrictions_count_one": "制限 {count} 件",
-                "restrictions_count_other": "制限 {count} 件",
                 "content_horror": "極度のホラー",
                 "content_gore": "過剰なゴア",
                 "content_violence": "写実的な暴力",
                 "content_adult": "成人向けの言葉やテーマ",
                 "content_sex": "性的なものを思わせる",
-                "pedestals": "台座"
+                "pedestals": "台座",
+                "emoji_disabled": "エモジ無効",
+                "stickers_disabled": "ステッカー無効",
+                "pedestals_disabled": "ペデスタル無効",
+                "prints_disabled": "プリント無効",
+                "drones_disabled": "ドローン無効",
+                "props_disabled": "アイテム無効",
+                "third_person_view_disabled": "三人称視点無効",
+                "debug_allowed": "デバッグ許可"
             },
             "actions": {
                 "delete_cache_tooltip": "キャッシュからワールドを削除",
@@ -5210,7 +5216,8 @@
                 },
                 "favorite_rate": "お気に入り率 {rate}%",
                 "capacity_value": "推奨 {recommended}・最大 {max}",
-                "video_domains_count": "許可ドメイン {count} 件"
+                "video_domains_count": "許可ドメイン {count} 件",
+                "attributes": "その他の属性"
             },
             "json": {
                 "header": "JSON"

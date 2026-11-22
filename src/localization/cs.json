@@ -5163,16 +5163,20 @@
                 "future_proofing": "Budoucí kompatibilita",
                 "labs": "Labs",
                 "cache": "Mezipaměť",
-                "restrictions_count_one": "{count} omezení",
-                "restrictions_count_few": "{count} omezení",
-                "restrictions_count_many": "{count} omezení",
-                "restrictions_count_other": "{count} omezení",
                 "content_horror": "Horor",
                 "content_gore": "Krvavé násilí",
                 "content_violence": "Násilí",
                 "content_adult": "Pro dospělé",
                 "content_sex": "Sexuální obsah",
-                "pedestals": "Podstavce"
+                "pedestals": "Podstavce",
+                "emoji_disabled": "Emoji zakázány",
+                "stickers_disabled": "Nálepky zakázány",
+                "pedestals_disabled": "Podstavce zakázány",
+                "prints_disabled": "Tisky zakázány",
+                "drones_disabled": "Drony zakázány",
+                "props_disabled": "Předměty zakázány",
+                "third_person_view_disabled": "Pohled třetí osoby zakázán",
+                "debug_allowed": "Ladění povoleno"
             },
             "actions": {
                 "delete_cache_tooltip": "Odstranit svět z mezipaměti",
@@ -5267,7 +5271,8 @@
                 },
                 "favorite_rate": "Podíl oblíbených {rate} %",
                 "capacity_value": "Doporučeno {recommended} · Max. {max}",
-                "video_domains_count": "Povolené domény: {count}"
+                "video_domains_count": "Povolené domény: {count}",
+                "attributes": "Další vlastnosti"
             },
             "json": {
                 "header": "JSON"

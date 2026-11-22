@@ -5049,14 +5049,20 @@
                 "future_proofing": "퓨처 프루핑",
                 "labs": "커뮤니티 랩스",
                 "cache": "캐시",
-                "restrictions_count_one": "제한 {count}개",
-                "restrictions_count_other": "제한 {count}개",
                 "content_horror": "공포",
                 "content_gore": "고어",
                 "content_violence": "폭력",
                 "content_adult": "성인",
                 "content_sex": "성적",
-                "pedestals": "받침대"
+                "pedestals": "받침대",
+                "emoji_disabled": "이모지 비활성화",
+                "stickers_disabled": "스티커 비활성화",
+                "pedestals_disabled": "페데스탈 비활성화",
+                "prints_disabled": "프린트 비활성화",
+                "drones_disabled": "드론 비활성화",
+                "props_disabled": "아이템 비활성화",
+                "third_person_view_disabled": "3인칭 시점 비활성화",
+                "debug_allowed": "디버그 허용"
             },
             "actions": {
                 "delete_cache_tooltip": "캐시에서 월드 삭제",
@@ -5151,7 +5157,8 @@
                 },
                 "favorite_rate": "즐겨찾기 비율 {rate}%",
                 "capacity_value": "권장 {recommended} · 최대 {max}",
-                "video_domains_count": "허용 도메인 {count}개"
+                "video_domains_count": "허용 도메인 {count}개",
+                "attributes": "기타 속성"
             },
             "json": {
                 "header": "JSON"

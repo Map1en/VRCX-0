@@ -147,6 +147,7 @@ export function WorldDialogTabPanels({
         previousInstances,
         previewUrl,
         restrictions,
+        attributes,
         screenshots,
         screenshotsError,
         screenshotsRefreshDisabled,
@@ -283,6 +284,7 @@ export function WorldDialogTabPanels({
                     previousInstanceCount={previousInstances.length}
                     previewUrl={previewUrl}
                     restrictions={restrictions}
+                    attributes={attributes}
                     totalVisitTime={totalVisitTime}
                     onOpenVisitHistory={() => onChangeTab('visit-history')}
                     onSaveMemo={onSaveMemo}

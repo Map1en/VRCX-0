@@ -5112,14 +5112,20 @@
                 "future_proofing": "可未來更新",
                 "labs": "社群實驗室",
                 "cache": "快取",
-                "restrictions_count_one": "{count} 項功能限制",
-                "restrictions_count_other": "{count} 項功能限制",
                 "content_horror": "恐怖",
                 "content_gore": "血腥",
                 "content_violence": "暴力",
                 "content_adult": "成人",
                 "content_sex": "色情",
-                "pedestals": "展示台"
+                "pedestals": "展示台",
+                "emoji_disabled": "已停用表情",
+                "stickers_disabled": "已停用貼紙",
+                "pedestals_disabled": "已停用展示台",
+                "prints_disabled": "已停用照片列印",
+                "drones_disabled": "已停用無人機",
+                "props_disabled": "已停用道具",
+                "third_person_view_disabled": "已停用第三人稱視角",
+                "debug_allowed": "允許偵錯"
             },
             "actions": {
                 "delete_cache_tooltip": "從快取中刪除世界",
@@ -5214,7 +5220,8 @@
                 },
                 "favorite_rate": "收藏率 {rate}%",
                 "capacity_value": "建議 {recommended} · 上限 {max}",
-                "video_domains_count": "允許 {count} 個網域"
+                "video_domains_count": "允許 {count} 個網域",
+                "attributes": "其他屬性"
             },
             "json": {
                 "header": "原始資料"

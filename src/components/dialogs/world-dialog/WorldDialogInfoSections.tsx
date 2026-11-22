@@ -51,6 +51,7 @@ export function WorldInfoSections({
     previousInstanceCount,
     previewUrl,
     restrictions,
+    attributes,
     totalVisitTime,
     onOpenVisitHistory,
     onSaveMemo
@@ -65,6 +66,7 @@ export function WorldInfoSections({
     | 'memo'
     | 'previewUrl'
     | 'restrictions'
+    | 'attributes'
     | 'totalVisitTime'
 > & {
     previousInstanceCount: number;
@@ -266,6 +268,7 @@ export function WorldInfoSections({
 
             {authorTags.length ||
             restrictions.length ||
+            attributes.length ||
             domains.length ||
             previewUrl ? (
                 <EntityInfoSection title={t('dialog.world.info.sections.tags')}>
@@ -290,6 +293,20 @@ export function WorldInfoSections({
                         >
                             <div className="mt-1 flex flex-wrap gap-1.5">
                                 {restrictions.map((tag) => (
+                                    <Badge key={tag.key} variant="outline">
+                                        {tag.label}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </EntityInfoBlock>
+                    ) : null}
+                    {attributes.length ? (
+                        <EntityInfoBlock
+                            label={t('dialog.world.info.attributes')}
+                            full
+                        >
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                {attributes.map((tag) => (
                                     <Badge key={tag.key} variant="outline">
                                         {tag.label}
                                     </Badge>

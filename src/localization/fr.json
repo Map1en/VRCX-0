@@ -4636,8 +4636,6 @@
                 "future_proofing": "Compatibilité future",
                 "labs": "Labs",
                 "cache": "Cache",
-                "restrictions_count_one": "{count} restriction",
-                "restrictions_count_other": "{count} restrictions",
                 "content_horror": "Horreur",
                 "content_gore": "Gore",
                 "content_violence": "Violence",

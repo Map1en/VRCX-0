@@ -131,6 +131,8 @@ function WorldRailMeter({
     );
 }
 
+const RAIL_CHIP_LIMIT = 5;
+
 function compactWorldId(worldId: string) {
     if (!worldId || worldId.length <= 18) {
         return worldId || '';
@@ -499,7 +501,6 @@ export function WorldDialogOverviewSection({
         worldUrl
     } = model;
     const {
-        onChangeTab,
         onCopyVrcxWorldUrl,
         onCopyWorldId,
         onCopyWorldName,
@@ -509,6 +510,15 @@ export function WorldDialogOverviewSection({
         onOpenWorldPage
     } = commands;
     const { restrictions, warnings } = visibleTags;
+    const railChips = [
+        ...(world.isLabs
+            ? [{ key: 'labs', label: t('dialog.world.tags.labs') }]
+            : []),
+        ...warnings,
+        ...restrictions
+    ];
+    const visibleRailChips = railChips.slice(0, RAIL_CHIP_LIMIT);
+    const hiddenRailChips = railChips.slice(RAIL_CHIP_LIMIT);
     const isPrivateWorld = !world.isLabs && world.releaseStatus === 'private';
     const lastVisitedAt = model.previousInstances[0]?.created_at;
     const lastVisitedText = lastVisitedAt
@@ -623,36 +633,30 @@ export function WorldDialogOverviewSection({
                 actionCommands={commands}
             />
 
-            {world.isLabs || warnings.length || restrictions.length ? (
+            {railChips.length ? (
                 <div className="flex flex-wrap gap-1.5">
-                    {world.isLabs ? (
-                        <Badge variant="outline" className="max-w-full">
-                            <span className="truncate">
-                                {t('dialog.world.tags.labs')}
-                            </span>
-                        </Badge>
-                    ) : null}
-                    {warnings.map((tag) => (
+                    {visibleRailChips.map((chip) => (
                         <Badge
-                            key={tag.key}
+                            key={chip.key}
                             variant="outline"
-                            className="max-w-full"
+                            className="text-muted-foreground max-w-full font-normal"
                         >
-                            <span className="truncate">{tag.label}</span>
+                            <span className="truncate">{chip.label}</span>
                         </Badge>
                     ))}
-                    {restrictions.length ? (
-                        <Button
-                            type="button"
-                            size="xs"
-                            variant="outline"
-                            className="rounded-full"
-                            onClick={() => onChangeTab('info')}
+                    {hiddenRailChips.length ? (
+                        <HintTooltip
+                            label={hiddenRailChips
+                                .map((chip) => chip.label)
+                                .join(', ')}
                         >
-                            {t('dialog.world.tags.restrictions_count', {
-                                count: restrictions.length
-                            })}
-                        </Button>
+                            <Badge
+                                variant="outline"
+                                className="text-muted-foreground cursor-default font-normal tabular-nums"
+                            >
+                                +{hiddenRailChips.length}
+                            </Badge>
+                        </HintTooltip>
                     ) : null}
                 </div>
             ) : null}

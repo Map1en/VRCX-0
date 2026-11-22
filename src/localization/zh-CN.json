@@ -5112,14 +5112,20 @@
                 "future_proofing": "未来兼容",
                 "labs": "社区实验室",
                 "cache": "缓存",
-                "restrictions_count_one": "{count} 项功能限制",
-                "restrictions_count_other": "{count} 项功能限制",
                 "content_horror": "恐怖",
                 "content_gore": "血腥",
                 "content_violence": "暴力",
                 "content_adult": "成人内容",
                 "content_sex": "性暗示",
-                "pedestals": "展示台"
+                "pedestals": "展示台",
+                "emoji_disabled": "已禁用表情",
+                "stickers_disabled": "已禁用贴纸",
+                "pedestals_disabled": "已禁用展示台",
+                "prints_disabled": "已禁用照片打印",
+                "drones_disabled": "已禁用无人机",
+                "props_disabled": "已禁用道具",
+                "third_person_view_disabled": "已禁用第三人称视角",
+                "debug_allowed": "允许调试"
             },
             "actions": {
                 "delete_cache_tooltip": "从缓存中删除此世界",
@@ -5214,7 +5220,8 @@
                 },
                 "favorite_rate": "收藏率 {rate}%",
                 "capacity_value": "推荐 {recommended} · 最大 {max}",
-                "video_domains_count": "允许 {count} 个域名"
+                "video_domains_count": "允许 {count} 个域名",
+                "attributes": "其他属性"
             },
             "json": {
                 "header": "原始 JSON 信息"

@@ -127,6 +127,7 @@ export interface WorldDialogTabModel {
     previousInstances: WorldPreviousInstances;
     previewUrl: string;
     restrictions: ReturnType<typeof visibleWorldTags>['restrictions'];
+    attributes: ReturnType<typeof visibleWorldTags>['attributes'];
     screenshots: WorldWorldScreenshots;
     screenshotsError: string;
     screenshotsRefreshDisabled: boolean;
@@ -561,6 +562,7 @@ export function WorldDialogTabbedView({
         previousInstances,
         previewUrl,
         restrictions: visibleTags.restrictions,
+        attributes: visibleTags.attributes,
         screenshots: worldScreenshots,
         screenshotsError: worldScreenshotsError,
         screenshotsStatus: worldScreenshotsStatus,

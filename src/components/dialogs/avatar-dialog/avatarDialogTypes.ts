@@ -89,7 +89,6 @@ export type AvatarPlatformInfo = ReturnType<typeof getPlatformInfo>;
 
 export type AvatarTagGroups = {
     localTags: AvatarLocalTag[];
-    contentTags: string[];
     authorTags: string[];
     otherTags: string[];
 };

@@ -41,4 +41,26 @@ describe('AvatarDialogHeaderBadges', () => {
 
         expect(container.textContent).toBe('');
     });
+
+    it('folds badges past the limit into a count', () => {
+        render(
+            <AvatarDialogHeaderBadges
+                avatarBlocked
+                contentTags={[
+                    'content_horror',
+                    'content_gore',
+                    'content_violence',
+                    'content_adult',
+                    'content_sex'
+                ]}
+                hasImposter
+                imposterVersion=""
+                isFallback
+                isMarketplace={false}
+            />
+        );
+
+        expect(screen.getByText('dialog.avatar.error.blocked')).toBeTruthy();
+        expect(screen.getByText('+2')).toBeTruthy();
+    });
 });

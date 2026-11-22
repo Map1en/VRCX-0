@@ -22,6 +22,7 @@ function renderSections(fields: Partial<WorldProfileRecord>) {
             previousInstanceCount={0}
             previewUrl=""
             restrictions={[]}
+            attributes={[]}
             totalVisitTime={0}
             onOpenVisitHistory={vi.fn()}
             onSaveMemo={vi.fn()}

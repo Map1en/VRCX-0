@@ -1,8 +1,11 @@
 import { useTranslation } from 'react-i18next';
 
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 
 import { contentTagLabel } from '../../world-dialog/worldDialogUtils';
+
+const BADGE_LIMIT = 5;
 
 export function AvatarDialogHeaderBadges({
     avatarBlocked,
@@ -49,6 +52,8 @@ export function AvatarDialogHeaderBadges({
     if (!avatarBlocked && !descriptors.length) {
         return null;
     }
+    const visible = descriptors.slice(0, BADGE_LIMIT);
+    const hidden = descriptors.slice(BADGE_LIMIT);
 
     return (
         <>
@@ -57,7 +62,7 @@ export function AvatarDialogHeaderBadges({
                     {t('dialog.avatar.error.blocked')}
                 </Badge>
             ) : null}
-            {descriptors.map(({ key, label }) => (
+            {visible.map(({ key, label }) => (
                 <Badge
                     key={key}
                     variant="outline"
@@ -66,6 +71,18 @@ export function AvatarDialogHeaderBadges({
                     <span className="truncate">{label}</span>
                 </Badge>
             ))}
+            {hidden.length ? (
+                <HintTooltip
+                    label={hidden.map(({ label }) => label).join(', ')}
+                >
+                    <Badge
+                        variant="outline"
+                        className="text-muted-foreground cursor-default font-normal tabular-nums"
+                    >
+                        +{hidden.length}
+                    </Badge>
+                </HintTooltip>
+            ) : null}
         </>
     );
 }

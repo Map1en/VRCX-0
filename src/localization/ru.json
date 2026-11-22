@@ -5157,16 +5157,20 @@
                 "future_proofing": "Перспективные решения",
                 "labs": "Лаборатории",
                 "cache": "Кэш",
-                "restrictions_count_one": "{count} ограничение",
-                "restrictions_count_few": "{count} ограничения",
-                "restrictions_count_many": "{count} ограничений",
-                "restrictions_count_other": "{count} ограничения",
                 "content_horror": "Ужасы",
                 "content_gore": "Жестокость",
                 "content_violence": "Насилие",
                 "content_adult": "Для взрослых",
                 "content_sex": "Сексуальные",
-                "pedestals": "Пьедесталы"
+                "pedestals": "Пьедесталы",
+                "emoji_disabled": "Эмодзи отключены",
+                "stickers_disabled": "Стикеры отключены",
+                "pedestals_disabled": "Пьедесталы отключены",
+                "prints_disabled": "Печать снимков отключена",
+                "drones_disabled": "Дроны отключены",
+                "props_disabled": "Предметы отключены",
+                "third_person_view_disabled": "Вид от третьего лица отключён",
+                "debug_allowed": "Отладка разрешена"
             },
             "actions": {
                 "delete_cache_tooltip": "Удалить мир из кэша",
@@ -5261,7 +5265,8 @@
                 },
                 "favorite_rate": "Доля в избранном {rate}%",
                 "capacity_value": "Рекомендуется {recommended} · Макс. {max}",
-                "video_domains_count": "Разрешённых доменов: {count}"
+                "video_domains_count": "Разрешённых доменов: {count}",
+                "attributes": "Прочие свойства"
             },
             "json": {
                 "header": "JSON"
