@@ -1,9 +1,15 @@
-import { CopyIcon, ExternalLinkIcon, PersonStandingIcon } from 'lucide-react';
+import {
+    CopyIcon,
+    ExternalLinkIcon,
+    LockIcon,
+    PersonStandingIcon
+} from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarPlatformDots } from '@/components/avatars/AvatarPlatformDots';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import type { PlatformFileAnalysis } from '@/domain/entities/world';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
 import {
@@ -17,6 +23,7 @@ import {
     hasAvatarPerformanceDetails
 } from '@/shared/utils/avatarPlatform';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -26,9 +33,11 @@ import type {
     AvatarDialogTab,
     AvatarGalleryEntry,
     AvatarListing,
+    AvatarPlatformInfo,
     AvatarViewRecord,
     AvatarViewState
 } from './avatar-dialog/avatarDialogTypes';
+import { performanceRankClass } from './avatar-dialog/avatarPerformancePresentation';
 import { AvatarDialogGalleryTab } from './avatar-dialog/components/AvatarDialogGalleryTab';
 import { AvatarDialogHeaderActions } from './avatar-dialog/components/AvatarDialogHeaderActions';
 import { AvatarDialogHeaderBadges } from './avatar-dialog/components/AvatarDialogHeaderBadges';
@@ -183,6 +192,12 @@ function AvatarOverviewReferences({
     );
 }
 
+const RAIL_PLATFORMS = [
+    { key: 'pc', name: 'PC', analysisKey: 'standalonewindows' },
+    { key: 'android', name: 'Android', analysisKey: 'android' },
+    { key: 'ios', name: 'iOS', analysisKey: 'ios' }
+] as const;
+
 function AvatarDialogOverviewSection({
     avatar,
     avatarFallbackLabel,
@@ -197,7 +212,9 @@ function AvatarDialogOverviewSection({
     onCopyAvatarUrl,
     onCopyVrcxAvatarUrl,
     vrcxAvatarUrl,
-    onOpenAvatarUrl
+    onOpenAvatarUrl,
+    platformInfo,
+    fileAnalysis
 }: {
     avatar: AvatarViewRecord;
     avatarFallbackLabel: string;
@@ -213,8 +230,23 @@ function AvatarDialogOverviewSection({
     onCopyVrcxAvatarUrl(): void;
     vrcxAvatarUrl: string;
     onOpenAvatarUrl(): void;
+    platformInfo: AvatarPlatformInfo;
+    fileAnalysis: PlatformFileAnalysis;
 }) {
     const { t } = useTranslation();
+    const railPlatforms = RAIL_PLATFORMS.filter(
+        ({ key }) => platformInfo?.[key]?.platform
+    ).map(({ key, name, analysisKey }) => ({
+        key,
+        name,
+        rating: platformInfo[key].performanceRating,
+        size: fileAnalysis?.[analysisKey]?._fileSize || ''
+    }));
+    const description =
+        avatar.description &&
+        avatar.description.trim() !== String(avatar.name || '').trim()
+            ? avatar.description
+            : '';
     const imageClickable = Boolean(
         (imageUrl || avatar.imageUrl) && onImageClick
     );
@@ -257,24 +289,42 @@ function AvatarDialogOverviewSection({
             }
         >
             <div className="flex min-w-0 flex-col gap-2">
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                disabled={!avatar.name}
-                                className="h-auto min-w-0 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal hover:bg-transparent disabled:pointer-events-none disabled:opacity-100"
-                                onClick={avatar.name ? onTitleClick : undefined}
+                <div className="flex min-w-0 items-start gap-2 overflow-hidden">
+                    {avatar.releaseStatus === 'private' ? (
+                        <HintTooltip label={t('dialog.avatar.tags.private')}>
+                            <span
+                                className="mt-0.5 shrink-0 cursor-help"
+                                role="img"
+                                tabIndex={0}
+                                aria-label={t('dialog.avatar.tags.private')}
                             >
-                                <span className="line-clamp-2 min-w-0 text-balance break-words">
-                                    {avatar.name || avatarFallbackLabel}
-                                </span>
-                            </Button>
-                        }
-                    />
-                    <TooltipContent>{t('common.actions.copy')}</TooltipContent>
-                </Tooltip>
+                                <LockIcon className="size-5" />
+                            </span>
+                        </HintTooltip>
+                    ) : null}
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    disabled={!avatar.name}
+                                    className="h-auto min-w-0 flex-1 shrink justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal hover:bg-transparent disabled:pointer-events-none disabled:opacity-100"
+                                    onClick={
+                                        avatar.name ? onTitleClick : undefined
+                                    }
+                                >
+                                    <span className="line-clamp-2 min-w-0 text-balance break-words">
+                                        {avatar.name || avatarFallbackLabel}
+                                    </span>
+                                </Button>
+                            }
+                        />
+                        <TooltipContent>
+                            {t('common.actions.copy')}
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
                 {avatar.authorName ? (
                     <Button
                         type="button"
@@ -294,11 +344,37 @@ function AvatarDialogOverviewSection({
                 <div className="flex flex-wrap gap-1.5">{badges}</div>
             ) : null}
 
-            {avatar.description ? (
+            {railPlatforms.length ? (
+                <EntityFactList className="border-t pt-3">
+                    {railPlatforms.map(({ key, name, rating, size }) => (
+                        <EntityFactRow key={key} label={name}>
+                            <HintTooltip
+                                label={size ? `${name} ${size}` : name}
+                            >
+                                <span
+                                    className={cn(
+                                        'min-w-0 cursor-default truncate text-right font-medium',
+                                        performanceRankClass(rating)
+                                    )}
+                                >
+                                    {rating
+                                        ? t(
+                                              `dialog.avatar.performance.ranks.${rating}`,
+                                              { defaultValue: rating }
+                                          )
+                                        : '\u2713'}
+                                </span>
+                            </HintTooltip>
+                        </EntityFactRow>
+                    ))}
+                </EntityFactList>
+            ) : null}
+
+            {description ? (
                 <>
                     <Separator />
                     <div className="text-muted-foreground max-h-28 overflow-auto text-sm break-words whitespace-pre-wrap">
-                        {avatar.description}
+                        {description}
                     </div>
                 </>
             ) : null}
@@ -405,6 +481,9 @@ export function AvatarDialogTabbedView({
     const localTags = Array.isArray(avatar.$tags) ? avatar.$tags : [];
     const remoteTags = Array.isArray(avatar.tags) ? avatar.tags : [];
     const contentTags = remoteTags.filter((tag) => tag.startsWith('content_'));
+    const isFallbackAvatar = avatar.tags.some((tag) => /quest/i.test(tag));
+    const isMarketplaceAvatar =
+        typeof avatar.productId === 'string' && avatar.productId.length > 0;
     const authorTags = remoteTags.filter((tag) =>
         tag.startsWith('author_tag_')
     );
@@ -508,6 +587,8 @@ export function AvatarDialogTabbedView({
                 railMaxHeight="44vh"
                 rail={
                     <AvatarDialogOverviewSection
+                        platformInfo={platformInfo}
+                        fileAnalysis={fileAnalysis}
                         avatar={avatar}
                         avatarFallbackLabel={avatarFallbackLabel}
                         imageUrl={imageUrl}
@@ -552,11 +633,20 @@ export function AvatarDialogTabbedView({
                         vrcxAvatarUrl={vrcxAvatarUrl}
                         onOpenAvatarUrl={() => openExternalLink(avatarUrl)}
                         badges={
-                            <AvatarDialogHeaderBadges
-                                avatar={avatar}
-                                isCurrentAvatar={isCurrentAvatar}
-                                avatarBlocked={avatarBlocked}
-                            />
+                            avatarBlocked ||
+                            contentTags.length ||
+                            hasImposter ||
+                            isFallbackAvatar ||
+                            isMarketplaceAvatar ? (
+                                <AvatarDialogHeaderBadges
+                                    avatarBlocked={avatarBlocked}
+                                    contentTags={contentTags}
+                                    hasImposter={hasImposter}
+                                    imposterVersion={imposterVersion}
+                                    isFallback={isFallbackAvatar}
+                                    isMarketplace={isMarketplaceAvatar}
+                                />
+                            ) : null
                         }
                         actions={
                             <AvatarDialogHeaderActions
@@ -615,6 +705,9 @@ export function AvatarDialogTabbedView({
                         listings={listings}
                         avatarUrl={avatarUrl}
                         onOpenAuthor={openAvatarAuthor}
+                        onOpenPerformance={() =>
+                            onActiveTabChange('performance')
+                        }
                         onSaveMemo={onSaveMemo}
                     />
                     <AvatarDialogPerformanceTab

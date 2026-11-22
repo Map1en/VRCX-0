@@ -5370,7 +5370,8 @@
                 "fallback": "フォールバック",
                 "impostor": "インポスター",
                 "future_proofing": "将来互換",
-                "cache": "キャッシュ"
+                "cache": "キャッシュ",
+                "marketplace": "マーケット"
             },
             "actions": {
                 "delete_cache_tooltip": "キャッシュからアバターを削除",
@@ -5421,7 +5422,13 @@
                 "gallery_move_earlier": "前へ移動",
                 "gallery_move_later": "後ろへ移動",
                 "gallery_delete_image": "画像を削除",
-                "attributes": "属性"
+                "attributes": "属性",
+                "sections": {
+                    "personal": "あなたとこのアバター",
+                    "details": "詳細",
+                    "performance": "パフォーマンス",
+                    "tags": "タグ"
+                }
             },
             "performance": {
                 "header": "パフォーマンス",

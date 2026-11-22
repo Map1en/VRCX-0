@@ -5385,7 +5385,8 @@
                 "fallback": "Fallback",
                 "impostor": "Impostor",
                 "future_proofing": "Zukunftssicherung",
-                "cache": "Cache"
+                "cache": "Cache",
+                "marketplace": "Marktplatz"
             },
             "actions": {
                 "delete_cache_tooltip": "Avatar aus dem Cache löschen",
@@ -5436,7 +5437,13 @@
                 "gallery_move_earlier": "Nach vorne",
                 "gallery_move_later": "Nach hinten",
                 "gallery_delete_image": "Bild löschen",
-                "attributes": "Attribute"
+                "attributes": "Attribute",
+                "sections": {
+                    "personal": "Du und dieser Avatar",
+                    "details": "Details",
+                    "performance": "Leistung",
+                    "tags": "Tags"
+                }
             },
             "performance": {
                 "header": "Leistung",

@@ -5311,7 +5311,8 @@
                 "fallback": "대체",
                 "impostor": "임포스터",
                 "future_proofing": "퓨처 프루핑",
-                "cache": "캐시"
+                "cache": "캐시",
+                "marketplace": "마켓플레이스"
             },
             "actions": {
                 "delete_cache_tooltip": "캐시에서 아바타 삭제",
@@ -5362,7 +5363,13 @@
                 "gallery_move_earlier": "앞으로 이동",
                 "gallery_move_later": "뒤로 이동",
                 "gallery_delete_image": "이미지 삭제",
-                "attributes": "속성"
+                "attributes": "속성",
+                "sections": {
+                    "personal": "나와 이 아바타",
+                    "details": "세부 정보",
+                    "performance": "퍼포먼스",
+                    "tags": "태그"
+                }
             },
             "performance": {
                 "header": "성능",

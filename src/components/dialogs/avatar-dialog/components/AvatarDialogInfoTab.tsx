@@ -11,14 +11,17 @@ import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import {
     EntityDialogTabContent,
     EntityInfoBlock,
-    EntityInfoGrid,
+    EntityInfoSection,
+    EntityInfoSections,
     EntityMemoTextarea
 } from '../../EntityDialogScaffold';
+import { contentTagLabel } from '../../world-dialog/worldDialogUtils';
 import type {
     AvatarPlatformInfo,
     AvatarTagGroups,
     AvatarViewRecord
 } from '../avatarDialogTypes';
+import { performanceRankClass } from '../avatarPerformancePresentation';
 import { AvatarDialogListings } from './AvatarDialogListings';
 import { AvatarDialogTagList } from './AvatarDialogTagList';
 
@@ -65,6 +68,7 @@ export function AvatarDialogInfoTab({
     listings,
     avatarUrl,
     onOpenAuthor,
+    onOpenPerformance,
     onSaveMemo
 }: {
     avatar: AvatarViewRecord;
@@ -78,18 +82,29 @@ export function AvatarDialogInfoTab({
     listings: EconomyListingRecord[];
     avatarUrl: string;
     onOpenAuthor(): void;
+    onOpenPerformance(): void;
     onSaveMemo(value: string): void | Promise<void>;
 }) {
     const { t } = useTranslation();
 
     const { localTags, contentTags, authorTags, otherTags } = tags;
     const attributes = getAttributes(avatar, hasImposter, imposterVersion, t);
+    const createdAt = avatar.created_at || avatar.createdAt;
+    const updatedAt = avatar.updated_at || avatar.updatedAt;
+    const platformRows = PLATFORM_ROWS.filter(
+        ({ key }) => platformInfo?.[key]?.platform
+    );
+    const hasTags =
+        attributes.length ||
+        contentTags.length ||
+        authorTags.length ||
+        otherTags.length;
 
     return (
         <EntityDialogTabContent value="info" forceMount>
-            <EntityInfoGrid>
+            <EntityInfoSections>
                 {detail ? (
-                    <Alert className="col-span-full">
+                    <Alert>
                         <AlertDescription>
                             {isValidElement(detail)
                                 ? detail
@@ -100,135 +115,151 @@ export function AvatarDialogInfoTab({
                         </AlertDescription>
                     </Alert>
                 ) : null}
-                <AvatarDialogListings
-                    listings={listings}
-                    productId={
-                        typeof avatar.productId === 'string'
-                            ? avatar.productId
-                            : ''
-                    }
-                    avatarUrl={avatarUrl}
-                />
-                <EntityMemoTextarea
-                    label={t('dialog.avatar.info.memo')}
-                    value={memo}
-                    placeholder={t('dialog.avatar.info.memo_placeholder')}
-                    onSave={onSaveMemo}
-                />
-                <EntityInfoBlock
-                    label={t('table.import.author')}
-                    onClick={avatar.authorId ? onOpenAuthor : undefined}
+
+                <EntityInfoSection
+                    title={t('dialog.avatar.info.sections.personal')}
                 >
-                    <span className="block truncate text-sm leading-snug font-medium">
-                        {avatar.authorName || EMPTY_VALUE}
-                    </span>
-                </EntityInfoBlock>
-                <EntityInfoBlock
-                    label={t('dialog.avatar.info.created_at')}
-                    value={
-                        avatar.created_at || avatar.createdAt
-                            ? formatDateFilter(
-                                  avatar.created_at || avatar.createdAt,
-                                  'long'
-                              )
-                            : EMPTY_VALUE
-                    }
-                />
-                <EntityInfoBlock
-                    label={t('dialog.avatar.info.last_updated')}
-                    value={
-                        avatar.updated_at || avatar.updatedAt
-                            ? formatDateFilter(
-                                  avatar.updated_at || avatar.updatedAt,
-                                  'long'
-                              )
-                            : EMPTY_VALUE
-                    }
-                />
-                <EntityInfoBlock
-                    label={t('dialog.avatar.info.version')}
-                    value={
-                        avatar.version ? String(avatar.version) : EMPTY_VALUE
-                    }
-                />
-                <EntityInfoBlock
-                    label={t('dialog.avatar.info.time_spent')}
-                    value={
-                        avatar.$timeSpent
-                            ? timeToText(avatar.$timeSpent)
-                            : EMPTY_VALUE
-                    }
-                />
-                {PLATFORM_ROWS.filter(
-                    ({ key }) => platformInfo?.[key]?.platform
-                ).map(({ key, label, analysisKey }) => {
-                    const rating = platformInfo[key].performanceRating;
-                    return (
+                    <EntityMemoTextarea
+                        label={t('dialog.avatar.info.memo')}
+                        value={memo}
+                        placeholder={t('dialog.avatar.info.memo_placeholder')}
+                        onSave={onSaveMemo}
+                    />
+                    {avatar.$timeSpent ? (
                         <EntityInfoBlock
-                            key={key}
-                            label={t(`dialog.avatar.info.${label}`)}
-                            value={
-                                [
-                                    rating
-                                        ? t(
-                                              `dialog.avatar.performance.ranks.${rating}`,
-                                              { defaultValue: rating }
-                                          )
-                                        : '',
-                                    fileAnalysis[analysisKey]?._fileSize
-                                ]
-                                    .filter(Boolean)
-                                    .join(' · ') || EMPTY_VALUE
-                            }
+                            label={t('dialog.avatar.info.time_spent')}
+                            value={timeToText(avatar.$timeSpent)}
                         />
-                    );
-                })}
-                {attributes.length ? (
+                    ) : null}
+                    {localTags.length ? (
+                        <EntityInfoBlock
+                            label={t('dialog.avatar.label.local_tags')}
+                            full
+                        >
+                            <AvatarDialogTagList
+                                tags={localTags.map((entry) => entry.tag)}
+                            />
+                        </EntityInfoBlock>
+                    ) : null}
+                </EntityInfoSection>
+
+                <EntityInfoSection
+                    title={t('dialog.avatar.info.sections.details')}
+                >
                     <EntityInfoBlock
-                        label={t('dialog.avatar.info.attributes')}
-                        full
-                    >
-                        <AvatarDialogTagList tags={attributes} />
-                    </EntityInfoBlock>
-                ) : null}
-                {localTags.length ? (
-                    <EntityInfoBlock
-                        label={t('dialog.avatar.label.local_tags')}
-                        full
-                    >
-                        <AvatarDialogTagList
-                            tags={localTags.map((entry) => entry.tag)}
+                        label={t('table.import.author')}
+                        value={avatar.authorName || EMPTY_VALUE}
+                        onClick={avatar.authorId ? onOpenAuthor : undefined}
+                    />
+                    {avatar.version ? (
+                        <EntityInfoBlock
+                            label={t('dialog.avatar.info.version')}
+                            value={String(avatar.version)}
                         />
-                    </EntityInfoBlock>
-                ) : null}
-                {contentTags.length ? (
-                    <EntityInfoBlock label={t('dialog.avatar.info.tags')} full>
-                        <AvatarDialogTagList
-                            tags={contentTags}
-                            trimPrefix="content_"
+                    ) : null}
+                    {updatedAt ? (
+                        <EntityInfoBlock
+                            label={t('dialog.avatar.info.last_updated')}
+                            value={formatDateFilter(updatedAt, 'long')}
                         />
-                    </EntityInfoBlock>
-                ) : null}
-                {authorTags.length ? (
-                    <EntityInfoBlock
-                        label={t('dialog.world.info.author_tags')}
-                        full
-                    >
-                        <AvatarDialogTagList
-                            tags={authorTags}
-                            trimPrefix="author_tag_"
+                    ) : null}
+                    {createdAt ? (
+                        <EntityInfoBlock
+                            label={t('dialog.avatar.info.created_at')}
+                            value={formatDateFilter(createdAt, 'long')}
                         />
-                    </EntityInfoBlock>
-                ) : null}
-                {otherTags.length ? (
-                    <EntityInfoBlock
-                        label={t('dialog.avatar.label.vrchat_tags')}
-                        full
+                    ) : null}
+                    <AvatarDialogListings
+                        listings={listings}
+                        productId={
+                            typeof avatar.productId === 'string'
+                                ? avatar.productId
+                                : ''
+                        }
+                        avatarUrl={avatarUrl}
+                    />
+                </EntityInfoSection>
+
+                {platformRows.length ? (
+                    <EntityInfoSection
+                        title={t('dialog.avatar.info.sections.performance')}
                     >
-                        <AvatarDialogTagList tags={otherTags} />
-                    </EntityInfoBlock>
+                        {platformRows.map(({ key, label, analysisKey }) => {
+                            const rating = platformInfo[key].performanceRating;
+                            return (
+                                <EntityInfoBlock
+                                    key={key}
+                                    label={t(`dialog.avatar.info.${label}`)}
+                                    value={
+                                        rating ? (
+                                            <span
+                                                className={performanceRankClass(
+                                                    rating
+                                                )}
+                                            >
+                                                {t(
+                                                    `dialog.avatar.performance.ranks.${rating}`,
+                                                    { defaultValue: rating }
+                                                )}
+                                            </span>
+                                        ) : (
+                                            EMPTY_VALUE
+                                        )
+                                    }
+                                    hint={fileAnalysis[analysisKey]?._fileSize}
+                                    onClick={onOpenPerformance}
+                                />
+                            );
+                        })}
+                    </EntityInfoSection>
                 ) : null}
-            </EntityInfoGrid>
+
+                {hasTags ? (
+                    <EntityInfoSection
+                        title={t('dialog.avatar.info.sections.tags')}
+                    >
+                        {attributes.length ? (
+                            <EntityInfoBlock
+                                label={t('dialog.avatar.info.attributes')}
+                                full
+                            >
+                                <AvatarDialogTagList tags={attributes} />
+                            </EntityInfoBlock>
+                        ) : null}
+                        {contentTags.length ? (
+                            <EntityInfoBlock
+                                label={t('dialog.avatar.info.tags')}
+                                full
+                            >
+                                <AvatarDialogTagList
+                                    tags={contentTags.map((tag) =>
+                                        contentTagLabel(tag, t)
+                                    )}
+                                />
+                            </EntityInfoBlock>
+                        ) : null}
+                        {authorTags.length ? (
+                            <EntityInfoBlock
+                                label={t('dialog.world.info.author_tags')}
+                                full
+                            >
+                                <AvatarDialogTagList
+                                    tags={authorTags}
+                                    trimPrefix="author_tag_"
+                                />
+                            </EntityInfoBlock>
+                        ) : null}
+                        {otherTags.length ? (
+                            <EntityInfoBlock
+                                label={t('dialog.avatar.label.vrchat_tags')}
+                                full
+                            >
+                                <AvatarDialogTagList tags={otherTags} />
+                            </EntityInfoBlock>
+                        ) : null}
+                    </EntityInfoSection>
+                ) : null}
+            </EntityInfoSections>
         </EntityDialogTabContent>
     );
 }

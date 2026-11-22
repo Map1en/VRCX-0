@@ -5421,7 +5421,8 @@
                 "fallback": "Резервный",
                 "impostor": "Импостор",
                 "future_proofing": "Перспективные решения",
-                "cache": "Кэш"
+                "cache": "Кэш",
+                "marketplace": "Магазин"
             },
             "actions": {
                 "delete_cache_tooltip": "Удалить аватар из кэша",
@@ -5472,7 +5473,13 @@
                 "gallery_move_earlier": "Переместить раньше",
                 "gallery_move_later": "Переместить позже",
                 "gallery_delete_image": "Удалить изображение",
-                "attributes": "Атрибуты"
+                "attributes": "Атрибуты",
+                "sections": {
+                    "personal": "Вы и этот аватар",
+                    "details": "Подробности",
+                    "performance": "Производительность",
+                    "tags": "Теги"
+                }
             },
             "performance": {
                 "header": "Производительность",

@@ -85,6 +85,12 @@ const visibleWorldFeatureTags: Array<
     ]
 ];
 
+export function contentTagLabel(tag: string, t: TFunction) {
+    const localeKey = `dialog.world.tags.${tag}`;
+    const localized = t(localeKey);
+    return localized === localeKey ? tag.replace(/^content_/, '') : localized;
+}
+
 export function visibleWorldTags(world: WorldProfileRecord, t: TFunction) {
     const tags = world.tags;
     const warnings: Array<{ key: string; label: string }> = [];
@@ -131,14 +137,7 @@ export function visibleWorldTags(world: WorldProfileRecord, t: TFunction) {
     }
     for (const tag of tags) {
         if (String(tag).startsWith('content_')) {
-            const localeKey = `dialog.world.tags.${tag}`;
-            const localized = t(localeKey);
-            pushWarning(
-                tag,
-                localized === localeKey
-                    ? String(tag).replace(/^content_/, '')
-                    : localized
-            );
+            pushWarning(tag, contentTagLabel(String(tag), t));
         }
     }
 

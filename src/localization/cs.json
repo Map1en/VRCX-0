@@ -5427,7 +5427,8 @@
                 "fallback": "Záložní",
                 "impostor": "Impostor",
                 "future_proofing": "Budoucí kompatibilita",
-                "cache": "Mezipaměť"
+                "cache": "Mezipaměť",
+                "marketplace": "Obchod"
             },
             "actions": {
                 "delete_cache_tooltip": "Odstranit avatara z mezipaměti",
@@ -5478,7 +5479,13 @@
                 "gallery_move_earlier": "Posunout dopředu",
                 "gallery_move_later": "Posunout dozadu",
                 "gallery_delete_image": "Odstranit obrázek",
-                "attributes": "Atributy"
+                "attributes": "Atributy",
+                "sections": {
+                    "personal": "Vy a tento avatar",
+                    "details": "Podrobnosti",
+                    "performance": "Výkon",
+                    "tags": "Štítky"
+                }
             },
             "performance": {
                 "header": "Výkon",

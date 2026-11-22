@@ -5389,7 +5389,8 @@
                 "fallback": "Respaldo",
                 "impostor": "Impostor",
                 "future_proofing": "Preparado para el futuro",
-                "cache": "Caché"
+                "cache": "Caché",
+                "marketplace": "Tienda"
             },
             "actions": {
                 "delete_cache_tooltip": "Eliminar avatar de la caché",
@@ -5440,7 +5441,13 @@
                 "gallery_move_earlier": "Mover antes",
                 "gallery_move_later": "Mover después",
                 "gallery_delete_image": "Eliminar imagen",
-                "attributes": "Atributos"
+                "attributes": "Atributos",
+                "sections": {
+                    "personal": "Tú y este avatar",
+                    "details": "Detalles",
+                    "performance": "Rendimiento",
+                    "tags": "Etiquetas"
+                }
             },
             "performance": {
                 "header": "Rendimiento",

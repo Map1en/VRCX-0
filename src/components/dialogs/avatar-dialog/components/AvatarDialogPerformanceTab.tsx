@@ -192,7 +192,7 @@ function PlatformPerformanceSection({
             {stats ? (
                 PERFORMANCE_STAT_GROUPS.map((group) => (
                     <section key={group.label} className="space-y-1.5 pt-2">
-                        <h4 className="text-muted-foreground px-3 text-xs font-medium">
+                        <h4 className="text-foreground px-3 text-sm font-semibold">
                             {t(
                                 `dialog.avatar.performance.group.${group.label}`
                             )}

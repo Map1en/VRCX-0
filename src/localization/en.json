@@ -5389,7 +5389,8 @@
                 "fallback": "Fallback",
                 "impostor": "Impostor",
                 "future_proofing": "Future Proofing",
-                "cache": "Cache"
+                "cache": "Cache",
+                "marketplace": "Marketplace"
             },
             "actions": {
                 "delete_cache_tooltip": "Delete avatar from cache",
@@ -5440,7 +5441,13 @@
                 "gallery_move_earlier": "Move earlier",
                 "gallery_move_later": "Move later",
                 "gallery_delete_image": "Delete image",
-                "attributes": "Attributes"
+                "attributes": "Attributes",
+                "sections": {
+                    "personal": "You and This Avatar",
+                    "details": "Details",
+                    "performance": "Performance",
+                    "tags": "Tags"
+                }
             },
             "performance": {
                 "header": "Performance",
