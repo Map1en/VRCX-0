@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { LockIcon } from 'lucide-react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import type { EntityRecord } from '@/domain/entities/shared';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
@@ -39,7 +40,8 @@ export function FavoriteWorldGroups({
     search,
     filteredRows,
     loading,
-    error
+    error,
+    renderToolbar
 }: {
     groups: readonly EntityRecord[];
     rows: readonly EntityRecord[];
@@ -47,6 +49,7 @@ export function FavoriteWorldGroups({
     filteredRows: readonly EntityRecord[];
     loading: boolean;
     error: string;
+    renderToolbar: (groupTabs: ReactNode) => ReactNode;
 }) {
     const groupedRows = groups.length
         ? groups.map((group): FavoriteWorldGroupView & EntityRecord => ({
@@ -93,26 +96,8 @@ export function FavoriteWorldGroups({
         }
     }, [activeGroup, groupedRows]);
 
-    if (search.trim()) {
-        return (
-            <EntityList
-                rows={filteredRows}
-                kind="world"
-                loading={loading}
-                error={error}
-            />
-        );
-    }
-    if (loading || error || !groupedRows.length) {
-        return (
-            <EntityList
-                rows={rows}
-                kind="world"
-                loading={loading}
-                error={error}
-            />
-        );
-    }
+    const showGroups =
+        !search.trim() && !loading && !error && groupedRows.length > 0;
 
     return (
         <Tabs
@@ -120,30 +105,49 @@ export function FavoriteWorldGroups({
             onValueChange={setActiveGroup}
             className="gap-2"
         >
-            <TabsList className="max-w-full justify-start overflow-x-auto overflow-y-hidden">
-                {groupedRows.map((group) => (
-                    <TabsTrigger
+            {renderToolbar(
+                showGroups ? (
+                    <TabsList className="max-w-full shrink justify-start overflow-x-auto overflow-y-hidden">
+                        {groupedRows.map((group) => (
+                            <TabsTrigger
+                                key={group.key}
+                                value={group.key}
+                                className="flex-none gap-1.5"
+                            >
+                                {group.visibility &&
+                                group.visibility !== 'public' ? (
+                                    <LockIcon
+                                        data-icon="inline-start"
+                                        aria-hidden="true"
+                                    />
+                                ) : null}
+                                <span>{group.label}</span>
+                                <span className="text-content-tertiary text-[11px] leading-none font-medium tabular-nums">
+                                    {favoriteGroupCountLabel(group)}
+                                </span>
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                ) : null
+            )}
+            {showGroups ? (
+                groupedRows.map((group) => (
+                    <TabsContent
                         key={group.key}
                         value={group.key}
-                        className="flex-none gap-1.5"
+                        className="m-0"
                     >
-                        <span>{group.label}</span>
-                        {group.visibility ? (
-                            <span className="text-muted-foreground text-xs font-normal">
-                                {group.visibility}
-                            </span>
-                        ) : null}
-                        <span className="text-muted-foreground text-xs tabular-nums">
-                            {favoriteGroupCountLabel(group)}
-                        </span>
-                    </TabsTrigger>
-                ))}
-            </TabsList>
-            {groupedRows.map((group) => (
-                <TabsContent key={group.key} value={group.key} className="m-0">
-                    <EntityList rows={group.rows} kind="world" />
-                </TabsContent>
-            ))}
+                        <EntityList rows={group.rows} kind="world" />
+                    </TabsContent>
+                ))
+            ) : (
+                <EntityList
+                    rows={search.trim() ? filteredRows : rows}
+                    kind="world"
+                    loading={loading}
+                    error={error}
+                />
+            )}
         </Tabs>
     );
 }

@@ -9,6 +9,10 @@ import { getFeedRowId } from '@/components/feed/feedRows';
 import { FeedTypeIndicator } from '@/components/feed/FeedTypeIndicator';
 import type { FeedLoadStatus, FeedRow } from '@/components/feed/feedTypes';
 import {
+    ToolbarActions,
+    ToolbarIconButton
+} from '@/components/layout/ToolbarControls';
+import {
     formatCompactDateTime,
     formatDateFilterOrFallback
 } from '@/lib/dateTime';
@@ -20,9 +24,7 @@ import {
 } from '@/services/feedLiveMergeService';
 import { buildFeedRoute } from '@/shared/utils/feedRouteScope';
 import { useDialogStore } from '@/state/dialogStore';
-import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { EntityDialogTabContent } from '../../EntityDialogScaffold';
 import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
@@ -111,23 +113,13 @@ export function UserDialogFeedPanel({
                 <span className="text-muted-foreground text-sm font-medium">
                     {openFeedLabel}
                 </span>
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon-sm"
-                                className="ml-auto"
-                                aria-label={openFeedLabel}
-                                onClick={onOpenFullFeed}
-                            >
-                                <ArrowUpRightIcon className="size-4" />
-                            </Button>
-                        }
+                <ToolbarActions className="ml-auto">
+                    <ToolbarIconButton
+                        icon={ArrowUpRightIcon}
+                        label={openFeedLabel}
+                        onClick={onOpenFullFeed}
                     />
-                    <TooltipContent>{openFeedLabel}</TooltipContent>
-                </Tooltip>
+                </ToolbarActions>
             </div>
 
             {loadStatus === 'running' ? (

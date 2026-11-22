@@ -4831,7 +4831,6 @@
             },
             "groups": {
                 "header": "Группы",
-                "sort_by": "Сортировать по:",
                 "own_groups": "Собственные группы",
                 "mutual_groups": "Взаимные группы",
                 "groups": "Группы",
@@ -4844,7 +4843,7 @@
             },
             "worlds": {
                 "header": "Миры",
-                "sort_by": "Сортировать по:",
+                "current_occupants": "Сейчас в мире",
                 "sorting": {
                     "name": "Имя",
                     "updated": "Обновлению",
@@ -4862,7 +4861,6 @@
             },
             "avatars": {
                 "header": "Аватары",
-                "sort_by": "Сортировать по:",
                 "sort_by_name": "Имени",
                 "sort_by_update": "Обновлению",
                 "sort_by_uploaded": "Загружено",
@@ -4980,8 +4978,6 @@
                 "visibility_hidden": "Скрытая",
                 "moderator": "Координатор",
                 "muted": "Выключено",
-                "order_by": "Заказ",
-                "group_by": "Группа",
                 "trust_level": "Уровень доверия",
                 "age_verified": "Возраст подтверждён",
                 "platform": "Последняя использованная платформа",

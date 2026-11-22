@@ -27,7 +27,8 @@ import {
     sortMutualFriendRows,
     summarizeEntityRow,
     userIdForRow,
-    worldOccupantSubtitle
+    entityDescriptionSubtitle,
+    worldOccupantCount
 } from './userDialogRows';
 
 describe('userDialogRows', () => {
@@ -360,7 +361,9 @@ describe('userDialogRows', () => {
         expect(
             summarizeEntityRow({ name: 'World', $favoriteGroup: 'Favorites' })
         ).toBe('World');
-        expect(worldOccupantSubtitle({ occupants: 12 })).toBe('(12)');
+        expect(worldOccupantCount({ occupants: 12 })).toBe(12);
+        expect(entityDescriptionSubtitle(' Neko ', 'Neko')).toBe('');
+        expect(entityDescriptionSubtitle('Neko v2', 'Neko')).toBe('Neko v2');
         expect(
             resolveStatusStateText({
                 $presence: activePresence(),

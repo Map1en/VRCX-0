@@ -4801,7 +4801,6 @@
             },
             "groups": {
                 "header": "Groups",
-                "sort_by": "Sort by:",
                 "own_groups": "Owned Groups",
                 "mutual_groups": "Mutual Groups",
                 "groups": "Groups",
@@ -4814,7 +4813,7 @@
             },
             "worlds": {
                 "header": "Worlds",
-                "sort_by": "Sort by:",
+                "current_occupants": "Players in world now",
                 "sorting": {
                     "name": "Name",
                     "updated": "Updated",
@@ -4832,7 +4831,6 @@
             },
             "avatars": {
                 "header": "Avatars",
-                "sort_by": "Sort by:",
                 "sort_by_name": "Name",
                 "sort_by_update": "Updated",
                 "sort_by_uploaded": "Uploaded",
@@ -4950,8 +4948,6 @@
                 "visibility_hidden": "Hidden",
                 "moderator": "VRChat Team",
                 "muted": "Muted",
-                "order_by": "Order By",
-                "group_by": "Group By",
                 "trust_level": "Trust level",
                 "age_verified": "Age verified",
                 "platform": "Last used platform",

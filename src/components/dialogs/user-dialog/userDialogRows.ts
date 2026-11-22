@@ -217,9 +217,16 @@ export function hydrateMutualFriendRows<T extends UserDialogRow>(
     });
 }
 
-export function worldOccupantSubtitle(row: UserDialogRow) {
-    const occupants = Number(row?.occupants ?? row?.userCount ?? 0) || 0;
-    return occupants > 0 ? `(${occupants})` : '';
+export function worldOccupantCount(row: UserDialogRow) {
+    return Number(row?.occupants ?? row?.userCount ?? 0) || 0;
+}
+
+export function entityDescriptionSubtitle(description: unknown, label: string) {
+    if (typeof description !== 'string') {
+        return '';
+    }
+    const trimmed = description.trim();
+    return trimmed && trimmed !== label.trim() ? trimmed : '';
 }
 
 export function formatStatsDate(value: unknown) {

@@ -4786,7 +4786,6 @@
             },
             "groups": {
                 "header": "群组",
-                "sort_by": "排序方式：",
                 "own_groups": "创建的群组",
                 "mutual_groups": "共同群组",
                 "groups": "加入的群组",
@@ -4799,7 +4798,7 @@
             },
             "worlds": {
                 "header": "创建的世界",
-                "sort_by": "排序方式：",
+                "current_occupants": "当前在线人数",
                 "sorting": {
                     "name": "世界名称",
                     "updated": "更新时间",
@@ -4817,7 +4816,6 @@
             },
             "avatars": {
                 "header": "创建的模型",
-                "sort_by": "排序方式：",
                 "sort_by_name": "名称",
                 "sort_by_update": "更新时间",
                 "sort_by_uploaded": "上传时间",
@@ -4935,8 +4933,6 @@
                 "visibility_hidden": "隐藏",
                 "moderator": "VRChat 官方团队",
                 "muted": "已静音",
-                "order_by": "排序方式",
-                "group_by": "分组方式",
                 "trust_level": "信誉等级",
                 "age_verified": "已通过年龄验证",
                 "platform": "最近使用的平台",

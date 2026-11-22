@@ -1,4 +1,9 @@
-import { ListIcon, WaypointsIcon } from 'lucide-react';
+import {
+    ArrowDownWideNarrowIcon,
+    ArrowUpNarrowWideIcon,
+    ListIcon,
+    WaypointsIcon
+} from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -7,19 +12,14 @@ import { InstanceHistoryListPanel } from '@/components/dialogs/previous-instance
 import { DialogErrorState } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import { UserActivityPanel } from '@/components/dialogs/UserActivityPanel';
 import { useHasLicensedAvatars } from '@/components/economy/useHasLicensedAvatars';
+import {
+    ToolbarIconButton,
+    ToolbarSegmented,
+    type ToolbarSegmentOption
+} from '@/components/layout/ToolbarControls';
 import type { UserProfileEntity } from '@/domain/entities/user';
 import { useDialogStore } from '@/state/dialogStore';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     EntityDialogTabContent,
@@ -29,16 +29,10 @@ import {
     userDialogAvatarReleaseStatusOptions,
     userDialogAvatarSortingOptions,
     userDialogMutualFriendSortingOptions,
-    userDialogWorldOrderOptions,
     userDialogWorldSortingOptions,
     readUserDialogMutualView,
     writeUserDialogMutualView,
-    type UserDialogAvatarReleaseStatus,
-    type UserDialogAvatarSort,
-    type UserDialogMutualFriendSort,
-    type UserDialogMutualView,
-    type UserDialogWorldOrder,
-    type UserDialogWorldSort
+    type UserDialogMutualView
 } from '../userDialogListOptions';
 import { EntityList, FavoriteWorldGroups } from '../UserDialogViewParts';
 import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
@@ -48,7 +42,10 @@ import {
 } from '../useUserDialogSupplementalData';
 import type { useUserDialogTabData } from '../useUserDialogTabData';
 import { UserDialogMutualGraph } from './UserDialogMutualGraph';
-import { UserDialogSearchHeader } from './UserDialogSearchHeader';
+import {
+    UserDialogSearchHeader,
+    UserDialogSortSelect
+} from './UserDialogSearchHeader';
 
 type UserTabData = ReturnType<typeof useUserDialogTabData>;
 type SupplementalData = ReturnType<typeof useUserDialogSupplementalData>;
@@ -90,18 +87,14 @@ export function UserDialogMutualTab({
         {
             value: 'list',
             label: t('dialog.user.mutual_friends.view.list'),
-            Icon: ListIcon
+            icon: ListIcon
         },
         {
             value: 'graph',
             label: t('view.charts.mutual_friend.tab_label'),
-            Icon: WaypointsIcon
+            icon: WaypointsIcon
         }
-    ] satisfies {
-        value: UserDialogMutualView;
-        label: string;
-        Icon: typeof ListIcon;
-    }[];
+    ] satisfies ToolbarSegmentOption<UserDialogMutualView>[];
 
     return (
         <EntityDialogTabContent
@@ -118,76 +111,29 @@ export function UserDialogMutualTab({
                 loadTab={loadTab}
                 search={search}
                 setSearch={setSearch}
-            >
-                <ToggleGroup
-                    variant="outline"
-                    size="sm"
-                    value={[view]}
-                    onValueChange={(nextValue) => {
-                        const option = viewOptions.find(
-                            (candidate) => candidate.value === nextValue[0]
-                        );
-                        if (option) {
-                            setView(option.value);
-                            writeUserDialogMutualView(option.value);
-                        }
-                    }}
-                >
-                    {viewOptions.map(({ value, label, Icon }) => (
-                        <Tooltip key={value}>
-                            <TooltipTrigger
-                                render={
-                                    <ToggleGroupItem
-                                        value={value}
-                                        aria-label={label}
-                                    >
-                                        <Icon />
-                                    </ToggleGroupItem>
-                                }
-                            />
-                            <TooltipContent>{label}</TooltipContent>
-                        </Tooltip>
-                    ))}
-                </ToggleGroup>
-                <span className="text-muted-foreground text-sm">
-                    {t('dialog.user.groups.sort_by')}
-                </span>
-                <Select<UserDialogMutualFriendSort>
-                    value={mutualSort}
-                    onValueChange={(value) => {
-                        if (value) {
-                            setMutualSort(value);
-                        }
-                    }}
-                    disabled={
-                        remoteStatus.mutual === 'running' || view === 'graph'
-                    }
-                    items={userDialogMutualFriendSortingOptions.map(
-                        (option) => ({
-                            value: option.value,
-                            label: t(option.name)
-                        })
-                    )}
-                >
-                    <SelectTrigger size="sm" className="w-36">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {userDialogMutualFriendSortingOptions.map(
-                                (option) => (
-                                    <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                    >
-                                        {t(option.name)}
-                                    </SelectItem>
-                                )
-                            )}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </UserDialogSearchHeader>
+                views={
+                    <>
+                        <ToolbarSegmented
+                            iconOnly
+                            value={view}
+                            options={viewOptions}
+                            onValueChange={(nextView) => {
+                                setView(nextView);
+                                writeUserDialogMutualView(nextView);
+                            }}
+                        />
+                        <UserDialogSortSelect
+                            value={mutualSort}
+                            options={userDialogMutualFriendSortingOptions}
+                            onValueChange={setMutualSort}
+                            disabled={
+                                remoteStatus.mutual === 'running' ||
+                                view === 'graph'
+                            }
+                        />
+                    </>
+                }
+            />
             {showGraph ? (
                 <UserDialogMutualGraph
                     userId={profile?.id || ''}
@@ -242,72 +188,37 @@ export function UserDialogWorldsTab({
                 loadTab={loadTab}
                 search={search}
                 setSearch={setSearch}
-            >
-                <span className="text-muted-foreground text-sm">
-                    {t('dialog.user.worlds.sort_by')}
-                </span>
-                <Select<UserDialogWorldSort>
-                    value={worldSort}
-                    onValueChange={(value) => {
-                        if (value) {
-                            changeWorldSort(value);
-                        }
-                    }}
-                    disabled={remoteStatus.worlds === 'running'}
-                    items={userDialogWorldSortingOptions.map((option) => ({
-                        value: option.value,
-                        label: t(option.name)
-                    }))}
-                >
-                    <SelectTrigger size="sm" className="w-32">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {userDialogWorldSortingOptions.map((option) => (
-                                <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                >
-                                    {t(option.name)}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-                <span className="text-muted-foreground text-sm">
-                    {t('dialog.user.label.order_by')}
-                </span>
-                <Select<UserDialogWorldOrder>
-                    value={worldOrder}
-                    onValueChange={(value) => {
-                        if (value) {
-                            changeWorldOrder(value);
-                        }
-                    }}
-                    disabled={remoteStatus.worlds === 'running'}
-                    items={userDialogWorldOrderOptions.map((option) => ({
-                        value: option.value,
-                        label: t(option.name)
-                    }))}
-                >
-                    <SelectTrigger size="sm" className="w-36">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {userDialogWorldOrderOptions.map((option) => (
-                                <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                >
-                                    {t(option.name)}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </UserDialogSearchHeader>
+                views={
+                    <>
+                        <UserDialogSortSelect
+                            value={worldSort}
+                            options={userDialogWorldSortingOptions}
+                            onValueChange={changeWorldSort}
+                            disabled={remoteStatus.worlds === 'running'}
+                        />
+                        <ToolbarIconButton
+                            icon={
+                                worldOrder === 'descending'
+                                    ? ArrowDownWideNarrowIcon
+                                    : ArrowUpNarrowWideIcon
+                            }
+                            label={t(
+                                worldOrder === 'descending'
+                                    ? 'dialog.user.worlds.order.descending'
+                                    : 'dialog.user.worlds.order.ascending'
+                            )}
+                            disabled={remoteStatus.worlds === 'running'}
+                            onClick={() =>
+                                changeWorldOrder(
+                                    worldOrder === 'descending'
+                                        ? 'ascending'
+                                        : 'descending'
+                                )
+                            }
+                        />
+                    </>
+                }
+            />
             <EntityList
                 rows={filteredProfileWorlds}
                 kind="world"
@@ -339,17 +250,6 @@ export function UserDialogFavoriteWorldsTab({
             value="favorite-worlds"
             className="flex flex-col gap-2"
         >
-            <UserDialogSearchHeader
-                searchKey="favoriteWorlds"
-                tab="favorite-worlds"
-                rows={favoriteWorlds}
-                filteredRows={filteredFavoriteWorlds}
-                placeholder={t('dialog.user.action.search_favorite_worlds')}
-                remoteStatus={remoteStatus}
-                loadTab={loadTab}
-                search={search}
-                setSearch={setSearch}
-            />
             <FavoriteWorldGroups
                 groups={remoteData.favoriteWorldGroups}
                 rows={favoriteWorlds}
@@ -357,6 +257,22 @@ export function UserDialogFavoriteWorldsTab({
                 filteredRows={filteredFavoriteWorlds}
                 loading={remoteStatus['favorite-worlds'] === 'running'}
                 error={remoteErrors['favorite-worlds'] || ''}
+                renderToolbar={(groupTabs) => (
+                    <UserDialogSearchHeader
+                        searchKey="favoriteWorlds"
+                        tab="favorite-worlds"
+                        rows={favoriteWorlds}
+                        filteredRows={filteredFavoriteWorlds}
+                        placeholder={t(
+                            'dialog.user.action.search_favorite_worlds'
+                        )}
+                        remoteStatus={remoteStatus}
+                        loadTab={loadTab}
+                        search={search}
+                        setSearch={setSearch}
+                        views={groupTabs}
+                    />
+                )}
             />
         </EntityDialogTabContent>
     );
@@ -411,80 +327,27 @@ export function UserDialogAvatarsTab({
                 loadTab={loadTab}
                 search={search}
                 setSearch={setSearch}
-            >
-                {isCurrentUser ? (
-                    <>
-                        <span className="text-muted-foreground text-sm">
-                            {t('dialog.user.avatars.sort_by')}
-                        </span>
-                        <Select<UserDialogAvatarSort>
-                            value={avatarSort}
-                            onValueChange={(value) => {
-                                if (value) {
-                                    changeAvatarSort(value);
-                                }
-                            }}
-                            disabled={remoteStatus.avatars === 'running'}
-                            items={userDialogAvatarSortingOptions.map(
-                                (option) => ({
+                views={
+                    isCurrentUser ? (
+                        <>
+                            <UserDialogSortSelect
+                                value={avatarSort}
+                                options={userDialogAvatarSortingOptions}
+                                onValueChange={changeAvatarSort}
+                                disabled={remoteStatus.avatars === 'running'}
+                            />
+                            <ToolbarSegmented
+                                value={avatarReleaseStatus}
+                                options={releaseStatusOptions.map((option) => ({
                                     value: option.value,
                                     label: t(option.name)
-                                })
-                            )}
-                        >
-                            <SelectTrigger size="sm" className="w-36">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {userDialogAvatarSortingOptions.map(
-                                        (option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {t(option.name)}
-                                            </SelectItem>
-                                        )
-                                    )}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <span className="text-muted-foreground text-sm">
-                            {t('dialog.user.label.group_by')}
-                        </span>
-                        <Select<UserDialogAvatarReleaseStatus>
-                            value={avatarReleaseStatus}
-                            onValueChange={(value) => {
-                                if (value) {
-                                    changeAvatarReleaseStatus(value);
-                                }
-                            }}
-                            disabled={remoteStatus.avatars === 'running'}
-                            items={releaseStatusOptions.map((option) => ({
-                                value: option.value,
-                                label: t(option.name)
-                            }))}
-                        >
-                            <SelectTrigger size="sm" className="w-32">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {releaseStatusOptions.map((option) => (
-                                        <SelectItem
-                                            key={option.value}
-                                            value={option.value}
-                                        >
-                                            {t(option.name)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </>
-                ) : null}
-            </UserDialogSearchHeader>
+                                }))}
+                                onValueChange={changeAvatarReleaseStatus}
+                            />
+                        </>
+                    ) : undefined
+                }
+            />
             <EntityList
                 rows={visibleProfileAvatars}
                 kind="avatar"

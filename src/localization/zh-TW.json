@@ -4786,7 +4786,6 @@
             },
             "groups": {
                 "header": "群組",
-                "sort_by": "排序依據",
                 "own_groups": "自身群組",
                 "mutual_groups": "相互加入的群組",
                 "groups": "群組",
@@ -4799,7 +4798,7 @@
             },
             "worlds": {
                 "header": "世界",
-                "sort_by": "分類依據：",
+                "current_occupants": "目前線上人數",
                 "sorting": {
                     "name": "名稱",
                     "updated": "已更新",
@@ -4817,7 +4816,6 @@
             },
             "avatars": {
                 "header": "角色",
-                "sort_by": "分類依據：",
                 "sort_by_name": "名稱",
                 "sort_by_update": "更新日期",
                 "sort_by_uploaded": "上傳日期",
@@ -4935,8 +4933,6 @@
                 "visibility_hidden": "隱藏",
                 "moderator": "VRChat 官方團隊",
                 "muted": "已靜音",
-                "order_by": "排序方式",
-                "group_by": "分組方式",
                 "trust_level": "信任等級",
                 "age_verified": "已通過年齡驗證",
                 "platform": "最近使用的平台",

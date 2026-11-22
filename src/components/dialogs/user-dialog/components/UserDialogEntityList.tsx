@@ -1,4 +1,4 @@
-import { CrownIcon, LockIcon } from 'lucide-react';
+import { CrownIcon, LockIcon, UsersIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,8 +22,9 @@ import {
     isUndisclosedMutualFriendRow,
     summarizeEntityRow,
     userIdForRow,
+    entityDescriptionSubtitle,
     userRowSubtitle,
-    worldOccupantSubtitle
+    worldOccupantCount
 } from '../userDialogRows';
 import { rowImage, type UserDialogEntityKind } from './userDialogEntityImages';
 import { EntityListState } from './UserDialogEntityListState';
@@ -99,10 +100,10 @@ export function EntityList({
                     kind === 'user'
                         ? userRowSubtitle(row, nowMs, t)
                         : kind === 'world'
-                          ? worldOccupantSubtitle(row)
-                          : typeof row.description === 'string'
-                            ? row.description
-                            : '';
+                          ? ''
+                          : entityDescriptionSubtitle(row.description, label);
+                const occupants =
+                    kind === 'world' ? worldOccupantCount(row) : 0;
                 const userId = kind === 'user' ? userIdForRow(row) : '';
                 const rowPresence = kind === 'user' ? presenceOf(row) : null;
                 const isTraveling = rowPresence
@@ -210,6 +211,21 @@ export function EntityList({
                                 <span className="text-content-secondary block truncate text-xs leading-4">
                                     {subtitle}
                                 </span>
+                            ) : null}
+                            {occupants > 0 ? (
+                                <HintTooltip
+                                    label={t(
+                                        'dialog.user.worlds.current_occupants'
+                                    )}
+                                >
+                                    <span className="text-content-secondary flex w-fit items-center gap-1 text-xs leading-4 tabular-nums">
+                                        <UsersIcon
+                                            aria-hidden="true"
+                                            className="size-3"
+                                        />
+                                        {occupants}
+                                    </span>
+                                </HintTooltip>
                             ) : null}
                         </span>
                     </>

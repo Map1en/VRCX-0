@@ -1,16 +1,79 @@
-import { RefreshCwIcon } from 'lucide-react';
+import { ArrowUpDownIcon } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { HintTooltip } from '@/ui/hint-tooltip';
-import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
-import { Spinner } from '@/ui/shadcn/spinner';
+import {
+    ToolbarActions,
+    ToolbarRefreshButton,
+    ToolbarSearch,
+    ToolbarStatus,
+    ToolbarViews
+} from '@/components/layout/ToolbarControls';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
 
 import type {
     UserDialogDataTab,
     UserDialogRemoteStatus
 } from '../userDialogTabService';
+
+export function UserDialogSortSelect<TValue extends string>({
+    value,
+    options,
+    onValueChange,
+    disabled = false,
+    isOptionDisabled
+}: {
+    value: TValue;
+    options: readonly { value: TValue; name: string }[];
+    onValueChange: (value: TValue) => void;
+    disabled?: boolean;
+    isOptionDisabled?: (value: TValue) => boolean;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <Select<TValue>
+            value={value}
+            onValueChange={(next) => {
+                if (next) {
+                    onValueChange(next);
+                }
+            }}
+            disabled={disabled}
+            items={options.map((option) => ({
+                value: option.value,
+                label: t(option.name)
+            }))}
+        >
+            <SelectTrigger className="max-w-56 min-w-36 shrink-0">
+                <span className="flex min-w-0 items-center gap-2">
+                    <ArrowUpDownIcon className="text-muted-foreground size-4 shrink-0" />
+                    <SelectValue />
+                </span>
+            </SelectTrigger>
+            <SelectContent>
+                <SelectGroup>
+                    {options.map((option) => (
+                        <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            disabled={isOptionDisabled?.(option.value)}
+                        >
+                            {t(option.name)}
+                        </SelectItem>
+                    ))}
+                </SelectGroup>
+            </SelectContent>
+        </Select>
+    );
+}
 
 export function UserDialogSearchHeader<TSearch extends Record<string, string>>({
     searchKey,
@@ -18,7 +81,8 @@ export function UserDialogSearchHeader<TSearch extends Record<string, string>>({
     rows,
     filteredRows,
     placeholder,
-    children,
+    views,
+    actions,
     remoteStatus,
     loadTab,
     search,
@@ -29,62 +93,46 @@ export function UserDialogSearchHeader<TSearch extends Record<string, string>>({
     rows: readonly unknown[];
     filteredRows: readonly unknown[];
     placeholder?: string;
-    children?: ReactNode;
+    views?: ReactNode;
+    actions?: ReactNode;
     remoteStatus: UserDialogRemoteStatus;
     loadTab: (tab: UserDialogDataTab, options: { force?: boolean }) => void;
     search: TSearch;
     setSearch: Dispatch<SetStateAction<TSearch>>;
 }) {
-    const { t } = useTranslation();
     const currentSearch = String(search?.[searchKey] ?? '');
     const hasSearch = currentSearch.trim().length > 0;
     const running = tab ? remoteStatus[tab] === 'running' : false;
 
     return (
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <div className="flex min-w-0 items-center gap-2">
+            <ToolbarViews className="min-w-0 flex-wrap">{views}</ToolbarViews>
+            {hasSearch ? (
+                <ToolbarStatus className="tabular-nums">
+                    {filteredRows.length}/{rows.length}
+                </ToolbarStatus>
+            ) : null}
+            <ToolbarSearch
+                value={currentSearch}
+                placeholder={placeholder}
+                onValueChange={(value) =>
+                    setSearch((current) => ({
+                        ...current,
+                        [searchKey]: value
+                    }))
+                }
+            />
+            <ToolbarActions>
                 {tab ? (
-                    <HintTooltip label={t('common.actions.refresh')}>
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="outline"
-                            disabled={running}
-                            onClick={() => {
-                                loadTab(tab, { force: true });
-                            }}
-                        >
-                            {running ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : (
-                                <RefreshCwIcon data-icon="inline-start" />
-                            )}
-                            <span className="sr-only">
-                                {t('common.actions.refresh')}
-                            </span>
-                        </Button>
-                    </HintTooltip>
+                    <ToolbarRefreshButton
+                        loading={running}
+                        onRefresh={() => {
+                            loadTab(tab, { force: true });
+                        }}
+                    />
                 ) : null}
-                {hasSearch ? (
-                    <div className="text-muted-foreground min-w-0 text-sm tabular-nums">
-                        {filteredRows.length}/{rows.length}
-                    </div>
-                ) : null}
-            </div>
-            <div className="ml-auto flex min-w-0 flex-1 basis-64 flex-wrap items-center justify-end gap-2">
-                <Input
-                    value={currentSearch}
-                    onChange={(event) =>
-                        setSearch((current) => ({
-                            ...current,
-                            [searchKey]: event.target.value
-                        }))
-                    }
-                    placeholder={placeholder}
-                    className="h-8 min-w-40 flex-1 sm:max-w-64"
-                />
-                {children}
-            </div>
+                {actions}
+            </ToolbarActions>
         </div>
     );
 }

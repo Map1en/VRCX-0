@@ -1,31 +1,24 @@
+import { Settings2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import { ToolbarIconButton } from '@/components/layout/ToolbarControls';
 import { recordToolOpen } from '@/services/telemetry/telemetryToolUsage';
 import { useDialogStore } from '@/state/dialogStore';
-import { Button } from '@/ui/shadcn/button';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 
 import {
     EntityBlank,
     EntityDialogTabContent
 } from '../../EntityDialogScaffold';
 import { groupIdForRow } from '../userDialogGroupRows';
-import {
-    userDialogGroupSortingOptions,
-    type UserDialogGroupSort
-} from '../userDialogListOptions';
+import { userDialogGroupSortingOptions } from '../userDialogListOptions';
 import type { buildUserDialogGroupSummary } from '../userDialogViewData';
 import { EntityList, UserGroupSection } from '../UserDialogViewParts';
 import type { useUserDialogTabData } from '../useUserDialogTabData';
-import { UserDialogSearchHeader } from './UserDialogSearchHeader';
+import {
+    UserDialogSearchHeader,
+    UserDialogSortSelect
+} from './UserDialogSearchHeader';
 
 type UserTabData = ReturnType<typeof useUserDialogTabData>;
 type GroupSummary = ReturnType<typeof buildUserDialogGroupSummary>;
@@ -81,58 +74,31 @@ export function UserDialogGroupsTab({
                 loadTab={loadTab}
                 search={search}
                 setSearch={setSearch}
-            >
-                <span className="text-muted-foreground text-sm">
-                    {t('dialog.user.groups.sort_by')}
-                </span>
-                <Select<UserDialogGroupSort>
-                    value={effectiveGroupSort}
-                    onValueChange={(value) => {
-                        if (value) {
-                            setGroupSort(value);
+                views={
+                    <UserDialogSortSelect
+                        value={effectiveGroupSort}
+                        options={userDialogGroupSortingOptions}
+                        onValueChange={setGroupSort}
+                        disabled={remoteStatus.groups === 'running'}
+                        isOptionDisabled={(value) =>
+                            value === 'inGame' && !isCurrentUser
                         }
-                    }}
-                    disabled={remoteStatus.groups === 'running'}
-                    items={userDialogGroupSortingOptions.map((option) => ({
-                        value: option.value,
-                        label: t(option.name)
-                    }))}
-                >
-                    <SelectTrigger size="sm" className="w-36">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {userDialogGroupSortingOptions.map((option) => (
-                                <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                    disabled={
-                                        option.value === 'inGame' &&
-                                        !isCurrentUser
-                                    }
-                                >
-                                    {t(option.name)}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-                {isCurrentUser ? (
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                            recordToolOpen('my-groups');
-                            closeDialog();
-                            navigate('/tools/my-groups');
-                        }}
-                    >
-                        {t('dialog.user.groups.manage')}
-                    </Button>
-                ) : null}
-            </UserDialogSearchHeader>
+                    />
+                }
+                actions={
+                    isCurrentUser ? (
+                        <ToolbarIconButton
+                            icon={Settings2Icon}
+                            label={t('dialog.user.groups.manage')}
+                            onClick={() => {
+                                recordToolOpen('my-groups');
+                                closeDialog();
+                                navigate('/tools/my-groups');
+                            }}
+                        />
+                    ) : undefined
+                }
+            />
             {(remoteStatus.groups === 'running' && !profileGroups.length) ||
             remoteErrors.groups ? (
                 <EntityList

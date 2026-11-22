@@ -4797,7 +4797,6 @@
             },
             "groups": {
                 "header": "Grupos",
-                "sort_by": "Ordenar por:",
                 "own_groups": "Meus Grupos",
                 "mutual_groups": "Grupos Mútuos",
                 "groups": "Grupos",
@@ -4810,7 +4809,7 @@
             },
             "worlds": {
                 "header": "Mundos",
-                "sort_by": "Ordenar por:",
+                "current_occupants": "Jogadores Agora",
                 "sorting": {
                     "name": "Nome",
                     "updated": "Atualizado",
@@ -4828,7 +4827,6 @@
             },
             "avatars": {
                 "header": "Avatares",
-                "sort_by": "Ordenar por:",
                 "sort_by_name": "Nome",
                 "sort_by_update": "Atualizado",
                 "sort_by_uploaded": "Enviado",
@@ -4946,8 +4944,6 @@
                 "visibility_hidden": "Oculto",
                 "moderator": "Moderador",
                 "muted": "Silenciado",
-                "order_by": "Ordenar Por",
-                "group_by": "Agrupar Por",
                 "trust_level": "Nível de confiança",
                 "age_verified": "Idade verificada",
                 "platform": "Última plataforma usada",

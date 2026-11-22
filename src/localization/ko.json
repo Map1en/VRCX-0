@@ -4723,7 +4723,6 @@
             },
             "groups": {
                 "header": "그룹",
-                "sort_by": "정렬 기준:",
                 "own_groups": "소유한 그룹",
                 "mutual_groups": "공통 그룹",
                 "groups": "그룹",
@@ -4736,7 +4735,7 @@
             },
             "worlds": {
                 "header": "월드",
-                "sort_by": "정렬 기준:",
+                "current_occupants": "현재 접속 인원",
                 "sorting": {
                     "name": "이름",
                     "updated": "업데이트순",
@@ -4754,7 +4753,6 @@
             },
             "avatars": {
                 "header": "아바타",
-                "sort_by": "정렬 기준:",
                 "sort_by_name": "이름순",
                 "sort_by_update": "업데이트순",
                 "sort_by_uploaded": "업로드순",
@@ -4872,8 +4870,6 @@
                 "visibility_hidden": "숨김",
                 "moderator": "VRChat 팀",
                 "muted": "음소거됨",
-                "order_by": "정렬 기준",
-                "group_by": "그룹화 기준",
                 "trust_level": "신뢰 등급",
                 "age_verified": "연령 인증 완료",
                 "platform": "마지막으로 사용한 플랫폼",

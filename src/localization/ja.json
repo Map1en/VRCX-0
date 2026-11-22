@@ -4782,7 +4782,6 @@
             },
             "groups": {
                 "header": "グループ",
-                "sort_by": "並べ替え:",
                 "own_groups": "自分のグループ",
                 "mutual_groups": "共通のグループ",
                 "groups": "グループ",
@@ -4795,7 +4794,7 @@
             },
             "worlds": {
                 "header": "ワールド",
-                "sort_by": "並べ替え:",
+                "current_occupants": "現在のプレイヤー数",
                 "sorting": {
                     "name": "名前",
                     "updated": "更新日",
@@ -4813,7 +4812,6 @@
             },
             "avatars": {
                 "header": "アバター",
-                "sort_by": "並べ替え:",
                 "sort_by_name": "名前順",
                 "sort_by_update": "更新順",
                 "sort_by_uploaded": "アップロード順",
@@ -4931,8 +4929,6 @@
                 "visibility_hidden": "非表示",
                 "moderator": "VRChat チーム",
                 "muted": "ミュート中",
-                "order_by": "並び順",
-                "group_by": "グループ化",
                 "trust_level": "トラストランク",
                 "age_verified": "年齢確認済み",
                 "platform": "最後に使用したプラットフォーム",

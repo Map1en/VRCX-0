@@ -4330,7 +4330,6 @@
             },
             "groups": {
                 "header": "Groupes",
-                "sort_by": "Trier par",
                 "own_groups": "Mes groupes",
                 "mutual_groups": "Groupes en commun",
                 "groups": "Groupes",
@@ -4343,7 +4342,6 @@
             },
             "worlds": {
                 "header": "Mondes",
-                "sort_by": "Trier par :",
                 "sorting": {
                     "name": "Nom",
                     "updated": "Mise à jour",
@@ -4361,7 +4359,6 @@
             },
             "avatars": {
                 "header": "Avatars",
-                "sort_by": "Trier par :",
                 "sort_by_name": "Trier par nom",
                 "sort_by_update": "Trier par mise à jour",
                 "sort_by_uploaded": "Date d'envoi",
@@ -4479,8 +4476,6 @@
                 "visibility_hidden": "Masqué",
                 "moderator": "Équipe VRChat",
                 "muted": "Microphone désactivé",
-                "order_by": "Trier par",
-                "group_by": "Grouper par",
                 "trust_level": "Rang de confiance",
                 "age_verified": "Âge vérifié",
                 "platform": "Dernière plateforme utilisée",
