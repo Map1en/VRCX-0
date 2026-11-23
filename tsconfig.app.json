@@ -1,11 +1,10 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
-        "jsx": "preserve",
+        "jsx": "react-jsx",
         "lib": ["esnext", "dom", "dom.iterable"],
         "types": ["vite/client"],
         "resolveJsonModule": true,
-        "strict": true,
         "composite": false,
         "incremental": false
     },
