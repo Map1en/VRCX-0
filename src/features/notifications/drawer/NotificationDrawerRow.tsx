@@ -198,9 +198,7 @@ export const NotificationDrawerRow = memo(function NotificationDrawerRow({
                     >
                         <div className="flex shrink-0 items-start gap-1.5">
                             <span className="mt-1.5 flex w-2 shrink-0 justify-center">
-                                {markAllSeenState === 'active' ? (
-                                    <Spinner className="text-muted-foreground size-3 shrink-0 -translate-y-0.5" />
-                                ) : markAllSeenState === 'failed' ? (
+                                {markAllSeenState === 'failed' ? (
                                     <IntentTooltip
                                         content={t(
                                             'side_panel.notification_center.mark_read_failed'
@@ -215,13 +213,25 @@ export const NotificationDrawerRow = memo(function NotificationDrawerRow({
                                             </span>
                                         </span>
                                     </IntentTooltip>
-                                ) : showUnreadDot && !nested ? (
-                                    <span className="bg-primary size-2 rounded-full">
-                                        <span className="sr-only">
-                                            {t('view.notification.feed.unread')}
-                                        </span>
+                                ) : nested ? null : (
+                                    <span
+                                        className={cn(
+                                            'bg-primary size-2 rounded-full transition-[scale,opacity] duration-300 ease-out',
+                                            markAllSeenState === 'active'
+                                                ? 'animate-pulse'
+                                                : !showUnreadDot &&
+                                                      'scale-0 opacity-0'
+                                        )}
+                                    >
+                                        {showUnreadDot ? (
+                                            <span className="sr-only">
+                                                {t(
+                                                    'view.notification.feed.unread'
+                                                )}
+                                            </span>
+                                        ) : null}
                                     </span>
-                                ) : null}
+                                )}
                             </span>
                             <button
                                 type="button"
