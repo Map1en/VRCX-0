@@ -2,7 +2,6 @@ use std::fs;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Duration;
 use vrcx_0_application_core::RuntimeOperationStatus;
 
 use async_trait::async_trait;
@@ -23,7 +22,9 @@ use vrcx_0_application_core::{
     UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata,
     UpdaterPort, UpdaterProgressCallback,
 };
-use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use vrcx_0_application_core::{
+    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskJoinFuture, TokioTaskHandle,
+};
 use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::{proxy::with_remote_dns, realtime::RealtimeWsStatusPayload};
 use vrcx_0_runtime_host_desktop::notification::{DesktopNotificationAction, DesktopNotifier};
@@ -313,38 +314,8 @@ impl RuntimeHostActions for TauriRuntimeHostActions {
 #[derive(Clone)]
 pub(super) struct TauriRuntimeTaskExecutor;
 
-struct TauriRuntimeTaskHandle(tauri::async_runtime::JoinHandle<()>);
-
-impl RuntimeTaskHandle for TauriRuntimeTaskHandle {
-    fn abort(&self) {
-        self.0.abort();
-    }
-
-    fn is_finished(&self) -> bool {
-        self.0.inner().is_finished()
-    }
-
-    fn join_or_abort(&mut self, timeout: Duration) {
-        if self.is_finished() {
-            let _ = block_on_runtime_task(&mut self.0);
-            return;
-        }
-
-        let Some(joined) =
-            block_on_runtime_task(async { tokio::time::timeout(timeout, &mut self.0).await })
-        else {
-            self.0.abort();
-            return;
-        };
-        if joined.is_ok() {
-            return;
-        }
-
-        self.0.abort();
-        let _ = block_on_runtime_task(async {
-            tokio::time::timeout(Duration::from_millis(50), &mut self.0).await
-        });
-    }
+fn block_on_task_join(future: TaskJoinFuture<'_>) -> Option<bool> {
+    block_on_runtime_task(future)
 }
 
 pub(crate) fn block_on_runtime_task<F>(future: F) -> Option<F::Output>
@@ -362,7 +333,10 @@ where
 
 impl RuntimeTaskExecutor for TauriRuntimeTaskExecutor {
     fn spawn(&self, task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
-        Box::new(TauriRuntimeTaskHandle(tauri::async_runtime::spawn(task)))
+        Box::new(TokioTaskHandle::new(
+            tauri::async_runtime::handle().inner().spawn(task),
+            block_on_task_join,
+        ))
     }
 }
 

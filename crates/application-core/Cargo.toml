@@ -22,4 +22,4 @@ vrcx-0-contracts = { path = "../contracts" }
 vrcx-0-core = { path = "../core" }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["test-util"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "test-util"] }

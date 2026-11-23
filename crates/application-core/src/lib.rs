@@ -90,8 +90,8 @@ pub use runtime_output::{
 pub use runtime_status::RuntimeOperationStatus;
 pub use sync::{RuntimeSyncEngine, RuntimeSyncSnapshot};
 pub use task_supervisor::{
-    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSpawnOutcome, TaskStopReport,
-    TaskStopToken, TaskSupervisor,
+    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskJoinFuture, TaskSpawnOutcome,
+    TaskStopReport, TaskStopToken, TaskSupervisor, TokioTaskHandle,
 };
 pub use vrcx_0_contracts::RuntimeEventPayload;
 pub use vrcx_0_core::{FavoriteChangeScope, FavoriteEntityKind, FavoriteGroupVisibility};

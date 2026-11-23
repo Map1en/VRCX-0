@@ -18,6 +18,58 @@ pub trait RuntimeTaskExecutor: Send + Sync {
     fn spawn(&self, task: RuntimeTask) -> Box<dyn RuntimeTaskHandle>;
 }
 
+pub type TaskJoinFuture<'a> = Pin<Box<dyn Future<Output = bool> + Send + 'a>>;
+
+pub type TaskBlockOn = for<'a> fn(TaskJoinFuture<'a>) -> Option<bool>;
+
+pub struct TokioTaskHandle {
+    handle: tokio::task::JoinHandle<()>,
+    block_on: TaskBlockOn,
+}
+
+impl TokioTaskHandle {
+    pub fn new(handle: tokio::task::JoinHandle<()>, block_on: TaskBlockOn) -> Self {
+        Self { handle, block_on }
+    }
+}
+
+impl RuntimeTaskHandle for TokioTaskHandle {
+    fn abort(&self) {
+        self.handle.abort();
+    }
+
+    fn is_finished(&self) -> bool {
+        self.handle.is_finished()
+    }
+
+    fn join_or_abort(&mut self, timeout: Duration) {
+        let block_on = self.block_on;
+        let handle = &mut self.handle;
+        if handle.is_finished() {
+            block_on(Box::pin(async move {
+                let _ = handle.await;
+                true
+            }));
+            return;
+        }
+
+        let joined = block_on(Box::pin(async {
+            tokio::time::timeout(timeout, &mut *handle).await.is_ok()
+        }));
+        if joined == Some(true) {
+            return;
+        }
+
+        handle.abort();
+        if joined.is_some() {
+            block_on(Box::pin(async {
+                let _ = tokio::time::timeout(Duration::from_millis(50), &mut *handle).await;
+                true
+            }));
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TaskSpawnOutcome {
     Scheduled,
@@ -538,5 +590,57 @@ mod tests {
             TaskSpawnOutcome::Rejected
         );
         assert!(!cancellable_factory_called.load(Ordering::Acquire));
+    }
+
+    fn block_on_current_runtime(future: TaskJoinFuture<'_>) -> Option<bool> {
+        let handle = tokio::runtime::Handle::try_current().ok()?;
+        Some(tokio::task::block_in_place(|| handle.block_on(future)))
+    }
+
+    fn cannot_block(_future: TaskJoinFuture<'_>) -> Option<bool> {
+        None
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn tokio_handle_waits_for_a_task_that_finishes_in_time() {
+        let finished = Arc::new(AtomicBool::new(false));
+        let finished_in_task = Arc::clone(&finished);
+        let mut handle = TokioTaskHandle::new(
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+                finished_in_task.store(true, Ordering::Release);
+            }),
+            block_on_current_runtime,
+        );
+
+        handle.join_or_abort(Duration::from_secs(5));
+
+        assert!(finished.load(Ordering::Acquire));
+        assert!(handle.is_finished());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn tokio_handle_aborts_a_task_that_outlives_the_timeout() {
+        let mut handle = TokioTaskHandle::new(
+            tokio::spawn(tokio::time::sleep(Duration::from_secs(60))),
+            block_on_current_runtime,
+        );
+
+        handle.join_or_abort(Duration::from_millis(20));
+
+        assert!(handle.is_finished());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn tokio_handle_aborts_when_the_host_cannot_block() {
+        let mut handle = TokioTaskHandle::new(
+            tokio::spawn(tokio::time::sleep(Duration::from_secs(60))),
+            cannot_block,
+        );
+
+        handle.join_or_abort(Duration::from_secs(5));
+        tokio::time::sleep(Duration::from_millis(20)).await;
+
+        assert!(handle.is_finished());
     }
 }
