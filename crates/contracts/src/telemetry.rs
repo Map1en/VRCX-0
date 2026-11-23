@@ -137,6 +137,24 @@ pub struct ToolUsagePayload {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DialogTabUsageEntry {
+    pub dialog: String,
+    pub tab: String,
+    pub views: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub landings: Option<u32>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DialogTabUsagePayload {
+    #[serde(flatten)]
+    pub context: TelemetryContext,
+    pub tabs: Vec<DialogTabUsageEntry>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AssistantHealthPayload {
     #[serde(flatten)]
     pub context: TelemetryContext,

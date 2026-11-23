@@ -54,3 +54,34 @@ export const TELEMETRY_TOOL_KEYS = [
 ] as const;
 
 export type TelemetryPageRouteKey = (typeof TELEMETRY_ROUTE_KEYS)[number];
+
+export const TELEMETRY_DIALOG_TAB_KEYS = {
+    user: [
+        'info',
+        'instance-history',
+        'feed',
+        'mutual',
+        'groups',
+        'worlds',
+        'favorite-worlds',
+        'avatars',
+        'activity',
+        'json'
+    ],
+    user_self: ['info', 'instance-history', 'groups', 'worlds', 'avatars', 'json'],
+    world: ['instances', 'visit-history', 'screenshots', 'info', 'store', 'json'],
+    group: [
+        'overview',
+        'instances',
+        'events',
+        'instance-history',
+        'posts',
+        'members',
+        'photos',
+        'store',
+        'json'
+    ],
+    avatar: ['info', 'performance', 'gallery', 'json']
+} as const satisfies Record<string, readonly string[]>;
+
+export type TelemetryDialogKey = keyof typeof TELEMETRY_DIALOG_TAB_KEYS;

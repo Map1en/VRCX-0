@@ -20,6 +20,10 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import {
+    recordDialogTabLanding,
+    recordDialogTabSwitch
+} from '@/services/telemetry/telemetryDialogTabs';
 import { recordToolOpen } from '@/services/telemetry/telemetryToolUsage';
 import { toast } from '@/services/toastService';
 import { vrchatGroupUrl } from '@/shared/constants/vrchatWebUrls';
@@ -259,6 +263,9 @@ export function GroupDialogTabbedView({
         const nextTab = resolveGroupDialogTab(tabs, lastGroupDialogTab);
         lastGroupDialogTab = nextTab;
         setActiveTab(nextTab);
+        if (group.id) {
+            recordDialogTabLanding('group', nextTab);
+        }
     });
 
     useEffect(() => {
@@ -508,6 +515,7 @@ export function GroupDialogTabbedView({
     function changeTab(tab: string) {
         lastGroupDialogTab = resolveGroupDialogTab(tabs, tab);
         setActiveTab(lastGroupDialogTab);
+        recordDialogTabSwitch('group', lastGroupDialogTab);
     }
 
     const loadPostsForTarget = useEffectEvent(() => {

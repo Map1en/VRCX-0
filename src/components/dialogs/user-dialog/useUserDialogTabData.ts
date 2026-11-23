@@ -19,6 +19,10 @@ import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatEconomyRepository from '@/repositories/vrchatEconomyRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import {
+    recordDialogTabLanding,
+    recordDialogTabSwitch
+} from '@/services/telemetry/telemetryDialogTabs';
 import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
@@ -173,6 +177,7 @@ export function useUserDialogTabData({
         (state) => state.snapshot?.constants ?? null
     );
     const profileUserId = typeof profile.id === 'string' ? profile.id : '';
+    const telemetryDialog = isCurrentUser ? 'user_self' : 'user';
     const effectiveAvatarReleaseStatus =
         profileUserId === currentUserId ? avatarReleaseStatus : 'all';
     const countAvatarReleaseStatus =
@@ -281,6 +286,9 @@ export function useUserDialogTabData({
         );
         lastUserDialogTab = nextTab;
         setActiveTab(nextTab);
+        if (profileUserId) {
+            recordDialogTabLanding(telemetryDialog, nextTab);
+        }
     });
 
     useEffect(() => {
@@ -503,6 +511,7 @@ export function useUserDialogTabData({
             ? 'info'
             : resolveTabValue(visibleTabs(viewData.tabs), tab);
         setActiveTab(nextTab);
+        recordDialogTabSwitch(telemetryDialog, nextTab);
     }
 
     function changeWorldSort(value: UserDialogWorldSort) {

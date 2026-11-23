@@ -1,5 +1,6 @@
 import {
     useEffect,
+    useEffectEvent,
     useMemo,
     useState,
     type Dispatch,
@@ -19,6 +20,10 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import {
+    recordDialogTabLanding,
+    recordDialogTabSwitch
+} from '@/services/telemetry/telemetryDialogTabs';
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
 import { vrcxWorldDeepLink } from '@/shared/constants/vrcxDeepLinks';
 import { parseLocation } from '@/shared/utils/location';
@@ -405,7 +410,21 @@ export function WorldDialogTabbedView({
     function changeTab(tab: string) {
         lastWorldDialogTab = resolveWorldDialogTab(tabs, tab);
         setActiveTab(lastWorldDialogTab);
+        recordDialogTabSwitch('world', lastWorldDialogTab);
     }
+
+    const recordWorldTabLanding = useEffectEvent(() => {
+        recordDialogTabLanding(
+            'world',
+            resolveWorldDialogTab(tabs, activeTab)
+        );
+    });
+
+    useEffect(() => {
+        if (world.id) {
+            recordWorldTabLanding();
+        }
+    }, [world.id]);
 
     useEffect(() => {
         const groupIds = creatorGroupKey

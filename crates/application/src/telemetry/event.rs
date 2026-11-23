@@ -10,6 +10,11 @@ pub enum TelemetryClientEvent {
     ToolOpen {
         tool: String,
     },
+    DialogTabView {
+        dialog: String,
+        tab: String,
+        landing: bool,
+    },
     RouteError {
         error_class: String,
         name: Option<String>,

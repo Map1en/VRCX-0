@@ -7655,6 +7655,7 @@ export type StartupBootstrapSnapshot = {
 export type TelemetryClientEvent =
     | { type: 'pageVisit'; route: string; landing: boolean }
     | { type: 'toolOpen'; tool: string }
+    | { type: 'dialogTabView'; dialog: string; tab: string; landing: boolean }
     | {
           type: 'routeError';
           error_class: string;

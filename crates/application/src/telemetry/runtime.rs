@@ -13,7 +13,8 @@ use vrcx_0_application_core::{
     TaskStopToken, TaskSupervisor,
 };
 use vrcx_0_contracts::telemetry::{
-    AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, PageHealthPayload,
+    AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, DialogTabUsagePayload,
+    PageHealthPayload,
     TelemetryConfigSnapshot, TelemetryContext, TelemetryOfflineRecord, TelemetryRuntimeMode,
     TelemetryVrcxOrigin, ToolUsagePayload,
 };
@@ -585,13 +586,14 @@ impl TelemetryRuntime {
     }
 
     async fn flush_collectors_locked(&self, session: &TelemetrySession) {
-        let (routes, tools, assistant_health) = {
+        let (routes, tools, dialog_tabs, assistant_health) = {
             let Ok(state) = self.inner.state.lock() else {
                 return;
             };
             (
                 state.acc.route_snapshot(),
                 state.acc.tool_snapshot(),
+                state.acc.dialog_tab_snapshot(),
                 state.acc.assistant_health_snapshot(),
             )
         };
@@ -621,6 +623,20 @@ impl TelemetryRuntime {
             {
                 if let Ok(mut state) = self.inner.state.lock() {
                     state.acc.mark_tools_sent(tools.revision);
+                }
+            }
+        }
+        if let Some(dialog_tabs) = dialog_tabs {
+            let payload = DialogTabUsagePayload {
+                context: context.clone(),
+                tabs: dialog_tabs.entries,
+            };
+            if self
+                .post_debug("/api/v1/telemetry/dialog-tabs", &payload, "dialog tabs")
+                .await
+            {
+                if let Ok(mut state) = self.inner.state.lock() {
+                    state.acc.mark_dialog_tabs_sent(dialog_tabs.revision);
                 }
             }
         }

@@ -4,7 +4,13 @@ import {
     LockIcon,
     PersonStandingIcon
 } from 'lucide-react';
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+    type ReactNode,
+    useEffect,
+    useEffectEvent,
+    useMemo,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarPlatformDots } from '@/components/avatars/AvatarPlatformDots';
@@ -16,6 +22,10 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import {
+    recordDialogTabLanding,
+    recordDialogTabSwitch
+} from '@/services/telemetry/telemetryDialogTabs';
 import { vrchatAvatarUrl } from '@/shared/constants/vrchatWebUrls';
 import { vrcxAvatarDeepLink } from '@/shared/constants/vrcxDeepLinks';
 import {
@@ -528,8 +538,23 @@ export function AvatarDialogTabbedView({
     }, [showPerformanceTab, t]);
 
     function changeTab(tab: string) {
-        onActiveTabChange(resolveAvatarDialogTab(tabs, tab));
+        const nextTab = resolveAvatarDialogTab(tabs, tab);
+        onActiveTabChange(nextTab);
+        recordDialogTabSwitch('avatar', nextTab);
     }
+
+    const recordAvatarTabLanding = useEffectEvent(() => {
+        recordDialogTabLanding(
+            'avatar',
+            resolveAvatarDialogTab(tabs, activeTab)
+        );
+    });
+
+    useEffect(() => {
+        if (avatar.id) {
+            recordAvatarTabLanding();
+        }
+    }, [avatar.id]);
 
     useEffect(() => {
         setGalleryIndex((index) =>

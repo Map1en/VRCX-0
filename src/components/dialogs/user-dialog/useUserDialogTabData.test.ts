@@ -30,6 +30,10 @@ vi.mock('@/repositories/worldProfileRepository', () => ({ default: {} }));
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: { appUserDialogTabCountsGet: vi.fn(async () => ({})) }
 }));
+vi.mock('@/services/telemetry/telemetryDialogTabs', () => ({
+    recordDialogTabLanding: vi.fn(),
+    recordDialogTabSwitch: vi.fn()
+}));
 
 import { useUserDialogTabData } from './useUserDialogTabData';
 

@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
-use vrcx_0_contracts::telemetry::{RouteUsageEntry, TelemetryErrorDetail, ToolUsageEntry};
+use vrcx_0_contracts::telemetry::{
+    DialogTabUsageEntry, RouteUsageEntry, TelemetryErrorDetail, ToolUsageEntry,
+};
 
 use super::event::TelemetryClientEvent;
 use super::privacy::{build_error_detail, sanitize_error_summary};
 
 const MAX_ROUTE_KEYS: usize = 64;
 const MAX_TOOL_KEYS: usize = 32;
+const MAX_DIALOG_TAB_KEYS: usize = 64;
 const MAX_VALUE_LENGTH: usize = 64;
 const MAX_DETAILS_PER_CHANNEL: usize = 64;
 pub(super) const MAX_DETAILS_PER_PAYLOAD: usize = 20;
@@ -18,11 +21,13 @@ pub struct TelemetryAccumulator {
     current_route: Option<String>,
     routes: HashMap<String, RouteUsage>,
     tools: HashMap<String, ToolUsage>,
+    dialog_tabs: HashMap<(String, String), DialogTabUsage>,
     assistant: AssistantHealthAccumulator,
     client_errors: DetailAccumulator,
     revision: u64,
     routes_sent_revision: u64,
     tools_sent_revision: u64,
+    dialog_tabs_sent_revision: u64,
     assistant_sent_revision: u64,
     client_errors_revision: u64,
     client_errors_sent_revision: u64,
@@ -41,6 +46,13 @@ struct RouteUsage {
 #[derive(Default)]
 struct ToolUsage {
     opens: u32,
+    revision: u64,
+}
+
+#[derive(Default)]
+struct DialogTabUsage {
+    views: u32,
+    landings: u32,
     revision: u64,
 }
 
@@ -74,6 +86,11 @@ pub(super) struct ToolSnapshot {
     pub revision: u64,
 }
 
+pub(super) struct DialogTabSnapshot {
+    pub entries: Vec<DialogTabUsageEntry>,
+    pub revision: u64,
+}
+
 pub(super) struct AssistantHealthSnapshot {
     pub entry: AssistantHealthEntry,
     pub revision: u64,
@@ -91,6 +108,11 @@ impl TelemetryAccumulator {
                 self.record_page_visit(route, landing)
             }
             TelemetryClientEvent::ToolOpen { tool } => self.record_tool_open(tool),
+            TelemetryClientEvent::DialogTabView {
+                dialog,
+                tab,
+                landing,
+            } => self.record_dialog_tab_view(dialog, tab, landing),
             TelemetryClientEvent::RouteError {
                 error_class,
                 name,
@@ -254,6 +276,31 @@ impl TelemetryAccumulator {
         self.tools_sent_revision = self.tools_sent_revision.max(revision);
     }
 
+    pub(super) fn dialog_tab_snapshot(&self) -> Option<DialogTabSnapshot> {
+        let revision = self.revision;
+        let mut entries = self
+            .dialog_tabs
+            .iter()
+            .filter(|(_, usage)| usage.revision > self.dialog_tabs_sent_revision)
+            .map(|((dialog, tab), usage)| DialogTabUsageEntry {
+                dialog: dialog.clone(),
+                tab: tab.clone(),
+                views: usage.views,
+                landings: (usage.landings > 0).then_some(usage.landings),
+            })
+            .collect::<Vec<_>>();
+        entries.sort_by(|left, right| {
+            left.dialog
+                .cmp(&right.dialog)
+                .then_with(|| left.tab.cmp(&right.tab))
+        });
+        (!entries.is_empty()).then_some(DialogTabSnapshot { entries, revision })
+    }
+
+    pub(super) fn mark_dialog_tabs_sent(&mut self, revision: u64) {
+        self.dialog_tabs_sent_revision = self.dialog_tabs_sent_revision.max(revision);
+    }
+
     pub(super) fn assistant_health_snapshot(&self) -> Option<AssistantHealthSnapshot> {
         if self.assistant.revision <= self.assistant_sent_revision {
             return None;
@@ -303,6 +350,28 @@ impl TelemetryAccumulator {
         usage.opens = increment(usage.opens);
         let revision = self.advance_revision();
         if let Some(usage) = self.tools.get_mut(&tool) {
+            usage.revision = revision;
+        }
+    }
+
+    fn record_dialog_tab_view(&mut self, dialog: String, tab: String, landing: bool) {
+        let (Some(dialog), Some(tab)) = (
+            sanitize_dimension_value(dialog),
+            sanitize_dimension_value(tab),
+        ) else {
+            return;
+        };
+        let key = (dialog, tab);
+        let Some(usage) = ensure_entry(&mut self.dialog_tabs, key.clone(), MAX_DIALOG_TAB_KEYS)
+        else {
+            return;
+        };
+        usage.views = increment(usage.views);
+        if landing {
+            usage.landings = increment(usage.landings);
+        }
+        let revision = self.advance_revision();
+        if let Some(usage) = self.dialog_tabs.get_mut(&key) {
             usage.revision = revision;
         }
     }
@@ -414,13 +483,13 @@ fn tool_usage_entry(tool: &str, usage: &ToolUsage) -> ToolUsageEntry {
     }
 }
 
-fn ensure_entry<T: Default>(
-    map: &mut HashMap<String, T>,
-    key: String,
+fn ensure_entry<K: Eq + std::hash::Hash + std::fmt::Debug, T: Default>(
+    map: &mut HashMap<K, T>,
+    key: K,
     cap: usize,
 ) -> Option<&mut T> {
     if !map.contains_key(&key) && map.len() >= cap {
-        tracing::debug!("telemetry dimension cap reached; dropping {key}");
+        tracing::debug!("telemetry dimension cap reached; dropping {key:?}");
         return None;
     }
     Some(map.entry(key).or_default())
@@ -667,6 +736,49 @@ mod tests {
         assert_eq!(tools.entries[0].opens, 1);
         acc.mark_tools_sent(tools.revision);
         assert!(acc.tool_snapshot().is_none());
+    }
+
+    #[test]
+    fn dialog_tab_views_keep_landings_separate_from_chosen_views() {
+        let mut acc = TelemetryAccumulator::default();
+        for (tab, landing) in [("info", true), ("groups", false), ("info", true)] {
+            acc.record(TelemetryClientEvent::DialogTabView {
+                dialog: "user".into(),
+                tab: tab.into(),
+                landing,
+            });
+        }
+        acc.record(TelemetryClientEvent::DialogTabView {
+            dialog: "world".into(),
+            tab: "info".into(),
+            landing: false,
+        });
+
+        let first = acc.dialog_tab_snapshot().expect("dialog tabs should be dirty");
+        let rows = first
+            .entries
+            .iter()
+            .map(|entry| (entry.dialog.as_str(), entry.tab.as_str(), entry.views, entry.landings))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            rows,
+            vec![
+                ("user", "groups", 1, None),
+                ("user", "info", 2, Some(2)),
+                ("world", "info", 1, None),
+            ]
+        );
+        acc.mark_dialog_tabs_sent(first.revision);
+        assert!(acc.dialog_tab_snapshot().is_none());
+
+        acc.record(TelemetryClientEvent::DialogTabView {
+            dialog: "user".into(),
+            tab: "groups".into(),
+            landing: false,
+        });
+        let second = acc.dialog_tab_snapshot().expect("new view should be dirty");
+        assert_eq!(second.entries.len(), 1);
+        assert_eq!(second.entries[0].views, 2);
     }
 
     #[test]
