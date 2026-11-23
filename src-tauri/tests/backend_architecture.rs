@@ -728,6 +728,148 @@ fn expensive_tauri_operations_leave_the_async_workers() {
     assert!(violations.is_empty(), "{}", violations.join("\n"));
 }
 
+fn production_source(path: &std::path::Path) -> Option<String> {
+    let normalized = path.to_string_lossy().replace('\\', "/");
+    let file_name = path.file_name()?.to_string_lossy();
+    if normalized.contains("/tests/")
+        || normalized.contains("test_support")
+        || file_name == "tests.rs"
+        || file_name.ends_with("_tests.rs")
+    {
+        return None;
+    }
+    let source = std::fs::read_to_string(path).expect("read production source");
+    Some(match source.find("#[cfg(test)]\nmod ") {
+        Some(index) => source[..index].to_string(),
+        None => source,
+    })
+}
+
+fn swallowed_error_statements(source: &str) -> Vec<String> {
+    let lines: Vec<&str> = source.lines().map(str::trim).collect();
+    let mut statements = Vec::new();
+    for (index, line) in lines.iter().enumerate() {
+        if line.starts_with("let _ =") {
+            let statement = lines[index..]
+                .iter()
+                .scan(false, |done, line| {
+                    if *done {
+                        return None;
+                    }
+                    *done = line.ends_with(';');
+                    Some(*line)
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            statements.push(statement);
+        } else if line.ends_with(".ok();") {
+            let start = lines[..index]
+                .iter()
+                .rposition(|line| line.ends_with(';') || line.ends_with('{') || line.ends_with('}'))
+                .map_or(0, |position| position + 1);
+            let statement = lines[start..=index].join(" ");
+            if !statement.starts_with("let ") {
+                statements.push(statement);
+            }
+        }
+    }
+    statements
+}
+
+#[test]
+fn persistence_and_media_do_not_silently_drop_errors() {
+    const BEST_EFFORT_CALLS: &[&str] = &[
+        "remove_file(",
+        "remove_file_if_exists(",
+        "remove_dir(",
+        "remove_dir_all(",
+        "remove_sidecars(",
+        ".send(",
+        ".join()",
+    ];
+    const EXCEPTIONS: &[(&str, &str, &str)] = &[
+        (
+            "crates/persistence/src/screenshot_cache.rs",
+            "let _ = conn.execute(",
+            "thumbnail cache rows are bookkeeping for files on disk; a lost row only re-encodes or re-evicts a thumbnail",
+        ),
+        (
+            "crates/media/src/image_cache.rs",
+            "let _ = std::fs::write(&marker",
+            "the touch marker only refreshes the directory mtime used for eviction order",
+        ),
+        (
+            "crates/media/src/png.rs",
+            ".seek(SeekFrom::Start(",
+            "read-path seek; the read that follows reports the failure",
+        ),
+        (
+            "crates/media/src/screenshot_metadata.rs",
+            ".seek(std::io::SeekFrom::Start(0)).ok();",
+            "read-path seek; the read that follows reports the failure",
+        ),
+        (
+            "crates/media/src/screenshot_metadata.rs",
+            "let _ = pf.restore(&original);",
+            "restore only runs after the edit already failed and is reported as false",
+        ),
+    ];
+
+    let mut used = BTreeSet::new();
+    let mut violations = Vec::new();
+    for crate_dir in ["crates/persistence/src", "crates/media/src"] {
+        for path in rust_sources_below(crate_dir) {
+            let Some(source) = production_source(&path) else {
+                continue;
+            };
+            let relative = path
+                .strip_prefix(workspace_file(""))
+                .expect("source inside workspace")
+                .to_string_lossy()
+                .replace('\\', "/");
+            for statement in swallowed_error_statements(&source) {
+                if BEST_EFFORT_CALLS
+                    .iter()
+                    .any(|call| statement.contains(call))
+                {
+                    continue;
+                }
+                match EXCEPTIONS.iter().position(|(file, snippet, _)| {
+                    *file == relative && statement.contains(snippet)
+                }) {
+                    Some(index) => {
+                        used.insert(index);
+                    }
+                    None => violations.push(format!("{relative}: {statement}")),
+                }
+            }
+        }
+    }
+    for (index, (file, snippet, _)) in EXCEPTIONS.iter().enumerate() {
+        if !used.contains(&index) {
+            violations.push(format!("stale exception {file}: {snippet}"));
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "persistence and media must return or log write errors instead of dropping them; fix the call or register it in EXCEPTIONS with a reason:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn swallowed_error_scan_reads_whole_statements() {
+    let source = "let _ = conn.execute(\n    \"DELETE\",\n    [],\n);\nself.file\n    .seek(SeekFrom::Start(0))\n    .ok();\nlet format = guess(&raw).ok();\nlet _ = std::fs::remove_file(&temp);";
+    assert_eq!(
+        swallowed_error_statements(source),
+        [
+            "let _ = conn.execute( \"DELETE\", [], );",
+            "self.file .seek(SeekFrom::Start(0)) .ok();",
+            "let _ = std::fs::remove_file(&temp);",
+        ]
+    );
+}
+
 #[test]
 fn persistence_leaves_expand_nested_use_groups() {
     let source = "use vrcx_0_persistence::{\n    assistant,\n    config::ConfigRepository,\n    activity::{self, activity_self_caches_invalidate},\n    DatabaseService,\n};";
