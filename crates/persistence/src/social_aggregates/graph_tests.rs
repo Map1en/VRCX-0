@@ -96,6 +96,38 @@ fn social_graph_uses_mutual_graph_edges_without_implying_coplay() {
 }
 
 #[test]
+fn social_graph_counts_a_link_stored_from_both_friends_once() {
+    let (_dir, db) = test_db("social-graph-both-directions");
+    ensure_realtime_tables(&db, "usrself").unwrap();
+    for sql in [
+        "CREATE TABLE usrself_mutual_graph_friends (friend_id TEXT PRIMARY KEY)",
+        "CREATE TABLE usrself_mutual_graph_links (friend_id TEXT NOT NULL, mutual_id TEXT NOT NULL, PRIMARY KEY(friend_id, mutual_id))",
+        "CREATE TABLE usrself_mutual_graph_meta (friend_id TEXT PRIMARY KEY, last_fetched_at TEXT, opted_out INTEGER DEFAULT 0)",
+        "INSERT INTO usrself_mutual_graph_friends (friend_id) VALUES ('usr_a'), ('usr_b')",
+        "INSERT INTO usrself_mutual_graph_links (friend_id, mutual_id)
+             VALUES ('usr_a', 'usr_b'), ('usr_b', 'usr_a')",
+    ] {
+        db.execute_non_query(sql, &Default::default()).unwrap();
+    }
+
+    let output = get_social_graph(
+        &db,
+        SocialGraphInput {
+            owner_user_id: OwnerId::new("usr_self"),
+            user_id: None,
+            depth: 1,
+            max_nodes: None,
+            max_edges: None,
+        },
+    )
+    .unwrap();
+
+    assert_eq!(output.edges.len(), 1);
+    assert_eq!(output.total_edges, 1);
+    assert!(output.nodes.iter().all(|node| node.connection_degree == 1));
+}
+
+#[test]
 fn social_graph_marks_first_degree_friends_apart_from_mutuals() {
     let (_dir, db) = test_db("social-graph-is-friend");
     ensure_realtime_tables(&db, "usrself").unwrap();

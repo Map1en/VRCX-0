@@ -71,6 +71,7 @@ pub fn get_social_graph(
     let max_edges = clamped_limit(input.max_edges, DEFAULT_MAX_EDGES, MAX_MAX_EDGES);
     let mut degree_by_user_id: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut edges = Vec::new();
+    let mut seen_pairs = BTreeSet::new();
 
     for friend_id in snapshot.friend_ids {
         if focus
@@ -96,6 +97,14 @@ pub fn get_social_graph(
             .entry(link.mutual_id.clone())
             .or_default()
             .insert(link.friend_id.clone());
+        let pair = if link.friend_id <= link.mutual_id {
+            (link.friend_id.clone(), link.mutual_id.clone())
+        } else {
+            (link.mutual_id.clone(), link.friend_id.clone())
+        };
+        if !seen_pairs.insert(pair) {
+            continue;
+        }
         edges.push(SocialGraphEdge {
             source_user_id: link.friend_id,
             target_user_id: link.mutual_id,
