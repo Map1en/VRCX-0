@@ -233,6 +233,43 @@ mod tests {
     }
 
     #[test]
+    fn request_auth_accepts_loopback_origins_and_rejects_non_bearer_schemes() {
+        let policy = McpAuthPolicy {
+            port: 8798,
+            token: "secret-token".into(),
+            allow_lan_connections: false,
+        };
+
+        assert_eq!(
+            authorize_mcp_request(
+                &policy,
+                Some("Bearer secret-token"),
+                Some("127.0.0.1:8798"),
+                Some("HTTP://LOCALHOST:8798"),
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            authorize_mcp_request(
+                &policy,
+                Some("Bearer secret-token"),
+                Some("127.0.0.1:8798"),
+                Some("http://127.0.0.1:9999"),
+            ),
+            Err(McpAuthError::InvalidOrigin)
+        );
+        assert_eq!(
+            authorize_mcp_request(
+                &policy,
+                Some("Basic secret-token"),
+                Some("127.0.0.1:8798"),
+                None,
+            ),
+            Err(McpAuthError::MissingBearerToken)
+        );
+    }
+
+    #[test]
     fn client_help_snippets_include_real_url_and_token_warning() {
         let snippets = client_config_snippets(7654, "tok_secret", false);
 
