@@ -22,7 +22,7 @@ pub fn span_duration_ms(
         SpanEnd::UnknownNextStart => 0,
         SpanEnd::OpenTail => now_ms - start_ms,
     };
-    inferred.min(MAX_INFERRED_SPAN_MS)
+    inferred.clamp(0, MAX_INFERRED_SPAN_MS)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

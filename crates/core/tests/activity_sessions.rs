@@ -109,6 +109,18 @@ fn span_duration_keeps_negative_recorded_value() {
 }
 
 #[test]
+fn span_duration_never_infers_a_negative_value_when_the_clock_goes_back() {
+    assert_eq!(
+        span_duration_ms(BASE, 0, SpanEnd::NextStart(BASE - MINUTE), BASE),
+        0
+    );
+    assert_eq!(
+        span_duration_ms(BASE, 0, SpanEnd::OpenTail, BASE - MINUTE),
+        0
+    );
+}
+
+#[test]
 fn span_duration_infers_from_next_start_when_unrecorded() {
     assert_eq!(
         span_duration_ms(BASE, 0, SpanEnd::NextStart(BASE + 90 * MINUTE), BASE + HOUR),
@@ -146,13 +158,5 @@ fn span_duration_is_zero_when_next_start_is_unusable() {
     assert_eq!(
         span_duration_ms(BASE, 0, SpanEnd::UnknownNextStart, BASE + 2 * HOUR),
         0
-    );
-}
-
-#[test]
-fn span_duration_is_negative_when_next_start_precedes_start() {
-    assert_eq!(
-        span_duration_ms(BASE, 0, SpanEnd::NextStart(BASE - MINUTE), BASE),
-        -MINUTE
     );
 }
