@@ -604,9 +604,13 @@ describe('buildSigmaGraph', () => {
         vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
             context
         );
-        await renderGraph({ onSelectNode: vi.fn() });
+        const container = await renderGraph({ onSelectNode: vi.fn() });
         emit('enterNode', { node: 'usr_a' });
         emit('afterRender', { node: 'usr_a' });
+        expect(container.querySelector('canvas')?.style).toMatchObject({
+            width: '400px',
+            height: '300px'
+        });
         expect(drawMutualFriendHoverCard).toHaveBeenCalledWith(
             context,
             expect.objectContaining({
@@ -625,6 +629,42 @@ describe('buildSigmaGraph', () => {
         emit('afterRender', { node: 'usr_a' });
         expect(drawMutualFriendHoverCard).not.toHaveBeenCalled();
         expect(context.clearRect).toHaveBeenCalledWith(0, 0, 400, 300);
+    });
+
+    it('colors only the emphasized node label with the accent', async () => {
+        const graph = await buildSigmaGraph({
+            graph: GRAPH,
+            layoutSettings: MUTUAL_GRAPH_LAYOUT_DEFAULTS,
+            communityIndexById: new Map<string, number>(),
+            namedCommunityIndexes: new Set<number>(),
+            theme: buildMutualFriendsGraphTheme(true),
+            emphasizedNodeId: 'usr_target'
+        });
+        renderSigmaGraph({
+            graph,
+            container: document.createElement('div'),
+            instanceRef: { current: null },
+            resizeObserverRef: { current: null },
+            themeRef: {
+                current: {
+                    ...buildMutualFriendsGraphTheme(true),
+                    labelColor: '#e2e8f0',
+                    emphasisLabelColor: '#fde047'
+                }
+            },
+            selectedNodeIdRef: { current: '' },
+            crossCommunityOnlyRef: { current: false },
+            onSelectNode: vi.fn(),
+            hoverCardStringsRef: {
+                current: { connections: '', lastFetched: '', unavailable: '' }
+            }
+        });
+        const options = sigmaMock.options[0];
+
+        expect(projectNode(graph, options, 'usr_target').labelColor).toBe(
+            '#fde047'
+        );
+        expect(projectNode(graph, options, 'usr_a').labelColor).toBe('#e2e8f0');
     });
 
     it('keeps the colored dot until an avatar loads and never covers hollow nodes', async () => {

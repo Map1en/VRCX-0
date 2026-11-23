@@ -1,5 +1,4 @@
-const MIN_IMAGE_RADIUS = 6;
-const IMAGE_RADIUS_SCALE = 0.9;
+const MIN_IMAGE_RADIUS = 5;
 
 export interface NodeImageLoader {
     get(url: string): HTMLImageElement | null;
@@ -38,13 +37,13 @@ export function createNodeImageLoader(onLoad: () => void): NodeImageLoader {
 export function drawMutualFriendNodeImage(
     ctx: CanvasRenderingContext2D,
     image: HTMLImageElement,
-    node: { x: number; y: number; size: number },
+    node: { x: number; y: number; radius: number },
     alpha: number
 ) {
-    if (node.size < MIN_IMAGE_RADIUS || alpha <= 0) {
+    const { radius } = node;
+    if (radius < MIN_IMAGE_RADIUS || alpha <= 0) {
         return;
     }
-    const radius = node.size * IMAGE_RADIUS_SCALE;
     const side = Math.min(image.naturalWidth, image.naturalHeight);
     ctx.save();
     ctx.globalAlpha = alpha;

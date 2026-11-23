@@ -125,6 +125,7 @@ export function UserDialogMutualGraph({
         onSelectNode: openNode,
         forceLabels: true,
         minNodeSize: EGO_MIN_NODE_SIZE,
+        emphasizedNodeId: userId,
         nodeImageUrlById
     });
 

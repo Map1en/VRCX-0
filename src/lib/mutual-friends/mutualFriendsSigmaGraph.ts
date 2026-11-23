@@ -33,6 +33,7 @@ import {
 
 const NODE_LABEL_THRESHOLD = 10;
 const DEFAULT_MIN_NODE_SIZE = 4;
+const NODE_RING_SIZE = 0.1;
 const MAX_NODE_SIZE = 22;
 const UNASSIGNED_COMMUNITY = -1;
 const LABEL_DENSITY = 0.7;
@@ -57,6 +58,7 @@ type MutualFriendsNodeAttributes = Record<string, unknown> & {
     community: number;
     communityNamed: boolean;
     degree: number;
+    emphasized: boolean;
     forceLabel?: boolean;
     fullLabel: string;
     holeColor?: string;
@@ -315,7 +317,8 @@ export async function buildSigmaGraph({
     namedCommunityIndexes,
     theme,
     forceLabels = false,
-    minNodeSize = DEFAULT_MIN_NODE_SIZE
+    minNodeSize = DEFAULT_MIN_NODE_SIZE,
+    emphasizedNodeId = ''
 }: {
     graph: MutualFriendGraph;
     layoutSettings: MutualFriendsLayoutSettings;
@@ -324,6 +327,7 @@ export async function buildSigmaGraph({
     theme: MutualFriendsGraphTheme;
     forceLabels?: boolean;
     minNodeSize?: number;
+    emphasizedNodeId?: string;
 }) {
     const graph = new Graph<
         MutualFriendsNodeAttributes,
@@ -352,6 +356,7 @@ export async function buildSigmaGraph({
             size: baseSize,
             baseSize,
             degree: node.degree,
+            emphasized: node.id === emphasizedNodeId,
             mutualCount: node.mutualCount,
             optedOut: node.optedOut,
             lastFetchedAt: node.lastFetchedAt,
@@ -487,7 +492,9 @@ export function renderSigmaGraph({
 
         const result = {
             ...data,
-            labelColor: theme.labelColor,
+            labelColor: attributes.emphasized
+                ? theme.emphasisLabelColor
+                : theme.labelColor,
             labelFont: 'Arial',
             labelSize: 14,
             backdropVisibility: 'hidden' as const,
@@ -604,7 +611,7 @@ export function renderSigmaGraph({
                     layerBorder({
                         borders: [
                             {
-                                size: 0.1,
+                                size: NODE_RING_SIZE,
                                 color: {
                                     attribute: 'borderColor',
                                     default: NODE_RING_COLOR
@@ -658,11 +665,7 @@ export function renderSigmaGraph({
     const hoverCanvas = renderer.createCanvas('mutual-friend-hover', {
         afterLayer: 'stage',
         style: {
-            pointerEvents: 'none',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%'
+            pointerEvents: 'none'
         }
     });
     const drawNodeImages = (
@@ -705,7 +708,7 @@ export function renderSigmaGraph({
             drawMutualFriendNodeImage(
                 ctx,
                 image,
-                { x, y, size },
+                { x, y, radius: size * (1 - NODE_RING_SIZE) },
                 stayLit ? 1 : 1 - dim * NODE_DIM_STRENGTH
             );
         });
@@ -722,6 +725,8 @@ export function renderSigmaGraph({
             hoverCanvas.width = pixelWidth;
             hoverCanvas.height = pixelHeight;
         }
+        hoverCanvas.style.width = `${width}px`;
+        hoverCanvas.style.height = `${height}px`;
         const ctx = hoverCanvas.getContext('2d');
         if (!ctx) {
             return;

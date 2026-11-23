@@ -32,6 +32,7 @@ interface SigmaLifecycleOptions {
     onOpenNode?: (nodeId: string) => void;
     forceLabels?: boolean;
     minNodeSize?: number;
+    emphasizedNodeId?: string;
     nodeImageUrlById?: ReadonlyMap<string, string>;
 }
 
@@ -50,6 +51,7 @@ export function useMutualFriendsSigmaLifecycle({
     onOpenNode,
     forceLabels = false,
     minNodeSize,
+    emphasizedNodeId,
     nodeImageUrlById = NO_NODE_IMAGES
 }: SigmaLifecycleOptions) {
     const { t } = useTranslation();
@@ -164,7 +166,8 @@ export function useMutualFriendsSigmaLifecycle({
             namedCommunityIndexes,
             theme: themeRef.current,
             forceLabels,
-            minNodeSize
+            minNodeSize,
+            emphasizedNodeId
         })
             .then((builtGraph) => {
                 if (!active || containerRef.current !== container) {
@@ -211,6 +214,7 @@ export function useMutualFriendsSigmaLifecycle({
     }, [
         graph,
         communityIndexById,
+        emphasizedNodeId,
         forceLabels,
         minNodeSize,
         namedCommunityIndexes,
