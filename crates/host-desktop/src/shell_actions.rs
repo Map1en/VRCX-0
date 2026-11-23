@@ -49,7 +49,22 @@ fn discord_profile_url(discord_id: &str) -> Result<String, Error> {
     Ok(format!("https://discord.com/users/{discord_id}"))
 }
 
+const BASE64_READABLE_IMAGE_EXTENSIONS: [&str; 5] = ["png", "jpg", "jpeg", "webp", "gif"];
+
 pub fn file_base64(path: &str) -> Result<String, Error> {
+    let is_image = Path::new(path)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            BASE64_READABLE_IMAGE_EXTENSIONS
+                .iter()
+                .any(|allowed| extension.eq_ignore_ascii_case(allowed))
+        });
+    if !is_image {
+        return Err(Error::Custom(format!(
+            "Only image files can be read: {path}"
+        )));
+    }
     let bytes = std::fs::read(path)?;
     Ok(B64.encode(&bytes))
 }
@@ -191,7 +206,7 @@ fn cache_paths_overlap(left: &Path, right: &Path) -> bool {
 }
 
 pub fn open_existing_folder(path: &Path) -> Result<bool, Error> {
-    if !path.exists() {
+    if !path.is_dir() {
         return Ok(false);
     }
     open::that(path.to_string_lossy().as_ref())
@@ -342,9 +357,50 @@ fn open_folder_and_select_item_linux(path: &Path, is_folder: bool) -> Result<(),
 mod tests {
     use super::{
         cache_paths_equal, cache_paths_overlap, disable_vrchat_rich_presence_at,
-        discord_profile_url, normalize_config_file_json,
+        discord_profile_url, file_base64, normalize_config_file_json, open_existing_folder,
     };
     use std::{path::Path, time::SystemTime};
+
+    fn temp_dir(name: &str) -> std::path::PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "vrcx-0-shell-{name}-{}-{nonce}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn reads_image_files_as_base64_but_refuses_other_files() {
+        let dir = temp_dir("file-base64");
+        let image = dir.join("VRChat_photo.PNG");
+        let database = dir.join("VRCX-0.sqlite3");
+        std::fs::write(&image, b"png").unwrap();
+        std::fs::write(&database, b"secret").unwrap();
+
+        let image_result = file_base64(&image.to_string_lossy());
+        let database_result = file_base64(&database.to_string_lossy());
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert_eq!(image_result.unwrap(), "cG5n");
+        assert!(database_result.is_err());
+    }
+
+    #[test]
+    fn opening_a_folder_refuses_a_file() {
+        let dir = temp_dir("open-folder");
+        let file = dir.join("payload.exe");
+        std::fs::write(&file, b"not a folder").unwrap();
+
+        let opened = open_existing_folder(&file);
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert!(!opened.unwrap());
+    }
 
     #[test]
     fn builds_discord_profile_web_url() {
