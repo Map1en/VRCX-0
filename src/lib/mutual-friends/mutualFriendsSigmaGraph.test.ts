@@ -267,6 +267,55 @@ describe('mutual friends graph lifecycle', () => {
     );
 });
 
+describe('mutual friends graph node images', () => {
+    it('repaints only when avatar urls actually change', async () => {
+        vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+            400
+        );
+        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(
+            300
+        );
+        function GraphView({ urls }: { urls: ReadonlyMap<string, string> }) {
+            const lifecycle = useMutualFriendsSigmaLifecycle({
+                graph: GRAPH,
+                layoutSettings: MUTUAL_GRAPH_LAYOUT_DEFAULTS,
+                communityIndexById: new Map<string, number>(),
+                namedCommunityIndexes: new Set<number>(),
+                resolvedTheme: 'dark',
+                crossCommunityOnly: false,
+                selectedNodeId: '',
+                selectedNodeIdRef: { current: '' },
+                onSelectNode: vi.fn(),
+                nodeImageUrlById: urls
+            });
+            return createElement('div', { ref: lifecycle.setGraphElementRef });
+        }
+        const view = render(
+            createElement(GraphView, {
+                urls: new Map([['usr_a', 'https://image/a']])
+            })
+        );
+        await waitFor(() =>
+            expect(view.container.querySelector('canvas')).not.toBeNull()
+        );
+        sigmaMock.refresh.mockClear();
+
+        view.rerender(
+            createElement(GraphView, {
+                urls: new Map([['usr_a', 'https://image/a']])
+            })
+        );
+        expect(sigmaMock.refresh).not.toHaveBeenCalled();
+
+        view.rerender(
+            createElement(GraphView, {
+                urls: new Map([['usr_a', 'https://image/a2']])
+            })
+        );
+        expect(sigmaMock.refresh).toHaveBeenCalledOnce();
+    });
+});
+
 function projectNode(
     graph: MutualFriendsSigmaGraph,
     options: SigmaOptions,
@@ -670,25 +719,40 @@ describe('buildSigmaGraph', () => {
     it('keeps the colored dot until an avatar loads and never covers hollow nodes', async () => {
         const images: {
             src: string;
-            complete: boolean;
             naturalWidth: number;
             naturalHeight: number;
-            onload: (() => void) | null;
+            settle: () => void;
         }[] = [];
         vi.stubGlobal(
             'Image',
             class {
                 src = '';
-                decoding = '';
-                complete = false;
                 naturalWidth = 0;
                 naturalHeight = 0;
-                onload: (() => void) | null = null;
+                settle = () => {};
                 constructor() {
                     images.push(this);
                 }
+                decode() {
+                    return new Promise<void>((resolve) => {
+                        this.settle = resolve;
+                    });
+                }
             }
         );
+        const frames: FrameRequestCallback[] = [];
+        vi.stubGlobal(
+            'requestAnimationFrame',
+            (callback: FrameRequestCallback) => frames.push(callback)
+        );
+        vi.stubGlobal('cancelAnimationFrame', () => {
+            frames.length = 0;
+        });
+        const flushFrames = () => {
+            for (const callback of frames.splice(0)) {
+                callback(0);
+            }
+        };
         const context = {
             setTransform: vi.fn(),
             clearRect: vi.fn(),
@@ -697,7 +761,9 @@ describe('buildSigmaGraph', () => {
             beginPath: vi.fn(),
             arc: vi.fn(),
             clip: vi.fn(),
+            fill: vi.fn(),
             drawImage: vi.fn(),
+            fillStyle: '',
             globalAlpha: 1
         };
         vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
@@ -719,6 +785,7 @@ describe('buildSigmaGraph', () => {
             },
             nodeImageUrlByIdRef: {
                 current: new Map([
+                    ['usr_target', 'https://image/target'],
                     ['usr_a', 'https://image/a'],
                     ['usr_b', 'https://image/b']
                 ])
@@ -726,21 +793,27 @@ describe('buildSigmaGraph', () => {
         });
 
         emit('afterRender', { node: '' });
-        expect(images.map((image) => image.src)).toEqual(['https://image/a']);
+        expect(images.map((image) => image.src)).toEqual([
+            'https://image/target',
+            'https://image/a'
+        ]);
         expect(context.drawImage).not.toHaveBeenCalled();
 
         sigmaMock.refresh.mockClear();
-        Object.assign(images[0], {
-            complete: true,
-            naturalWidth: 128,
-            naturalHeight: 96
-        });
-        images[0].onload?.();
+        Object.assign(images[1], { naturalWidth: 128, naturalHeight: 96 });
+        images[1].settle();
+        await Promise.resolve();
+        expect(sigmaMock.refresh).not.toHaveBeenCalled();
+        flushFrames();
         expect(sigmaMock.refresh).toHaveBeenCalledOnce();
         emit('afterRender', { node: '' });
+        expect(context.fill).toHaveBeenCalledOnce();
+        expect(context.fillStyle).toBe(
+            buildMutualFriendsGraphTheme(true).backgroundColor
+        );
         expect(context.drawImage).toHaveBeenCalledOnce();
         expect(context.drawImage).toHaveBeenCalledWith(
-            images[0],
+            images[1],
             16,
             0,
             96,
@@ -751,8 +824,80 @@ describe('buildSigmaGraph', () => {
             expect.any(Number)
         );
 
+        sigmaMock.refresh.mockClear();
         controller.dispose();
-        expect(images[0].onload).toBeNull();
+        images[0].settle();
+        await Promise.resolve();
+        flushFrames();
+        expect(sigmaMock.refresh).not.toHaveBeenCalled();
+    });
+
+    it('shows avatars only for the hovered node and its neighbors when asked to', async () => {
+        const requested: string[] = [];
+        vi.stubGlobal(
+            'Image',
+            class {
+                set src(value: string) {
+                    requested.push(value);
+                }
+                decode() {
+                    return new Promise<void>(() => {});
+                }
+            }
+        );
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+            setTransform: vi.fn(),
+            clearRect: vi.fn()
+        } as unknown as CanvasRenderingContext2D);
+        const graph = await buildSigmaGraph({
+            graph: {
+                nodes: [node('usr_hub'), node('usr_near'), node('usr_far')],
+                links: [{ source: 'usr_hub', target: 'usr_near' }]
+            },
+            layoutSettings: MUTUAL_GRAPH_LAYOUT_DEFAULTS,
+            communityIndexById: new Map<string, number>(),
+            namedCommunityIndexes: new Set<number>(),
+            theme: buildMutualFriendsGraphTheme(true)
+        });
+        graph.updateEachNodeAttributes((_, attributes) => ({
+            ...attributes,
+            baseSize: 4
+        }));
+        renderSigmaGraph({
+            graph,
+            container: document.createElement('div'),
+            instanceRef: { current: null },
+            resizeObserverRef: { current: null },
+            themeRef: { current: buildMutualFriendsGraphTheme(true) },
+            selectedNodeIdRef: { current: '' },
+            crossCommunityOnlyRef: { current: false },
+            onSelectNode: vi.fn(),
+            hoverCardStringsRef: {
+                current: { connections: '', lastFetched: '', unavailable: '' }
+            },
+            nodeImageUrlByIdRef: {
+                current: new Map([
+                    ['usr_hub', 'https://image/hub'],
+                    ['usr_near', 'https://image/near'],
+                    ['usr_far', 'https://image/far']
+                ])
+            },
+            nodeImagesOnHover: true
+        });
+        const options = sigmaMock.options[0];
+
+        emit('afterRender', { node: '' });
+        expect(requested).toEqual([]);
+        expect(projectNode(graph, options, 'usr_near').size).toBe(4);
+
+        emit('enterNode', { node: 'usr_hub' });
+        emit('afterRender', { node: '' });
+        expect(requested.toSorted()).toEqual([
+            'https://image/hub',
+            'https://image/near'
+        ]);
+        expect(projectNode(graph, options, 'usr_near').size).toBe(12);
+        expect(projectNode(graph, options, 'usr_far').size).toBe(4);
     });
 
     it('reacts to a double click only once', async () => {

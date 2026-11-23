@@ -22,6 +22,7 @@ import { useMutualFriendsLayoutSettings } from '@/lib/mutual-friends/useMutualFr
 import { useMutualFriendsSigmaLifecycle } from '@/lib/mutual-friends/useMutualFriendsSigmaLifecycle';
 import { commands } from '@/platform/tauri/bindings';
 import { openUserDialog } from '@/services/dialogService';
+import { userImage } from '@/services/entityMediaService';
 import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
@@ -30,6 +31,8 @@ import { useMutualFriendsGraphFetch } from './useMutualFriendsGraphFetch';
 import { useMutualFriendsRuntime } from './useMutualFriendsRuntime';
 import { useMutualFriendsSnapshot } from './useMutualFriendsSnapshot';
 import { useMutualFriendsViewFilters } from './useMutualFriendsViewFilters';
+
+const NODE_IMAGE_RESOLUTION = 128;
 
 export function useMutualFriendsPageState() {
     const { t } = useTranslation();
@@ -187,6 +190,17 @@ export function useMutualFriendsPageState() {
         setSelectedNodeId(nextValue);
     }, []);
 
+    const nodeImageUrlById = useMemo(() => {
+        const urls = new Map<string, string>();
+        for (const node of filteredGraph.nodes) {
+            const url = userImage(friendsById[node.id], NODE_IMAGE_RESOLUTION);
+            if (url) {
+                urls.set(node.id, url);
+            }
+        }
+        return urls;
+    }, [filteredGraph.nodes, friendsById]);
+
     const sigma = useMutualFriendsSigmaLifecycle({
         graph: filteredGraph,
         layoutSettings,
@@ -197,7 +211,9 @@ export function useMutualFriendsPageState() {
         selectedNodeId,
         selectedNodeIdRef,
         onSelectNode: handleSelectNode,
-        onOpenNode: openNode
+        onOpenNode: openNode,
+        nodeImageUrlById,
+        nodeImagesOnHover: true
     });
 
     const { fetchProgress, handleCancelFetch, handleFetchGraph } =

@@ -6,29 +6,39 @@ export interface NodeImageLoader {
 }
 
 export function createNodeImageLoader(onLoad: () => void): NodeImageLoader {
-    const images = new Map<string, HTMLImageElement>();
+    const images = new Map<string, HTMLImageElement | null>();
     let disposed = false;
+    let frame = 0;
+    const scheduleLoad = () => {
+        if (!disposed && !frame) {
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                onLoad();
+            });
+        }
+    };
     return {
         get(url) {
-            let image = images.get(url);
-            if (!image) {
-                image = new Image();
-                image.decoding = 'async';
-                image.onload = () => {
-                    if (!disposed) {
-                        onLoad();
-                    }
-                };
+            if (!images.has(url)) {
+                images.set(url, null);
+                const image = new Image();
                 image.src = url;
-                images.set(url, image);
+                image.decode().then(
+                    () => {
+                        if (!disposed) {
+                            images.set(url, image);
+                            scheduleLoad();
+                        }
+                    },
+                    () => {}
+                );
             }
-            return image.complete && image.naturalWidth > 0 ? image : null;
+            return images.get(url) ?? null;
         },
         dispose() {
             disposed = true;
-            for (const image of images.values()) {
-                image.onload = null;
-            }
+            cancelAnimationFrame(frame);
+            frame = 0;
             images.clear();
         }
     };
@@ -38,7 +48,8 @@ export function drawMutualFriendNodeImage(
     ctx: CanvasRenderingContext2D,
     image: HTMLImageElement,
     node: { x: number; y: number; radius: number },
-    alpha: number
+    alpha: number,
+    backgroundColor: string
 ) {
     const { radius } = node;
     if (radius < MIN_IMAGE_RADIUS || alpha <= 0) {
@@ -50,6 +61,8 @@ export function drawMutualFriendNodeImage(
     ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
     ctx.clip();
+    ctx.fillStyle = backgroundColor;
+    ctx.fill();
     ctx.drawImage(
         image,
         (image.naturalWidth - side) / 2,

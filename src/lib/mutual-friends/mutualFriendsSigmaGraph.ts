@@ -34,6 +34,7 @@ import {
 const NODE_LABEL_THRESHOLD = 10;
 const DEFAULT_MIN_NODE_SIZE = 4;
 const NODE_RING_SIZE = 0.1;
+const HOVER_IMAGE_NODE_SIZE = 12;
 const MAX_NODE_SIZE = 22;
 const UNASSIGNED_COMMUNITY = -1;
 const LABEL_DENSITY = 0.7;
@@ -450,7 +451,8 @@ export function renderSigmaGraph({
     onSelectNode,
     onOpenNode,
     hoverCardStringsRef,
-    nodeImageUrlByIdRef
+    nodeImageUrlByIdRef,
+    nodeImagesOnHover = false
 }: {
     graph: MutualFriendsSigmaGraph;
     container: HTMLElement;
@@ -463,6 +465,7 @@ export function renderSigmaGraph({
     onOpenNode?: (nodeId: string) => void;
     hoverCardStringsRef: { current: HoverCardStrings };
     nodeImageUrlByIdRef?: { current: ReadonlyMap<string, string> };
+    nodeImagesOnHover?: boolean;
 }) {
     destroySigmaInstance(instanceRef, resizeObserverRef);
     const reducedMotion = prefersReducedMotion();
@@ -538,6 +541,17 @@ export function renderSigmaGraph({
             if (dim > 0.5) {
                 result.label = '';
             }
+        }
+        if (
+            nodeImagesOnHover &&
+            (isHovered || isNeighbor) &&
+            attributes.type !== 'hollow' &&
+            nodeImageUrlByIdRef?.current.has(node)
+        ) {
+            result.size = Math.max(
+                result.size,
+                baseSize + (HOVER_IMAGE_NODE_SIZE - baseSize) * dim
+            );
         }
         result.borderColor =
             attributes.type === 'hollow' ? result.color : result.ringColor;
@@ -678,14 +692,19 @@ export function renderSigmaGraph({
             return;
         }
         const dim = hoverTransition.value;
-        graph.forEachNode((node, attributes) => {
+        const hoverNodes = hovered && dim > 0 ? [hovered, ...neighbors] : [];
+        for (const node of nodeImagesOnHover ? hoverNodes : graph.nodes()) {
             const url = urls.get(node);
-            if (!url || attributes.type === 'hollow') {
-                return;
+            if (
+                !url ||
+                !graph.hasNode(node) ||
+                graph.getNodeAttribute(node, 'type') === 'hollow'
+            ) {
+                continue;
             }
             const data = renderer.getNodeDisplayData(node);
             if (!data) {
-                return;
+                continue;
             }
             const { x, y } = renderer.framedGraphToViewport(data);
             const size = renderer.scaleSize(data.size);
@@ -695,23 +714,25 @@ export function renderSigmaGraph({
                 x - size > width ||
                 y - size > height
             ) {
-                return;
+                continue;
             }
             const image = imageLoader.get(url);
             if (!image) {
-                return;
+                continue;
             }
             const stayLit =
                 node === hovered ||
                 neighbors.has(node) ||
                 node === selectedNodeIdRef.current;
+            const restingAlpha = stayLit ? 1 : 1 - dim * NODE_DIM_STRENGTH;
             drawMutualFriendNodeImage(
                 ctx,
                 image,
                 { x, y, radius: size * (1 - NODE_RING_SIZE) },
-                stayLit ? 1 : 1 - dim * NODE_DIM_STRENGTH
+                nodeImagesOnHover ? dim : restingAlpha,
+                themeRef.current.backgroundColor
             );
-        });
+        }
     };
     const drawOverlay = () => {
         const { width, height } = renderer.getDimensions();

@@ -34,6 +34,7 @@ interface SigmaLifecycleOptions {
     minNodeSize?: number;
     emphasizedNodeId?: string;
     nodeImageUrlById?: ReadonlyMap<string, string>;
+    nodeImagesOnHover?: boolean;
 }
 
 const NO_NODE_IMAGES: ReadonlyMap<string, string> = new Map();
@@ -52,7 +53,8 @@ export function useMutualFriendsSigmaLifecycle({
     forceLabels = false,
     minNodeSize,
     emphasizedNodeId,
-    nodeImageUrlById = NO_NODE_IMAGES
+    nodeImageUrlById = NO_NODE_IMAGES,
+    nodeImagesOnHover = false
 }: SigmaLifecycleOptions) {
     const { t } = useTranslation();
     const containerRef = useRef<HTMLElement | null>(null);
@@ -190,7 +192,8 @@ export function useMutualFriendsSigmaLifecycle({
                     onSelectNode: (nodeId) => selectNodeRef.current(nodeId),
                     onOpenNode: (nodeId) => openNodeRef.current?.(nodeId),
                     hoverCardStringsRef,
-                    nodeImageUrlByIdRef
+                    nodeImageUrlByIdRef,
+                    nodeImagesOnHover
                 });
                 graphologyRef.current = builtGraph;
             })
@@ -218,6 +221,7 @@ export function useMutualFriendsSigmaLifecycle({
         forceLabels,
         minNodeSize,
         namedCommunityIndexes,
+        nodeImagesOnHover,
         layoutIterations,
         layoutSpacing,
         renderRetryToken,
@@ -246,7 +250,18 @@ export function useMutualFriendsSigmaLifecycle({
         controllerRef.current?.applyEdgeEmphasis();
     }, [crossCommunityOnly]);
 
+    const appliedNodeImageUrlByIdRef = useRef(nodeImageUrlById);
     useEffect(() => {
+        const previous = appliedNodeImageUrlByIdRef.current;
+        appliedNodeImageUrlByIdRef.current = nodeImageUrlById;
+        if (
+            previous.size === nodeImageUrlById.size &&
+            [...nodeImageUrlById].every(
+                ([node, url]) => previous.get(node) === url
+            )
+        ) {
+            return;
+        }
         controllerRef.current?.applyNodeImages();
     }, [nodeImageUrlById]);
 
