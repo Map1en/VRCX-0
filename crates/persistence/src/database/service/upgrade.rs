@@ -174,6 +174,11 @@ impl DatabaseService {
                             );
                         }
                     }
+                } else {
+                    tracing::warn!(
+                        "Database file {} is missing after a failed upgrade replacement; it stays closed until the next start restores the pre-upgrade backup",
+                        self.db_path.display()
+                    );
                 }
                 return Err(error);
             }
@@ -547,20 +552,28 @@ impl DatabaseService {
             replace_file_atomically(&self.db_path, work_db_path)?;
         }
         if !old_main_path.exists() {
-            if work_db_path.exists() && !self.db_path.exists() {
-                let _ = replace_file_atomically(work_db_path, &self.db_path);
-            }
+            self.put_upgraded_database_back(work_db_path);
             return Err(Error::Database(
                 "Original database backup is missing during upgrade rollback.".into(),
             ));
         }
         if let Err(error) = replace_file_atomically(old_main_path, &self.db_path) {
-            if work_db_path.exists() && !self.db_path.exists() {
-                let _ = replace_file_atomically(work_db_path, &self.db_path);
-            }
+            self.put_upgraded_database_back(work_db_path);
             return Err(Error::Io(error));
         }
         Ok(())
+    }
+
+    fn put_upgraded_database_back(&self, work_db_path: &Path) {
+        if !work_db_path.exists() || self.db_path.exists() {
+            return;
+        }
+        if let Err(error) = replace_file_atomically(work_db_path, &self.db_path) {
+            tracing::warn!(
+                "Failed to move the upgraded database back to {} during rollback: {error}",
+                self.db_path.display()
+            );
+        }
     }
 
     fn remove_upgrade_dir(&self) -> Result<(), Error> {
