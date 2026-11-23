@@ -32,6 +32,12 @@ describe('FeedDifferenceHtml', () => {
         );
     });
 
+    it('keeps replacement patterns in bio text as literal characters', () => {
+        expect(
+            formatDifferenceHtml('price', 'cost $` and $& now', ADD, DEL)
+        ).toBe('<del>price</del> <ins>cost $` and $&amp; now</ins>');
+    });
+
     it('keeps line breaks outside inserted and deleted text chunks', () => {
         expect(formatDifferenceHtml('first\nold', 'first\nnew', ADD, DEL)).toBe(
             'first <br><del>old</del> <ins>new</ins>'

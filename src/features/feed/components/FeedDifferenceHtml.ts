@@ -90,7 +90,7 @@ function formatDifferenceHtml(
                 result.push('<br>');
             }
             if (parts[i].length > 0) {
-                result.push(pattern.replace('{{text}}', parts[i]));
+                result.push(pattern.replace('{{text}}', () => parts[i]));
             }
         }
         return result;
