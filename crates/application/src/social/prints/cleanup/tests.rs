@@ -5,14 +5,9 @@ use super::{
 };
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc, Mutex,
-};
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
 use vrcx_0_application_core::{
-    RemoteMutationGate, RuntimeAuthScope, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
-    TaskSupervisor,
+    CountingTaskExecutor, RemoteMutationGate, RuntimeAuthScope, TaskSupervisor,
 };
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
@@ -154,8 +149,7 @@ fn detects_print_created_content_refresh_messages() {
 fn cleanup_queue_keeps_one_flight_pending() {
     let supervisor = TaskSupervisor::new();
     let executor = CountingTaskExecutor::default();
-    let spawned = Arc::clone(&executor.spawned);
-    supervisor.set_executor(executor);
+    supervisor.set_executor(executor.clone());
     let queue = PrintCleanupQueue::new();
     let deps = test_deps(Arc::new(TestPrintAdapter::new(&[], &[])));
     let trigger = PrintCleanupTrigger {
@@ -168,35 +162,7 @@ fn cleanup_queue_keeps_one_flight_pending() {
     queue.schedule(&supervisor, deps.clone(), trigger.clone());
     queue.schedule(&supervisor, deps, trigger);
 
-    assert_eq!(spawned.load(Ordering::Acquire), 1);
-}
-
-#[derive(Clone, Default)]
-struct CountingTaskExecutor {
-    spawned: Arc<AtomicUsize>,
-}
-
-struct CountingTaskHandle {
-    finished: bool,
-}
-
-impl RuntimeTaskExecutor for CountingTaskExecutor {
-    fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
-        self.spawned.fetch_add(1, Ordering::AcqRel);
-        Box::new(CountingTaskHandle { finished: false })
-    }
-}
-
-impl RuntimeTaskHandle for CountingTaskHandle {
-    fn abort(&self) {}
-
-    fn is_finished(&self) -> bool {
-        self.finished
-    }
-
-    fn join_or_abort(&mut self, _timeout: Duration) {
-        self.finished = true;
-    }
+    assert_eq!(executor.spawned(), 1);
 }
 
 struct TestPrintAdapter {

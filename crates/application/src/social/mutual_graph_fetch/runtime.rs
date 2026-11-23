@@ -5,8 +5,6 @@ use std::sync::{
 };
 use vrcx_0_core::OwnerId;
 
-#[cfg(test)]
-use std::time::Duration;
 use vrcx_0_core::time::now_iso;
 
 use crate::remote::VrchatRequestPort;

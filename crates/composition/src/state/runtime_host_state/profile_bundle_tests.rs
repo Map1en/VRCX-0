@@ -260,47 +260,19 @@ fn desktop_idle_stop_still_cleans_up_profile_services() -> Result<()> {
     Ok(())
 }
 
-struct CountingTaskExecutor {
-    spawned: Arc<AtomicUsize>,
-}
-
-struct FinishedTaskHandle;
-
-impl vrcx_0_application_core::RuntimeTaskHandle for FinishedTaskHandle {
-    fn abort(&self) {}
-
-    fn is_finished(&self) -> bool {
-        true
-    }
-
-    fn join_or_abort(&mut self, _timeout: std::time::Duration) {}
-}
-
-impl RuntimeTaskExecutor for CountingTaskExecutor {
-    fn spawn(
-        &self,
-        _task: vrcx_0_application_core::RuntimeTask,
-    ) -> Box<dyn vrcx_0_application_core::RuntimeTaskHandle> {
-        self.spawned.fetch_add(1, Ordering::AcqRel);
-        Box::new(FinishedTaskHandle)
-    }
-}
-
 #[test]
 fn construction_time_tasks_run_on_the_provided_executor() -> Result<()> {
     let dir = TestDir::new("construction-executor");
     let app_data = dir.path.join("app-data");
     std::fs::create_dir_all(&app_data)?;
-    let spawned = Arc::new(AtomicUsize::new(0));
+    let executor = vrcx_0_application_core::CountingTaskExecutor::default();
 
     let _state = RuntimeHostState::new(cli_options(
         app_data,
         RuntimeHostProfile::HeadlessData,
-        Some(Arc::new(CountingTaskExecutor {
-            spawned: Arc::clone(&spawned),
-        })),
+        Some(Arc::new(executor.clone())),
     ))?;
 
-    assert!(spawned.load(Ordering::Acquire) > 0);
+    assert!(executor.spawned() > 0);
     Ok(())
 }

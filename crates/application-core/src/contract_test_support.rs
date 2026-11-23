@@ -1,5 +1,5 @@
 use std::collections::{HashMap, VecDeque};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -7,7 +7,12 @@ use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_contracts::resolve_config_key;
 
-use crate::{ConfigStore, Error, ImageCachePort, Result, WebClientPort, WorldCachePort};
+use std::time::Duration;
+
+use crate::{
+    ConfigStore, Error, ImageCachePort, Result, RuntimeTask, RuntimeTaskExecutor,
+    RuntimeTaskHandle, WebClientPort, WorldCachePort,
+};
 
 pub struct CallRecorder<T> {
     calls: Mutex<Vec<T>>,
@@ -670,5 +675,60 @@ impl ConfigStore for MemoryConfigStore {
 
     fn write_generation(&self) -> u64 {
         self.generation.load(Ordering::Acquire)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct DiscardTaskExecutor;
+
+struct FinishedTaskHandle;
+
+impl RuntimeTaskExecutor for DiscardTaskExecutor {
+    fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
+        Box::new(FinishedTaskHandle)
+    }
+}
+
+impl RuntimeTaskHandle for FinishedTaskHandle {
+    fn abort(&self) {}
+
+    fn is_finished(&self) -> bool {
+        true
+    }
+
+    fn join_or_abort(&mut self, _timeout: Duration) {}
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct CountingTaskExecutor {
+    spawned: Arc<AtomicUsize>,
+}
+
+impl CountingTaskExecutor {
+    pub fn spawned(&self) -> usize {
+        self.spawned.load(Ordering::Acquire)
+    }
+}
+
+struct PendingTaskHandle {
+    finished: bool,
+}
+
+impl RuntimeTaskExecutor for CountingTaskExecutor {
+    fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
+        self.spawned.fetch_add(1, Ordering::AcqRel);
+        Box::new(PendingTaskHandle { finished: false })
+    }
+}
+
+impl RuntimeTaskHandle for PendingTaskHandle {
+    fn abort(&self) {}
+
+    fn is_finished(&self) -> bool {
+        self.finished
+    }
+
+    fn join_or_abort(&mut self, _timeout: Duration) {
+        self.finished = true;
     }
 }

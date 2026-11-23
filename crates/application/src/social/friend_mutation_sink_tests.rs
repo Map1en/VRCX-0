@@ -1,10 +1,8 @@
 use std::collections::HashMap;
-use std::{sync::OnceLock, time::Duration};
+use std::sync::OnceLock;
 
 use serde_json::json;
-use vrcx_0_application_core::{
-    RemoteMutationGate, Result, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
-};
+use vrcx_0_application_core::{DiscardTaskExecutor, RemoteMutationGate, Result};
 use vrcx_0_application_realtime::test_support::{
     runtime_with_active_session, TestRealtimeHostRuntime,
 };
@@ -19,27 +17,6 @@ use vrcx_0_core::friends::{FriendBaselineEntry, FriendBaselinePresence, FriendRe
 use crate::social::social_mutation::{apply_friend_request_accept_locally, apply_unfriend_locally};
 use crate::social::{SocialFriendMutationStatus, SocialMutationDeps};
 use vrcx_0_core::OwnerId;
-
-#[derive(Clone, Copy)]
-struct DiscardTaskExecutor;
-
-struct FinishedTaskHandle;
-
-impl RuntimeTaskExecutor for DiscardTaskExecutor {
-    fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
-        Box::new(FinishedTaskHandle)
-    }
-}
-
-impl RuntimeTaskHandle for FinishedTaskHandle {
-    fn abort(&self) {}
-
-    fn is_finished(&self) -> bool {
-        true
-    }
-
-    fn join_or_abort(&mut self, _timeout: Duration) {}
-}
 
 fn deps(runtime: &TestRealtimeHostRuntime) -> SocialMutationDeps<'_> {
     static REMOTE_MUTATIONS: OnceLock<RemoteMutationGate> = OnceLock::new();

@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use serde_json::{json, Map};
 use vrcx_0_application_core::{
-    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSupervisor,
+    DiscardTaskExecutor, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSupervisor,
 };
 use vrcx_0_core::friends::{FriendBaselineEntry, FriendBaselinePresence, FriendRecord};
 use vrcx_0_persistence::realtime::{
@@ -14,27 +14,6 @@ use super::*;
 use crate::test_support::test_runtime;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::feed::test_support::seed_feed_bio_row;
-
-#[derive(Clone, Copy)]
-struct DiscardTaskExecutor;
-
-struct FinishedTaskHandle;
-
-impl RuntimeTaskExecutor for DiscardTaskExecutor {
-    fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
-        Box::new(FinishedTaskHandle)
-    }
-}
-
-impl RuntimeTaskHandle for FinishedTaskHandle {
-    fn abort(&self) {}
-
-    fn is_finished(&self) -> bool {
-        true
-    }
-
-    fn join_or_abort(&mut self, _timeout: Duration) {}
-}
 
 fn friend(id: &str, display_name: &str, state_bucket: &str, location: &str) -> FriendBaselineEntry {
     FriendBaselineEntry {

@@ -2,9 +2,7 @@ use super::*;
 use crate::social::{MutualGraphLinkOutput, MutualGraphMetaOutput, MutualGraphSnapshotOutput};
 use serde_json::{json, Value};
 use std::sync::Condvar;
-use vrcx_0_application_core::{
-    RuntimeEventSink, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
-};
+use vrcx_0_application_core::{DiscardTaskExecutor, RuntimeEventSink};
 
 struct NoopMutualGraphStore;
 
@@ -36,27 +34,6 @@ impl MutualGraphStore for NoopMutualGraphStore {
     ) -> Result<()> {
         Ok(())
     }
-}
-
-#[derive(Clone)]
-struct DropTaskExecutor;
-
-struct FinishedTaskHandle;
-
-impl RuntimeTaskExecutor for DropTaskExecutor {
-    fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
-        Box::new(FinishedTaskHandle)
-    }
-}
-
-impl RuntimeTaskHandle for FinishedTaskHandle {
-    fn abort(&self) {}
-
-    fn is_finished(&self) -> bool {
-        true
-    }
-
-    fn join_or_abort(&mut self, _timeout: Duration) {}
 }
 
 #[derive(Default)]
@@ -170,7 +147,7 @@ fn start_emits_a_running_status_before_the_job_is_spawned() {
     let event_bus = RuntimeEventBus::new();
     let runtime = MutualGraphFetchRuntime::with_event_bus(event_bus.clone());
     let tasks = TaskSupervisor::new();
-    tasks.set_executor(DropTaskExecutor);
+    tasks.set_executor(DiscardTaskExecutor);
 
     let started = runtime
         .start(
