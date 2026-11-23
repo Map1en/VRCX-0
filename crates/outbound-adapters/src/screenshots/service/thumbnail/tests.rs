@@ -56,7 +56,7 @@ fn write_text_chunk(path: &Path, keyword: &str, text: &str) -> Result<()> {
     let mut png =
         png::PngFile::open_rw(&path_str).map_err(|e| Error::Custom(format!("png open: {e}")))?;
     let chunk = png::generate_text_chunk(keyword, text);
-    assert!(png.write_chunk(&chunk));
+    assert!(png.write_chunk(&chunk)?);
     Ok(())
 }
 

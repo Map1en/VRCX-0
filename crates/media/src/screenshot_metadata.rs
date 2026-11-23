@@ -33,26 +33,40 @@ pub fn delete_text_metadata(path: &str, delete_vrchat_metadata: bool) -> bool {
         return false;
     }
 
-    let mut pf = match png::PngFile::open_rw(path) {
-        Ok(p) => p,
-        Err(_) => return false,
-    };
-    let deleted_vrchat = if delete_vrchat_metadata {
-        png::delete_text_chunk("XML:com.adobe.xmp", &mut pf)
-    } else {
-        false
-    };
-    let deleted_vrcx = png::delete_text_chunk("Description", &mut pf);
-    deleted_vrchat || deleted_vrcx
+    edit_png_in_place(path, |pf| {
+        let deleted_vrchat = if delete_vrchat_metadata {
+            png::delete_text_chunk("XML:com.adobe.xmp", pf)?
+        } else {
+            false
+        };
+        let deleted_vrcx = png::delete_text_chunk("Description", pf)?;
+        Ok(deleted_vrchat || deleted_vrcx)
+    })
 }
 
 pub fn write_vrcx_metadata(text: &str, path: &str) -> bool {
+    let chunk = png::generate_text_chunk("Description", text);
+    edit_png_in_place(path, |pf| pf.write_chunk(&chunk))
+}
+
+fn edit_png_in_place(
+    path: &str,
+    edit: impl FnOnce(&mut png::PngFile) -> std::io::Result<bool>,
+) -> bool {
+    let Ok(original) = std::fs::read(path) else {
+        return false;
+    };
     let mut pf = match png::PngFile::open_rw(path) {
         Ok(p) => p,
         Err(_) => return false,
     };
-    let chunk = png::generate_text_chunk("Description", text);
-    pf.write_chunk(&chunk)
+    match edit(&mut pf) {
+        Ok(changed) => changed,
+        Err(_) => {
+            let _ = pf.restore(&original);
+            false
+        }
+    }
 }
 
 pub fn has_vrcx_metadata(path: &str) -> bool {
@@ -288,5 +302,75 @@ mod tests {
         assert_eq!(metadata.world.instance_id, "wrld_lfs:123");
         assert_eq!(metadata.world.name.as_deref(), Some("LFS World"));
         assert_eq!(metadata.players[0].display_name, "Friend");
+    }
+
+    #[test]
+    fn writing_metadata_through_a_read_only_handle_reports_failure() {
+        let bytes = png_with_pre_idat_text_chunks(&[]);
+        let path = write_png("read-only-handle", &bytes);
+        let mut pf = png::PngFile::open_read(path.to_str().unwrap()).unwrap();
+
+        let written = pf.write_chunk(&generate_text_chunk("Description", "{}"));
+        drop(pf);
+        let after = fs::read(&path).unwrap();
+        fs::remove_file(path).ok();
+
+        assert!(written.is_err());
+        assert_eq!(after, bytes);
+    }
+
+    #[test]
+    fn a_failed_edit_restores_the_original_screenshot_bytes() {
+        let bytes = png_with_pre_idat_text_chunks(&[generate_text_chunk(
+            "XML:com.adobe.xmp",
+            "<x:xmpmeta/>",
+        )]);
+        let path = write_png("failed-edit", &bytes);
+
+        let edited = edit_png_in_place(path.to_str().unwrap(), |pf| {
+            pf.write_chunk(&generate_text_chunk(
+                "Description",
+                "{\"application\":\"VRCX-0\"}",
+            ))?;
+            png::delete_text_chunk("XML:com.adobe.xmp", pf)?;
+            Err(std::io::Error::other("injected failure"))
+        });
+        let after = fs::read(&path).unwrap();
+        fs::remove_file(path).ok();
+
+        assert!(!edited);
+        assert_eq!(after, bytes);
+    }
+
+    #[test]
+    fn writing_and_deleting_metadata_round_trips_the_description_chunk() {
+        let bytes = png_with_pre_idat_text_chunks(&[]);
+        let path = write_png("round-trip", &bytes);
+        let path_str = path.to_str().unwrap().to_string();
+        let vrcx = r#"{"application":"VRCX-0","version":1}"#;
+
+        assert!(write_vrcx_metadata(vrcx, &path_str));
+        assert_eq!(read_text_metadata(&path_str), vec![vrcx.to_string()]);
+        assert!(delete_text_metadata(&path_str, false));
+        let after = fs::read(&path).unwrap();
+        fs::remove_file(path).ok();
+
+        assert_eq!(after, bytes);
+    }
+
+    #[test]
+    fn writing_metadata_keeps_the_screenshot_creation_time() {
+        let path = write_png("creation-time", &png_with_pre_idat_text_chunks(&[]));
+        let Ok(created_before) = fs::metadata(&path).and_then(|meta| meta.created()) else {
+            fs::remove_file(path).ok();
+            return;
+        };
+        std::thread::sleep(std::time::Duration::from_millis(20));
+
+        assert!(write_vrcx_metadata("{}", path.to_str().unwrap()));
+        let created_after = fs::metadata(&path).and_then(|meta| meta.created()).unwrap();
+        fs::remove_file(path).ok();
+
+        assert_eq!(created_after, created_before);
     }
 }

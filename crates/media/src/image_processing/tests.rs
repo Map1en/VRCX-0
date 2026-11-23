@@ -208,7 +208,7 @@ fn crop_print_file_preserves_itxt_chunks() -> Result<(), Error> {
         let mut png = png_mod::PngFile::open_rw(&path_str)
             .map_err(|e| Error::Custom(format!("png open: {e}")))?;
         let chunk = png_mod::generate_text_chunk("Description", "{\"source\":\"vrcx\"}");
-        assert!(png.write_chunk(&chunk));
+        assert!(png.write_chunk(&chunk)?);
     }
 
     assert!(super::crop_print_file(&path)?);

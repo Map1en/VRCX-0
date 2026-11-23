@@ -215,7 +215,11 @@ pub fn crop_print_file(path: &Path) -> Result<bool, Error> {
             let temp_str = temp_path.to_string_lossy();
             let mut new_png = png_mod::PngFile::open_rw(&temp_str).map_err(Error::Custom)?;
             for chunk in &text_chunks {
-                new_png.write_chunk(chunk);
+                if let Err(error) = new_png.write_chunk(chunk) {
+                    drop(new_png);
+                    let _ = std::fs::remove_file(&temp_path);
+                    return Err(error.into());
+                }
             }
         }
     }

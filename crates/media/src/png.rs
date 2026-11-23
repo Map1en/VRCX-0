@@ -298,38 +298,32 @@ impl PngFile {
         None
     }
 
-    pub fn write_chunk(&mut self, chunk: &PngChunk) -> bool {
+    pub fn write_chunk(&mut self, chunk: &PngChunk) -> std::io::Result<bool> {
         self.ensure_cache();
         let last = match self.cache.last() {
             Some(c) => c,
-            None => return false,
+            None => return Ok(false),
         };
         let insert_pos = last.index + CHUNK_NONDATA_SIZE + last.data.len();
-        let file_len = self.file.seek(SeekFrom::End(0)).unwrap_or(0) as usize;
+        let file_len = self.file.seek(SeekFrom::End(0))? as usize;
 
-        self.file.seek(SeekFrom::Start(insert_pos as u64)).ok();
-        let tail_len = file_len - insert_pos;
-        let mut tail = vec![0u8; tail_len];
-        if tail_len > 0 {
-            let _ = self.file.read_exact(&mut tail);
-        }
+        self.file.seek(SeekFrom::Start(insert_pos as u64))?;
+        let mut tail = vec![0u8; file_len - insert_pos];
+        self.file.read_exact(&mut tail)?;
 
-        let chunk_bytes = chunk.to_bytes();
-        let new_len = file_len + chunk_bytes.len();
-        self.file.set_len(new_len as u64).ok();
-        self.file.seek(SeekFrom::Start(insert_pos as u64)).ok();
-        let _ = self.file.write_all(&chunk_bytes);
-        let _ = self.file.write_all(&tail);
-        true
+        self.file.seek(SeekFrom::Start(insert_pos as u64))?;
+        self.file.write_all(&chunk.to_bytes())?;
+        self.file.write_all(&tail)?;
+        Ok(true)
     }
 
-    pub fn delete_chunk(&mut self, chunk: &PngChunk) -> bool {
+    pub fn delete_chunk(&mut self, chunk: &PngChunk) -> std::io::Result<bool> {
         if !chunk.exists_in_file(&mut self.file) {
-            return false;
+            return Ok(false);
         }
         let delete_start = chunk.index;
         let delete_len = chunk.data.len() + CHUNK_NONDATA_SIZE;
-        let file_len = self.file.seek(SeekFrom::End(0)).unwrap_or(0) as usize;
+        let file_len = self.file.seek(SeekFrom::End(0))? as usize;
 
         let src_pos = delete_start + delete_len;
         let buf_size = 128 * 1024;
@@ -338,18 +332,18 @@ impl PngFile {
         let mut write_pos = delete_start;
 
         while read_pos < file_len {
-            self.file.seek(SeekFrom::Start(read_pos as u64)).ok();
+            self.file.seek(SeekFrom::Start(read_pos as u64))?;
             let to_read = buf_size.min(file_len - read_pos);
-            let n = self.file.read(&mut buffer[..to_read]).unwrap_or(0);
+            let n = self.file.read(&mut buffer[..to_read])?;
             if n == 0 {
                 break;
             }
-            self.file.seek(SeekFrom::Start(write_pos as u64)).ok();
-            let _ = self.file.write_all(&buffer[..n]);
+            self.file.seek(SeekFrom::Start(write_pos as u64))?;
+            self.file.write_all(&buffer[..n])?;
             read_pos += n;
             write_pos += n;
         }
-        self.file.set_len((file_len - delete_len) as u64).ok();
+        self.file.set_len((file_len - delete_len) as u64)?;
 
         self.cache.retain(|c| c.index != chunk.index);
         for c in &mut self.cache {
@@ -357,7 +351,14 @@ impl PngFile {
                 c.index -= delete_len;
             }
         }
-        true
+        Ok(true)
+    }
+
+    pub fn restore(&mut self, original: &[u8]) -> std::io::Result<()> {
+        self.cache.clear();
+        self.file.seek(SeekFrom::Start(0))?;
+        self.file.write_all(original)?;
+        self.file.set_len(original.len() as u64)
     }
 }
 
@@ -390,7 +391,7 @@ pub fn read_text_chunk(keyword: &str, png: &mut PngFile, legacy_search: bool) ->
     None
 }
 
-pub fn delete_text_chunk(keyword: &str, png: &mut PngFile) -> bool {
+pub fn delete_text_chunk(keyword: &str, png: &mut PngFile) -> std::io::Result<bool> {
     let chunks = png.get_chunks_of_type(&ChunkType::ITXT);
     for c in &chunks {
         if let Some((kw, _)) = c.read_itxt() {
@@ -399,7 +400,7 @@ pub fn delete_text_chunk(keyword: &str, png: &mut PngFile) -> bool {
             }
         }
     }
-    false
+    Ok(false)
 }
 
 #[cfg(test)]
