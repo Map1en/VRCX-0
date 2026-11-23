@@ -4,6 +4,8 @@ use std::sync::{mpsc, Arc, RwLock};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
+use vrcx_0_platform::path_utils::replace_file_atomically;
+
 use crate::Error;
 
 pub struct StorageService {
@@ -15,14 +17,7 @@ pub struct StorageService {
 
 impl StorageService {
     pub fn new(file_path: &Path) -> Result<Self, Error> {
-        let data = if file_path.exists() {
-            let content = std::fs::read_to_string(file_path)?;
-            serde_json::from_str(&content).unwrap_or_default()
-        } else {
-            HashMap::new()
-        };
-
-        let data = Arc::new(RwLock::new(data));
+        let data = Arc::new(RwLock::new(load(file_path)?));
         let (dirty_tx, dirty_rx) = mpsc::channel::<()>();
 
         let saver_data = Arc::clone(&data);
@@ -64,11 +59,46 @@ impl StorageService {
     }
 
     pub fn save(&self) -> Result<(), Error> {
-        let data = self.data.read().unwrap();
-        let json = serde_json::to_string_pretty(&*data)?;
-        std::fs::write(&self.file_path, json)?;
-        Ok(())
+        write_atomically(&self.data, &self.file_path)
     }
+}
+
+fn load(file_path: &Path) -> Result<HashMap<String, String>, Error> {
+    if !file_path.exists() {
+        return Ok(HashMap::new());
+    }
+    let content = std::fs::read_to_string(file_path)?;
+    match serde_json::from_str(&content) {
+        Ok(data) => Ok(data),
+        Err(error) => {
+            let corrupt_path = sibling_path(file_path, "corrupt");
+            replace_file_atomically(file_path, &corrupt_path)?;
+            tracing::warn!(
+                "StorageService: {} is not valid JSON ({error}); kept it as {} and started empty",
+                file_path.display(),
+                corrupt_path.display()
+            );
+            Ok(HashMap::new())
+        }
+    }
+}
+
+fn sibling_path(file_path: &Path, suffix: &str) -> PathBuf {
+    let mut name = file_path.as_os_str().to_owned();
+    name.push(".");
+    name.push(suffix);
+    PathBuf::from(name)
+}
+
+fn write_atomically(data: &RwLock<HashMap<String, String>>, path: &Path) -> Result<(), Error> {
+    let json = serde_json::to_string_pretty(&*data.read().unwrap())?;
+    let temp_path = sibling_path(path, "tmp");
+    std::fs::write(&temp_path, json)?;
+    if let Err(error) = replace_file_atomically(&temp_path, path) {
+        let _ = std::fs::remove_file(&temp_path);
+        return Err(error.into());
+    }
+    Ok(())
 }
 
 impl Drop for StorageService {
@@ -106,14 +136,8 @@ fn debounce_saver(
 }
 
 fn do_save(data: &RwLock<HashMap<String, String>>, path: &Path) {
-    let data = data.read().unwrap();
-    match serde_json::to_string_pretty(&*data) {
-        Ok(json) => {
-            if let Err(e) = std::fs::write(path, json) {
-                tracing::warn!("StorageService: failed to write: {e}");
-            }
-        }
-        Err(e) => tracing::error!("StorageService: failed to serialize: {e}"),
+    if let Err(e) = write_atomically(data, path) {
+        tracing::warn!("StorageService: failed to write: {e}");
     }
 }
 
@@ -197,6 +221,55 @@ mod tests {
             Some("false")
         );
         assert_eq!(reloaded.get("VRCX_ProxyServer"), None);
+        Ok(())
+    }
+
+    #[test]
+    fn keeps_a_corrupt_config_file_aside_instead_of_overwriting_it() -> Result<(), Error> {
+        let dir = TestDir::new("storage-corrupt");
+        let config_path = dir.path.join("VRCX-0.json");
+        let truncated = br#"{"VRCX_CloseToTray":"true","VRCX_Prox"#;
+        std::fs::write(&config_path, truncated)?;
+
+        let storage = StorageService::new(&config_path)?;
+        assert!(storage.get_all().is_empty());
+        storage.set("VRCX_StartAsMinimizedState".into(), "false".into());
+        storage.save()?;
+        drop(storage);
+
+        assert_eq!(
+            std::fs::read(dir.path.join("VRCX-0.json.corrupt"))?,
+            truncated
+        );
+        let reloaded = StorageService::new(&config_path)?;
+        assert_eq!(
+            reloaded.get("VRCX_StartAsMinimizedState").as_deref(),
+            Some("false")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn saving_replaces_the_file_without_leaving_a_temporary_copy() -> Result<(), Error> {
+        let dir = TestDir::new("storage-atomic");
+        let config_path = dir.path.join("VRCX-0.json");
+        std::fs::write(&config_path, r#"{"VRCX_CloseToTray":"true"}"#)?;
+
+        let storage = StorageService::new(&config_path)?;
+        storage.set("VRCX_CloseToTray".into(), "false".into());
+        storage.save()?;
+        drop(storage);
+
+        let names = std::fs::read_dir(&dir.path)?
+            .map(|entry| entry.map(|entry| entry.file_name().to_string_lossy().into_owned()))
+            .collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(names, vec!["VRCX-0.json".to_string()]);
+        let saved: HashMap<String, String> =
+            serde_json::from_str(&std::fs::read_to_string(&config_path)?)?;
+        assert_eq!(
+            saved.get("VRCX_CloseToTray").map(String::as_str),
+            Some("false")
+        );
         Ok(())
     }
 }
