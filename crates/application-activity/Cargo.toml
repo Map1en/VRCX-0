@@ -5,9 +5,6 @@ edition = "2021"
 license.workspace = true
 description = "Activity delivery runtime"
 
-[features]
-test-utils = ["vrcx-0-application-core/test-utils"]
-
 [dependencies]
 chrono = { workspace = true }
 moka = { version = "0.12", features = ["sync"] }
