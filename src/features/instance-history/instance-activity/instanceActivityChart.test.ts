@@ -71,6 +71,39 @@ describe('instanceActivityChart', () => {
         ).toContain('Known World');
     });
 
+    it('escapes remote world and instance names in the tooltip markup', () => {
+        const selectedDate = '2024-01-02';
+        const { startMs } = getLocalDayBounds(selectedDate);
+        const option = buildChartOption({
+            selectedDate,
+            barWidth: 25,
+            hour12: false,
+            t,
+            rows: [
+                chartRow({
+                    worldName: '<img src=x onerror=alert(1)>',
+                    parsedLocation: {
+                        instanceName: '<b>1</b>',
+                        accessTypeName: 'friends'
+                    },
+                    joinMs: startMs,
+                    leaveMs: startMs + 60 * 60 * 1000,
+                    visibleStartMs: startMs,
+                    visibleDurationMs: 60 * 60 * 1000
+                })
+            ]
+        });
+
+        const html = option.tooltip.formatter([
+            { seriesName: 'Time', dataIndex: 0 }
+        ]);
+
+        expect(html).not.toContain('<img');
+        expect(html).not.toContain('<b>');
+        expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+        expect(html).toContain('#&lt;b&gt;1&lt;/b&gt;');
+    });
+
     it('marks the selected main chart row and resolves row activation from bar or axis clicks', () => {
         const selectedDate = '2024-01-02';
         const { startMs } = getLocalDayBounds(selectedDate);

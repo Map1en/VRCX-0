@@ -1,3 +1,5 @@
+import { format } from 'echarts/core';
+
 import { formatClock, timeToText } from '@/lib/dateTime';
 import { DAY_MS, HOUR_MS, MINUTE_MS } from '@/shared/constants/time';
 
@@ -147,9 +149,9 @@ export function buildChartOption({
 
                 return [
                     `<div class="min-w-44">`,
-                    `<div style="font-weight:600;margin-bottom:4px;">${worldNameLabel(row, t)}</div>`,
+                    `<div style="font-weight:600;margin-bottom:4px;">${format.encodeHTML(worldNameLabel(row, t))}</div>`,
                     locationBits.length
-                        ? `<div style="margin-bottom:4px;">${locationBits.join(' ')}</div>`
+                        ? `<div style="margin-bottom:4px;">${format.encodeHTML(locationBits.join(' '))}</div>`
                         : '',
                     `<div>${formatClock(row.joinMs, { hour12, includeSeconds: true })} - ${formatClock(row.leaveMs, { hour12, includeSeconds: true })}</div>`,
                     `<div>${t('view.charts.instance_activity.online_time')}: ${timeToText(row.visibleDurationMs, true)}</div>`,

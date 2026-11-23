@@ -1,3 +1,5 @@
+import { format } from 'echarts/core';
+
 import { formatClock as formatAppClock, timeToText } from '@/lib/dateTime';
 
 import type { PreviousInstanceVisitWindow } from './previousInstancesRows';
@@ -318,6 +320,7 @@ export function buildInfoChartOption({
                     );
                     return [parts.title, parts.timeRange, parts.duration]
                         .filter(Boolean)
+                        .map((part) => format.encodeHTML(part))
                         .join('<br />');
                 }
             },

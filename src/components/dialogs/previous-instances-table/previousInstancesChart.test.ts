@@ -268,6 +268,35 @@ describe('previousInstancesChart', () => {
         expect(lane[0].color).not.toBe(lane[1].color);
     });
 
+    it('escapes remote display names in the default tooltip markup', () => {
+        const chartPayload = buildInfoChartOption({
+            hour12: false,
+            rows: [
+                {
+                    userId: 'usr_peer',
+                    displayName: '<img src=x onerror=alert(1)>',
+                    joinMs: 0,
+                    leaveMs: 60_000,
+                    durationMs: 60_000,
+                    isFriend: false,
+                    isFavorite: false
+                }
+            ]
+        });
+
+        if (chartPayload === null) {
+            throw new Error('expected chart payload to be present');
+        }
+
+        const html = chartPayload.option.tooltip.formatter({
+            seriesIndex: 1,
+            dataIndex: 0
+        });
+
+        expect(html).not.toContain('<img');
+        expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    });
+
     it('builds tooltip content as pure text parts for the page adapter', () => {
         expect(
             buildInfoChartTooltipParts(
