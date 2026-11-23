@@ -6,7 +6,9 @@ use std::{
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 use serde_json::{json, Value};
-use vrcx_0_core::activity_sessions::{span_duration_ms, SpanEnd};
+use vrcx_0_core::activity_sessions::{
+    merge_sessions_with_gap, span_duration_ms, ActivitySession, SpanEnd, PLAY_SESSION_MERGE_GAP_MS,
+};
 
 use crate::common::{
     normalize_text, parse_json_value, row_i64, row_json, row_string, row_value, value_as_i64,
@@ -51,14 +53,6 @@ fn with_activity_refresh_lock<T>(
     operation()
 }
 
-#[derive(Clone, Debug)]
-struct ActivitySessionRow {
-    start: i64,
-    end: i64,
-    is_open_tail: bool,
-    source_revision: String,
-}
-
 fn activity_now_ms(input: Option<i64>) -> i64 {
     input.unwrap_or_else(|| Utc::now().timestamp_millis())
 }
@@ -86,7 +80,7 @@ fn clamp_activity_range_days(value: &Value, default_value: i64) -> i64 {
     days.clamp(1, ACTIVITY_MAX_RANGE_DAYS)
 }
 
-fn activity_session_output_from_data(session: &ActivitySessionRow) -> ActivitySessionOutput {
+fn activity_session_output_from_data(session: &ActivitySession) -> ActivitySessionOutput {
     ActivitySessionOutput {
         start: session.start,
         end: session.end,
@@ -95,7 +89,7 @@ fn activity_session_output_from_data(session: &ActivitySessionRow) -> ActivitySe
     }
 }
 
-fn activity_session_input_from_data(session: &ActivitySessionRow) -> ActivitySessionInput {
+fn activity_session_input_from_data(session: &ActivitySession) -> ActivitySessionInput {
     ActivitySessionInput {
         start: json!(session.start),
         end: json!(session.end),
@@ -108,14 +102,14 @@ fn read_activity_sessions_data(
     db: &DatabaseService,
     user_prefix: &str,
     user_id: &str,
-) -> Result<Vec<ActivitySessionRow>, Error> {
+) -> Result<Vec<ActivitySession>, Error> {
     Ok(db
         .execute(
             &format!("SELECT start_at, end_at, is_open_tail, source_revision FROM {user_prefix}_activity_sessions_v2 WHERE user_id = @user_id ORDER BY start_at"),
             &ParamsBuilder::new().set("user_id", user_id.to_string()).build(),
         )?
         .into_iter()
-        .map(|row| ActivitySessionRow {
+        .map(|row| ActivitySession {
             start: row_i64(&row, 0),
             end: row_i64(&row, 1),
             is_open_tail: row_i64(&row, 2) != 0,
@@ -257,41 +251,12 @@ fn read_self_activity_source_after(
         .collect())
 }
 
-fn merge_activity_sessions(
-    older_sessions: &[ActivitySessionRow],
-    newer_sessions: &[ActivitySessionRow],
-) -> Vec<ActivitySessionRow> {
-    let mut sessions = Vec::with_capacity(older_sessions.len() + newer_sessions.len());
-    sessions.extend_from_slice(older_sessions);
-    sessions.extend_from_slice(newer_sessions);
-    if sessions.is_empty() {
-        return sessions;
-    }
-    sessions.sort_by_key(|session| session.start);
-
-    let mut merged: Vec<ActivitySessionRow> = Vec::new();
-    for session in sessions {
-        if let Some(last) = merged.last_mut() {
-            if session.start <= last.end + ACTIVITY_ONLINE_SESSION_MERGE_GAP_MS {
-                last.end = last.end.max(session.end);
-                last.is_open_tail = last.is_open_tail || session.is_open_tail;
-                if !session.source_revision.is_empty() {
-                    last.source_revision = session.source_revision;
-                }
-                continue;
-            }
-        }
-        merged.push(session);
-    }
-    merged
-}
-
 fn build_sessions_from_gamelog(
     rows: &[ActivitySourceLocationRow],
     now_ms: i64,
     may_have_open_tail: bool,
     source_revision: &str,
-) -> Vec<ActivitySessionRow> {
+) -> Vec<ActivitySession> {
     let mut raw_sessions = Vec::new();
     for (index, row) in rows.iter().enumerate() {
         let Some(start) = parse_activity_time_ms(&row.created_at) else {
@@ -306,7 +271,7 @@ fn build_sessions_from_gamelog(
         };
         let duration = span_duration_ms(start, row.time, end, now_ms);
         if duration > 0 {
-            raw_sessions.push(ActivitySessionRow {
+            raw_sessions.push(ActivitySession {
                 start,
                 end: start + duration,
                 is_open_tail: false,
@@ -315,7 +280,7 @@ fn build_sessions_from_gamelog(
         }
     }
 
-    let mut sessions = merge_activity_sessions(&[], &raw_sessions);
+    let mut sessions = merge_sessions_with_gap(&[], &raw_sessions, PLAY_SESSION_MERGE_GAP_MS);
     if may_have_open_tail {
         if let Some(last) = sessions.last_mut() {
             last.is_open_tail = true;
@@ -349,7 +314,7 @@ fn write_activity_snapshot(
     user_prefix: &str,
     user_id: &str,
     sync: &ActivitySyncStateOutput,
-    sessions: &[ActivitySessionRow],
+    sessions: &[ActivitySession],
     replace_from_start_at: Option<i64>,
 ) -> Result<(), Error> {
     let session_inputs: Vec<ActivitySessionInput> = sessions
@@ -389,7 +354,7 @@ fn write_activity_snapshot(
 
 fn activity_refresh_output(
     sync: ActivitySyncStateOutput,
-    sessions: Vec<ActivitySessionRow>,
+    sessions: Vec<ActivitySession>,
     source_count: usize,
 ) -> ActivitySelfSessionsRefreshOutput {
     ActivitySelfSessionsRefreshOutput {
@@ -710,7 +675,7 @@ fn activity_self_sessions_refresh_inner(
             let computed =
                 build_sessions_from_gamelog(&rows, now_ms, true, &source_last_created_at);
             let replace_from_start_at = sessions.last().map(|session| session.start);
-            sessions = merge_activity_sessions(&sessions, &computed);
+            sessions = merge_sessions_with_gap(&sessions, &computed, PLAY_SESSION_MERGE_GAP_MS);
             sync.updated_at = now_iso;
             sync.source_last_created_at = source_last_created_at;
             sync.pending_session_start_at = Value::Null;
@@ -752,7 +717,7 @@ fn activity_self_sessions_refresh_inner(
             let computed =
                 build_sessions_from_gamelog(&rows, now_ms, false, &sync.source_last_created_at);
             if !computed.is_empty() {
-                sessions = merge_activity_sessions(&computed, &sessions);
+                sessions = merge_sessions_with_gap(&computed, &sessions, PLAY_SESSION_MERGE_GAP_MS);
             }
             sync.cached_range_days = range_days;
             sync.updated_at = now_iso;
@@ -964,7 +929,6 @@ pub fn activity_bucket_cache_upsert(
 pub(crate) const ACTIVITY_FULL_CACHE_BATCH_DAYS: i64 = 30;
 pub(crate) const ACTIVITY_INITIAL_RANGE_DAYS: i64 = 90;
 pub(super) const ACTIVITY_MAX_RANGE_DAYS: i64 = 3650;
-pub(crate) const ACTIVITY_ONLINE_SESSION_MERGE_GAP_MS: i64 = 5 * 60 * 1000;
 pub(crate) const ACTIVITY_DAY_MS: i64 = 86_400_000;
 
 fn activity_presence_from_row(row: &[Value]) -> ActivityPresenceOutput {
