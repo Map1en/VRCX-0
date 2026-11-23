@@ -41,7 +41,10 @@ import {
     getGameLogFilterTypeLabel,
     useGameLogFilterCommands
 } from '../gameLogFilterCommands';
-import { getGameLogSessionPlayerAffinity } from '../gameLogRows';
+import {
+    getGameLogExternalTarget,
+    getGameLogSessionPlayerAffinity
+} from '../gameLogRows';
 import {
     useGameLogSessionAffinity,
     type GameLogSessionAffinity
@@ -52,7 +55,6 @@ import type {
     GameLogSessionMember
 } from '../gameLogTypes';
 
-const VIDEO_SOURCE_WITHOUT_LINK = new Set(['LSMedia', 'PopcornPalace']);
 const PLAYER_EVENT_GRID_CLASS =
     'grid-cols-[4.75rem_1rem_1rem_minmax(0,16rem)_5.5rem_5rem]';
 
@@ -406,7 +408,12 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
         event?.videoId ||
         t('view.game_log.sessions.unknown_video');
     const showVideoLink = Boolean(
-        videoUrl && !VIDEO_SOURCE_WITHOUT_LINK.has(event.videoId || '')
+        getGameLogExternalTarget({
+            type: event.type,
+            videoId: event.videoId,
+            videoName: event.videoName,
+            videoUrl
+        })
     );
 
     return (
@@ -419,14 +426,16 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
                             <Button
                                 type="button"
                                 variant="link"
-                                className="text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal whitespace-normal"
+                                className="group/video-link text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal whitespace-normal hover:no-underline"
                                 onClick={(eventObject) => {
                                     eventObject.stopPropagation();
                                     openExternalLink(videoUrl);
                                 }}
                             >
-                                <span className="line-clamp-2 leading-tight break-words">
-                                    {videoLabel}
+                                <span className="line-clamp-2 leading-snug break-words">
+                                    <span className="underline-offset-2 group-hover/video-link:underline">
+                                        {videoLabel}
+                                    </span>
                                 </span>
                             </Button>
                         ) : (

@@ -11,7 +11,9 @@ function recordDialogTabView(
     tab: string,
     landing: boolean
 ) {
-    if ((TELEMETRY_DIALOG_TAB_KEYS[dialog] as readonly string[]).includes(tab)) {
+    if (
+        (TELEMETRY_DIALOG_TAB_KEYS[dialog] as readonly string[]).includes(tab)
+    ) {
         recordTelemetryEvent({ type: 'dialogTabView', dialog, tab, landing });
     }
 }

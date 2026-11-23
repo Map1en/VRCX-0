@@ -14,9 +14,8 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_contracts::telemetry::{
     AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, DialogTabUsagePayload,
-    PageHealthPayload,
-    TelemetryConfigSnapshot, TelemetryContext, TelemetryOfflineRecord, TelemetryRuntimeMode,
-    TelemetryVrcxOrigin, ToolUsagePayload,
+    PageHealthPayload, TelemetryConfigSnapshot, TelemetryContext, TelemetryOfflineRecord,
+    TelemetryRuntimeMode, TelemetryVrcxOrigin, ToolUsagePayload,
 };
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};

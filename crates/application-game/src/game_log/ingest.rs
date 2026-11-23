@@ -133,6 +133,7 @@ pub struct GameLogIngestEngine {
     has_seen_process_event: bool,
     last_video_created_at: String,
     now_playing_log: NowPlayingLogFollow,
+    provider_world_video_url: String,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -281,8 +282,14 @@ impl GameLogIngestEngine {
                         &self.state.current_location,
                         data,
                     ) {
-                        video::ProviderVideoEvent::Video(input) => {
+                        video::ProviderVideoEvent::Video(mut input) => {
                             if self.accept_video_url(&input.video_url) {
+                                if input.video_id == "PopcornPalace"
+                                    && !self.provider_world_video_url.is_empty()
+                                {
+                                    input.video_url =
+                                        std::mem::take(&mut self.provider_world_video_url);
+                                }
                                 self.push_video(&mut output, *input);
                             }
                         }
@@ -441,6 +448,7 @@ impl GameLogIngestEngine {
         self.state.has_player_events = false;
         self.state.last_resource_url.clear();
         self.state.last_video_url.clear();
+        self.provider_world_video_url.clear();
     }
 
     fn ingest_player_joined(
@@ -608,9 +616,11 @@ impl GameLogIngestEngine {
         video_url: &str,
         display_name: &str,
     ) -> Option<VideoInput> {
-        if video::uses_provider_video_events(&self.state.current_location)
-            || self.now_playing_log_active()
-        {
+        if video::uses_provider_video_events(&self.state.current_location) {
+            self.provider_world_video_url = decode_video_url(video_url);
+            return None;
+        }
+        if self.now_playing_log_active() {
             return None;
         }
 

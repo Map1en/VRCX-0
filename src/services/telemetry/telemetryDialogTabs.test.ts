@@ -34,7 +34,12 @@ describe('dialog tab telemetry', () => {
         expect(
             appTelemetryRecordEvent.mock.calls.map(([event]) => event)
         ).toEqual([
-            { type: 'dialogTabView', dialog: 'user', tab: 'info', landing: true },
+            {
+                type: 'dialogTabView',
+                dialog: 'user',
+                tab: 'info',
+                landing: true
+            },
             {
                 type: 'dialogTabView',
                 dialog: 'user',

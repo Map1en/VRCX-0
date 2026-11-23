@@ -603,6 +603,68 @@ fn provider_world_keeps_its_video_line_and_takes_cover_and_transport_from_now_pl
 }
 
 #[test]
+fn popcorn_palace_video_takes_the_url_vrchat_resolved_before_it() {
+    let mut engine = GameLogIngestEngine::default();
+    let popcorn = |created_at: &str, name: &str, pos: f64| {
+        event(
+            created_at,
+            GameLogEventKind::Vrcx {
+                data: format!(
+                    r#"VideoPlay(PopcornPalace) {{"videoName":"{name}","videoPos":{pos},"videoLength":5549.292,"thumbnailUrl":"","displayName":"Obsessives"}}"#
+                ),
+            },
+        )
+    };
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-11-23T18:34:44.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_266523e8-9161-40da-acd0-6bd82e075833:1".into(),
+                    world_name: "Popcorn Palace".into(),
+                },
+            ),
+            event(
+                "2026-11-23T18:34:57.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "https://vr-m.net/p/e6KEduVoWkryuv9G.m3u8".into(),
+                    display_name: String::new(),
+                },
+            ),
+            popcorn("2026-11-23T18:34:57.500Z", "The Tunnel - 2011-05-19", 0.0),
+            popcorn(
+                "2026-11-23T18:35:10.000Z",
+                "The Tunnel - 2011-05-19",
+                3741.73,
+            ),
+            popcorn("2026-11-23T20:00:00.000Z", "Next Movie", 0.0),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let videos: Vec<_> = output
+        .side_effects
+        .iter()
+        .filter_map(|effect| match effect {
+            GameLogSideEffect::Video(input) => {
+                Some((input.video_name.as_str(), input.video_url.as_str()))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        videos,
+        vec![
+            (
+                "The Tunnel - 2011-05-19",
+                "https://vr-m.net/p/e6KEduVoWkryuv9G.m3u8"
+            ),
+            ("Next Movie", "Next Movie"),
+        ]
+    );
+}
+
+#[test]
 fn now_playing_media_id_names_the_video_source_when_the_world_writes_no_video_line() {
     let mut engine = GameLogIngestEngine::default();
     let output = engine.ingest_events(

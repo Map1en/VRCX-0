@@ -68,8 +68,22 @@ export const TELEMETRY_DIALOG_TAB_KEYS = {
         'activity',
         'json'
     ],
-    user_self: ['info', 'instance-history', 'groups', 'worlds', 'avatars', 'json'],
-    world: ['instances', 'visit-history', 'screenshots', 'info', 'store', 'json'],
+    user_self: [
+        'info',
+        'instance-history',
+        'groups',
+        'worlds',
+        'avatars',
+        'json'
+    ],
+    world: [
+        'instances',
+        'visit-history',
+        'screenshots',
+        'info',
+        'store',
+        'json'
+    ],
     group: [
         'overview',
         'instances',

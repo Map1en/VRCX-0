@@ -414,10 +414,7 @@ export function WorldDialogTabbedView({
     }
 
     const recordWorldTabLanding = useEffectEvent(() => {
-        recordDialogTabLanding(
-            'world',
-            resolveWorldDialogTab(tabs, activeTab)
-        );
+        recordDialogTabLanding('world', resolveWorldDialogTab(tabs, activeTab));
     });
 
     useEffect(() => {

@@ -138,7 +138,11 @@ export function getGameLogExternalTarget(
 ) {
     const type = normalizeGameLogId(row?.type);
     if (type === 'VideoPlay') {
-        if (row?.videoId === 'LSMedia' || row?.videoId === 'PopcornPalace') {
+        if (
+            row?.videoId === 'LSMedia' ||
+            (row?.videoId === 'PopcornPalace' &&
+                row?.videoUrl === row?.videoName)
+        ) {
             return '';
         }
         return normalizeGameLogId(row?.videoUrl);

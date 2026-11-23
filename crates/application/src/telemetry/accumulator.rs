@@ -754,11 +754,20 @@ mod tests {
             landing: false,
         });
 
-        let first = acc.dialog_tab_snapshot().expect("dialog tabs should be dirty");
+        let first = acc
+            .dialog_tab_snapshot()
+            .expect("dialog tabs should be dirty");
         let rows = first
             .entries
             .iter()
-            .map(|entry| (entry.dialog.as_str(), entry.tab.as_str(), entry.views, entry.landings))
+            .map(|entry| {
+                (
+                    entry.dialog.as_str(),
+                    entry.tab.as_str(),
+                    entry.views,
+                    entry.landings,
+                )
+            })
             .collect::<Vec<_>>();
         assert_eq!(
             rows,

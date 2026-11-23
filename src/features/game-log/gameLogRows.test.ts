@@ -128,6 +128,22 @@ describe('gameLogRows', () => {
         ).toBe('');
         expect(
             getGameLogExternalTarget({
+                type: 'VideoPlay',
+                videoId: 'PopcornPalace',
+                videoName: 'The Tunnel',
+                videoUrl: 'https://vr-m.net/p/a.m3u8'
+            })
+        ).toBe('https://vr-m.net/p/a.m3u8');
+        expect(
+            getGameLogExternalTarget({
+                type: 'VideoPlay',
+                videoId: 'PopcornPalace',
+                videoName: 'The Tunnel',
+                videoUrl: 'The Tunnel'
+            })
+        ).toBe('');
+        expect(
+            getGameLogExternalTarget({
                 type: 'ImageLoad',
                 resourceUrl: 'https://cdn.example.test/image.png'
             })
