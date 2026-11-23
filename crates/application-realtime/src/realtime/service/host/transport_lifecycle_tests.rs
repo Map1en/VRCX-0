@@ -1742,6 +1742,73 @@ fn a_reconnect_the_recorder_did_not_cover_still_writes_what_changed() -> Result<
 }
 
 #[test]
+fn late_messages_from_a_replaced_session_do_not_reach_the_new_session() -> Result<()> {
+    let (_dir, runtime, old_session) = runtime_with_active_session("replaced-session-late")?;
+    let old_transport = active_transport(&runtime);
+    let (old_generation, old_session_generation) =
+        (old_transport.generation, old_transport.session_generation);
+    seed_online_friend(&runtime, &old_session)?;
+    runtime.runtime().finish_realtime_transport(
+        old_transport,
+        RealtimeTransportTermination::UnexpectedExit {
+            reason: "websocket stream ended".into(),
+            connected_secs: Some(60),
+        },
+    );
+    let mut replacement = old_session.clone();
+    replacement.user_id = "usr_other".into();
+    runtime
+        .auth_scope()
+        .set(&replacement.user_id, &replacement.endpoint);
+    runtime.sync_friend_baseline(&replacement, online_friend_roster())?;
+    runtime.set_task_executor_for_test(DiscardTaskExecutor);
+    runtime.runtime().start_from_friend_baseline(
+        replacement.user_id.clone(),
+        replacement.endpoint.clone(),
+        replacement.websocket.clone(),
+        2,
+        json!({"id": replacement.user_id}),
+    )?;
+    runtime.take_events_for_test();
+    let sink = RealtimeHostRuntimeMessageSink {
+        runtime: Arc::clone(runtime.runtime()),
+    };
+
+    for json in [
+        json!({
+            "type": "friend-add",
+            "content": {
+                "userId": "usr_late",
+                "user": {"id": "usr_late", "displayName": "Late", "state": "online"}
+            }
+        }),
+        json!({"type": "economy-update", "content": {"walletBalance": 1}}),
+    ] {
+        sink.handle_realtime_ws_message(
+            old_generation,
+            old_session_generation,
+            &old_session,
+            &RealtimeWsMessagePayload {
+                json,
+                raw: "{}".into(),
+                received_at: "2026-11-23T00:00:00Z".into(),
+            },
+        );
+    }
+
+    let snapshot = runtime.runtime().friend_snapshot().expect("replacement roster");
+    assert_eq!(snapshot.current_user_id, replacement.user_id);
+    assert!(!snapshot.friends_by_id.contains_key("usr_late"));
+    for user_id in [&old_session.user_id, &replacement.user_id] {
+        assert!(friend_log_current_list(runtime.database(), user_id.clone())?
+            .iter()
+            .all(|row| row.user_id != "usr_late"));
+    }
+    assert!(runtime.take_events_for_test().is_empty());
+    Ok(())
+}
+
+#[test]
 fn economy_update_emits_the_wallet_balance_for_the_session_user() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("economy-update")?;
     let transport = active_transport(&runtime);

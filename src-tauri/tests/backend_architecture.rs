@@ -983,6 +983,40 @@ fn ipc_commands_that_take_paths_declare_where_the_path_is_checked() {
 }
 
 #[test]
+fn realtime_host_takes_the_friend_owner_lock_before_state() {
+    let mut functions_with_both = 0;
+    let mut violations = Vec::new();
+    for path in rust_sources_below("crates/application-realtime/src/realtime/service/host") {
+        let Some(source) = production_source(&path) else {
+            continue;
+        };
+        for (index, _) in source.match_indices("fn ") {
+            let name = &source[index + 3..][..identifier_end(&source[index + 3..])];
+            let Some(body) = function_body(&source[index..], name) else {
+                continue;
+            };
+            let owner = body.find("lock_friend_owner()");
+            let state = body
+                .match_indices(".lock()")
+                .map(|(position, _)| position)
+                .find(|position| body[..*position].trim_end().ends_with("state"));
+            if let (Some(owner), Some(state)) = (owner, state) {
+                functions_with_both += 1;
+                if state < owner {
+                    violations.push(format!("{}: {name}", path.display()));
+                }
+            }
+        }
+    }
+    assert!(functions_with_both > 0, "lock order scan found no function taking both locks");
+    assert!(
+        violations.is_empty(),
+        "the global lock order is friend owner -> feed owner -> state; these functions take state before the friend owner lock:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn persistence_leaves_expand_nested_use_groups() {
     let source = "use vrcx_0_persistence::{\n    assistant,\n    config::ConfigRepository,\n    activity::{self, activity_self_caches_invalidate},\n    DatabaseService,\n};";
     assert_eq!(
