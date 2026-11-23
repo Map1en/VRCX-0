@@ -138,6 +138,7 @@ export function UserDialogMutualTab({
                 <UserDialogMutualGraph
                     userId={profile?.id || ''}
                     displayName={profile?.displayName || ''}
+                    iconUrl={profile?.iconUrl || ''}
                     rows={filteredMutualFriends}
                 />
             ) : (

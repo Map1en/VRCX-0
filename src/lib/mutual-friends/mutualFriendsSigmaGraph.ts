@@ -26,8 +26,14 @@ import {
     drawMutualFriendHoverCard,
     type HoverCardStrings
 } from './mutualFriendsSigmaHoverCard';
+import {
+    createNodeImageLoader,
+    drawMutualFriendNodeImage
+} from './mutualFriendsSigmaNodeImages';
 
 const NODE_LABEL_THRESHOLD = 10;
+const DEFAULT_MIN_NODE_SIZE = 4;
+const MAX_NODE_SIZE = 22;
 const UNASSIGNED_COMMUNITY = -1;
 const LABEL_DENSITY = 0.7;
 const LABEL_GRID_CELL_SIZE = 140;
@@ -308,7 +314,8 @@ export async function buildSigmaGraph({
     communityIndexById,
     namedCommunityIndexes,
     theme,
-    forceLabels = false
+    forceLabels = false,
+    minNodeSize = DEFAULT_MIN_NODE_SIZE
 }: {
     graph: MutualFriendGraph;
     layoutSettings: MutualFriendsLayoutSettings;
@@ -316,6 +323,7 @@ export async function buildSigmaGraph({
     namedCommunityIndexes: ReadonlySet<number>;
     theme: MutualFriendsGraphTheme;
     forceLabels?: boolean;
+    minNodeSize?: number;
 }) {
     const graph = new Graph<
         MutualFriendsNodeAttributes,
@@ -331,7 +339,11 @@ export async function buildSigmaGraph({
     );
 
     for (const node of sourceGraph.nodes) {
-        const baseSize = 4 + (maxDegree ? (node.degree / maxDegree) * 18 : 0);
+        const baseSize =
+            minNodeSize +
+            (maxDegree
+                ? (node.degree / maxDegree) * (MAX_NODE_SIZE - minNodeSize)
+                : 0);
         const community =
             communityIndexById.get(node.id) ?? UNASSIGNED_COMMUNITY;
         graph.addNode(node.id, {
@@ -432,7 +444,8 @@ export function renderSigmaGraph({
     crossCommunityOnlyRef,
     onSelectNode,
     onOpenNode,
-    hoverCardStringsRef
+    hoverCardStringsRef,
+    nodeImageUrlByIdRef
 }: {
     graph: MutualFriendsSigmaGraph;
     container: HTMLElement;
@@ -444,6 +457,7 @@ export function renderSigmaGraph({
     onSelectNode: (nodeId: string) => void;
     onOpenNode?: (nodeId: string) => void;
     hoverCardStringsRef: { current: HoverCardStrings };
+    nodeImageUrlByIdRef?: { current: ReadonlyMap<string, string> };
 }) {
     destroySigmaInstance(instanceRef, resizeObserverRef);
     const reducedMotion = prefersReducedMotion();
@@ -454,6 +468,7 @@ export function renderSigmaGraph({
     let neighbors = new Set<string>();
 
     const repaint = () => renderer.refresh({ skipIndexation: true });
+    const imageLoader = createNodeImageLoader(repaint);
 
     const reduceNode = (
         node: string,
@@ -650,7 +665,52 @@ export function renderSigmaGraph({
             height: '100%'
         }
     });
-    const drawHoverCard = () => {
+    const drawNodeImages = (
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number
+    ) => {
+        const urls = nodeImageUrlByIdRef?.current;
+        if (!urls?.size) {
+            return;
+        }
+        const dim = hoverTransition.value;
+        graph.forEachNode((node, attributes) => {
+            const url = urls.get(node);
+            if (!url || attributes.type === 'hollow') {
+                return;
+            }
+            const data = renderer.getNodeDisplayData(node);
+            if (!data) {
+                return;
+            }
+            const { x, y } = renderer.framedGraphToViewport(data);
+            const size = renderer.scaleSize(data.size);
+            if (
+                x + size < 0 ||
+                y + size < 0 ||
+                x - size > width ||
+                y - size > height
+            ) {
+                return;
+            }
+            const image = imageLoader.get(url);
+            if (!image) {
+                return;
+            }
+            const stayLit =
+                node === hovered ||
+                neighbors.has(node) ||
+                node === selectedNodeIdRef.current;
+            drawMutualFriendNodeImage(
+                ctx,
+                image,
+                { x, y, size },
+                stayLit ? 1 : 1 - dim * NODE_DIM_STRENGTH
+            );
+        });
+    };
+    const drawOverlay = () => {
         const { width, height } = renderer.getDimensions();
         const pixelRatio = window.devicePixelRatio || 1;
         const pixelWidth = Math.round(width * pixelRatio);
@@ -668,6 +728,7 @@ export function renderSigmaGraph({
         }
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         ctx.clearRect(0, 0, width, height);
+        drawNodeImages(ctx, width, height);
         if (!isPointerOverNode || !hovered || !graph.hasNode(hovered)) {
             return;
         }
@@ -690,7 +751,7 @@ export function renderSigmaGraph({
     };
 
     renderer.removeAllListeners();
-    renderer.on('afterRender', drawHoverCard);
+    renderer.on('afterRender', drawOverlay);
     renderer.on('enterNode', ({ node }) => {
         container.style.cursor = 'pointer';
         isPointerOverNode = true;
@@ -757,11 +818,13 @@ export function renderSigmaGraph({
         applyEdgeEmphasis() {
             repaint();
         },
+        applyNodeImages: repaint,
         dispose() {
             container.style.cursor = '';
+            imageLoader.dispose();
             cancelTransition(hoverTransition);
             cancelTransition(selectionTransition);
-            renderer.removeListener('afterRender', drawHoverCard);
+            renderer.removeListener('afterRender', drawOverlay);
             renderer.killLayer('mutual-friend-hover');
         }
     };

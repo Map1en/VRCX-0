@@ -10,6 +10,7 @@ import { useMutualFriendLabels } from '@/lib/mutual-friends/useMutualFriendLabel
 import { useMutualFriendsLayoutSettings } from '@/lib/mutual-friends/useMutualFriendsLayoutSettings';
 import { useMutualFriendsSigmaLifecycle } from '@/lib/mutual-friends/useMutualFriendsSigmaLifecycle';
 import { openUserDialog } from '@/services/dialogService';
+import { userImage } from '@/services/entityMediaService';
 import { useResolvedThemeMode } from '@/services/themeService';
 import { useDialogStore } from '@/state/dialogStore';
 import { HintTooltip } from '@/ui/hint-tooltip';
@@ -31,12 +32,17 @@ import {
 export type UserDialogMutualGraphProps = {
     userId: string;
     displayName: string;
+    iconUrl: string;
     rows: readonly Record<string, unknown>[];
 };
+
+const EGO_MIN_NODE_SIZE = 10;
+const NODE_IMAGE_RESOLUTION = 128;
 
 export function UserDialogMutualGraph({
     userId,
     displayName,
+    iconUrl,
     rows
 }: UserDialogMutualGraphProps) {
     const graph = useMutualFriendGraphContext(true);
@@ -88,6 +94,16 @@ export function UserDialogMutualGraph({
             )
         };
     }, [egoGraph, resolvedTheme, userId]);
+    const nodeImageUrlById = useMemo(() => {
+        const urls = new Map<string, string>();
+        for (const row of [...rows, { id: userId, iconUrl }]) {
+            const url = userImage(row, NODE_IMAGE_RESOLUTION);
+            if (typeof row.id === 'string' && url) {
+                urls.set(row.id, url);
+            }
+        }
+        return urls;
+    }, [iconUrl, rows, userId]);
     const openNode = useCallback(
         (nodeId: string) => {
             if (nodeId !== userId) {
@@ -107,7 +123,9 @@ export function UserDialogMutualGraph({
         selectedNodeId: '',
         selectedNodeIdRef,
         onSelectNode: openNode,
-        forceLabels: true
+        forceLabels: true,
+        minNodeSize: EGO_MIN_NODE_SIZE,
+        nodeImageUrlById
     });
 
     return (
