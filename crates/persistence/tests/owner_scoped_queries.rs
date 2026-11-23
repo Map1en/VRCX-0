@@ -16,7 +16,7 @@ const OWNER_TABLES: &[&str] = &[
 ];
 
 const OWNER_FILTER_EXCEPTIONS: &[(&str, &str)] = &[
-    // Suspected gap: assistant session UI/runtime/pin updates are keyed by session id only, while load and delete are owner scoped.
+    // Assistant session UI/runtime/pin updates are keyed by the random session id only; load and delete stay owner scoped.
     ("src/assistant.rs", "update assistant_session set entity_panel_open"),
     ("src/assistant.rs", "update assistant_session set endpoint_id"),
     ("src/assistant.rs", "update assistant_session set pinned"),
