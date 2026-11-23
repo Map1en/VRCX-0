@@ -78,9 +78,23 @@ pub fn vrchat_app_data() -> PathBuf {
 
     #[cfg(not(target_os = "linux"))]
     {
-        let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
-        PathBuf::from(local_app_data).join("..\\LocalLow\\VRChat\\VRChat")
+        windows_vrchat_app_data().unwrap_or_else(|| PathBuf::from(VRCHAT_LOCAL_LOW_DIR))
     }
+}
+
+#[cfg(not(target_os = "linux"))]
+const VRCHAT_LOCAL_LOW_DIR: &str = "..\\LocalLow\\VRChat\\VRChat";
+
+#[cfg(not(target_os = "linux"))]
+pub fn windows_vrchat_app_data() -> Option<PathBuf> {
+    windows_vrchat_app_data_under(std::env::var("LOCALAPPDATA").ok())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn windows_vrchat_app_data_under(local_app_data: Option<String>) -> Option<PathBuf> {
+    local_app_data
+        .filter(|path| !path.is_empty())
+        .map(|path| PathBuf::from(path).join(VRCHAT_LOCAL_LOW_DIR))
 }
 
 pub fn vrchat_photos_location() -> String {
@@ -626,6 +640,17 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+
+    #[cfg(not(target_os = "linux"))]
+    #[test]
+    fn windows_app_data_is_unknown_without_local_app_data() {
+        assert_eq!(windows_vrchat_app_data_under(None), None);
+        assert_eq!(windows_vrchat_app_data_under(Some(String::new())), None);
+        assert_eq!(
+            windows_vrchat_app_data_under(Some(r"C:\Users\me\AppData\Local".into())),
+            Some(PathBuf::from(r"C:\Users\me\AppData\Local").join(VRCHAT_LOCAL_LOW_DIR))
+        );
+    }
 
     struct TestDir {
         path: PathBuf,

@@ -2095,9 +2095,21 @@ impl DesktopRuntimeProfileExtension {
     ) {
         #[cfg(target_os = "windows")]
         if is_host_capability_available(HostCapability::GameLogWatcher) {
-            let local_low = std::env::var("LOCALAPPDATA")
-                .map(|path| PathBuf::from(path).join("..\\LocalLow\\VRChat\\VRChat"))
-                .unwrap_or_default();
+            let Some(local_low) = vrcx_0_host_desktop::vrchat_paths::windows_vrchat_app_data()
+            else {
+                state.desktop_assembly().background_jobs().register_job(
+                    "gameLogWatcher",
+                    "rust-host",
+                    None,
+                    RuntimeOperationStatus::Unavailable,
+                    "LOCALAPPDATA is not set, so the VRChat log folder cannot be located.",
+                );
+                emit_game_log_watcher_status(
+                    state,
+                    vrcx_0_application_core::BackendRuntimeGameLogStatus::Unavailable,
+                );
+                return;
+            };
             if let Err(error) = self
                 .game
                 .game_log_runtime
