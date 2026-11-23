@@ -112,6 +112,7 @@ struct MemoryLibrary {
     index: Mutex<Vec<(String, i64)>>,
     hashed: Mutex<Vec<String>>,
     cleared_roots: Mutex<Vec<String>>,
+    clear_error: Mutex<Option<String>>,
 }
 
 impl MemoryLibrary {
@@ -204,7 +205,7 @@ impl ScreenshotLibraryPort for MemoryLibrary {
         self.strip_metadata(path)
     }
 
-    fn delete_all_metadata(&self, root_path: &str) {
+    fn delete_all_metadata(&self, root_path: &str) -> Result<()> {
         self.cleared_roots.lock().unwrap().push(root_path.into());
         let paths = self
             .with_metadata
@@ -215,6 +216,10 @@ impl ScreenshotLibraryPort for MemoryLibrary {
             .collect::<Vec<_>>();
         for path in paths {
             self.strip_metadata(&path);
+        }
+        match self.clear_error.lock().unwrap().clone() {
+            Some(message) => Err(Error::Custom(message)),
+            None => Ok(()),
         }
     }
 }
@@ -437,7 +442,9 @@ fn clearing_all_metadata_refreshes_every_readable_favorite() {
     library.file_with_metadata("b.png", 30, "b");
     library.unreadable_indexed_file("locked.png", 20);
 
-    favorites(&store, &library).delete_all_metadata("photos");
+    favorites(&store, &library)
+        .delete_all_metadata("photos")
+        .unwrap();
 
     assert_eq!(
         *library.cleared_roots.lock().unwrap(),
@@ -450,5 +457,21 @@ fn clearing_all_metadata_refreshes_every_readable_favorite() {
             favorite(2, "locked.png", 20, "locked"),
             favorite(1, "a.png", 9, "a-stripped"),
         ]
+    );
+}
+
+#[test]
+fn a_failed_cache_clear_is_reported_after_favorites_are_refreshed() {
+    let store = MemoryFavoriteStore::with(vec![favorite(1, "a.png", 10, "a")]);
+    let library = MemoryLibrary::new();
+    library.file_with_metadata("a.png", 10, "a");
+    *library.clear_error.lock().unwrap() = Some("clear screenshot cache: disk I/O error".into());
+
+    let result = favorites(&store, &library).delete_all_metadata("photos");
+
+    assert!(result.is_err());
+    assert_eq!(
+        store.favorites(),
+        vec![favorite(1, "a.png", 9, "a-stripped")]
     );
 }

@@ -35,7 +35,7 @@ pub trait ScreenshotLibraryPort: Send + Sync {
         paths: &[String],
     ) -> Result<Vec<ScreenshotLibraryImage>>;
     fn delete_text_metadata(&self, path: &str) -> bool;
-    fn delete_all_metadata(&self, root_path: &str);
+    fn delete_all_metadata(&self, root_path: &str) -> Result<()>;
 }
 
 #[derive(Clone)]
@@ -142,11 +142,12 @@ impl ScreenshotFavorites {
         deleted
     }
 
-    pub fn delete_all_metadata(&self, root_path: &str) {
-        self.library.delete_all_metadata(root_path);
+    pub fn delete_all_metadata(&self, root_path: &str) -> Result<()> {
+        let cleared = self.library.delete_all_metadata(root_path);
         if let Err(error) = self.refresh_all() {
             tracing::warn!(%error, "failed to refresh screenshot favorites after metadata clear");
         }
+        cleared
     }
 
     fn refresh(&self, path: &str) -> Result<()> {

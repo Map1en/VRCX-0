@@ -153,9 +153,9 @@ pub fn delete_all_screenshot_metadata(
     cache: &MetadataCacheDb,
     thumbnail_cache_dir: &Path,
     photos_dir: &str,
-) {
+) -> Result<()> {
     if photos_dir.is_empty() {
-        return;
+        return Ok(());
     }
     for entry in walkdir::WalkDir::new(photos_dir).into_iter().flatten() {
         if entry.file_type().is_file()
@@ -167,8 +167,9 @@ pub fn delete_all_screenshot_metadata(
             delete_text_metadata(&entry.path().to_string_lossy(), true);
         }
     }
-    cache.clear_all();
+    cache.clear_all()?;
     delete_all_thumbnail_cache_files(thumbnail_cache_dir, cache);
+    Ok(())
 }
 
 pub fn add_screenshot_metadata(

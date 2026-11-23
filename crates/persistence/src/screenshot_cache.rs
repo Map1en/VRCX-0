@@ -116,22 +116,26 @@ impl MetadataCacheDb {
              );",
         )
         .map_err(|error| Error::sqlite_with_context("init cache db", error))?;
-        let _ = conn.execute(
-            "ALTER TABLE screenshot_files ADD COLUMN scan_root TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE screenshot_thumbnail_cache ADD COLUMN cache_key TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE screenshot_files ADD COLUMN index_version INTEGER NOT NULL DEFAULT 0",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE screenshot_files ADD COLUMN captured_at_ms INTEGER NOT NULL DEFAULT 0",
-            [],
-        );
+        for (table, column, definition) in [
+            ("screenshot_files", "scan_root", "TEXT NOT NULL DEFAULT ''"),
+            (
+                "screenshot_thumbnail_cache",
+                "cache_key",
+                "TEXT NOT NULL DEFAULT ''",
+            ),
+            (
+                "screenshot_files",
+                "index_version",
+                "INTEGER NOT NULL DEFAULT 0",
+            ),
+            (
+                "screenshot_files",
+                "captured_at_ms",
+                "INTEGER NOT NULL DEFAULT 0",
+            ),
+        ] {
+            add_column_if_missing(&conn, table, column, definition)?;
+        }
         conn.execute_batch(
             "CREATE INDEX IF NOT EXISTS idx_screenshot_files_folder_path
                  ON screenshot_files(scan_root, folder_path);
@@ -180,25 +184,30 @@ impl MetadataCacheDb {
         .flatten()
     }
 
-    pub fn bulk_add(&self, entries: &[(String, Option<String>)]) {
+    pub fn bulk_add(&self, entries: &[(String, Option<String>)]) -> Result<()> {
         let conn = self.inner.conn.lock().unwrap();
-        let tx = match conn.unchecked_transaction() {
-            Ok(t) => t,
-            Err(_) => return,
-        };
+        let tx = conn.unchecked_transaction().map_err(|error| {
+            Error::sqlite_with_context("start screenshot metadata cache transaction", error)
+        })?;
         {
-            let mut stmt = match tx.prepare(
-                "INSERT OR IGNORE INTO cache (file_path, metadata, cached_at) VALUES (?1, ?2, ?3)",
-            ) {
-                Ok(s) => s,
-                Err(_) => return,
-            };
+            let mut stmt = tx
+                .prepare(
+                    "INSERT OR IGNORE INTO cache (file_path, metadata, cached_at) VALUES (?1, ?2, ?3)",
+                )
+                .map_err(|error| {
+                    Error::sqlite_with_context("prepare screenshot metadata cache insert", error)
+                })?;
             let now = now_unix_seconds();
             for (path, meta) in entries {
-                let _ = stmt.execute(rusqlite::params![path, meta.as_deref(), now]);
+                stmt.execute(rusqlite::params![path, meta.as_deref(), now])
+                    .map_err(|error| {
+                        Error::sqlite_with_context("insert screenshot metadata cache row", error)
+                    })?;
             }
         }
-        let _ = tx.commit();
+        tx.commit().map_err(|error| {
+            Error::sqlite_with_context("commit screenshot metadata cache transaction", error)
+        })
     }
 
     pub fn scan_status(&self) -> ScreenshotLibraryScanStatus {
@@ -841,11 +850,20 @@ impl MetadataCacheDb {
         Ok(())
     }
 
-    pub fn clear_all(&self) {
+    pub fn clear_all(&self) -> Result<()> {
         let conn = self.inner.conn.lock().unwrap();
-        let _ = conn.execute("DELETE FROM cache", []);
-        let _ = conn.execute("DELETE FROM screenshot_files", []);
-        let _ = conn.execute("DELETE FROM screenshot_thumbnail_cache", []);
+        let tx = conn.unchecked_transaction().map_err(|error| {
+            Error::sqlite_with_context("start screenshot cache clear transaction", error)
+        })?;
+        tx.execute_batch(
+            "DELETE FROM cache;
+             DELETE FROM screenshot_files;
+             DELETE FROM screenshot_thumbnail_cache;",
+        )
+        .map_err(|error| Error::sqlite_with_context("clear screenshot cache", error))?;
+        tx.commit().map_err(|error| {
+            Error::sqlite_with_context("commit screenshot cache clear transaction", error)
+        })
     }
 
     fn map_library_image_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ScreenshotLibraryImage> {
@@ -870,6 +888,32 @@ impl MetadataCacheDb {
             metadata,
         })
     }
+}
+
+fn add_column_if_missing(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    definition: &str,
+) -> Result<()> {
+    let context = format!("add column {table}.{column}");
+    let exists = conn
+        .query_row(
+            "SELECT 1 FROM pragma_table_info(?1) WHERE name = ?2",
+            [table, column],
+            |_| Ok(()),
+        )
+        .optional()
+        .map_err(|error| Error::sqlite_with_context(&context, error))?
+        .is_some();
+    if !exists {
+        conn.execute(
+            &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+            [],
+        )
+        .map_err(|error| Error::sqlite_with_context(&context, error))?;
+    }
+    Ok(())
 }
 
 fn normalize_thumbnail_cache_paths(conn: &mut Connection, thumbnail_dir: &Path) -> Result<()> {

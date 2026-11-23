@@ -115,8 +115,8 @@ impl ScreenshotLibraryPort for LocalScreenshotLibraryAdapter {
         delete_text_metadata(path, true)
     }
 
-    fn delete_all_metadata(&self, root_path: &str) {
-        delete_all_screenshot_metadata(&self.cache, &self.thumbnail_cache_dir, root_path);
+    fn delete_all_metadata(&self, root_path: &str) -> Result<()> {
+        delete_all_screenshot_metadata(&self.cache, &self.thumbnail_cache_dir, root_path)
     }
 }
 

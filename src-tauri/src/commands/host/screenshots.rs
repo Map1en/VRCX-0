@@ -309,8 +309,7 @@ pub async fn app__delete_all_screenshot_metadata(
     require_host_capability(HostCapability::ScreenshotCache)?;
     let screenshots = state.runtime_host().screenshots().clone();
     run_blocking("screenshot metadata clear", move || {
-        screenshots.delete_all_metadata();
-        Ok::<_, AppError>(())
+        Ok::<_, AppError>(screenshots.delete_all_metadata()?)
     })
     .await
 }

@@ -527,17 +527,55 @@ fn clear_all_removes_metadata_library_and_thumbnail_records() -> Result<()> {
     let dir = TestDir::new("clear-all");
     let cache = open_cache(&dir);
     let root_str = path_string(&dir.path.join("Screenshots"));
-    cache.bulk_add(&[("file.png".to_string(), Some("{}".to_string()))]);
+    cache.bulk_add(&[("file.png".to_string(), Some("{}".to_string()))])?;
     let entry = library_entry(&root_str, "a.png", &root_str, "a.png");
     store_entries(&cache, &root_str, &[entry])?;
     cache.record_thumbnail_cache("a.png", "thumb.webp", "key", 100, 1000);
 
-    cache.clear_all();
+    cache.clear_all()?;
 
     assert!(!cache.is_cached("file.png"));
     assert!(cache.library_file_states(&root_str).is_empty());
     assert!(cache.thumbnail_cache_entries().is_empty());
     Ok(())
+}
+
+#[test]
+fn clear_all_reports_failure_and_keeps_every_row() -> Result<()> {
+    let dir = TestDir::new("clear-all-failure");
+    let cache = open_cache(&dir);
+    let root_str = path_string(&dir.path.join("Screenshots"));
+    cache.bulk_add(&[("file.png".to_string(), Some("{}".to_string()))])?;
+    store_entries(
+        &cache,
+        &root_str,
+        &[library_entry(&root_str, "a.png", &root_str, "a.png")],
+    )?;
+    rusqlite::Connection::open(dir.path.join("metadataCache.db"))
+        .and_then(|conn| conn.execute_batch("DROP TABLE screenshot_thumbnail_cache"))
+        .map_err(|error| crate::Error::sqlite_with_context("drop thumbnail table", error))?;
+
+    assert!(cache.clear_all().is_err());
+
+    assert!(cache.is_cached("file.png"));
+    assert_eq!(cache.library_file_states(&root_str).len(), 1);
+    Ok(())
+}
+
+#[test]
+fn opening_reports_which_column_migration_failed() {
+    let dir = TestDir::new("column-migration-failure");
+    let db_path = dir.path.join("metadataCache.db");
+    rusqlite::Connection::open(&db_path)
+        .and_then(|conn| conn.execute_batch("CREATE VIEW screenshot_files AS SELECT 1 AS path"))
+        .unwrap();
+
+    let error = match MetadataCacheDb::new(&db_path) {
+        Ok(_) => panic!("opening over a view must fail"),
+        Err(error) => error.to_string(),
+    };
+
+    assert!(error.contains("screenshot_files.scan_root"), "{error}");
 }
 
 #[test]
@@ -548,7 +586,7 @@ fn delete_screenshot_entry_removes_index_and_metadata_cache_rows() -> Result<()>
     cache.bulk_add(&[
         ("a.png".to_string(), Some("{}".to_string())),
         ("b.png".to_string(), Some("{}".to_string())),
-    ]);
+    ])?;
     store_entries(
         &cache,
         &root_str,

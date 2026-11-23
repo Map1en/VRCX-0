@@ -164,7 +164,15 @@ export function createSettingsMaintenanceActions({
         if (!result.ok) {
             return;
         }
-        await deleteAllScreenshotMetadataFromShell();
+        try {
+            await deleteAllScreenshotMetadataFromShell();
+        } catch (error) {
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
+            return;
+        }
         toast.add({
             type: 'success',
             title: t('view.settings.success.screenshot_metadata_removed')

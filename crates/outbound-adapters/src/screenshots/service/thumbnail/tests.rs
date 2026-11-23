@@ -633,7 +633,7 @@ fn forget_screenshot_file_clears_index_metadata_and_thumbnail_cache() -> Result<
     cache.bulk_add(&[
         (removed_path_string.clone(), Some("{}".to_string())),
         (kept_path_string.clone(), Some("{}".to_string())),
-    ]);
+    ])?;
     let removed_thumbnail = PathBuf::from(ensure_screenshot_thumbnail(
         &removed_path_string,
         &thumbnail_dir,

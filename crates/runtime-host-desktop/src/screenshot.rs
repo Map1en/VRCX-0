@@ -462,8 +462,8 @@ impl DesktopScreenshotRuntime {
         self.event_bus.emit(progress);
     }
 
-    pub fn delete_all_metadata(&self) {
-        self.favorites.delete_all_metadata(&self.photos_root);
+    pub fn delete_all_metadata(&self) -> Result<()> {
+        Ok(self.favorites.delete_all_metadata(&self.photos_root)?)
     }
 
     pub(crate) fn screenshot_favorites(&self) -> &ScreenshotFavorites {

@@ -5,6 +5,17 @@ import type { AppToastOptions } from '@/services/toastService';
 import { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
 import { createSettingsMaintenanceActions } from './useSettingsMaintenanceActions';
 
+const shellMocks = vi.hoisted(() => ({
+    deleteAllScreenshotMetadata: vi.fn(async () => undefined)
+}));
+
+vi.mock('@/services/shellIntegrationService', async (importOriginal) => ({
+    ...(await importOriginal<
+        typeof import('@/services/shellIntegrationService')
+    >()),
+    deleteAllScreenshotMetadata: shellMocks.deleteAllScreenshotMetadata
+}));
+
 function createMaintenanceActions({
     cleanupAvatarFeedHistory = async () => ({
         deletedRows: 0,
@@ -176,6 +187,28 @@ describe('handleFeedPersistenceDisabledChange', () => {
         await actions.handleFeedPersistenceDisabledChange(true);
 
         expect(setFeedPersistenceDisabledPreference).toHaveBeenCalledWith(true);
+    });
+});
+
+describe('deleteAllScreenshotMetadata', () => {
+    it('reports a failed metadata clear instead of claiming success', async () => {
+        shellMocks.deleteAllScreenshotMetadata.mockRejectedValueOnce(
+            new Error('clear screenshot cache: disk I/O error')
+        );
+        const toastError = vi.fn();
+        const actions = createMaintenanceActions({
+            confirm: async () => ({ ok: true }),
+            toastError
+        });
+
+        await actions.deleteAllScreenshotMetadata();
+
+        expect(toastError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'clear screenshot cache: disk I/O error'
+            })
+        );
     });
 });
 
