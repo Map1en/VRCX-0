@@ -28,6 +28,7 @@ import {
 } from '@/ui/shadcn/input-group';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Toggle } from '@/ui/shadcn/toggle';
 import {
     ToggleGroup,
     ToggleGroupItem,
@@ -442,6 +443,29 @@ function ToolbarTooltipButton({
             />
             <TooltipContent>{label}</TooltipContent>
         </Tooltip>
+    );
+}
+
+export function ToolbarToggle({
+    icon: Icon,
+    label,
+    pressed,
+    onPressedChange
+}: {
+    icon: LucideIcon;
+    label: string;
+    pressed: boolean;
+    onPressedChange: (pressed: boolean) => void;
+}) {
+    return (
+        <Toggle
+            pressed={pressed}
+            onPressedChange={onPressedChange}
+            className="text-muted-foreground hover:text-foreground data-pressed:text-foreground px-2.5 data-pressed:bg-(--state-pressed-surface)"
+        >
+            <Icon />
+            {label}
+        </Toggle>
     );
 }
 

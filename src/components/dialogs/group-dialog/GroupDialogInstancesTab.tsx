@@ -5,10 +5,10 @@ import { useTranslation } from 'react-i18next';
 import {
     ToolbarActions,
     ToolbarRefreshButton,
-    ToolbarStatus
+    ToolbarStatus,
+    ToolbarToggle
 } from '@/components/layout/ToolbarControls';
 import type { GroupDialogInstanceRow } from '@/domain/entities/group';
-import { Toggle } from '@/ui/shadcn/toggle';
 
 import { GroupInstanceRows, isGroupInstanceFull } from './GroupInstanceRows';
 
@@ -37,14 +37,12 @@ export function GroupDialogInstancesTab({
     return (
         <div className="flex min-w-0 flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-                <Toggle
+                <ToolbarToggle
+                    icon={EyeOffIcon}
+                    label={t('dialog.world.instances.filter_hide_unavailable')}
                     pressed={hideFull}
                     onPressedChange={setHideFull}
-                    className="text-muted-foreground hover:text-foreground data-pressed:text-foreground px-2.5 data-pressed:bg-(--state-pressed-surface)"
-                >
-                    <EyeOffIcon />
-                    {t('dialog.world.instances.filter_hide_unavailable')}
-                </Toggle>
+                />
                 <ToolbarStatus className="mr-auto tabular-nums">
                     {hideFull ? `${rows.length}/${instances.length}` : null}
                 </ToolbarStatus>

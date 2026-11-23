@@ -1,4 +1,4 @@
-import { EyeOffIcon, UsersIcon, type LucideIcon } from 'lucide-react';
+import { EyeOffIcon, UsersIcon } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { shallow } from 'zustand/shallow';
@@ -9,7 +9,8 @@ import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadg
 import { useLanguageNames } from '@/components/language/useLanguageNames';
 import {
     ToolbarFilterMenu,
-    ToolbarRefreshButton
+    ToolbarRefreshButton,
+    ToolbarToggle
 } from '@/components/layout/ToolbarControls';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import type { WorldProfileRecord } from '@/domain/entities/world';
@@ -31,7 +32,6 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
-import { Toggle } from '@/ui/shadcn/toggle';
 
 import {
     InstanceUserTiles,
@@ -59,29 +59,6 @@ function stringList(value: unknown): string[] {
     return Array.isArray(value)
         ? value.filter((item): item is string => typeof item === 'string')
         : [];
-}
-
-function WorldInstanceQuickFilter({
-    icon: Icon,
-    label,
-    pressed,
-    onPressedChange
-}: {
-    icon: LucideIcon;
-    label: string;
-    pressed: boolean;
-    onPressedChange: (pressed: boolean) => void;
-}) {
-    return (
-        <Toggle
-            pressed={pressed}
-            onPressedChange={onPressedChange}
-            className="text-muted-foreground hover:text-foreground data-pressed:text-foreground px-2.5 data-pressed:bg-(--state-pressed-surface)"
-        >
-            <Icon />
-            {label}
-        </Toggle>
-    );
 }
 
 function toggle(values: string[], value: string, checked: boolean) {
@@ -327,7 +304,7 @@ export function WorldDialogInstancesPanel({
         <>
             <div className="flex flex-wrap items-center gap-2">
                 <div className="mr-auto flex min-w-0 flex-wrap items-center gap-2">
-                    <WorldInstanceQuickFilter
+                    <ToolbarToggle
                         icon={UsersIcon}
                         label={t('dialog.world.instances.filter_with_friends')}
                         pressed={filter.withFriends}
@@ -335,7 +312,7 @@ export function WorldDialogInstancesPanel({
                             patchFilter({ withFriends })
                         }
                     />
-                    <WorldInstanceQuickFilter
+                    <ToolbarToggle
                         icon={EyeOffIcon}
                         label={t(
                             'dialog.world.instances.filter_hide_unavailable'
@@ -486,7 +463,7 @@ export function WorldDialogInstancesPanel({
                 className={cn(
                     'flex shrink-0 flex-col',
                     visibleRows.length &&
-                        'bg-card ring-stroke-subtle overflow-hidden rounded-xl ring-1'
+                        'bg-card/40 overflow-hidden rounded-md border'
                 )}
             >
                 {visibleRows.length ? (

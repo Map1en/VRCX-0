@@ -14,7 +14,11 @@ export function AvatarDialogTagList({
     return (
         <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-                <Badge key={tag} variant="outline">
+                <Badge
+                    key={tag}
+                    variant="outline"
+                    className="text-muted-foreground font-normal"
+                >
                     {trimPrefix ? tag.replace(trimPrefix, '') : tag}
                 </Badge>
             ))}

@@ -151,8 +151,8 @@ describe('UserDialogActivitySummaryPanel', () => {
                 onOpenInstanceHistory={onOpenInstanceHistory}
                 presenceActivityAt={undefined}
                 profile={{ id: 'usr_test' }}
-                userTimeSpent={0}
-                userJoinCount={0}
+                userTimeSpent={3_600_000}
+                userJoinCount={3}
             />
         );
 
@@ -171,6 +171,27 @@ describe('UserDialogActivitySummaryPanel', () => {
         expect(onOpenInstanceHistory).toHaveBeenCalledOnce();
     });
 
+    it('hides activity rows that have no value', () => {
+        render(
+            <UserDialogActivitySummaryPanel
+                friendedAt={undefined}
+                isCurrentUser={false}
+                isFriend
+                lastSeen={undefined}
+                presenceActivityAt={undefined}
+                profile={{ id: 'usr_test' }}
+                userTimeSpent={0}
+                userJoinCount={0}
+            />
+        );
+
+        expect(
+            screen
+                .getAllByText(/^dialog\.user\.info\./)
+                .map((element) => element.textContent)
+        ).toEqual(['dialog.user.info.activity_summary']);
+    });
+
     it('hides the friended date for the current user', () => {
         render(
             <UserDialogActivitySummaryPanel
@@ -178,9 +199,9 @@ describe('UserDialogActivitySummaryPanel', () => {
                 isCurrentUser
                 isFriend={false}
                 lastSeen={undefined}
-                presenceActivityAt={undefined}
+                presenceActivityAt="2026-08-12T00:00:00Z"
                 profile={{ id: 'usr_self' }}
-                userTimeSpent={0}
+                userTimeSpent={3_600_000}
                 userJoinCount={0}
             />
         );

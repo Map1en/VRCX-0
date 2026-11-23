@@ -279,7 +279,11 @@ export function WorldInfoSections({
                         >
                             <div className="mt-1 flex flex-wrap gap-1.5">
                                 {authorTags.map((tag) => (
-                                    <Badge key={tag} variant="outline">
+                                    <Badge
+                                        key={tag}
+                                        variant="outline"
+                                        className="text-muted-foreground font-normal"
+                                    >
                                         {tag}
                                     </Badge>
                                 ))}
@@ -293,7 +297,11 @@ export function WorldInfoSections({
                         >
                             <div className="mt-1 flex flex-wrap gap-1.5">
                                 {restrictions.map((tag) => (
-                                    <Badge key={tag.key} variant="outline">
+                                    <Badge
+                                        key={tag.key}
+                                        variant="outline"
+                                        className="text-muted-foreground font-normal"
+                                    >
                                         {tag.label}
                                     </Badge>
                                 ))}
@@ -307,7 +315,11 @@ export function WorldInfoSections({
                         >
                             <div className="mt-1 flex flex-wrap gap-1.5">
                                 {attributes.map((tag) => (
-                                    <Badge key={tag.key} variant="outline">
+                                    <Badge
+                                        key={tag.key}
+                                        variant="outline"
+                                        className="text-muted-foreground font-normal"
+                                    >
                                         {tag.label}
                                     </Badge>
                                 ))}
@@ -339,7 +351,11 @@ export function WorldInfoSections({
                     {domainsOpen && domains.length ? (
                         <div className="col-span-full flex flex-wrap gap-1.5 pb-1">
                             {domains.map((url) => (
-                                <Badge key={url} variant="outline">
+                                <Badge
+                                    key={url}
+                                    variant="outline"
+                                    className="text-muted-foreground font-normal"
+                                >
                                     {url}
                                 </Badge>
                             ))}

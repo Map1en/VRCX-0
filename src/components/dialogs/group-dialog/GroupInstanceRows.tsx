@@ -232,7 +232,7 @@ export function GroupInstanceRows({
     }
 
     return (
-        <div className="bg-card ring-stroke-subtle flex flex-col overflow-hidden rounded-xl ring-1">
+        <div className="bg-card/40 flex flex-col overflow-hidden rounded-md border">
             {rows.map((instance, index) => {
                 const location = getInstanceLocation(instance);
                 const parsedLocation = parseLocation(location);

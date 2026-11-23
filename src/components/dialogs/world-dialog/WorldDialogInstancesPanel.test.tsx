@@ -35,7 +35,8 @@ vi.mock('@/components/instances/InstanceVisitedBadge', () => ({
 
 vi.mock('@/components/layout/ToolbarControls', () => ({
     ToolbarFilterMenu: () => null,
-    ToolbarRefreshButton: () => null
+    ToolbarRefreshButton: () => null,
+    ToolbarToggle: () => null
 }));
 
 vi.mock('./WorldInstanceRowTitle', () => ({

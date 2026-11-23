@@ -73,7 +73,7 @@ function GroupOverviewSection({
     return (
         <section className="bg-card/40 flex min-w-0 flex-col gap-2 rounded-md border p-3">
             <div className="flex min-w-0 items-center justify-between gap-2">
-                <div className="text-muted-foreground truncate text-xs font-medium">
+                <div className="text-foreground truncate text-sm font-semibold">
                     {title}
                 </div>
                 {action}
@@ -321,6 +321,8 @@ export function GroupDialogTabPanels({
         (tag) => !String(tag).startsWith('admin_')
     );
     const roles = Array.isArray(group.roles) ? group.roles : [];
+    const lastVisitedAt =
+        previousInstances[0]?.created_at || previousInstances[0]?.createdAt;
     const [bannerFailed, setBannerFailed] = useState(false);
     const visitedTabs = useVisitedTabs(activeTab, group.id);
 
@@ -501,38 +503,27 @@ export function GroupDialogTabPanels({
                         title={t('dialog.group.overview.basics')}
                     >
                         <EntityInfoGrid className="px-0">
-                            <EntityInfoBlock
-                                label={t('dialog.group.info.created_at')}
-                                value={
-                                    group.createdAt || group.created_at
-                                        ? formatDateFilter(
-                                              group.createdAt ||
-                                                  group.created_at,
-                                              'long'
-                                          )
-                                        : '—'
-                                }
-                            />
-                            <EntityInfoBlock
-                                label={t('dialog.group.info.last_visited')}
-                                value={
-                                    previousInstances[0]?.created_at ||
-                                    previousInstances[0]?.createdAt
-                                        ? formatDateFilter(
-                                              previousInstances[0]
-                                                  ?.created_at ||
-                                                  previousInstances[0]
-                                                      ?.createdAt,
-                                              'long'
-                                          )
-                                        : '—'
-                                }
-                                onClick={
-                                    previousInstances.length
-                                        ? () => onChangeTab('instance-history')
-                                        : undefined
-                                }
-                            />
+                            {group.createdAt || group.created_at ? (
+                                <EntityInfoBlock
+                                    label={t('dialog.group.info.created_at')}
+                                    value={formatDateFilter(
+                                        group.createdAt || group.created_at,
+                                        'long'
+                                    )}
+                                />
+                            ) : null}
+                            {lastVisitedAt ? (
+                                <EntityInfoBlock
+                                    label={t('dialog.group.info.last_visited')}
+                                    value={formatDateFilter(
+                                        lastVisitedAt,
+                                        'long'
+                                    )}
+                                    onClick={() =>
+                                        onChangeTab('instance-history')
+                                    }
+                                />
+                            ) : null}
                             {roles.length ? (
                                 <EntityInfoBlock
                                     label={t('dialog.group.info.roles')}
@@ -547,7 +538,11 @@ export function GroupDialogTabPanels({
                                 >
                                     <div className="flex flex-wrap gap-1.5">
                                         {tags.map((tag) => (
-                                            <Badge key={tag} variant="outline">
+                                            <Badge
+                                                key={tag}
+                                                variant="outline"
+                                                className="text-muted-foreground font-normal"
+                                            >
                                                 {tag}
                                             </Badge>
                                         ))}
