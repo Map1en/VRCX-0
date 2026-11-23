@@ -834,9 +834,10 @@ fn persistence_and_media_do_not_silently_drop_errors() {
                 {
                     continue;
                 }
-                match EXCEPTIONS.iter().position(|(file, snippet, _)| {
-                    *file == relative && statement.contains(snippet)
-                }) {
+                match EXCEPTIONS
+                    .iter()
+                    .position(|(file, snippet, _)| *file == relative && statement.contains(snippet))
+                {
                     Some(index) => {
                         used.insert(index);
                     }
@@ -874,9 +875,7 @@ fn function_body<'a>(source: &'a str, name: &str) -> Option<&'a str> {
     let start = source
         .match_indices(&format!("fn {name}"))
         .map(|(index, _)| index)
-        .find(|index| {
-            source[index + 3 + name.len()..].starts_with(['(', '<'])
-        })?;
+        .find(|index| source[index + 3 + name.len()..].starts_with(['(', '<']))?;
     let open = start + source[start..].find('{')?;
     Some(braced_body(&source[open + 1..], ""))
 }
@@ -918,51 +917,226 @@ fn ipc_commands_that_take_paths_declare_where_the_path_is_checked() {
     const DESKTOP_SCREENSHOTS: &str = "crates/runtime-host-desktop/src/screenshot.rs";
     const DESKTOP_MEDIA: &str = "crates/runtime-host-desktop/src/media.rs";
     const GUARDED: &[(&str, &str, &str, &str)] = &[
-        ("app__add_screenshot_metadata", SCREENSHOTS, "app__add_screenshot_metadata", "ensure_screenshot_write_allowed"),
-        ("app__community_theme_debug_load_local_theme", "src-tauri/src/commands/host/theme_debug.rs", "app__community_theme_debug_load_local_theme", "ensure_host_read_allowed"),
-        ("app__copy_image_to_clipboard", "crates/host-desktop/src/clipboard.rs", "copy_image_to_clipboard", "validate_image_path"),
-        ("app__crop_all_prints", DESKTOP_MEDIA, "crop_all_prints", "ensure_write_allowed"),
-        ("app__crop_print_image", DESKTOP_MEDIA, "crop_print_image", "ensure_write_allowed"),
-        ("app__delete_screenshot_file", DESKTOP_SCREENSHOTS, "delete_file", "ensure_delete_allowed"),
-        ("app__delete_screenshot_metadata", SCREENSHOTS, "app__delete_screenshot_metadata", "ensure_screenshot_write_allowed"),
-        ("app__devkit_read_file", "src-tauri/src/commands/host/devkit.rs", "app__devkit_read_file", "ensure_host_read_allowed"),
-        ("app__ensure_screenshot_thumbnail", SCREENSHOTS, "app__ensure_screenshot_thumbnail", "ensure_screenshot_read_allowed"),
-        ("app__export_screenshots_zip", DESKTOP_SCREENSHOTS, "plan_export", "ensure_managed_screenshot"),
-        ("app__game_log_import", "src-tauri/src/commands/local/game_log.rs", "app__game_log_import", "ensure_host_read_allowed"),
-        ("app__get_extra_screenshot_data", SCREENSHOTS, "app__get_extra_screenshot_data", "ensure_screenshot_read_allowed"),
-        ("app__get_file_base64", "crates/host-desktop/src/shell_actions.rs", "file_base64", "BASE64_READABLE_IMAGE_EXTENSIONS"),
-        ("app__get_screenshot_folder_images", DESKTOP_SCREENSHOTS, "folder_images", "photos_root"),
-        ("app__get_screenshot_metadata", SCREENSHOTS, "app__get_screenshot_metadata", "ensure_screenshot_read_allowed"),
-        ("app__get_screenshot_share_facts", "crates/outbound-adapters/src/screenshots/share.rs", "facts", "photos_root"),
-        ("app__get_screenshots_by_file_names", DESKTOP_SCREENSHOTS, "by_file_names", "photos_root"),
-        ("app__local_test_avatar_delete", "crates/host-desktop/src/local_test_avatars.rs", "delete_in", "validate_file_name"),
-        ("app__open_folder_and_select_item", SHELL, "app__open_folder_and_select_item", "ensure_host_read_allowed"),
-        ("app__open_ugc_photos_folder", SHELL, "app__open_ugc_photos_folder", "ensure_host_read_allowed"),
-        ("app__pick_random_screenshot_in_folder_tree", DESKTOP_SCREENSHOTS, "random_path_in_folder_tree", "photos_root"),
-        ("app__plan_data_dir_migration", "crates/runtime-host-desktop/src/data_dir.rs", "plan", "prepare_app_data_dir_migration_target"),
-        ("app__profile_backup_run_manual", "crates/runtime-host-desktop/src/profile_backup.rs", "run_manual", "ensure_write_allowed"),
-        ("app__profile_restore_validate", "crates/runtime-host-desktop/src/profile_backup.rs", "validate_restore", "ensure_read_allowed"),
-        ("app__request_data_dir_migration", "crates/runtime-host-desktop/src/data_dir.rs", "request_migration", "self.plan("),
-        ("app__save_emoji_to_file", DESKTOP_MEDIA, "save_ugc_category", "ensure_write_allowed"),
-        ("app__save_print_to_file", DESKTOP_MEDIA, "save_ugc_category", "ensure_write_allowed"),
-        ("app__save_sticker_to_file", DESKTOP_MEDIA, "save_ugc_category", "ensure_write_allowed"),
-        ("app__set_screenshot_favorite", DESKTOP_SCREENSHOTS, "set_favorite", "ensure_read_allowed"),
-        ("app__start_game_from_path", "crates/runtime-host-desktop/src/state.rs", "start_game_from_path", "ensure_vrchat_launch_path_allowed"),
+        (
+            "app__add_screenshot_metadata",
+            SCREENSHOTS,
+            "app__add_screenshot_metadata",
+            "ensure_screenshot_write_allowed",
+        ),
+        (
+            "app__community_theme_debug_load_local_theme",
+            "src-tauri/src/commands/host/theme_debug.rs",
+            "app__community_theme_debug_load_local_theme",
+            "ensure_host_read_allowed",
+        ),
+        (
+            "app__copy_image_to_clipboard",
+            "crates/host-desktop/src/clipboard.rs",
+            "copy_image_to_clipboard",
+            "validate_image_path",
+        ),
+        (
+            "app__crop_all_prints",
+            DESKTOP_MEDIA,
+            "crop_all_prints",
+            "ensure_write_allowed",
+        ),
+        (
+            "app__crop_print_image",
+            DESKTOP_MEDIA,
+            "crop_print_image",
+            "ensure_write_allowed",
+        ),
+        (
+            "app__delete_screenshot_file",
+            DESKTOP_SCREENSHOTS,
+            "delete_file",
+            "ensure_delete_allowed",
+        ),
+        (
+            "app__delete_screenshot_metadata",
+            SCREENSHOTS,
+            "app__delete_screenshot_metadata",
+            "ensure_screenshot_write_allowed",
+        ),
+        (
+            "app__devkit_read_file",
+            "src-tauri/src/commands/host/devkit.rs",
+            "app__devkit_read_file",
+            "ensure_host_read_allowed",
+        ),
+        (
+            "app__ensure_screenshot_thumbnail",
+            SCREENSHOTS,
+            "app__ensure_screenshot_thumbnail",
+            "ensure_screenshot_read_allowed",
+        ),
+        (
+            "app__export_screenshots_zip",
+            DESKTOP_SCREENSHOTS,
+            "plan_export",
+            "ensure_managed_screenshot",
+        ),
+        (
+            "app__game_log_import",
+            "src-tauri/src/commands/local/game_log.rs",
+            "app__game_log_import",
+            "ensure_host_read_allowed",
+        ),
+        (
+            "app__get_extra_screenshot_data",
+            SCREENSHOTS,
+            "app__get_extra_screenshot_data",
+            "ensure_screenshot_read_allowed",
+        ),
+        (
+            "app__get_file_base64",
+            "crates/host-desktop/src/shell_actions.rs",
+            "file_base64",
+            "BASE64_READABLE_IMAGE_EXTENSIONS",
+        ),
+        (
+            "app__get_screenshot_folder_images",
+            DESKTOP_SCREENSHOTS,
+            "folder_images",
+            "photos_root",
+        ),
+        (
+            "app__get_screenshot_metadata",
+            SCREENSHOTS,
+            "app__get_screenshot_metadata",
+            "ensure_screenshot_read_allowed",
+        ),
+        (
+            "app__get_screenshot_share_facts",
+            "crates/outbound-adapters/src/screenshots/share.rs",
+            "facts",
+            "photos_root",
+        ),
+        (
+            "app__get_screenshots_by_file_names",
+            DESKTOP_SCREENSHOTS,
+            "by_file_names",
+            "photos_root",
+        ),
+        (
+            "app__local_test_avatar_delete",
+            "crates/host-desktop/src/local_test_avatars.rs",
+            "delete_in",
+            "validate_file_name",
+        ),
+        (
+            "app__open_folder_and_select_item",
+            SHELL,
+            "app__open_folder_and_select_item",
+            "ensure_host_read_allowed",
+        ),
+        (
+            "app__open_ugc_photos_folder",
+            SHELL,
+            "app__open_ugc_photos_folder",
+            "ensure_host_read_allowed",
+        ),
+        (
+            "app__pick_random_screenshot_in_folder_tree",
+            DESKTOP_SCREENSHOTS,
+            "random_path_in_folder_tree",
+            "photos_root",
+        ),
+        (
+            "app__plan_data_dir_migration",
+            "crates/runtime-host-desktop/src/data_dir.rs",
+            "plan",
+            "prepare_app_data_dir_migration_target",
+        ),
+        (
+            "app__profile_backup_run_manual",
+            "crates/runtime-host-desktop/src/profile_backup.rs",
+            "run_manual",
+            "ensure_write_allowed",
+        ),
+        (
+            "app__profile_restore_validate",
+            "crates/runtime-host-desktop/src/profile_backup.rs",
+            "validate_restore",
+            "ensure_read_allowed",
+        ),
+        (
+            "app__request_data_dir_migration",
+            "crates/runtime-host-desktop/src/data_dir.rs",
+            "request_migration",
+            "self.plan(",
+        ),
+        (
+            "app__save_emoji_to_file",
+            DESKTOP_MEDIA,
+            "save_ugc_category",
+            "ensure_write_allowed",
+        ),
+        (
+            "app__save_print_to_file",
+            DESKTOP_MEDIA,
+            "save_ugc_category",
+            "ensure_write_allowed",
+        ),
+        (
+            "app__save_sticker_to_file",
+            DESKTOP_MEDIA,
+            "save_ugc_category",
+            "ensure_write_allowed",
+        ),
+        (
+            "app__set_screenshot_favorite",
+            DESKTOP_SCREENSHOTS,
+            "set_favorite",
+            "ensure_read_allowed",
+        ),
+        (
+            "app__start_game_from_path",
+            "crates/runtime-host-desktop/src/state.rs",
+            "start_game_from_path",
+            "ensure_vrchat_launch_path_allowed",
+        ),
     ];
     const NOT_A_FILE_ACCESS: &[(&str, &str)] = &[
-        ("app__file_metadata_get", "the argument is a VRChat file id or URL, not a local path"),
-        ("app__get_ugc_photo_location", "only resolves and returns a folder string; nothing is read or opened"),
-        ("app__open_background_image_files_selector_dialog", "the path only seeds the native picker; the user chooses the file"),
-        ("app__open_file_selector_dialog", "the path only seeds the native picker; the user chooses the file"),
-        ("app__open_folder_selector_dialog", "the path only seeds the native picker; the user chooses the folder"),
-        ("app__save_file_selector_dialog", "the path only seeds the native picker; the user chooses the target"),
-        ("app__save_vrc_reg_json_file", "the path only seeds the native picker; the user chooses the target"),
+        (
+            "app__file_metadata_get",
+            "the argument is a VRChat file id or URL, not a local path",
+        ),
+        (
+            "app__get_ugc_photo_location",
+            "only resolves and returns a folder string; nothing is read or opened",
+        ),
+        (
+            "app__open_background_image_files_selector_dialog",
+            "the path only seeds the native picker; the user chooses the file",
+        ),
+        (
+            "app__open_file_selector_dialog",
+            "the path only seeds the native picker; the user chooses the file",
+        ),
+        (
+            "app__open_folder_selector_dialog",
+            "the path only seeds the native picker; the user chooses the folder",
+        ),
+        (
+            "app__save_file_selector_dialog",
+            "the path only seeds the native picker; the user chooses the target",
+        ),
+        (
+            "app__save_vrc_reg_json_file",
+            "the path only seeds the native picker; the user chooses the target",
+        ),
     ];
 
     let registered: BTreeSet<String> = GUARDED
         .iter()
         .map(|(command, ..)| command.to_string())
-        .chain(NOT_A_FILE_ACCESS.iter().map(|(command, _)| command.to_string()))
+        .chain(
+            NOT_A_FILE_ACCESS
+                .iter()
+                .map(|(command, _)| command.to_string()),
+        )
         .collect();
     assert_eq!(
         path_taking_commands(),
@@ -975,7 +1149,9 @@ fn ipc_commands_that_take_paths_declare_where_the_path_is_checked() {
         let source = std::fs::read_to_string(workspace_file(file)).expect("read guard source");
         match function_body(&source, function) {
             Some(body) if body.contains(guard) => {}
-            Some(_) => violations.push(format!("{command}: {file}::{function} no longer calls {guard}")),
+            Some(_) => violations.push(format!(
+                "{command}: {file}::{function} no longer calls {guard}"
+            )),
             None => violations.push(format!("{command}: {file} has no fn {function}")),
         }
     }
@@ -1008,7 +1184,10 @@ fn realtime_host_takes_the_friend_owner_lock_before_state() {
             }
         }
     }
-    assert!(functions_with_both > 0, "lock order scan found no function taking both locks");
+    assert!(
+        functions_with_both > 0,
+        "lock order scan found no function taking both locks"
+    );
     assert!(
         violations.is_empty(),
         "the global lock order is friend owner -> feed owner -> state; these functions take state before the friend owner lock:\n{}",

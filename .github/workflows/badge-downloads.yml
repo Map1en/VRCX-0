@@ -48,7 +48,7 @@ jobs:
                       echo "Latest release does not contain a Windows x86_64 installer." >&2
                       exit 1
                   fi
-                  size="$(awk -v bytes="$size_bytes" 'BEGIN { printf "%.2f MB", bytes / 1000000 }')"
+                  size="$(awk -v bytes="$size_bytes" 'BEGIN { printf "%.2f MB", bytes / 1048576 }')"
                   echo "size=$size" >> "$GITHUB_OUTPUT"
 
             - name: Publish badge endpoints to badge-data branch

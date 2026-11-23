@@ -1796,13 +1796,18 @@ fn late_messages_from_a_replaced_session_do_not_reach_the_new_session() -> Resul
         );
     }
 
-    let snapshot = runtime.runtime().friend_snapshot().expect("replacement roster");
+    let snapshot = runtime
+        .runtime()
+        .friend_snapshot()
+        .expect("replacement roster");
     assert_eq!(snapshot.current_user_id, replacement.user_id);
     assert!(!snapshot.friends_by_id.contains_key("usr_late"));
     for user_id in [&old_session.user_id, &replacement.user_id] {
-        assert!(friend_log_current_list(runtime.database(), user_id.clone())?
-            .iter()
-            .all(|row| row.user_id != "usr_late"));
+        assert!(
+            friend_log_current_list(runtime.database(), user_id.clone())?
+                .iter()
+                .all(|row| row.user_id != "usr_late")
+        );
     }
     assert!(runtime.take_events_for_test().is_empty());
     Ok(())
