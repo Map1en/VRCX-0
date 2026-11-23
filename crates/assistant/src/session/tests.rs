@@ -495,6 +495,18 @@ fn title_shows_mentions_by_name_without_their_ids() {
 }
 
 #[test]
+fn title_unescapes_link_syntax_in_mention_names() {
+    assert_eq!(
+        derive_title(r"ask [@Alice \[VR\] \(x\)](vrcx-0://user/open?id=usr_a) now"),
+        "ask @Alice [VR] (x) now"
+    );
+    assert_eq!(
+        derive_title(r"ask [@a\\\[b](vrcx-0://user/open?id=usr_a)"),
+        r"ask @a\[b"
+    );
+}
+
+#[test]
 fn rename_and_pin_survive_a_reopen_without_reordering() {
     let persistence = test_persistence();
     let owner = OwnerId::new(TEST_OWNER);

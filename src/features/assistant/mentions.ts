@@ -10,7 +10,7 @@ export type MentionSegment =
     | { kind: 'mention'; target: MentionTarget };
 
 export function mentionToken({ kind, id, name }: MentionTarget): string {
-    return `[@${name}](${entityHref(kind, id)})`;
+    return `[@${name.replace(/[\\[\]()]/g, '\\$&')}](${entityHref(kind, id)})`;
 }
 
 export function encodeMentions(
@@ -61,7 +61,9 @@ export function splitMentions(text: string): MentionSegment[] {
             target: {
                 kind: match[1] === 'world' ? 'world' : 'user',
                 id: after.slice(0, close),
-                name: rest.slice(open + 2, marker)
+                name: rest
+                    .slice(open + 2, marker)
+                    .replace(/\\([\\[\]()])/g, '$1')
             }
         });
         rest = after.slice(close + 1);

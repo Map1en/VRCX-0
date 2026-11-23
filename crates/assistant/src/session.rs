@@ -1010,7 +1010,18 @@ fn plain_mentions(text: &str) -> String {
         match (rest[..marker].rfind("[@"), after.find(')')) {
             (Some(open), Some(close)) => {
                 plain.push_str(&rest[..open]);
-                plain.push_str(&rest[open + 1..marker]);
+                let mut chars = rest[open + 1..marker].chars().peekable();
+                while let Some(ch) = chars.next() {
+                    match chars.peek() {
+                        Some(&next)
+                            if ch == '\\' && matches!(next, '\\' | '[' | ']' | '(' | ')') =>
+                        {
+                            plain.push(next);
+                            chars.next();
+                        }
+                        _ => plain.push(ch),
+                    }
+                }
                 rest = &after[close + 1..];
             }
             _ => {
