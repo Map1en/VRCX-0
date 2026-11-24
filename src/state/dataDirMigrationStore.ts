@@ -4,7 +4,7 @@ import type {
     DataDirMigrationMode,
     DataDirMigrationPlan,
     DataDirMigrationStatus
-} from '@/services/dataDirMigrationService';
+} from '@/platform/tauri/bindings';
 
 type DataDirMigrationStore = {
     status: DataDirMigrationStatus;
