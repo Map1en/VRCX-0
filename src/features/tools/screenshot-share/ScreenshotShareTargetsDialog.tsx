@@ -37,7 +37,11 @@ import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { ScreenshotShareOptions } from './ScreenshotShareOptions';
-import { screenshotShareErrorText } from './screenshotShareService';
+import {
+    deleteScreenshotShareTarget,
+    saveScreenshotShareTarget,
+    screenshotShareErrorText
+} from './screenshotShareService';
 import { useScreenshotShareHistory } from './useScreenshotShareHistory';
 
 const DEFAULT_SCREENSHOT_SHARE_FIELDS: ScreenshotShareFields = {
@@ -267,8 +271,6 @@ export function ScreenshotShareTargetsDialog({
 }) {
     const { t } = useTranslation();
     const targets = useScreenshotShareStore((state) => state.targets);
-    const save = useScreenshotShareStore((state) => state.save);
-    const remove = useScreenshotShareStore((state) => state.remove);
     const [tab, setTab] = useState<'targets' | 'history'>('targets');
     const [draft, setDraft] = useState<TargetDraft | null>(null);
     const [saving, setSaving] = useState(false);
@@ -286,7 +288,7 @@ export function ScreenshotShareTargetsDialog({
         setSaving(true);
         setError(null);
         try {
-            await save({
+            await saveScreenshotShareTarget({
                 id: draft.id,
                 name: draft.name.trim(),
                 url: draft.url.trim() || null,
@@ -303,7 +305,7 @@ export function ScreenshotShareTargetsDialog({
 
     async function toggleQuick(target: ScreenshotShareTarget) {
         try {
-            await save({
+            await saveScreenshotShareTarget({
                 id: target.id,
                 name: target.name,
                 url: null,
@@ -317,7 +319,7 @@ export function ScreenshotShareTargetsDialog({
 
     async function deleteTarget(target: ScreenshotShareTarget) {
         try {
-            await remove(target.id);
+            await deleteScreenshotShareTarget(target.id);
         } catch (deleteError) {
             toast.add({ type: 'error', title: errorMessage(deleteError) });
         }

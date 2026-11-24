@@ -32,6 +32,7 @@ import {
 import { buildScreenshotShareMessages } from './screenshotShareMessages';
 import { ScreenshotShareOptions } from './ScreenshotShareOptions';
 import {
+    saveScreenshotShareTarget,
     shareScreenshots,
     screenshotShareText
 } from './screenshotShareService';
@@ -80,7 +81,6 @@ export function ScreenshotShareDialog({
 }) {
     const { t } = useTranslation();
     const targets = useScreenshotShareStore((state) => state.targets);
-    const save = useScreenshotShareStore((state) => state.save);
     const sending = useScreenshotShareStore((state) => state.sending);
     const validTargets = targets.filter((item) => !item.invalid);
     const [targetId, setTargetId] = useState<string | null>(initialTargetId);
@@ -136,7 +136,7 @@ export function ScreenshotShareDialog({
         onOpenChange(false);
         if (remember) {
             try {
-                await save({
+                await saveScreenshotShareTarget({
                     id: target.id,
                     name: target.name,
                     url: null,

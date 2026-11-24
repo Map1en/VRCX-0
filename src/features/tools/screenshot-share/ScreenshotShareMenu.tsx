@@ -17,7 +17,10 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { ScreenshotShareDialog } from './ScreenshotShareDialog';
-import { shareScreenshots } from './screenshotShareService';
+import {
+    loadScreenshotShareTargets,
+    shareScreenshots
+} from './screenshotShareService';
 import { ScreenshotShareTargetsDialog } from './ScreenshotShareTargetsDialog';
 
 export function ScreenshotShareMenu({
@@ -30,7 +33,6 @@ export function ScreenshotShareMenu({
     const { t } = useTranslation();
     const targets = useScreenshotShareStore((state) => state.targets);
     const loaded = useScreenshotShareStore((state) => state.loaded);
-    const load = useScreenshotShareStore((state) => state.load);
     const sending = useScreenshotShareStore((state) => state.sending);
     const [manageOpen, setManageOpen] = useState(false);
     const [dialog, setDialog] = useState<{
@@ -43,11 +45,11 @@ export function ScreenshotShareMenu({
 
     useEffect(() => {
         if (!loaded) {
-            load().catch((error: unknown) => {
+            loadScreenshotShareTargets().catch((error: unknown) => {
                 console.warn('Screenshot share targets unavailable:', error);
             });
         }
-    }, [loaded, load]);
+    }, [loaded]);
 
     async function sendQuick() {
         if (!targets.length) {

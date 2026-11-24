@@ -1,19 +1,15 @@
 import { create } from 'zustand';
 
-import {
-    commands,
-    type ScreenshotShareTarget,
-    type ScreenshotShareTargetInput
-} from '@/platform/tauri/bindings';
+import type { ScreenshotShareTarget } from '@/platform/tauri/bindings';
 
 type ScreenshotShareStoreState = {
     targets: ScreenshotShareTarget[];
     loaded: boolean;
     sending: boolean;
     setSending(sending: boolean): void;
-    load(): Promise<ScreenshotShareTarget[]>;
-    save(input: ScreenshotShareTargetInput): Promise<ScreenshotShareTarget>;
-    remove(id: string): Promise<void>;
+    setLoadedTargets(targets: ScreenshotShareTarget[]): void;
+    upsertTarget(saved: ScreenshotShareTarget): void;
+    removeTarget(id: string): void;
     markInvalid(id: string): void;
 };
 
@@ -25,13 +21,10 @@ export const useScreenshotShareStore = create<ScreenshotShareStoreState>(
         setSending(sending) {
             set({ sending });
         },
-        async load() {
-            const targets = await commands.appGetScreenshotShareTargets();
+        setLoadedTargets(targets) {
             set({ targets, loaded: true });
-            return targets;
         },
-        async save(input) {
-            const saved = await commands.appSaveScreenshotShareTarget(input);
+        upsertTarget(saved) {
             const exists = get().targets.some(
                 (target) => target.id === saved.id
             );
@@ -42,10 +35,8 @@ export const useScreenshotShareStore = create<ScreenshotShareStoreState>(
                       )
                     : [...get().targets, saved]
             });
-            return saved;
         },
-        async remove(id) {
-            await commands.appDeleteScreenshotShareTarget(id);
+        removeTarget(id) {
             set({
                 targets: get().targets.filter((target) => target.id !== id)
             });
