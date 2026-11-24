@@ -546,6 +546,42 @@ describe('authExecutionService characterization', () => {
         );
     });
 
+    it('returns the realtime transport and account progress to idle on logout', async () => {
+        const initialRuntime = useRuntimeStore.getState();
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_self',
+            currentUserDisplayName: 'Self'
+        });
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            sessionPhase: 'ready'
+        });
+        useSessionStore.getState().setTransportStatus('pipeline-connected');
+        useRuntimeStore.getState().setTransportState({
+            websocketConnected: true,
+            websocketDomain: 'wss://pipeline.vrchat.cloud'
+        });
+        useRuntimeStore.getState().setInstanceQueueState({
+            active: true,
+            instanceLocation: 'wrld_previous:1',
+            position: 3,
+            queueSize: 9
+        });
+        useRuntimeStore.getState().setMutualGraphState({
+            runId: 4,
+            status: 'running',
+            ownerUserId: 'usr_self'
+        });
+
+        await expect(logoutFromReactShell()).resolves.toBe(true);
+
+        expect(useSessionStore.getState().transportStatus).toBe('disconnected');
+        const runtime = useRuntimeStore.getState();
+        expect(runtime.transport).toEqual(initialRuntime.transport);
+        expect(runtime.instanceQueue).toEqual(initialRuntime.instanceQueue);
+        expect(runtime.mutualGraph).toEqual(initialRuntime.mutualGraph);
+    });
+
     it('drops per-account user dialog caches on logout', async () => {
         const targetKey = dialogTargetKey(
             'https://api.vrchat.cloud/api/1',

@@ -215,18 +215,15 @@ export function resetCurrentUserRuntimeAuth() {
     clearCurrentUserRuntimeAuthState();
 }
 
-function resetAccountUiState() {
+function resetAccountState() {
     useDialogStore.getState().clearDialogState();
     useModalStore.getState().resetModalState();
     useVrcNotificationStore.getState().resetVrcNotificationState();
-}
-
-function resetPreviousAccountState() {
-    resetAccountUiState();
     const runtimeStore = useRuntimeStore.getState();
     runtimeStore.resetTransportState();
     runtimeStore.clearInstanceQueueState();
     runtimeStore.resetMutualGraphState();
+    useSessionStore.getState().setTransportStatus('disconnected');
 }
 
 function setCurrentUserRuntimeAuth(
@@ -491,7 +488,7 @@ export async function logoutWithoutConfirmation() {
     const currentUserDisplayName = runtimeStore.auth.currentUserDisplayName;
     const sessionPhase = useSessionStore.getState().sessionPhase;
 
-    resetAccountUiState();
+    resetAccountState();
 
     if (!currentUserId && sessionPhase !== 'authenticating') {
         resetCurrentUserRuntimeAuth();
@@ -548,7 +545,7 @@ async function executeLoginAttempt({
 }) {
     const attempt = beginAuthAttempt();
     if (useRuntimeStore.getState().auth.currentUserId) {
-        resetPreviousAccountState();
+        resetAccountState();
     }
     useRuntimeStore.getState().setStartupTask('auth', 'running', startupDetail);
     setAuthenticatingSessionState();
