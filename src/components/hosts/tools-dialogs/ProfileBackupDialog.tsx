@@ -5,7 +5,7 @@ import {
     RotateCcwIcon,
     SaveIcon
 } from 'lucide-react';
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateTime } from '@/lib/dateTime';
@@ -194,7 +194,7 @@ export function ProfileBackupDialog({
     const runningPhaseKey = profileBackupPhaseKey(status);
     const runningPhaseLabel = t(runningPhaseKey);
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         if (open) {
             void refreshRollbackState();
         }
