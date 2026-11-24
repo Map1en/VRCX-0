@@ -5,6 +5,11 @@ import type {
     Dashboard,
     DashboardPanel
 } from '@/repositories/dashboardRepository';
+import {
+    createDashboard,
+    deleteDashboard,
+    updateDashboard
+} from '@/services/dashboardService';
 import { toast } from '@/services/toastService';
 import { useDashboardStore } from '@/state/dashboardStore';
 import { useModalStore } from '@/state/modalStore';
@@ -21,9 +26,6 @@ export function useDashboardActions({
     const { t } = useTranslation();
     const navigate = useNavigate();
     const confirm = useModalStore((state) => state.confirm);
-    const createDashboard = useDashboardStore((state) => state.createDashboard);
-    const updateDashboard = useDashboardStore((state) => state.updateDashboard);
-    const deleteDashboard = useDashboardStore((state) => state.deleteDashboard);
     const setEditingDashboardId = useDashboardStore(
         (state) => state.setEditingDashboardId
     );

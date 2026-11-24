@@ -9,6 +9,11 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    createDashboard,
+    deleteDashboard,
+    updateDashboard
+} from '@/services/dashboardService';
 import { toast } from '@/services/toastService';
 import {
     DASHBOARD_NAV_KEY_PREFIX,
@@ -103,9 +108,6 @@ export function CustomNavDialog({
     const { t } = useTranslation();
     const prompt = useModalStore((state) => state.prompt);
     const confirm = useModalStore((state) => state.confirm);
-    const createDashboard = useDashboardStore((state) => state.createDashboard);
-    const updateDashboard = useDashboardStore((state) => state.updateDashboard);
-    const deleteDashboard = useDashboardStore((state) => state.deleteDashboard);
     const getDashboard = useDashboardStore((state) => state.getDashboard);
     const [localLayout, setLocalLayout] = useState<CustomNavLayout>(() =>
         cloneLayout(layout)

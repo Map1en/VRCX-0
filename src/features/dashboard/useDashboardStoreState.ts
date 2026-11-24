@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router';
 
+import { ensureDashboardsLoaded } from '@/services/dashboardService';
 import { useDashboardStore } from '@/state/dashboardStore';
 
 export function useDashboardStoreState() {
@@ -12,15 +13,14 @@ export function useDashboardStoreState() {
     const editingDashboardId = useDashboardStore(
         (state) => state.editingDashboardId
     );
-    const ensureLoaded = useDashboardStore((state) => state.ensureLoaded);
     const consumeEditingDashboardId = useDashboardStore(
         (state) => state.consumeEditingDashboardId
     );
     const dashboard = dashboards.find((entry) => entry.id === id) || null;
 
     useEffect(() => {
-        ensureLoaded().catch(() => {});
-    }, [ensureLoaded]);
+        ensureDashboardsLoaded().catch(() => {});
+    }, []);
 
     return {
         consumeEditingDashboardId,

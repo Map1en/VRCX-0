@@ -23,6 +23,7 @@ import {
     type NavLayoutEntry
 } from '@/components/layout/navMenuModel';
 import configRepository from '@/repositories/configRepository';
+import { ensureDashboardsLoaded } from '@/services/dashboardService';
 import { toast } from '@/services/toastService';
 import {
     isToolCapabilityAvailable,
@@ -128,9 +129,6 @@ export function useToolsPageState() {
     const { t, i18n } = useTranslation();
     const hostCapabilities = useRuntimeStore((state) => state.hostCapabilities);
     const dashboards = useDashboardStore((state) => state.dashboards);
-    const ensureDashboardsLoaded = useDashboardStore(
-        (state) => state.ensureLoaded
-    );
     const preferencesHydrated = usePreferencesStore(
         (state) => state.preferencesHydrated
     );
@@ -218,7 +216,7 @@ export function useToolsPageState() {
 
     useEffect(() => {
         ensureDashboardsLoaded().catch(() => {});
-    }, [ensureDashboardsLoaded]);
+    }, []);
 
     useEffect(() => {
         if (!preferencesHydrated) {

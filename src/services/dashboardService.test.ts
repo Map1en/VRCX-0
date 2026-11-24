@@ -1,0 +1,266 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+    getDashboards: vi.fn(),
+    saveDashboards: vi.fn()
+}));
+
+vi.mock('@/repositories/dashboardRepository', async (importOriginal) => {
+    const actual =
+        await importOriginal<
+            typeof import('@/repositories/dashboardRepository')
+        >();
+    return {
+        ...actual,
+        default: {
+            ...actual.default,
+            getDashboards: mocks.getDashboards,
+            saveDashboards: mocks.saveDashboards
+        }
+    };
+});
+
+import { DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard';
+import { useDashboardStore } from '@/state/dashboardStore';
+
+import {
+    createDashboard,
+    deleteDashboard,
+    ensureDashboardsLoaded,
+    resetDashboardState,
+    updateDashboard
+} from './dashboardService';
+
+type Deferred<T> = {
+    promise: Promise<T>;
+    resolve: (value: T) => void;
+};
+
+function deferred<T>(): Deferred<T> {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((promiseResolve) => {
+        resolve = promiseResolve;
+    });
+    return { promise, resolve };
+}
+
+const existingDashboard = {
+    id: 'dashboard-main',
+    name: 'Main',
+    icon: 'lucide:LayoutDashboard',
+    rows: []
+};
+
+describe('dashboardStore persistence ownership', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        resetDashboardState();
+    });
+
+    it('coalesces concurrent initial loads through one repository request', async () => {
+        const load = deferred<(typeof existingDashboard)[]>();
+        mocks.getDashboards.mockReturnValue(load.promise);
+
+        const first = ensureDashboardsLoaded();
+        const second = ensureDashboardsLoaded();
+
+        expect(mocks.getDashboards).toHaveBeenCalledTimes(1);
+        expect(useDashboardStore.getState().loadStatus).toBe('running');
+
+        load.resolve([existingDashboard]);
+
+        await expect(first).resolves.toEqual([existingDashboard]);
+        await expect(second).resolves.toEqual([existingDashboard]);
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [existingDashboard],
+            loaded: true,
+            loadStatus: 'ready',
+            detail: ''
+        });
+    });
+
+    it('keeps the previous mirror until a dashboard update is persisted', async () => {
+        useDashboardStore.setState({
+            dashboards: [existingDashboard],
+            loaded: true,
+            loadStatus: 'ready',
+            detail: ''
+        });
+        const save = deferred<(typeof existingDashboard)[]>();
+        mocks.saveDashboards.mockReturnValue(save.promise);
+
+        const update = updateDashboard(existingDashboard.id, {
+            name: 'Renamed'
+        });
+
+        expect(useDashboardStore.getState().dashboards).toEqual([
+            existingDashboard
+        ]);
+        await vi.waitFor(() =>
+            expect(mocks.saveDashboards).toHaveBeenCalledWith([
+                { ...existingDashboard, name: 'Renamed' }
+            ])
+        );
+
+        const persisted = [{ ...existingDashboard, name: 'Renamed' }];
+        save.resolve(persisted);
+
+        await expect(update).resolves.toEqual(persisted[0]);
+        expect(useDashboardStore.getState().dashboards).toEqual(persisted);
+    });
+
+    it('retries an initial load after a transient repository failure', async () => {
+        mocks.getDashboards
+            .mockRejectedValueOnce(new Error('storage unavailable'))
+            .mockResolvedValueOnce([existingDashboard]);
+
+        await expect(ensureDashboardsLoaded()).rejects.toThrow(
+            'storage unavailable'
+        );
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [],
+            loaded: false,
+            loadStatus: 'error',
+            detail: 'storage unavailable'
+        });
+
+        await expect(ensureDashboardsLoaded()).resolves.toEqual([
+            existingDashboard
+        ]);
+        expect(mocks.getDashboards).toHaveBeenCalledTimes(2);
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [existingDashboard],
+            loaded: true,
+            loadStatus: 'ready',
+            detail: ''
+        });
+    });
+
+    it('clears the editing target only after its dashboard is deleted', async () => {
+        useDashboardStore.setState({
+            dashboards: [existingDashboard],
+            loaded: true,
+            loadStatus: 'ready',
+            editingDashboardId: existingDashboard.id
+        });
+        mocks.saveDashboards.mockResolvedValue([]);
+
+        await deleteDashboard(existingDashboard.id);
+
+        expect(mocks.saveDashboards).toHaveBeenCalledWith([]);
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [],
+            editingDashboardId: null
+        });
+    });
+
+    it('serves an already loaded mirror without asking the repository', async () => {
+        useDashboardStore.setState({
+            dashboards: [existingDashboard],
+            loaded: true,
+            loadStatus: 'ready'
+        });
+
+        await expect(ensureDashboardsLoaded()).resolves.toEqual([
+            existingDashboard
+        ]);
+        expect(mocks.getDashboards).not.toHaveBeenCalled();
+    });
+
+    it('loads first, then appends a new dashboard and mirrors the persisted list', async () => {
+        mocks.getDashboards.mockResolvedValue([existingDashboard]);
+        mocks.saveDashboards.mockImplementation(
+            async (dashboards) => dashboards
+        );
+
+        const created = await createDashboard('Dashboard');
+
+        expect(mocks.getDashboards).toHaveBeenCalledOnce();
+        expect(created).toMatchObject({
+            id: expect.any(String),
+            name: expect.any(String),
+            icon: DEFAULT_DASHBOARD_ICON,
+            rows: []
+        });
+        expect(created.name).not.toBe(existingDashboard.name);
+        expect(mocks.saveDashboards).toHaveBeenCalledWith([
+            existingDashboard,
+            created
+        ]);
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [existingDashboard, created],
+            loaded: true,
+            loadStatus: 'ready',
+            detail: ''
+        });
+    });
+
+    it('rejects an update for an unknown dashboard without saving', async () => {
+        useDashboardStore.setState({
+            dashboards: [existingDashboard],
+            loaded: true,
+            loadStatus: 'ready'
+        });
+
+        await expect(updateDashboard('missing', {})).rejects.toThrow(
+            'Dashboard not found.'
+        );
+        expect(mocks.saveDashboards).not.toHaveBeenCalled();
+    });
+
+    it('keeps the mirror when persisting an update fails', async () => {
+        useDashboardStore.setState({
+            dashboards: [existingDashboard],
+            loaded: true,
+            loadStatus: 'ready',
+            detail: ''
+        });
+        mocks.saveDashboards.mockRejectedValue(new Error('disk full'));
+
+        await expect(
+            updateDashboard(existingDashboard.id, { name: 'Renamed' })
+        ).rejects.toThrow('disk full');
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [existingDashboard],
+            loadStatus: 'ready'
+        });
+    });
+
+    it('keeps editing another dashboard when a different one is deleted', async () => {
+        const other = { ...existingDashboard, id: 'dashboard-other' };
+        useDashboardStore.setState({
+            dashboards: [existingDashboard, other],
+            loaded: true,
+            loadStatus: 'ready',
+            editingDashboardId: other.id
+        });
+        mocks.saveDashboards.mockResolvedValue([other]);
+
+        await deleteDashboard(existingDashboard.id);
+
+        expect(mocks.saveDashboards).toHaveBeenCalledWith([other]);
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [other],
+            editingDashboardId: other.id
+        });
+    });
+
+    it('starts a fresh shared load after a reset while the earlier load still writes when it lands', async () => {
+        const stale = deferred<(typeof existingDashboard)[]>();
+        mocks.getDashboards
+            .mockReturnValueOnce(stale.promise)
+            .mockResolvedValueOnce([]);
+
+        const first = ensureDashboardsLoaded();
+        resetDashboardState();
+        const second = ensureDashboardsLoaded();
+
+        expect(mocks.getDashboards).toHaveBeenCalledTimes(2);
+        await expect(second).resolves.toEqual([]);
+        stale.resolve([existingDashboard]);
+        await expect(first).resolves.toEqual([existingDashboard]);
+        expect(useDashboardStore.getState().dashboards).toEqual([
+            existingDashboard
+        ]);
+    });
+});

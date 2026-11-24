@@ -8,6 +8,11 @@ import {
     type ShortcutHintItem
 } from '@/components/keyboard/ShortcutHintPanel';
 import type { Dashboard } from '@/repositories/dashboardRepository';
+import {
+    createDashboard,
+    deleteDashboard,
+    ensureDashboardsLoaded
+} from '@/services/dashboardService';
 import { startInventoryBundleWatch } from '@/services/inventoryBundleService';
 import { markAllNotificationsSeenWithFeedback } from '@/services/notificationMarkAllSeenService';
 import { setNavbarCollapsedPreference } from '@/services/preferencesService';
@@ -249,8 +254,6 @@ function useAppNavDashboardActions({
     navigate: Navigation;
 }) {
     const { t } = useTranslation();
-    const createDashboard = useDashboardStore((state) => state.createDashboard);
-    const deleteDashboard = useDashboardStore((state) => state.deleteDashboard);
     const setEditingDashboardId = useDashboardStore(
         (state) => state.setEditingDashboardId
     );
@@ -427,9 +430,6 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
         (state) => state.shortcutHintsVisible
     );
     const dashboards = useDashboardStore((state) => state.dashboards);
-    const ensureDashboardsLoaded = useDashboardStore(
-        (state) => state.ensureLoaded
-    );
     const sessionPhase = useSessionStore((state) => state.sessionPhase);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const preferencesHydrated = usePreferencesStore(
@@ -490,7 +490,7 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
     useEffect(() => {
         ensureDashboardsLoaded().catch(() => {});
-    }, [ensureDashboardsLoaded]);
+    }, []);
 
     useEffect(() => {
         const handleCustomizeRequested = () => {
