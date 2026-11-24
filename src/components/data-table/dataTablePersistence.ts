@@ -1,9 +1,10 @@
 import type { ColumnSizingState, OnChangeFn } from '@tanstack/react-table';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { safeJsonParse } from '@/shared/utils/json';
 
 const DATA_TABLE_STORAGE_PREFIX = 'vrcx-0:table:';
+const COLUMN_SIZING_SAVE_DELAY_MS = 300;
 type PersistedTableState = Record<string, unknown>;
 type TableColumnSizing = Record<string, number>;
 type TableColumnVisibility = Record<string, boolean>;
@@ -21,6 +22,26 @@ export function usePersistedTableColumnSizing({
         sanitizeTableColumnSizing(initialValue, columnIds)
     );
     const columnSizingRef = useRef(columnSizing);
+    const pendingWriteRef = useRef<{
+        timer: ReturnType<typeof setTimeout>;
+        write: () => void;
+    } | null>(null);
+
+    const flushPendingWrite = useCallback(() => {
+        const pending = pendingWriteRef.current;
+        if (!pending) {
+            return;
+        }
+        pendingWriteRef.current = null;
+        clearTimeout(pending.timer);
+        pending.write();
+    }, []);
+
+    useEffect(
+        () => flushPendingWrite,
+        [flushPendingWrite, writePersistedState]
+    );
+
     const setColumnSizing = useCallback<OnChangeFn<ColumnSizingState>>(
         (updater) => {
             const nextColumnSizing = sanitizeTableColumnSizing(
@@ -31,9 +52,19 @@ export function usePersistedTableColumnSizing({
             );
             columnSizingRef.current = nextColumnSizing;
             setColumnSizingState(nextColumnSizing);
-            writePersistedState({ columnSizing: nextColumnSizing });
+            if (pendingWriteRef.current) {
+                clearTimeout(pendingWriteRef.current.timer);
+            }
+            pendingWriteRef.current = {
+                timer: setTimeout(
+                    flushPendingWrite,
+                    COLUMN_SIZING_SAVE_DELAY_MS
+                ),
+                write: () =>
+                    writePersistedState({ columnSizing: nextColumnSizing })
+            };
         },
-        [columnIds, writePersistedState]
+        [columnIds, flushPendingWrite, writePersistedState]
     );
 
     return [columnSizing, setColumnSizing];

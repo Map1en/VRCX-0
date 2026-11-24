@@ -74,13 +74,13 @@ describe('useFeedTableState', () => {
                     '{}'
             ).sorting
         ).toEqual([{ id: 'type', desc: false }]);
+        first.unmount();
         expect(
             JSON.parse(
                 window.localStorage.getItem(getDataTableStorageKey('feed')) ||
                     '{}'
             ).columnSizing
         ).toEqual({ created_at: 144, displayName: 208 });
-        first.unmount();
 
         const second = renderHook(() => useFeedTableState(options));
 
