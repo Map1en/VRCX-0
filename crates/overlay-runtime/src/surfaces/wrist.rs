@@ -2,12 +2,13 @@ use chrono::{DateTime, Local, Timelike};
 use vrcx_0_application_activity::{
     ActivityActorRelation, ActivityCategory, ActivityEntry, ActivitySnapshot, ActivityText,
 };
+use vrcx_0_core::friends::{normalize_user_status, UserStatus};
 use vrcx_0_core::location::world_id_from_location;
 use vrcx_0_core::text::first_non_empty_owned;
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_vr_overlay::{
     DeviceChip, DeviceRole, DeviceStatus, FeedAccent, FeedKind, FeedLine, FeedRelation,
-    FeedSeverity, OverlayFooter, OverlayNowPlaying, OverlaySize, WristSurfaceModel,
+    FeedSeverity, FeedStatusDot, OverlayFooter, OverlayNowPlaying, OverlaySize, WristSurfaceModel,
 };
 use vrcx_0_vr_overlay_backend::{VrDeviceRole, VrDeviceSnapshot, VrDeviceStatus};
 
@@ -162,7 +163,7 @@ fn now_playing_model(
     })
 }
 
-fn clock_duration(total_seconds: i64) -> String {
+pub(crate) fn clock_duration(total_seconds: i64) -> String {
     let hours = total_seconds / 3600;
     let minutes = total_seconds % 3600 / 60;
     let seconds = total_seconds % 60;
@@ -318,6 +319,7 @@ pub(crate) fn feed_line_from_activity(
         relation: feed_relation(entry.actor_relation),
         severity: feed_severity(entry),
         accent: feed_accent(entry),
+        status_dot: feed_status_dot(entry),
     }
 }
 
@@ -541,6 +543,23 @@ fn feed_accent(entry: &ActivityEntry) -> FeedAccent {
         ActivityKind::Offline => FeedAccent::Offline,
         ActivityKind::Status | ActivityKind::AvatarChange | ActivityKind::Bio => FeedAccent::Muted,
         _ => FeedAccent::None,
+    }
+}
+
+fn feed_status_dot(entry: &ActivityEntry) -> Option<FeedStatusDot> {
+    if !matches!(entry.kind, ActivityKind::Status) {
+        return None;
+    }
+    let status = entry.content.status.as_str();
+    if normalize_user_status(status) == "online" {
+        return Some(FeedStatusDot::Active);
+    }
+    match UserStatus::normalize(status)? {
+        UserStatus::Active => Some(FeedStatusDot::Active),
+        UserStatus::JoinMe => Some(FeedStatusDot::JoinMe),
+        UserStatus::AskMe => Some(FeedStatusDot::AskMe),
+        UserStatus::Busy => Some(FeedStatusDot::Busy),
+        UserStatus::Offline => None,
     }
 }
 

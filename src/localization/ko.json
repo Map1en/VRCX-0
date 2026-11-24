@@ -3097,6 +3097,7 @@
                     "hide_private_worlds": "비공개 월드 숨기기",
                     "vr_device_status": "VR 기기 상태",
                     "battery_percentage": "배터리 잔량",
+                    "show_seconds": "초 단위 표시",
                     "wrist_feed_notifications": "손목 오버레이 알림 필터"
                 },
                 "test_mode": {

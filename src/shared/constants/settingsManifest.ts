@@ -947,6 +947,12 @@ defineCard('vr', 'wrist', 'view.settings.vr.wrist_overlay.header', [
         prefKey: 'wristOverlayShowBatteryPercent'
     },
     {
+        key: 'show-seconds',
+        labelKey: 'view.settings.vr.wrist_overlay.show_seconds',
+        dependsOn: 'enabled',
+        prefKey: 'wristOverlayShowSeconds'
+    },
+    {
         key: 'notifications',
         labelKey: 'view.settings.vr.wrist_overlay.wrist_feed_notifications',
         dependsOn: 'enabled'

@@ -3160,6 +3160,7 @@
                     "hide_private_worlds": "隐藏私人世界",
                     "vr_device_status": "VR 设备状态",
                     "battery_percentage": "显示电量百分比",
+                    "show_seconds": "显示秒数",
                     "wrist_feed_notifications": "手腕叠加界面通知筛选器"
                 },
                 "test_mode": {

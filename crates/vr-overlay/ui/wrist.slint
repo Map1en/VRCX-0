@@ -18,6 +18,8 @@ export struct WristFeedItem {
     accent-color: color,
     has-actor: bool,
     show-accent: bool,
+    status-color: color,
+    show-status-dot: bool,
 }
 
 export component WristPanel inherits Window {
@@ -220,6 +222,20 @@ export component WristPanel inherits Window {
                     color: line.actor-color;
                 }
 
+                if line.show-status-dot: Rectangle {
+                    horizontal-stretch: 0;
+                    width: 10px;
+
+                    Rectangle {
+                        x: 0px;
+                        y: (parent.height - self.height) / 2;
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 5px;
+                        background: line.status-color;
+                    }
+                }
+
                 Text {
                     horizontal-stretch: 1;
                     text: line.detail;
@@ -333,20 +349,21 @@ export component WristPanel inherits Window {
         }
 
         Text {
-            x: parent.width / 2 - 90px;
+            x: parent.width / 2 - 120px;
             y: parent.height - 24px;
-            width: 180px;
+            width: 240px;
             height: 17px;
             text: root.footer-center;
             font-size: 12px;
             horizontal-alignment: center;
+            overflow: elide;
             color: root.muted-color;
         }
 
         Text {
-            x: parent.width - 98px;
+            x: parent.width - 114px;
             y: parent.height - 24px;
-            width: 80px;
+            width: 96px;
             height: 17px;
             text: root.footer-right;
             font-size: 12px;

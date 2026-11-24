@@ -17,6 +17,7 @@ pub const VR_OVERLAY_HIDE_PRIVATE_WORLDS_CONFIG_KEY: &str = "wristOverlayHidePri
 pub const VR_OVERLAY_DARK_BACKGROUND_CONFIG_KEY: &str = "wristOverlayDarkBackground";
 pub const VR_OVERLAY_SHOW_DEVICES_CONFIG_KEY: &str = "wristOverlayShowDevices";
 pub const VR_OVERLAY_SHOW_BATTERY_PERCENT_CONFIG_KEY: &str = "wristOverlayShowBatteryPercent";
+pub const VR_OVERLAY_SHOW_SECONDS_CONFIG_KEY: &str = "wristOverlayShowSeconds";
 pub const HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY: &str = "hmdNotificationsEnabled";
 pub const HMD_NOTIFICATION_START_MODE_CONFIG_KEY: &str = "hmdNotificationStartMode";
 pub const HMD_NOTIFICATION_TIMEOUT_CONFIG_KEY: &str = "hmdNotificationTimeout";
@@ -137,6 +138,7 @@ pub(super) struct VrOverlayRuntimeConfig {
     pub(crate) render: WristOverlayRenderOptions,
     pub(crate) locale: OverlayLocale,
     pub(crate) dt_hour12: bool,
+    pub(crate) wrist_show_seconds: bool,
     pub(crate) show_instance_id_in_location: bool,
 }
 
@@ -151,6 +153,7 @@ impl Default for VrOverlayRuntimeConfig {
             render: WristOverlayRenderOptions::default(),
             locale: OverlayLocale::default(),
             dt_hour12: false,
+            wrist_show_seconds: false,
             show_instance_id_in_location: false,
         }
     }
@@ -319,6 +322,9 @@ pub(super) fn load_runtime_config(
         },
         locale,
         dt_hour12,
+        wrist_show_seconds: config
+            .get_bool(VR_OVERLAY_SHOW_SECONDS_CONFIG_KEY, false)
+            .unwrap_or(false),
         show_instance_id_in_location,
     }
 }

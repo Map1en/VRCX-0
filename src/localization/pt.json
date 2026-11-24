@@ -3167,6 +3167,7 @@
                     "hide_private_worlds": "Ocultar Mundos Privados",
                     "vr_device_status": "Status do Dispositivo VR",
                     "battery_percentage": "Porcentagem da Bateria",
+                    "show_seconds": "Mostrar segundos",
                     "wrist_feed_notifications": "Filtros de Notificação do Overlay de Pulso"
                 },
                 "test_mode": {

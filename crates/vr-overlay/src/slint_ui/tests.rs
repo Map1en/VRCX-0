@@ -5,8 +5,8 @@ use super::{
 };
 use crate::{
     AvatarBitmap, DeviceChip, DeviceRole, DeviceStatus, FeedAccent, FeedKind, FeedLine,
-    FeedRelation, FeedSeverity, MainSurfaceModel, OverlayFooter, OverlayNowPlaying, OverlaySize,
-    RgbaFrame, ToastCard, WristSurfaceModel,
+    FeedRelation, FeedSeverity, FeedStatusDot, MainSurfaceModel, OverlayFooter, OverlayNowPlaying,
+    OverlaySize, RgbaFrame, ToastCard, WristSurfaceModel,
 };
 use std::{sync::Arc, thread};
 
@@ -561,6 +561,7 @@ fn wrist_feed_item_preserves_actor_detail_and_muted_media_detail() {
         relation: FeedRelation::Favorite,
         severity: FeedSeverity::Important,
         accent: FeedAccent::None,
+        status_dot: None,
     };
     let media = FeedLine {
         time_text: String::new(),
@@ -570,6 +571,7 @@ fn wrist_feed_item_preserves_actor_detail_and_muted_media_detail() {
         relation: FeedRelation::None,
         severity: FeedSeverity::Normal,
         accent: FeedAccent::None,
+        status_dot: None,
     };
 
     let favorite_item = wrist_feed_item(&favorite, true);
@@ -597,6 +599,7 @@ fn wrist_feed_item_uses_feed_type_accents_and_keeps_severity_precedence() {
         relation: FeedRelation::Friend,
         severity: FeedSeverity::Normal,
         accent: FeedAccent::Online,
+        status_dot: None,
     };
 
     let online = wrist_feed_item(&row, true);
@@ -619,6 +622,24 @@ fn wrist_feed_item_uses_feed_type_accents_and_keeps_severity_precedence() {
         warning.accent_color,
         to_slint_color(crate::Color::rgba(239, 68, 68, 255))
     );
+}
+
+#[test]
+fn wrist_feed_item_colors_the_status_dot_by_the_new_status() {
+    let mut row = feed_row(1);
+    assert!(!wrist_feed_item(&row, true).show_status_dot);
+
+    for (status, color) in [
+        (FeedStatusDot::Active, crate::Color::rgba(46, 211, 25, 255)),
+        (FeedStatusDot::JoinMe, crate::Color::rgba(0, 184, 255, 255)),
+        (FeedStatusDot::AskMe, crate::Color::rgba(233, 124, 3, 255)),
+        (FeedStatusDot::Busy, crate::Color::rgba(200, 9, 40, 255)),
+    ] {
+        row.status_dot = Some(status);
+        let item = wrist_feed_item(&row, true);
+        assert!(item.show_status_dot);
+        assert_eq!(item.status_color, to_slint_color(color));
+    }
 }
 
 #[test]
@@ -673,6 +694,7 @@ fn sample_wrist_model() -> WristSurfaceModel {
             relation: FeedRelation::Favorite,
             severity: FeedSeverity::Important,
             accent: FeedAccent::None,
+            status_dot: None,
         }],
         now_playing: None,
         footer: OverlayFooter {
@@ -716,6 +738,7 @@ fn feed_row(index: u32) -> FeedLine {
         relation: FeedRelation::None,
         severity: FeedSeverity::Normal,
         accent: FeedAccent::None,
+        status_dot: None,
     }
 }
 

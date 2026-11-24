@@ -138,7 +138,8 @@ describe('useSettingsVrTabState', () => {
         [
             'onWristOverlayShowBatteryPercentChange',
             'wristOverlayShowBatteryPercent'
-        ]
+        ],
+        ['onWristOverlayShowSecondsChange', 'wristOverlayShowSeconds']
     ])('maps %s to the %s boolean preference', (propName, key) => {
         const vr = createVrSectionState();
         captured.vr = vr;

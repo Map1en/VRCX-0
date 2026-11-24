@@ -60,7 +60,9 @@ export function useSettingsVrTabState() {
             wristOverlayDarkBackground: state.wristOverlayDarkBackground,
             wristOverlayHidePrivateWorlds: state.wristOverlayHidePrivateWorlds,
             wristOverlayShowDevices: state.wristOverlayShowDevices,
-            wristOverlayShowBatteryPercent: state.wristOverlayShowBatteryPercent
+            wristOverlayShowBatteryPercent:
+                state.wristOverlayShowBatteryPercent,
+            wristOverlayShowSeconds: state.wristOverlayShowSeconds
         }))
     );
     const isSteamVRRunning = useRuntimeStore(
@@ -282,6 +284,13 @@ export function useSettingsVrTabState() {
             saveBoolPreference(
                 'wristOverlayShowBatteryPercent',
                 'wristOverlayShowBatteryPercent',
+                enabled
+            );
+        },
+        onWristOverlayShowSecondsChange: (enabled: boolean) => {
+            saveBoolPreference(
+                'wristOverlayShowSeconds',
+                'wristOverlayShowSeconds',
                 enabled
             );
         },

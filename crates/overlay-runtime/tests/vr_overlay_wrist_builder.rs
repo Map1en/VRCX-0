@@ -8,7 +8,8 @@ use vrcx_0_overlay_runtime::{
     WristRuntimeFooter, WristRuntimeNowPlaying,
 };
 use vrcx_0_vr_overlay::{
-    DeviceStatus, FeedAccent, FeedKind, FeedRelation, FeedSeverity, OverlayNowPlaying, OverlaySize,
+    DeviceStatus, FeedAccent, FeedKind, FeedRelation, FeedSeverity, FeedStatusDot,
+    OverlayNowPlaying, OverlaySize,
 };
 use vrcx_0_vr_overlay_backend::{VrDeviceRole, VrDeviceSnapshot, VrDeviceStatus};
 
@@ -343,6 +344,59 @@ fn now_playing_input(
         captured_at_ms,
     }
 }
+#[test]
+fn wrist_builder_marks_status_changes_with_the_new_status() {
+    let entries = [
+        ("Status", "join me"),
+        ("Status", "ask me"),
+        ("Status", "busy"),
+        ("Status", "active"),
+        ("Status", "offline"),
+        ("Online", "join me"),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(index, (activity_type, status))| {
+        let mut entry = activity_entry(
+            index as u64,
+            activity_type,
+            ActivityCategory::FavoriteMovement,
+            activity_type,
+        );
+        entry.content.status = status.to_string();
+        entry
+    })
+    .collect();
+
+    let model = build_wrist_surface_model(WristOverlayFrameInput {
+        activity: ActivitySnapshot { entries },
+        devices: Vec::new(),
+        now_playing: None,
+        live_now_playing: false,
+        footer: WristRuntimeFooter::default(),
+        options: WristOverlayRenderOptions::default(),
+        locale: "en".to_string(),
+        show_instance_id_in_location: false,
+        captured_at_ms: 42,
+    });
+
+    assert_eq!(
+        model
+            .feed_rows
+            .iter()
+            .map(|row| row.status_dot)
+            .collect::<Vec<_>>(),
+        vec![
+            None,
+            None,
+            Some(FeedStatusDot::Active),
+            Some(FeedStatusDot::Busy),
+            Some(FeedStatusDot::AskMe),
+            Some(FeedStatusDot::JoinMe),
+        ]
+    );
+}
+
 fn activity_entry(
     sequence: u64,
     activity_type: &str,

@@ -3167,6 +3167,7 @@
                     "hide_private_worlds": "Private Welten ausblenden",
                     "vr_device_status": "VR-Gerätestatus",
                     "battery_percentage": "Akkustand in Prozent",
+                    "show_seconds": "Sekunden anzeigen",
                     "wrist_feed_notifications": "Filter für Handgelenk-Overlay-Benachrichtigungen"
                 },
                 "test_mode": {

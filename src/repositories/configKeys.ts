@@ -215,6 +215,7 @@ export const ConfigKeys = defineConfigKeys({
     wristOverlayDarkBackground: { type: 'bool', default: true },
     wristOverlayShowDevices: { type: 'bool', default: true },
     wristOverlayShowBatteryPercent: { type: 'bool', default: false },
+    wristOverlayShowSeconds: { type: 'bool', default: false },
 
     // ── Settings - VR Background ─────────────────────
     // ── Auto State Change ────────────────────────────

@@ -3193,6 +3193,7 @@
                     "hide_private_worlds": "Скрыть частные миры",
                     "vr_device_status": "Статус устройства VR",
                     "battery_percentage": "Аккумуляторная батарея (в процентах)",
+                    "show_seconds": "Показывать секунды",
                     "wrist_feed_notifications": "Фильтры уведомления Wrist"
                 },
                 "test_mode": {

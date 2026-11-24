@@ -30,6 +30,14 @@ pub enum FeedAccent {
     Muted,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FeedStatusDot {
+    Active,
+    JoinMe,
+    AskMe,
+    Busy,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FeedRelation {
@@ -51,4 +59,6 @@ pub struct FeedLine {
     pub severity: FeedSeverity,
     #[serde(skip)]
     pub accent: FeedAccent,
+    #[serde(skip)]
+    pub status_dot: Option<FeedStatusDot>,
 }

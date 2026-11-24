@@ -16,7 +16,7 @@ use crate::{
     WristRuntimeFooter, WristRuntimeNowPlaying,
 };
 
-use super::text::{elapsed_minutes_text, instance_duration_text, local_time_text, now_ms};
+use super::text::{elapsed_duration_text, instance_duration_text, local_time_text, now_ms};
 use super::VrOverlayFrameInput;
 
 pub(super) trait VrOverlayFrameProducer: Send {
@@ -47,7 +47,7 @@ impl VrOverlayFrameProducer for RuntimeWristFrameProducer {
             test_wrist_frame_input(
                 input.config,
                 input.devices,
-                local_time_text(input.config.dt_hour12),
+                local_time_text(input.config.dt_hour12, input.config.wrist_show_seconds),
                 now_ms(),
             )
         } else {
@@ -106,11 +106,12 @@ fn build_wrist_frame_input(
     services: &dyn VrOverlayRuntimeServices,
     config: VrOverlayRuntimeConfig,
     devices: Vec<VrDeviceSnapshot>,
-    live_now_playing: bool,
+    wrist_visible: bool,
 ) -> WristOverlayFrameInput {
     let game_log = services.game_log_snapshot();
     let now_playing = services.now_playing();
     let captured_at_ms = now_ms();
+    let show_seconds = config.wrist_show_seconds && wrist_visible;
     let mut activity = services.activity_router().snapshot();
     for entry in &mut activity.entries {
         refresh_cached_location_names(services, entry);
@@ -124,19 +125,20 @@ fn build_wrist_frame_input(
             position_seconds: now_playing.position,
             started_at: now_playing.started_at.clone().unwrap_or_default(),
         }),
-        live_now_playing,
+        live_now_playing: wrist_visible,
         footer: WristRuntimeFooter {
             player_count: game_log.players.len() as u32,
             instance_duration: instance_duration_text(
                 &game_log.location,
                 &game_log.started_at,
                 captured_at_ms,
+                show_seconds,
             ),
             online_duration: services
                 .game_started_at()
-                .map(|started_at| elapsed_minutes_text(&started_at, captured_at_ms))
+                .map(|started_at| elapsed_duration_text(&started_at, captured_at_ms, show_seconds))
                 .unwrap_or_default(),
-            local_time: local_time_text(config.dt_hour12),
+            local_time: local_time_text(config.dt_hour12, show_seconds),
         },
         options: config.render,
         locale: config.locale.as_str().to_string(),
