@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { PrivacyLockOutcome } from '@/platform/tauri/bindings';
+import { getCachedAuthSnapshot } from '@/services/authSnapshotService';
 import {
     changePrivacyLockPassword,
     clearPrivacyLockPassword,
@@ -24,9 +25,11 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { LockCodeInput, LOCK_CODE_LENGTH } from './LockCodeInput';
 import { privacyLockOutcomeMessage } from './privacyLockOutcomeMessage';
+import { PrivacyLockQrVerification } from './PrivacyLockQrVerification';
 
 type DialogView = 'create' | 'change' | 'clear';
 
@@ -99,7 +102,12 @@ export function PrivacyLockPasswordDialog({
     const hasPassword = useRuntimeStore(
         (state) => state.privacyLock.hasPassword
     );
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const locked = useRuntimeStore((state) => state.privacyLock.locked);
     const [view, setView] = useState<DialogView | null>(null);
+    const [clearMethod, setClearMethod] = useState<'password' | 'qr'>(
+        'password'
+    );
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -113,6 +121,14 @@ export function PrivacyLockPasswordDialog({
     }>({});
     const [submitting, setSubmitting] = useState(false);
     const activeView: DialogView = view ?? (hasPassword ? 'change' : 'create');
+    const hasSavedAccountPassword = Boolean(
+        getCachedAuthSnapshot()?.savedCredentialsList.find(
+            (credential) => credential.user.id === currentUserId
+        )?.hasLoginCredentials
+    );
+    const showSubmit =
+        activeView !== 'clear' ||
+        (clearMethod === 'password' && hasSavedAccountPassword);
 
     function resetForm(nextView: DialogView | null) {
         setView(nextView);
@@ -188,6 +204,9 @@ export function PrivacyLockPasswordDialog({
             return;
         }
         if (activeView === 'clear') {
+            if (!showSubmit) {
+                return;
+            }
             if (!accountPassword) {
                 setErrors({
                     account: t('privacy_lock.error.account_password_required')
@@ -233,6 +252,20 @@ export function PrivacyLockPasswordDialog({
         }
     }
 
+    function openClearView() {
+        resetForm('clear');
+        setClearMethod(hasSavedAccountPassword ? 'password' : 'qr');
+    }
+
+    function handleQrVerified() {
+        toast.add({
+            type: 'success',
+            title: t('privacy_lock.toast.cleared')
+        });
+        resetForm(null);
+        onClose();
+    }
+
     const copy = VIEW_COPY[activeView];
 
     return (
@@ -247,31 +280,83 @@ export function PrivacyLockPasswordDialog({
                     </DialogHeader>
                     <FieldGroup className="gap-3">
                         {activeView === 'clear' ? (
-                            <Field
-                                data-invalid={
-                                    Boolean(errors.account) || undefined
-                                }
+                            <Tabs
+                                className="w-full"
+                                value={clearMethod}
+                                onValueChange={(value) => {
+                                    setClearMethod(
+                                        value === 'qr' ? 'qr' : 'password'
+                                    );
+                                    setErrors({});
+                                }}
                             >
-                                <FieldLabel htmlFor="privacy-lock-dialog-account-password">
-                                    {t('privacy_lock.field.account_password')}
-                                </FieldLabel>
-                                <Input
-                                    id="privacy-lock-dialog-account-password"
-                                    type="password"
-                                    autoComplete="off"
-                                    autoFocus
-                                    aria-invalid={
-                                        Boolean(errors.account) || undefined
-                                    }
-                                    disabled={submitting}
-                                    value={accountPassword}
-                                    onChange={(event) => {
-                                        setAccountPassword(event.target.value);
-                                        setErrors({});
-                                    }}
-                                />
-                                <FieldError>{errors.account}</FieldError>
-                            </Field>
+                                <TabsList className="w-full">
+                                    <TabsTrigger
+                                        value="password"
+                                        disabled={submitting}
+                                    >
+                                        {t(
+                                            'privacy_lock.recover.method_password'
+                                        )}
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="qr"
+                                        disabled={submitting}
+                                    >
+                                        {t('privacy_lock.recover.method_qr')}
+                                    </TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="password" className="pt-2">
+                                    {hasSavedAccountPassword ? (
+                                        <Field
+                                            data-invalid={
+                                                Boolean(errors.account) ||
+                                                undefined
+                                            }
+                                        >
+                                            <FieldLabel htmlFor="privacy-lock-dialog-account-password">
+                                                {t(
+                                                    'privacy_lock.field.account_password'
+                                                )}
+                                            </FieldLabel>
+                                            <Input
+                                                id="privacy-lock-dialog-account-password"
+                                                type="password"
+                                                autoComplete="off"
+                                                autoFocus
+                                                aria-invalid={
+                                                    Boolean(errors.account) ||
+                                                    undefined
+                                                }
+                                                disabled={submitting}
+                                                value={accountPassword}
+                                                onChange={(event) => {
+                                                    setAccountPassword(
+                                                        event.target.value
+                                                    );
+                                                    setErrors({});
+                                                }}
+                                            />
+                                            <FieldError>
+                                                {errors.account}
+                                            </FieldError>
+                                        </Field>
+                                    ) : (
+                                        <p className="text-muted-foreground text-center text-xs">
+                                            {t(
+                                                'privacy_lock.recover.password_unavailable'
+                                            )}
+                                        </p>
+                                    )}
+                                </TabsContent>
+                                <TabsContent value="qr" className="pt-2">
+                                    {clearMethod === 'qr' && !locked ? (
+                                        <PrivacyLockQrVerification
+                                            onVerified={handleQrVerified}
+                                        />
+                                    ) : null}
+                                </TabsContent>
+                            </Tabs>
                         ) : (
                             <>
                                 {activeView === 'change' ? (
@@ -329,7 +414,7 @@ export function PrivacyLockPasswordDialog({
                             variant="link"
                             className="text-muted-foreground mx-auto h-auto w-fit p-0 text-xs"
                             disabled={submitting}
-                            onClick={() => resetForm('clear')}
+                            onClick={openClearView}
                         >
                             {t('privacy_lock.action.clear_link')}
                         </Button>
@@ -354,20 +439,22 @@ export function PrivacyLockPasswordDialog({
                         >
                             {t('common.actions.cancel')}
                         </Button>
-                        <Button
-                            type="submit"
-                            variant={
-                                activeView === 'clear'
-                                    ? 'destructive'
-                                    : 'default'
-                            }
-                            disabled={submitting}
-                        >
-                            {submitting ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : null}
-                            {t(copy.submit)}
-                        </Button>
+                        {showSubmit ? (
+                            <Button
+                                type="submit"
+                                variant={
+                                    activeView === 'clear'
+                                        ? 'destructive'
+                                        : 'default'
+                                }
+                                disabled={submitting}
+                            >
+                                {submitting ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : null}
+                                {t(copy.submit)}
+                            </Button>
+                        ) : null}
                     </DialogFooter>
                 </form>
             </DialogContent>

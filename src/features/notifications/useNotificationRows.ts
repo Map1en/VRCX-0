@@ -93,7 +93,7 @@ export function useNotificationRows({
         if (!currentUserId) {
             setRows([]);
             setLoadStatus('idle');
-            setDetail('No current user session is available.');
+            setDetail(t('view.notifications.toast.no_current_user_session'));
             return () => {
                 active = false;
             };

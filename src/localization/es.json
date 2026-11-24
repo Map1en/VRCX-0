@@ -769,6 +769,9 @@
             "retry": "Reintentar"
         },
         "error": {
+            "realtime_event_failed": "No se pudo aplicar una actualización en tiempo real",
+            "runtime_bootstrap_failed": "VRCX-0 no pudo terminar de iniciarse",
+            "language_sync_failed": "No se pudo cambiar el idioma de la interfaz",
             "action_failed": "No se pudo completar la acción",
             "failed_to_load_data": "No se pudieron cargar los datos",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "No se pudo abrir la instancia en VRChat. Se te enviará una autoinvitación en su lugar.",
@@ -1218,7 +1221,7 @@
             "change_title": "Cambiar la contraseña de bloqueo",
             "change_description": "Introduce tu contraseña de bloqueo actual y elige una nueva.",
             "clear_title": "Quitar la contraseña de bloqueo",
-            "clear_description": "Introduce la contraseña de tu cuenta de VRChat para quitar la contraseña de bloqueo. Solo se compara con la contraseña guardada localmente en VRCX-0; no se envía nada a los servidores de VRChat."
+            "clear_description": "Confirma que eres tú con la contraseña de tu cuenta de VRChat o con un código QR para quitar la contraseña de bloqueo. La contraseña de la cuenta solo se compara con la guardada localmente en VRCX-0; no se envía nada a los servidores de VRChat."
         },
         "recover": {
             "description": "Introduce la contraseña de tu cuenta de VRChat para quitar el bloqueo. Solo se compara con la contraseña guardada localmente en VRCX-0; no se envía nada a los servidores de VRChat.",
@@ -2814,6 +2817,7 @@
                 },
                 "history": {
                     "empty": "Aún no se ha enviado nada",
+                    "load_failed": "No se pudo cargar lo que has enviado",
                     "summary": "{date} · {count} imagen(es)",
                     "open": "Abrir en Discord",
                     "retract": "Eliminar de Discord"
@@ -2925,6 +2929,7 @@
                 "title": "Chatbox",
                 "description": "Muestra la hora, lo que estás escuchando y tus propios textos en el Chatbox del juego, o envía mensajes escritos o traducidos.",
                 "save_failed": "No se pudo guardar la configuración del Chatbox.",
+                "load_failed": "No se pudo cargar la configuración del Chatbox.",
                 "status": {
                     "off": "Desactivado",
                     "manual": "Mostrando tu mensaje",
@@ -4233,6 +4238,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "Inicia sesión para ver las notificaciones",
                 "failed_to_load_notifications": "No se pudieron cargar las notificaciones",
                 "failed_to_mark_notification_as_seen": "No se pudo marcar la notificación como vista",
                 "failed_to_delete_notification": "No se pudo eliminar la notificación",
@@ -7320,6 +7326,9 @@
             "deleted": "Toda la caché de VRChat eliminada"
         },
         "gamelog": {
+            "debug_logging_title": "Activa el registro de depuración",
+            "debug_logging_description": "El registro de depuración de VRChat está desactivado. Actívalo en el menú rápido de VRChat, en Ajustes > Debug > Enable Debug Logging, y luego vuelve a entrar en la instancia o reinicia VRChat.",
+            "game_state_update_failed": "No se pudo actualizar el estado del juego",
             "vrchat_must_be_closed": "Debes cerrar VRChat antes de poder cambiar esta opción"
         },
         "error": "Error",
@@ -7608,6 +7617,8 @@
             "toast": {
                 "failed_to_add_favorite": "No se pudo añadir el favorito",
                 "failed_to_remove_favorite": "No se pudo quitar el favorito",
+                "move_failed_restored": "No se pudo mover al nuevo grupo, así que se devolvió a su grupo original.",
+                "move_failed_not_restored": "No se pudo mover al nuevo grupo ni devolverlo al original. Ya no está en tus favoritos de VRChat.",
                 "failed_to_add_local_favorite": "No se pudo añadir el favorito local",
                 "failed_to_remove_local_favorite": "No se pudo quitar el favorito local"
             }

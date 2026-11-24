@@ -768,6 +768,9 @@
             "retry": "再試行"
         },
         "error": {
+            "realtime_event_failed": "リアルタイム更新を反映できませんでした",
+            "runtime_bootstrap_failed": "VRCX-0 の起動処理を完了できませんでした",
+            "language_sync_failed": "表示言語を切り替えられませんでした",
             "action_failed": "操作を完了できませんでした",
             "failed_to_load_data": "データを読み込めませんでした",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat でインスタンスを開けなかったため、自分への招待に切り替えます",
@@ -1213,7 +1216,7 @@
             "change_title": "ロックパスワードを変更",
             "change_description": "現在のロックパスワードを入力してから、新しいパスワードを設定します。",
             "clear_title": "ロックパスワードを削除",
-            "clear_description": "VRChat アカウントのパスワードを入力するとロックパスワードを削除できます。ローカルに保存されたパスワードとだけ照合し、VRChat のサーバーには何も送信されません。"
+            "clear_description": "VRChat アカウントのパスワードか QR コードで本人確認すると、ロックパスワードを削除できます。アカウントのパスワードはローカルに保存されたものとだけ照合し、VRChat のサーバーには何も送信されません。"
         },
         "recover": {
             "description": "VRChat アカウントのパスワードを入力するとロックを解除できます。ローカルに保存されたパスワードとだけ照合し、VRChat のサーバーには何も送信されません。",
@@ -2800,6 +2803,7 @@
                 },
                 "history": {
                     "empty": "送信履歴はまだありません",
+                    "load_failed": "送信履歴を読み込めませんでした",
                     "summary": "{date} · {count} 枚",
                     "open": "Discord で開く",
                     "retract": "Discord から削除"
@@ -2910,6 +2914,7 @@
                 "title": "Chatbox",
                 "description": "ゲーム内の Chatbox に時刻や再生中の曲、好きな文章を表示します。入力したメッセージをそのまま、または翻訳して送ることもできます。",
                 "save_failed": "Chatbox の設定を保存できませんでした。",
+                "load_failed": "Chatbox の設定を読み込めませんでした。",
                 "status": {
                     "off": "オフ",
                     "manual": "メッセージを表示中",
@@ -4218,6 +4223,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "通知を見るにはログインしてください",
                 "failed_to_load_notifications": "通知を読み込めませんでした",
                 "failed_to_mark_notification_as_seen": "通知の既読化に失敗しました",
                 "failed_to_delete_notification": "通知の削除に失敗しました",
@@ -7287,6 +7293,9 @@
             "deleted": "すべての VRChat キャッシュが削除されました"
         },
         "gamelog": {
+            "debug_logging_title": "デバッグログをオンにしてください",
+            "debug_logging_description": "VRChat のデバッグログがオフになっています。VRChat のクイックメニューで「設定 > Debug > Enable Debug Logging」をオンにしてから、インスタンスに入り直すか VRChat を再起動してください。",
+            "game_state_update_failed": "ゲームの状態を更新できませんでした",
             "vrchat_must_be_closed": "変更を適用するには、VRChat を閉じてください"
         },
         "error": "エラー",
@@ -7596,6 +7605,8 @@
             "toast": {
                 "failed_to_add_favorite": "お気に入りに追加できませんでした",
                 "failed_to_remove_favorite": "お気に入りから削除できませんでした",
+                "move_failed_restored": "新しいグループに移動できなかったため、元のグループに戻しました。",
+                "move_failed_not_restored": "新しいグループへの移動も元のグループへの復元もできませんでした。VRChat のお気に入りから外れています。",
                 "failed_to_add_local_favorite": "ローカルのお気に入りに追加できませんでした",
                 "failed_to_remove_local_favorite": "ローカルのお気に入りから削除できませんでした"
             }

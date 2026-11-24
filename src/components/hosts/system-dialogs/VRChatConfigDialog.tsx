@@ -350,6 +350,13 @@ export function VRChatConfigDialog({
     }
 
     async function handleDeleteAllCache() {
+        if (isGameRunning) {
+            toast.add({
+                type: 'error',
+                title: t('dialog.config_json.close_vrchat_before_cleanup')
+            });
+            return;
+        }
         const result = await confirm({
             title: t('confirm.title'),
             description: t('confirm.clear_cache'),

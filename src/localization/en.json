@@ -769,6 +769,9 @@
             "retry": "Retry"
         },
         "error": {
+            "realtime_event_failed": "Couldn't apply a live update",
+            "runtime_bootstrap_failed": "VRCX-0 couldn't finish starting up",
+            "language_sync_failed": "Couldn't switch the display language",
             "action_failed": "Couldn't complete that action",
             "failed_to_load_data": "Couldn't load the data",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Couldn't open the instance in VRChat. Sending you a self-invite instead.",
@@ -1218,7 +1221,7 @@
             "change_title": "Change lock password",
             "change_description": "Enter your current lock password, then choose a new one.",
             "clear_title": "Remove lock password",
-            "clear_description": "Enter your VRChat account password to remove the lock password. It is only checked against the password saved locally in VRCX-0; nothing is sent to the VRChat servers."
+            "clear_description": "Confirm it is you with your VRChat account password or a QR code to remove the lock password. The account password is only checked against the copy saved locally in VRCX-0; nothing is sent to the VRChat servers."
         },
         "recover": {
             "description": "Enter your VRChat account password to remove the lock. It is only checked against the password saved locally in VRCX-0; nothing is sent to the VRChat servers.",
@@ -2814,6 +2817,7 @@
                 },
                 "history": {
                     "empty": "Nothing sent yet",
+                    "load_failed": "Couldn't load what you've sent",
                     "summary": "{date} · {count} image(s)",
                     "open": "Open in Discord",
                     "retract": "Delete from Discord"
@@ -2925,6 +2929,7 @@
                 "title": "Chatbox",
                 "description": "Show the time, what you are playing and your own text in the in-game chatbox, or type and translate messages.",
                 "save_failed": "Couldn't save Chatbox settings.",
+                "load_failed": "Couldn't load Chatbox settings.",
                 "status": {
                     "off": "Off",
                     "manual": "Showing your message",
@@ -4233,6 +4238,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "Sign in to see notifications",
                 "failed_to_load_notifications": "Failed to load notifications",
                 "failed_to_mark_notification_as_seen": "Failed to mark notification as seen",
                 "failed_to_delete_notification": "Failed to delete notification",
@@ -7330,6 +7336,9 @@
             "deleted": "All VRChat cache deleted"
         },
         "gamelog": {
+            "debug_logging_title": "Turn on debug logging",
+            "debug_logging_description": "VRChat debug logging is off. Turn it on in the VRChat quick menu under Settings > Debug > Enable Debug Logging, then rejoin the instance or restart VRChat.",
+            "game_state_update_failed": "Couldn't update the game state",
             "vrchat_must_be_closed": "VRChat needs to be closed before this option can be changed"
         },
         "error": "Error",
@@ -7639,6 +7648,8 @@
             "toast": {
                 "failed_to_add_favorite": "Failed to add favorite",
                 "failed_to_remove_favorite": "Failed to remove favorite",
+                "move_failed_restored": "Couldn't move it to the new group, so it was put back in its original group.",
+                "move_failed_not_restored": "Couldn't move it to the new group or put it back. It's no longer in your VRChat favorites.",
                 "failed_to_add_local_favorite": "Failed to add local favorite",
                 "failed_to_remove_local_favorite": "Failed to remove local favorite"
             }

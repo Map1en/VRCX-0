@@ -769,6 +769,9 @@
             "retry": "Tentar novamente"
         },
         "error": {
+            "realtime_event_failed": "Não foi possível aplicar uma atualização em tempo real",
+            "runtime_bootstrap_failed": "O VRCX-0 não conseguiu terminar de iniciar",
+            "language_sync_failed": "Não foi possível mudar o idioma da interface",
             "action_failed": "Não foi possível concluir esta ação",
             "failed_to_load_data": "Não foi possível carregar os dados",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Falha ao abrir a instância no VRChat, recorrendo ao convite para si mesmo",
@@ -1218,7 +1221,7 @@
             "change_title": "Alterar a senha de bloqueio",
             "change_description": "Digite a senha de bloqueio atual e escolha uma nova.",
             "clear_title": "Remover a senha de bloqueio",
-            "clear_description": "Digite a senha da sua conta VRChat para remover o código de bloqueio. Ela é comparada apenas com a senha salva localmente no VRCX-0; nada é enviado aos servidores do VRChat."
+            "clear_description": "Confirme que é você com a senha da sua conta VRChat ou com um código QR para remover o código de bloqueio. A senha da conta é comparada apenas com a salva localmente no VRCX-0; nada é enviado aos servidores do VRChat."
         },
         "recover": {
             "description": "Digite a senha da sua conta VRChat para remover o bloqueio. Ela é comparada apenas com a senha salva localmente no VRCX-0; nada é enviado aos servidores do VRChat.",
@@ -2810,6 +2813,7 @@
                 },
                 "history": {
                     "empty": "Nada enviado ainda",
+                    "load_failed": "Não foi possível carregar o que você enviou",
                     "summary": "{date} · {count} imagem(ns)",
                     "open": "Abrir no Discord",
                     "retract": "Apagar do Discord"
@@ -2921,6 +2925,7 @@
                 "title": "Chatbox",
                 "description": "Mostra a hora, o que está tocando e seus próprios textos no Chatbox do jogo, ou envia mensagens digitadas ou traduzidas.",
                 "save_failed": "Não foi possível salvar as configurações do Chatbox.",
+                "load_failed": "Não foi possível carregar as configurações do Chatbox.",
                 "status": {
                     "off": "Desligado",
                     "manual": "Mostrando sua mensagem",
@@ -4229,6 +4234,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "Entre na sua conta para ver as notificações",
                 "failed_to_load_notifications": "Não foi possível carregar as notificações",
                 "failed_to_mark_notification_as_seen": "Falha ao marcar a notificação como vista",
                 "failed_to_delete_notification": "Falha ao excluir a notificação",
@@ -7272,6 +7278,9 @@
             "deleted": "Todo o cache do VRChat excluído"
         },
         "gamelog": {
+            "debug_logging_title": "Ative o registro de depuração",
+            "debug_logging_description": "O registro de depuração do VRChat está desativado. Ative-o no menu rápido do VRChat em Configurações > Debug > Enable Debug Logging e depois entre de novo na instância ou reinicie o VRChat.",
+            "game_state_update_failed": "Não foi possível atualizar o estado do jogo",
             "vrchat_must_be_closed": "O VRChat precisa estar fechado antes que esta opção possa ser alterada"
         },
         "error": "Erro",
@@ -7552,6 +7561,8 @@
             "toast": {
                 "failed_to_add_favorite": "Falha ao adicionar favorito",
                 "failed_to_remove_favorite": "Falha ao remover favorito",
+                "move_failed_restored": "Não foi possível mover para o novo grupo, então ele voltou ao grupo original.",
+                "move_failed_not_restored": "Não foi possível mover para o novo grupo nem devolvê-lo ao original. Ele não está mais nos seus favoritos do VRChat.",
                 "failed_to_add_local_favorite": "Falha ao adicionar favorito local",
                 "failed_to_remove_local_favorite": "Falha ao remover favorito local"
             }

@@ -9,6 +9,7 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { applyRuntimeGameLogProjection } from '../gameLogIngestService';
 import { handleGameRunningUpdate } from '../gameStateService';
 import { isHostCapabilityAvailable } from '../hostCapabilityService';
+import i18n from '../i18nService';
 import { toast } from '../toastService';
 import { handleBrowserFocus } from '../vrcStatusService';
 import type { RuntimeEventPayloadMap } from './types';
@@ -101,9 +102,8 @@ export function handleDebugLoggingOutcome(outcome: DebugLoggingOutcome): void {
             );
         }
         useModalStore.getState().alert({
-            title: 'Enable debug logging',
-            description:
-                'VRCX-0 noticed VRChat debug logging is disabled. Enable debug logging in VRChat quick menu settings > debug > enable debug logging, then rejoin the instance or restart VRChat.'
+            title: i18n.t('message.gamelog.debug_logging_title'),
+            description: i18n.t('message.gamelog.debug_logging_description')
         });
     } else if (outcome.kind === 'unavailable' && outcome.error) {
         console.warn('Unable to inspect VRChat debug logging:', outcome.error);
@@ -119,7 +119,7 @@ export function handleUpdateIsGameRunning(
     handleGameRunningUpdate(payload).catch((error: unknown) => {
         toast.add({
             type: 'warning',
-            title: 'Game state update failed',
+            title: i18n.t('message.gamelog.game_state_update_failed'),
             description: error instanceof Error ? error.message : String(error)
         });
     });

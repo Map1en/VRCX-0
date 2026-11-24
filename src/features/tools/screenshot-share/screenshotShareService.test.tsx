@@ -165,6 +165,40 @@ describe('shareScreenshots', () => {
         expect(types).not.toContain('success');
     });
 
+    it('stops polling progress after the first failed read and logs it once', async () => {
+        vi.useFakeTimers();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            let finishShare: (
+                result: ScreenshotShareSendResult
+            ) => void = () => {};
+            mocks.appShareScreenshots.mockReturnValue(
+                new Promise((resolve) => {
+                    finishShare = resolve;
+                })
+            );
+            mocks.appGetScreenshotShareProgress.mockRejectedValue(
+                new Error('progress unavailable')
+            );
+
+            const sharing = shareScreenshots({
+                paths: ['a.png'],
+                targets: [target('a')]
+            });
+            await vi.advanceTimersByTimeAsync(2000);
+            finishShare({ records: [], error: null, targetInvalid: false });
+            await sharing;
+
+            expect(mocks.appGetScreenshotShareProgress).toHaveBeenCalledTimes(
+                1
+            );
+            expect(warn).toHaveBeenCalledTimes(1);
+        } finally {
+            warn.mockRestore();
+            vi.useRealTimers();
+        }
+    });
+
     it('reads the error code out of a wrapped command error', () => {
         expect(
             screenshotShareErrorText(

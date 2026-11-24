@@ -11,6 +11,7 @@ import type {
     NotificationResponse,
     NotificationRow
 } from '@/repositories/notificationPersistenceRepository';
+import i18n from '@/services/i18nService';
 import { sendNotificationButtonResponse } from '@/services/notificationActionService';
 import {
     getNotificationCategory,
@@ -516,7 +517,9 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     pendingInviteCount: 0,
                     recentDismissibleCount: 0,
                     loadStatus: 'idle',
-                    detail: 'No current user session is available.'
+                    detail: i18n.t(
+                        'view.notifications.toast.no_current_user_session'
+                    )
                 });
                 notificationRowsRevision += 1;
                 syncShellUnseenCount(0, true);

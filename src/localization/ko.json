@@ -768,6 +768,9 @@
             "retry": "재시도"
         },
         "error": {
+            "realtime_event_failed": "실시간 업데이트를 반영하지 못했습니다",
+            "runtime_bootstrap_failed": "VRCX-0을 끝까지 시작하지 못했습니다",
+            "language_sync_failed": "표시 언어를 바꾸지 못했습니다",
             "action_failed": "작업을 완료하지 못했습니다",
             "failed_to_load_data": "데이터를 불러오지 못했습니다",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat에서 인스턴스를 열지 못해 대신 셀프 초대를 보냅니다.",
@@ -2741,6 +2744,7 @@
                 },
                 "history": {
                     "empty": "보낸 기록이 없습니다",
+                    "load_failed": "보낸 기록을 불러오지 못했습니다",
                     "summary": "{date} · {count}장",
                     "open": "Discord에서 열기",
                     "retract": "Discord에서 삭제"
@@ -2851,6 +2855,7 @@
                 "title": "Chatbox",
                 "description": "게임 안 Chatbox에 시간, 재생 중인 곡, 직접 쓴 문구를 표시하고 메시지를 바로 또는 번역해서 보냅니다.",
                 "save_failed": "Chatbox 설정을 저장하지 못했습니다.",
+                "load_failed": "Chatbox 설정을 불러오지 못했습니다.",
                 "status": {
                     "off": "꺼짐",
                     "manual": "내 메시지 표시 중",
@@ -4159,6 +4164,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "알림을 보려면 로그인해 주세요",
                 "failed_to_load_notifications": "알림을 불러오지 못했습니다",
                 "failed_to_mark_notification_as_seen": "알림을 읽음으로 표시하지 못했습니다.",
                 "failed_to_delete_notification": "알림을 삭제하지 못했습니다.",
@@ -7229,6 +7235,9 @@
             "deleted": "모든 VRChat 캐시가 삭제되었습니다."
         },
         "gamelog": {
+            "debug_logging_title": "디버그 로그를 켜 주세요",
+            "debug_logging_description": "VRChat 디버그 로그가 꺼져 있습니다. VRChat 퀵 메뉴의 설정 > Debug > Enable Debug Logging에서 켠 뒤 인스턴스에 다시 들어가거나 VRChat을 다시 시작해 주세요.",
+            "game_state_update_failed": "게임 상태를 업데이트하지 못했습니다",
             "vrchat_must_be_closed": "이 옵션을 변경하려면 VRChat을 닫아야 합니다."
         },
         "error": "오류",
@@ -7538,6 +7547,8 @@
             "toast": {
                 "failed_to_add_favorite": "즐겨찾기를 추가하지 못했습니다.",
                 "failed_to_remove_favorite": "즐겨찾기를 삭제하지 못했습니다.",
+                "move_failed_restored": "새 그룹으로 옮기지 못해 원래 그룹으로 되돌렸습니다.",
+                "move_failed_not_restored": "새 그룹으로 옮기지도, 원래 그룹으로 되돌리지도 못했습니다. VRChat 즐겨찾기에서 빠졌습니다.",
                 "failed_to_add_local_favorite": "로컬 즐겨찾기를 추가하지 못했습니다.",
                 "failed_to_remove_local_favorite": "로컬 즐겨찾기를 삭제하지 못했습니다."
             }
@@ -7936,7 +7947,7 @@
             "change_title": "잠금 비밀번호 변경",
             "change_description": "현재 잠금 비밀번호를 입력한 뒤 새 비밀번호를 정하세요.",
             "clear_title": "잠금 비밀번호 제거",
-            "clear_description": "VRChat 계정 비밀번호를 입력하면 잠금 비밀번호를 제거합니다. VRCX-0에 로컬로 저장된 비밀번호와만 비교하며 VRChat 서버로는 아무것도 전송하지 않습니다."
+            "clear_description": "VRChat 계정 비밀번호나 QR 코드로 본인임을 확인하면 잠금 비밀번호를 제거합니다. 계정 비밀번호는 VRCX-0에 로컬로 저장된 비밀번호와만 비교하며 VRChat 서버로는 아무것도 전송하지 않습니다."
         },
         "recover": {
             "description": "VRChat 계정 비밀번호를 입력하면 잠금을 제거합니다. VRCX-0에 로컬로 저장된 비밀번호와만 비교하며 VRChat 서버로는 아무것도 전송하지 않습니다.",

@@ -25,18 +25,28 @@ export function usePresetSamples(
 
     useEffect(() => {
         let active = true;
-        void commands.appChatboxSamplesRender(inputs).then((rendered) => {
-            if (active) {
-                setSamples(
-                    Object.fromEntries(
-                        CHATBOX_PRESETS.map((preset, index) => [
-                            preset.id,
-                            rendered[index] ?? ''
-                        ])
-                    )
-                );
+        commands.appChatboxSamplesRender(inputs).then(
+            (rendered) => {
+                if (active) {
+                    setSamples(
+                        Object.fromEntries(
+                            CHATBOX_PRESETS.map((preset, index) => [
+                                preset.id,
+                                rendered[index] ?? ''
+                            ])
+                        )
+                    );
+                }
+            },
+            (error: unknown) => {
+                if (active) {
+                    console.warn(
+                        'Failed to render Chatbox preset samples:',
+                        error
+                    );
+                }
             }
-        });
+        );
         return () => {
             active = false;
         };

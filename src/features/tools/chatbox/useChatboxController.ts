@@ -22,28 +22,49 @@ export function useChatboxController() {
     const latestConfig = useRef<ChatboxConfig | null>(null);
     const saveSequence = useRef(0);
     const pendingSaves = useRef(0);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadAttempt, setLoadAttempt] = useState(0);
+
+    useEffect(() => {
+        void commands.appChatboxPreviewingSet(true);
+        return () => {
+            void commands.appChatboxPreviewingSet(false);
+        };
+    }, []);
 
     useEffect(() => {
         let active = true;
-        void commands.appChatboxPreviewingSet(true);
-        void Promise.all([
+        Promise.all([
             commands.appChatboxEditorStateGet(),
             commands.appChatboxStatusGet()
-        ]).then(([{ config: loadedConfig, ...loadedMeta }, loadedStatus]) => {
-            if (!active) {
-                return;
+        ]).then(
+            ([{ config: loadedConfig, ...loadedMeta }, loadedStatus]) => {
+                if (!active) {
+                    return;
+                }
+                latestConfig.current = loadedConfig;
+                setConfig(loadedConfig);
+                setMeta(loadedMeta);
+                if (loadedStatus) {
+                    useChatboxStore.getState().setStatus(loadedStatus);
+                }
+            },
+            (error: unknown) => {
+                if (!active) {
+                    return;
+                }
+                console.warn('Failed to load Chatbox settings:', error);
+                setLoadFailed(true);
             }
-            latestConfig.current = loadedConfig;
-            setConfig(loadedConfig);
-            setMeta(loadedMeta);
-            if (loadedStatus) {
-                useChatboxStore.getState().setStatus(loadedStatus);
-            }
-        });
+        );
         return () => {
             active = false;
-            void commands.appChatboxPreviewingSet(false);
         };
+    }, [loadAttempt]);
+
+    const reload = useCallback(() => {
+        setLoadFailed(false);
+        setLoadAttempt((attempt) => attempt + 1);
     }, []);
 
     useEffect(() => {
@@ -87,5 +108,5 @@ export function useChatboxController() {
         [t]
     );
 
-    return { config, meta, status, updateConfig };
+    return { config, meta, status, loadFailed, reload, updateConfig };
 }

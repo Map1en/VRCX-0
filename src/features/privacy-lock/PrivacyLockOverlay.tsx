@@ -1,24 +1,19 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { LockIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-    DeviceLoginQrCode,
-    DeviceLoginWaitingStatus
-} from '@/components/device-login/DeviceLoginQr';
 import { StatusDot } from '@/components/layout/status-bar/StatusBarParts';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import { commands, type PrivacyLockOutcome } from '@/platform/tauri/bindings';
+import type { PrivacyLockOutcome } from '@/platform/tauri/bindings';
 import { logoutWithoutConfirmation } from '@/services/authExecutionService';
 import { getCachedAuthSnapshot } from '@/services/authSnapshotService';
 import { startBackgroundModeForCurrentSession } from '@/services/backgroundModeService';
 import { userImage } from '@/services/entityMediaService';
 import {
     clearPrivacyLockPassword,
-    unlockPrivacyLock,
-    waitPrivacyLockDeviceVerification
+    unlockPrivacyLock
 } from '@/services/privacyLockService';
 import { usePrivacyLockPhase } from '@/state/privacyLockPhase';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -31,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { LockCodeInput } from './LockCodeInput';
 import { privacyLockOutcomeMessage } from './privacyLockOutcomeMessage';
+import { PrivacyLockQrVerification } from './PrivacyLockQrVerification';
 
 const LAYER_CLASS = 'vrcx-0-app-overlay fixed z-[10000]';
 
@@ -282,7 +278,7 @@ function RecoverPanel({ onBack }: { onBack: () => void }) {
                     )}
                 </TabsContent>
                 <TabsContent value="qr" className="pt-2">
-                    {method === 'qr' ? <QrRecoverForm /> : null}
+                    {method === 'qr' ? <PrivacyLockQrVerification /> : null}
                 </TabsContent>
             </Tabs>
             <Button
@@ -293,129 +289,6 @@ function RecoverPanel({ onBack }: { onBack: () => void }) {
             >
                 {t('privacy_lock.action.back')}
             </Button>
-        </div>
-    );
-}
-
-function QrRecoverForm() {
-    const { t } = useTranslation();
-    const [round, setRound] = useState(0);
-    const [pending, setPending] = useState<{
-        verificationUrl: string;
-        expiresAt: number;
-    } | null>(null);
-    const [phase, setPhase] = useState<
-        'starting' | 'waiting' | 'expired' | 'failed'
-    >('starting');
-    const [error, setError] = useState('');
-
-    useEffect(() => {
-        let active = true;
-        setPending(null);
-        setPhase('starting');
-
-        async function verify() {
-            const start = await commands.appPrivacyLockDeviceVerifyStart();
-            if (!active) {
-                return;
-            }
-            if (start.status !== 'pending') {
-                setError(
-                    start.status === 'failed'
-                        ? start.reason
-                        : t('privacy_lock.error.no_session')
-                );
-                setPhase('failed');
-                return;
-            }
-            setPending(start);
-            setPhase('waiting');
-            const outcome = await waitPrivacyLockDeviceVerification(
-                start.attemptId
-            );
-            if (
-                !active ||
-                outcome.status === 'ok' ||
-                outcome.status === 'cancelled'
-            ) {
-                return;
-            }
-            if (outcome.status === 'deviceCodeExpired') {
-                setPhase('expired');
-                return;
-            }
-            setError(privacyLockOutcomeMessage(t, outcome));
-            if (outcome.status === 'accountMismatch') {
-                setRound((value) => value + 1);
-                return;
-            }
-            setPhase('failed');
-        }
-
-        verify().catch((failure: unknown) => {
-            if (active) {
-                setError(
-                    userFacingErrorMessage(
-                        failure,
-                        t('privacy_lock.error.failed')
-                    )
-                );
-                setPhase('failed');
-            }
-        });
-        return () => {
-            active = false;
-        };
-    }, [round, t]);
-
-    useEffect(
-        () => () => {
-            void commands.appPrivacyLockDeviceVerifyCancel();
-        },
-        []
-    );
-
-    function retry() {
-        setError('');
-        setRound((value) => value + 1);
-    }
-
-    return (
-        <div className="flex w-full flex-col items-center gap-3">
-            {phase === 'waiting' && pending ? (
-                <>
-                    <DeviceLoginQrCode
-                        value={pending.verificationUrl}
-                        size={164}
-                    />
-                    <p className="text-muted-foreground text-center text-xs">
-                        {t('privacy_lock.recover.qr_description')}
-                    </p>
-                    <DeviceLoginWaitingStatus
-                        expiresAt={pending.expiresAt}
-                        className="w-full text-xs"
-                    />
-                </>
-            ) : null}
-            {phase === 'starting' ? <Spinner className="my-8" /> : null}
-            {phase === 'expired' ? (
-                <>
-                    <p className="text-muted-foreground text-center text-xs">
-                        {t('device_login.expired_title')}
-                    </p>
-                    <Button type="button" className="w-full" onClick={retry}>
-                        {t('device_login.refresh')}
-                    </Button>
-                </>
-            ) : null}
-            {phase === 'failed' ? (
-                <Button type="button" className="w-full" onClick={retry}>
-                    {t('device_login.retry')}
-                </Button>
-            ) : null}
-            {error ? (
-                <p className="text-destructive text-center text-xs">{error}</p>
-            ) : null}
         </div>
     );
 }

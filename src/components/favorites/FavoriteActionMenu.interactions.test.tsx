@@ -152,6 +152,8 @@ vi.mock('@/ui/shadcn/spinner', () => ({
     Spinner: () => <span />
 }));
 
+import { toast } from '@/services/toastService';
+
 import {
     FavoriteActionMenu,
     FavoriteActionSub,
@@ -326,6 +328,50 @@ describe('FavoriteActionMenu VRChat favorite groups', () => {
         expect(mocks.deleteFavorite.mock.invocationCallOrder[0]).toBeLessThan(
             mocks.addFavorite.mock.invocationCallOrder[0]
         );
+    });
+
+    it('puts the favorite back in its original group when adding to the new group fails', async () => {
+        mocks.addFavorite
+            .mockRejectedValueOnce(new Error('Group is full'))
+            .mockResolvedValueOnce({});
+        openMenu('group_0');
+
+        fireEvent.click(groupItem('Karaoke'));
+
+        await waitFor(() =>
+            expect(mocks.addFavorite).toHaveBeenLastCalledWith({
+                type: 'friend',
+                favoriteId: 'usr_friend',
+                tags: 'group_0'
+            })
+        );
+        await waitFor(() =>
+            expect(toast.add).toHaveBeenCalledWith({
+                type: 'error',
+                title: 'Group is full',
+                description:
+                    'component.favorite_action_menu.toast.move_failed_restored'
+            })
+        );
+    });
+
+    it('says the favorite was lost when putting it back also fails', async () => {
+        mocks.addFavorite
+            .mockRejectedValueOnce(new Error('Group is full'))
+            .mockRejectedValueOnce(new Error('Network error'));
+        openMenu('group_0');
+
+        fireEvent.click(groupItem('Karaoke'));
+
+        await waitFor(() =>
+            expect(toast.add).toHaveBeenCalledWith({
+                type: 'error',
+                title: 'Group is full',
+                description:
+                    'component.favorite_action_menu.toast.move_failed_not_restored'
+            })
+        );
+        expect(mocks.addFavorite).toHaveBeenCalledTimes(2);
     });
 
     it('adds the favorite to the clicked group when it is not favorited yet', async () => {

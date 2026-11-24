@@ -3,6 +3,7 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import { currentRealtimeTransportGeneration } from '../authenticatedRuntimeService';
+import i18n from '../i18nService';
 import { handleRealtimeInstanceQueueProjection } from '../realtimeInstanceQueueService';
 import {
     handleRealtimeCurrentUserProjection,
@@ -137,7 +138,7 @@ function handleBackendRealtimeProjectionFailure(error: unknown): void {
     });
     toast.add({
         type: 'warning',
-        title: 'Realtime event failed',
+        title: i18n.t('common.error.realtime_event_failed'),
         description: error instanceof Error ? error.message : String(error)
     });
 }

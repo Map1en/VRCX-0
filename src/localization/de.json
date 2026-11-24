@@ -769,6 +769,9 @@
             "retry": "Erneut versuchen"
         },
         "error": {
+            "realtime_event_failed": "Live-Aktualisierung konnte nicht übernommen werden",
+            "runtime_bootstrap_failed": "VRCX-0 konnte nicht vollständig starten",
+            "language_sync_failed": "Anzeigesprache konnte nicht gewechselt werden",
             "action_failed": "Die Aktion konnte nicht abgeschlossen werden",
             "failed_to_load_data": "Die Daten konnten nicht geladen werden",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Instanz konnte nicht in VRChat geöffnet werden, es wird stattdessen eine Selbsteinladung verwendet",
@@ -1218,7 +1221,7 @@
             "change_title": "Sperrpasswort ändern",
             "change_description": "Gib dein aktuelles Sperrpasswort ein und wähle dann ein neues.",
             "clear_title": "Sperrpasswort entfernen",
-            "clear_description": "Gib dein VRChat-Kontopasswort ein, um den Sperrcode zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet."
+            "clear_description": "Bestätige mit deinem VRChat-Kontopasswort oder per QR-Code, dass du es bist, um den Sperrcode zu entfernen. Das Kontopasswort wird nur mit dem lokal in VRCX-0 gespeicherten verglichen; nichts wird an die VRChat-Server gesendet."
         },
         "recover": {
             "description": "Gib dein VRChat-Kontopasswort ein, um die Sperre zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet.",
@@ -2810,6 +2813,7 @@
                 },
                 "history": {
                     "empty": "Noch nichts gesendet",
+                    "load_failed": "Gesendete Einträge konnten nicht geladen werden",
                     "summary": "{date} · {count} Bild(er)",
                     "open": "In Discord öffnen",
                     "retract": "Aus Discord löschen"
@@ -2921,6 +2925,7 @@
                 "title": "Chatbox",
                 "description": "Zeigt Uhrzeit, laufende Musik und eigene Texte in der Chatbox im Spiel an. Nachrichten kannst du direkt oder übersetzt senden.",
                 "save_failed": "Chatbox-Einstellungen konnten nicht gespeichert werden.",
+                "load_failed": "Chatbox-Einstellungen konnten nicht geladen werden.",
                 "status": {
                     "off": "Aus",
                     "manual": "Zeigt deine Nachricht",
@@ -4229,6 +4234,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "Melde dich an, um Benachrichtigungen zu sehen",
                 "failed_to_load_notifications": "Benachrichtigungen konnten nicht geladen werden",
                 "failed_to_mark_notification_as_seen": "Benachrichtigung konnte nicht als gesehen markiert werden",
                 "failed_to_delete_notification": "Benachrichtigung konnte nicht gelöscht werden",
@@ -7267,6 +7273,9 @@
             "deleted": "Gesamter VRChat-Cache gelöscht"
         },
         "gamelog": {
+            "debug_logging_title": "Debug-Protokollierung einschalten",
+            "debug_logging_description": "Die Debug-Protokollierung von VRChat ist aus. Schalte sie im VRChat-Schnellmenü unter Einstellungen > Debug > Enable Debug Logging ein und betritt die Instanz danach erneut oder starte VRChat neu.",
+            "game_state_update_failed": "Spielstatus konnte nicht aktualisiert werden",
             "vrchat_must_be_closed": "VRChat muss geschlossen werden, bevor diese Option geändert werden kann"
         },
         "error": "Fehler",
@@ -7547,6 +7556,8 @@
             "toast": {
                 "failed_to_add_favorite": "Favorit konnte nicht hinzugefügt werden",
                 "failed_to_remove_favorite": "Favorit konnte nicht entfernt werden",
+                "move_failed_restored": "Verschieben in die neue Gruppe fehlgeschlagen. Der Favorit wurde in seine ursprüngliche Gruppe zurückgelegt.",
+                "move_failed_not_restored": "Verschieben in die neue Gruppe und Zurücklegen fehlgeschlagen. Der Eintrag ist nicht mehr in deinen VRChat-Favoriten.",
                 "failed_to_add_local_favorite": "Lokaler Favorit konnte nicht hinzugefügt werden",
                 "failed_to_remove_local_favorite": "Lokaler Favorit konnte nicht entfernt werden"
             }

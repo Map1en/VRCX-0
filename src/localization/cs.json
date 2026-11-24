@@ -771,6 +771,9 @@
             "retry": "Zkusit znovu"
         },
         "error": {
+            "realtime_event_failed": "Živou aktualizaci se nepodařilo použít",
+            "runtime_bootstrap_failed": "VRCX-0 se nepodařilo úplně spustit",
+            "language_sync_failed": "Jazyk rozhraní se nepodařilo přepnout",
             "action_failed": "Akci se nepodařilo dokončit",
             "failed_to_load_data": "Data se nepodařilo načíst",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Nepodařilo se otevřít instanci ve VRChat, použije se pozvání sebe sama",
@@ -1228,7 +1231,7 @@
             "change_title": "Změnit heslo zámku",
             "change_description": "Zadejte aktuální heslo zámku a poté zvolte nové.",
             "clear_title": "Odebrat heslo zámku",
-            "clear_description": "Zadejte heslo k účtu VRChat, aby se kód zámku odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá."
+            "clear_description": "Potvrďte svou totožnost heslem k účtu VRChat nebo QR kódem a kód zámku se odebere. Heslo k účtu se porovnává pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá."
         },
         "recover": {
             "description": "Zadejte heslo k účtu VRChat, aby se zámek odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá.",
@@ -2836,6 +2839,7 @@
                 },
                 "history": {
                     "empty": "Zatím nic neodesláno",
+                    "load_failed": "Odeslané položky se nepodařilo načíst",
                     "summary": "{date} · obrázků: {count}",
                     "open": "Otevřít v Discordu",
                     "retract": "Smazat z Discordu"
@@ -2949,6 +2953,7 @@
                 "title": "Chatbox",
                 "description": "Zobrazuje v Chatboxu ve hře čas, právě hrající hudbu a vlastní texty. Zprávy můžeš poslat přímo nebo přeložené.",
                 "save_failed": "Nastavení Chatboxu se nepodařilo uložit.",
+                "load_failed": "Nastavení Chatboxu se nepodařilo načíst.",
                 "status": {
                     "off": "Vypnuto",
                     "manual": "Zobrazuje tvou zprávu",
@@ -4261,6 +4266,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "Pro zobrazení oznámení se přihlaste",
                 "failed_to_load_notifications": "Nepodařilo se načíst upozornění",
                 "failed_to_mark_notification_as_seen": "Nepodařilo se označit upozornění jako přečtené",
                 "failed_to_delete_notification": "Nepodařilo se odstranit upozornění",
@@ -7308,6 +7314,9 @@
             "deleted": "Veškerá mezipaměť VRChat smazána"
         },
         "gamelog": {
+            "debug_logging_title": "Zapněte ladicí protokolování",
+            "debug_logging_description": "Ladicí protokolování ve VRChatu je vypnuté. Zapněte ho v rychlé nabídce VRChatu v Nastavení > Debug > Enable Debug Logging a pak se znovu připojte k instanci nebo VRChat restartujte.",
+            "game_state_update_failed": "Stav hry se nepodařilo aktualizovat",
             "vrchat_must_be_closed": "Před změnou této možnosti je nutné zavřít VRChat"
         },
         "error": "Chyba",
@@ -7588,6 +7597,8 @@
             "toast": {
                 "failed_to_add_favorite": "Nepodařilo se přidat oblíbenou položku",
                 "failed_to_remove_favorite": "Nepodařilo se odebrat oblíbenou položku",
+                "move_failed_restored": "Přesun do nové skupiny se nezdařil, položka byla vrácena do původní skupiny.",
+                "move_failed_not_restored": "Přesun do nové skupiny ani vrácení do původní se nezdařilo. Položka už není ve vašich oblíbených ve VRChatu.",
                 "failed_to_add_local_favorite": "Nepodařilo se přidat místní oblíbenou položku",
                 "failed_to_remove_local_favorite": "Nepodařilo se odebrat místní oblíbenou položku"
             }

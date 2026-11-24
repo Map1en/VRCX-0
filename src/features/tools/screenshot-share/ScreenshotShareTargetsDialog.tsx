@@ -6,7 +6,7 @@ import {
     Trash2Icon,
     Undo2Icon
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatCompactDateTime } from '@/lib/dateTime';
@@ -38,6 +38,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { ScreenshotShareOptions } from './ScreenshotShareOptions';
 import { screenshotShareErrorText } from './screenshotShareService';
+import { useScreenshotShareHistory } from './useScreenshotShareHistory';
 
 const DEFAULT_SCREENSHOT_SHARE_FIELDS: ScreenshotShareFields = {
     world: true,
@@ -152,22 +153,9 @@ function TargetRow({
 
 function HistoryList() {
     const { t } = useTranslation();
-    const [records, setRecords] = useState<ScreenshotShareRecord[] | null>(
-        null
-    );
+    const { records, setRecords, loadFailed, reload } =
+        useScreenshotShareHistory();
     const [busyId, setBusyId] = useState<string | null>(null);
-
-    useEffect(() => {
-        let active = true;
-        void commands.appGetScreenshotShareHistory().then((history) => {
-            if (active) {
-                setRecords(history);
-            }
-        });
-        return () => {
-            active = false;
-        };
-    }, []);
 
     async function retract(record: ScreenshotShareRecord) {
         setBusyId(record.id);
@@ -189,6 +177,21 @@ function HistoryList() {
         }
     }
 
+    if (loadFailed) {
+        return (
+            <div className="text-muted-foreground flex flex-col items-center gap-2 rounded-md border border-dashed px-3 py-8 text-center text-sm">
+                {t('view.tools.screenshot_share.history.load_failed')}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={reload}
+                >
+                    {t('common.action.retry')}
+                </Button>
+            </div>
+        );
+    }
     if (!records) {
         return null;
     }

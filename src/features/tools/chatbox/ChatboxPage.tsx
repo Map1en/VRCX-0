@@ -5,6 +5,13 @@ import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { commands } from '@/platform/tauri/bindings';
 import { useChatboxStore } from '@/state/chatboxStore';
 import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
+import {
+    Empty,
+    EmptyContent,
+    EmptyHeader,
+    EmptyTitle
+} from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import { chatboxStatusLabelKey } from './chatboxConfig';
@@ -21,6 +28,8 @@ export function ChatboxPage() {
         config,
         meta,
         status,
+        loadFailed,
+        reload,
         updateConfig: onUpdate
     } = useChatboxController();
     const receivedAt = useChatboxStore((state) => state.receivedAt);
@@ -88,6 +97,24 @@ export function ChatboxPage() {
                             />
                         </div>
                     </div>
+                ) : loadFailed ? (
+                    <Empty className="flex-1">
+                        <EmptyHeader>
+                            <EmptyTitle>
+                                {t('view.tools.chatbox.load_failed')}
+                            </EmptyTitle>
+                        </EmptyHeader>
+                        <EmptyContent>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={reload}
+                            >
+                                {t('common.action.retry')}
+                            </Button>
+                        </EmptyContent>
+                    </Empty>
                 ) : (
                     <div className="flex flex-1 items-center justify-center">
                         <Spinner />

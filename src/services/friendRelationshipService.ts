@@ -31,7 +31,6 @@ type DeleteFriendsResult = SocialUnfriendBatchResult & {
 };
 
 const STALE_AUTH_SCOPE_ERROR_TEXT = 'stale for the current auth scope';
-const CHANGED_AUTH_SCOPE_ERROR_TEXT = 'authentication scope changed';
 
 function normalizeUserId(value: unknown): string {
     return typeof value === 'string'
@@ -92,16 +91,9 @@ async function deleteFriend({
             targetUserId: normalizedUserId,
             targetDisplayName: normalizeUserId(friend?.displayName)
         });
-        const stale =
-            !currentAuthScopeMatches(
-                normalizeUserId(currentUserId),
-                endpoint
-            ) ||
-            (outcome.status === 'remoteOkLocalFailed' &&
-                outcome.localError
-                    ?.toLowerCase()
-                    .includes(CHANGED_AUTH_SCOPE_ERROR_TEXT));
-        if (stale) {
+        if (
+            !currentAuthScopeMatches(normalizeUserId(currentUserId), endpoint)
+        ) {
             return {
                 stale: true,
                 userId: normalizedUserId

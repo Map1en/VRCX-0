@@ -81,17 +81,27 @@ function startProgressToast(target: ScreenshotShareTarget): () => void {
             )
         });
     };
+    let failed = false;
+    const stopPolling = (error: unknown) => {
+        if (failed) {
+            return;
+        }
+        failed = true;
+        globalThis.clearInterval(poll);
+        globalThis.clearTimeout(open);
+        console.warn('Failed to read screenshot share progress:', error);
+    };
     const poll = globalThis.setInterval(() => {
-        void commands.appGetScreenshotShareProgress().then((progress) => {
+        commands.appGetScreenshotShareProgress().then((progress) => {
             if (shown && progress.running) {
                 render(progress.processedFiles, progress.totalFiles);
             }
-        });
+        }, stopPolling);
     }, PROGRESS_POLL_INTERVAL_MS);
     const open = globalThis.setTimeout(() => {
-        void commands.appGetScreenshotShareProgress().then((progress) => {
+        commands.appGetScreenshotShareProgress().then((progress) => {
             render(progress.processedFiles, progress.totalFiles);
-        });
+        }, stopPolling);
     }, PROGRESS_TOAST_DELAY_MS);
     return () => {
         stopped = true;

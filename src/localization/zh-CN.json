@@ -768,6 +768,9 @@
             "retry": "重试"
         },
         "error": {
+            "realtime_event_failed": "实时更新处理失败",
+            "runtime_bootstrap_failed": "VRCX-0 未能完成启动",
+            "language_sync_failed": "界面语言切换失败",
             "action_failed": "无法完成该操作",
             "failed_to_load_data": "无法加载数据",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "无法在 VRChat 中打开房间，已改为向自己发送邀请",
@@ -1217,7 +1220,7 @@
             "change_title": "修改锁定密码",
             "change_description": "输入当前锁定密码，再设置一个新密码。",
             "clear_title": "移除锁定密码",
-            "clear_description": "输入 VRChat 账号密码以移除锁定密码。只与本地保存的密码比对，不连接 VRChat 服务器。"
+            "clear_description": "用 VRChat 账号密码或扫码确认身份后即可移除锁定密码。账号密码只与本地保存的密码比对，不连接 VRChat 服务器。"
         },
         "recover": {
             "description": "输入 VRChat 账号密码以移除锁定。只与本地保存的密码比对，不连接 VRChat 服务器。",
@@ -2804,6 +2807,7 @@
                 },
                 "history": {
                     "empty": "还没有发送记录",
+                    "load_failed": "发送记录加载失败",
                     "summary": "{date} · {count} 张",
                     "open": "在 Discord 中打开",
                     "retract": "从 Discord 撤回"
@@ -2914,6 +2918,7 @@
                 "title": "Chatbox",
                 "description": "在游戏内的 Chatbox 显示时间、正在播放和自定义文字，也可以直接打字或翻译后发送。",
                 "save_failed": "Chatbox 设置保存失败。",
+                "load_failed": "Chatbox 设置加载失败。",
                 "status": {
                     "off": "已关闭",
                     "manual": "正在显示你的消息",
@@ -4222,6 +4227,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "登录后才能查看通知",
                 "failed_to_load_notifications": "加载通知失败",
                 "failed_to_mark_notification_as_seen": "标记通知为已读失败",
                 "failed_to_delete_notification": "删除通知失败",
@@ -7314,6 +7320,9 @@
             "deleted": "已清除所有缓存"
         },
         "gamelog": {
+            "debug_logging_title": "请开启调试日志",
+            "debug_logging_description": "VRChat 的调试日志没有开启。请在 VRChat 快捷菜单的“设置 > Debug > Enable Debug Logging”中开启，然后重新加入房间或重启 VRChat。",
+            "game_state_update_failed": "游戏状态更新失败",
             "vrchat_must_be_closed": "必须关闭 VRChat 客户端后才能修改日志设置"
         },
         "error": "错误",
@@ -7623,6 +7632,8 @@
             "toast": {
                 "failed_to_add_favorite": "添加在线收藏失败",
                 "failed_to_remove_favorite": "移除在线收藏失败",
+                "move_failed_restored": "未能移到新分组，已放回原分组。",
+                "move_failed_not_restored": "未能移到新分组，也没能放回原分组，它已不在你的 VRChat 收藏中。",
                 "failed_to_add_local_favorite": "添加本地收藏失败",
                 "failed_to_remove_local_favorite": "移除本地收藏失败"
             }

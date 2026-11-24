@@ -768,6 +768,9 @@
             "retry": "重試"
         },
         "error": {
+            "realtime_event_failed": "即時更新處理失敗",
+            "runtime_bootstrap_failed": "VRCX-0 未能完成啟動",
+            "language_sync_failed": "介面語言切換失敗",
             "action_failed": "無法完成此操作",
             "failed_to_load_data": "無法載入資料",
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "無法在 VRChat 中開啟房間，改用自我邀請",
@@ -1217,7 +1220,7 @@
             "change_title": "變更鎖定密碼",
             "change_description": "輸入目前的鎖定密碼，再設定一組新密碼。",
             "clear_title": "移除鎖定密碼",
-            "clear_description": "輸入 VRChat 帳號密碼以移除鎖定密碼。只與 VRCX-0 本機儲存的密碼比對，不會傳送任何資料至 VRChat 伺服器。"
+            "clear_description": "以 VRChat 帳號密碼或掃碼確認身分後即可移除鎖定密碼。帳號密碼只與 VRCX-0 本機儲存的密碼比對，不會傳送任何資料至 VRChat 伺服器。"
         },
         "recover": {
             "description": "輸入 VRChat 帳號密碼以移除鎖定。只與 VRCX-0 本機儲存的密碼比對，不會傳送任何資料至 VRChat 伺服器。",
@@ -2804,6 +2807,7 @@
                 },
                 "history": {
                     "empty": "尚無傳送紀錄",
+                    "load_failed": "傳送紀錄載入失敗",
                     "summary": "{date} · {count} 張",
                     "open": "在 Discord 中開啟",
                     "retract": "從 Discord 收回"
@@ -2914,6 +2918,7 @@
                 "title": "Chatbox",
                 "description": "在遊戲內的 Chatbox 顯示時間、正在播放和自訂文字，也能直接輸入或翻譯後送出。",
                 "save_failed": "Chatbox 設定儲存失敗。",
+                "load_failed": "Chatbox 設定載入失敗。",
                 "status": {
                     "off": "已關閉",
                     "manual": "正在顯示你的訊息",
@@ -4222,6 +4227,7 @@
         },
         "notifications": {
             "toast": {
+                "no_current_user_session": "登入後才能查看通知",
                 "failed_to_load_notifications": "載入通知失敗",
                 "failed_to_mark_notification_as_seen": "標記通知為已讀失敗",
                 "failed_to_delete_notification": "刪除通知失敗",
@@ -7305,6 +7311,9 @@
             "deleted": "所有 VRChat 快取已刪除"
         },
         "gamelog": {
+            "debug_logging_title": "請開啟偵錯日誌",
+            "debug_logging_description": "VRChat 的偵錯日誌尚未開啟。請在 VRChat 快捷選單的「設定 > Debug > Enable Debug Logging」中開啟，然後重新加入房間或重新啟動 VRChat。",
+            "game_state_update_failed": "遊戲狀態更新失敗",
             "vrchat_must_be_closed": "必須先關閉 VRChat 才能變更此設定"
         },
         "error": "錯誤",
@@ -7614,6 +7623,8 @@
             "toast": {
                 "failed_to_add_favorite": "新增收藏失敗",
                 "failed_to_remove_favorite": "移除收藏失敗",
+                "move_failed_restored": "無法移到新分組，已放回原分組。",
+                "move_failed_not_restored": "無法移到新分組，也沒能放回原分組，它已不在你的 VRChat 收藏中。",
                 "failed_to_add_local_favorite": "新增本機收藏失敗",
                 "failed_to_remove_local_favorite": "移除本機收藏失敗"
             }

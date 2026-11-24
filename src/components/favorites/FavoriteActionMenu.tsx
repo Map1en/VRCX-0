@@ -238,11 +238,47 @@ function useFavoriteMenu({
                 });
             }
             if (group) {
-                await vrchatFavoriteRepository.addFavorite({
-                    type: resolveFavoriteAddType(group, kind),
-                    favoriteId: normalizedEntityId,
-                    tags: group.name
-                });
+                try {
+                    await vrchatFavoriteRepository.addFavorite({
+                        type: resolveFavoriteAddType(group, kind),
+                        favoriteId: normalizedEntityId,
+                        tags: group.name
+                    });
+                } catch (error) {
+                    if (!remoteFavorite || !remoteFavoriteGroup) {
+                        throw error;
+                    }
+                    const restored = await vrchatFavoriteRepository
+                        .addFavorite({
+                            type: resolveFavoriteAddType(
+                                remoteFavoriteGroup,
+                                kind
+                            ),
+                            favoriteId: normalizedEntityId,
+                            tags: remoteFavoriteGroup.name
+                        })
+                        .then(
+                            () => true,
+                            () => false
+                        );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t(
+                                      'component.favorite_action_menu.toast.failed_to_add_favorite'
+                                  ),
+                        description: restored
+                            ? t(
+                                  'component.favorite_action_menu.toast.move_failed_restored'
+                              )
+                            : t(
+                                  'component.favorite_action_menu.toast.move_failed_not_restored'
+                              )
+                    });
+                    return;
+                }
                 if (kind === 'world' && isRecord(entity)) {
                     persistWorldDetails(entity, normalizedEntityId);
                 } else if (kind === 'avatar' && isRecord(entity)) {

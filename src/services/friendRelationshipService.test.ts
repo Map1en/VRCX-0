@@ -67,7 +67,7 @@ describe('friendRelationshipService.deleteFriend', () => {
         expect(friendLogMocks.signalChanged).not.toHaveBeenCalled();
     });
 
-    it('treats a backend auth-scope-change local error as stale for the same account', async () => {
+    it('reports a remote unfriend whose local write hit an auth-scope change as applied on VRChat', async () => {
         commandMocks.unfriend.mockResolvedValue({
             status: 'remoteOkLocalFailed',
             targetUserId: 'usr_target',
@@ -81,13 +81,17 @@ describe('friendRelationshipService.deleteFriend', () => {
             userId: 'usr_target'
         });
 
-        expect(result.stale).toBe(true);
+        expect(result).toEqual({
+            stale: false,
+            userId: 'usr_target',
+            localError:
+                'Social mutation authentication scope changed during request.'
+        });
         expect(
             useRuntimeStore.getState().auth.currentUserSnapshot
         ).toMatchObject({
-            friends: ['usr_target']
+            friends: []
         });
-        expect(friendLogMocks.signalChanged).not.toHaveBeenCalled();
     });
 });
 
