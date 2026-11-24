@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { FavoriteEntityDetail } from '@/domain/favorites/types';
 import type { LoadStatus } from '@/domain/shared/types';
@@ -293,27 +293,30 @@ export function useFavoriteRemoteDetails({
         normalizedGroupTags.join('|')
     ].join('::');
     const hasIds = normalizedRequestedIds.length > 0;
-    const [state, setState] = useState(() => buildInitialState());
-    const retainedRef = useRef(buildRetainedDetails(refreshKey));
-    if (retainedRef.current.refreshKey !== refreshKey) {
-        retainedRef.current = buildRetainedDetails(refreshKey);
-    }
-    const requestParamsRef = useRef({
-        ids: normalizedIds,
-        requestedIds: normalizedRequestedIds,
+    const [stateEntry, setStateEntry] = useState(() => ({
         refreshKey,
-        tags: normalizedTags,
-        groupTags: normalizedGroupTags
-    });
-    requestParamsRef.current = {
+        value: buildInitialState()
+    }));
+    const state = stateEntry.value;
+    const retainedRef = useRef(buildRetainedDetails(refreshKey));
+    const requestParams = {
         ids: normalizedIds,
         requestedIds: normalizedRequestedIds,
         refreshKey,
         tags: normalizedTags,
         groupTags: normalizedGroupTags
     };
+    const requestParamsRef = useRef(requestParams);
+    useLayoutEffect(() => {
+        requestParamsRef.current = requestParams;
+    });
 
     useEffect(() => {
+        if (retainedRef.current.refreshKey !== refreshKey) {
+            retainedRef.current = buildRetainedDetails(refreshKey);
+        }
+        const setState = (value: RemoteDetailsState) =>
+            setStateEntry({ refreshKey, value });
         if (!enabled || !hasIds) {
             setState(
                 buildInitialState(
@@ -392,18 +395,23 @@ export function useFavoriteRemoteDetails({
         return () => {
             active = false;
         };
-    }, [enabled, hasIds, requestKey, type]);
+    }, [enabled, hasIds, refreshKey, requestKey, type]);
 
     if (state.requestKey === requestKey) {
         return state;
     }
     const pendingStatus = !hasIds ? 'ready' : enabled ? 'running' : 'idle';
-    return buildInitialState(
-        requestKey,
-        pendingStatus,
-        pendingStatus === 'running'
-            ? favoriteRemoteDetailsLoadingDetail(type)
-            : '',
-        retainedRef.current
-    );
+    const retainedState =
+        stateEntry.refreshKey === refreshKey ? state : buildInitialState();
+    return {
+        ...buildInitialState(
+            requestKey,
+            pendingStatus,
+            pendingStatus === 'running'
+                ? favoriteRemoteDetailsLoadingDetail(type)
+                : ''
+        ),
+        data: retainedState.data,
+        availabilityById: retainedState.availabilityById
+    };
 }
