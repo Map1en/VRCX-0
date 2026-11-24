@@ -37,6 +37,8 @@ import {
 } from './screenshotPrintCaption';
 import {
     copyScreenshotPrint,
+    loadScreenshotPrintOptions,
+    saveScreenshotPrintOptions,
     saveScreenshotPrints
 } from './screenshotPrintService';
 
@@ -199,8 +201,6 @@ export function ScreenshotPrintDialog({
 }) {
     const { t } = useTranslation();
     const saved = useScreenshotPrintOptionsStore((state) => state.options);
-    const loadOptions = useScreenshotPrintOptionsStore((state) => state.load);
-    const saveOptions = useScreenshotPrintOptionsStore((state) => state.save);
     const [options, setOptions] = useState<ScreenshotPrintOptions | null>(null);
     const [note, setNote] = useState('');
     const [facts, setFacts] = useState<ScreenshotShareFacts[]>([]);
@@ -216,10 +216,10 @@ export function ScreenshotPrintDialog({
     );
 
     useEffect(() => {
-        loadOptions().catch((error: unknown) => {
+        loadScreenshotPrintOptions().catch((error: unknown) => {
             console.warn('Print options unavailable:', error);
         });
-    }, [loadOptions]);
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -258,7 +258,7 @@ export function ScreenshotPrintDialog({
     function finish(
         action: (options: ScreenshotPrintOptions) => Promise<void>
     ) {
-        saveOptions(current);
+        saveScreenshotPrintOptions(current);
         onOpenChange(false);
         void action(current);
     }

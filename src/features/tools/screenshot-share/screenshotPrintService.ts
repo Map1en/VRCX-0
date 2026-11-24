@@ -1,8 +1,11 @@
 import { commands, type ScreenshotShareFacts } from '@/platform/tauri/bindings';
+import configRepository from '@/repositories/configRepository';
 import i18n from '@/services/i18nService';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
 import { toast } from '@/services/toastService';
 import {
+    DEFAULT_SCREENSHOT_PRINT_OPTIONS,
+    parseScreenshotPrintOptions,
     useScreenshotPrintOptionsStore,
     type ScreenshotPrintOptions
 } from '@/state/screenshotPrintOptionsStore';
@@ -13,6 +16,27 @@ import {
 } from './screenshotPrintCaption';
 
 const EMPTY_CONTENT: PrintContent = { note: '', people: null };
+const OPTIONS_KEY = 'VRCX_ScreenshotPrintOptions';
+
+export async function loadScreenshotPrintOptions(): Promise<ScreenshotPrintOptions> {
+    const store = useScreenshotPrintOptionsStore.getState();
+    if (store.loaded) {
+        return store.options;
+    }
+    const raw = await configRepository.getString(OPTIONS_KEY, '');
+    const options = raw
+        ? parseScreenshotPrintOptions(raw)
+        : DEFAULT_SCREENSHOT_PRINT_OPTIONS;
+    useScreenshotPrintOptionsStore.getState().setLoadedOptions(options);
+    return options;
+}
+
+export function saveScreenshotPrintOptions(
+    options: ScreenshotPrintOptions
+): void {
+    useScreenshotPrintOptionsStore.getState().setLoadedOptions(options);
+    void configRepository.setString(OPTIONS_KEY, JSON.stringify(options));
+}
 
 function failed(error: unknown): void {
     toast.add({
@@ -26,7 +50,7 @@ function failed(error: unknown): void {
 async function resolveOptions(
     options: ScreenshotPrintOptions | undefined
 ): Promise<ScreenshotPrintOptions> {
-    return options ?? (await useScreenshotPrintOptionsStore.getState().load());
+    return options ?? (await loadScreenshotPrintOptions());
 }
 
 export async function renderPrintCaptions(

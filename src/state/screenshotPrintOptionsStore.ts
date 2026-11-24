@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 
-import configRepository from '@/repositories/configRepository';
-
 export type ScreenshotPrintStyle = 'modern' | 'classic';
 export type ScreenshotPrintPeople = 'off' | 'count' | 'names';
 
@@ -18,8 +16,6 @@ export const DEFAULT_SCREENSHOT_PRINT_OPTIONS: ScreenshotPrintOptions = {
     playerCount: true,
     stay: true
 };
-
-const OPTIONS_KEY = 'VRCX_ScreenshotPrintOptions';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
@@ -60,30 +56,14 @@ export function parseScreenshotPrintOptions(
 type ScreenshotPrintOptionsState = {
     options: ScreenshotPrintOptions;
     loaded: boolean;
-    load(): Promise<ScreenshotPrintOptions>;
-    save(options: ScreenshotPrintOptions): void;
+    setLoadedOptions(options: ScreenshotPrintOptions): void;
 };
 
 export const useScreenshotPrintOptionsStore =
-    create<ScreenshotPrintOptionsState>((set, get) => ({
+    create<ScreenshotPrintOptionsState>((set) => ({
         options: DEFAULT_SCREENSHOT_PRINT_OPTIONS,
         loaded: false,
-        async load() {
-            if (get().loaded) {
-                return get().options;
-            }
-            const raw = await configRepository.getString(OPTIONS_KEY, '');
-            const options = raw
-                ? parseScreenshotPrintOptions(raw)
-                : DEFAULT_SCREENSHOT_PRINT_OPTIONS;
+        setLoadedOptions(options) {
             set({ options, loaded: true });
-            return options;
-        },
-        save(options) {
-            set({ options, loaded: true });
-            void configRepository.setString(
-                OPTIONS_KEY,
-                JSON.stringify(options)
-            );
         }
     }));
