@@ -717,6 +717,8 @@
             "save": "저장",
             "search": "검색",
             "select": "선택",
+            "show_secret": "표시",
+            "hide_secret": "숨기기",
             "cancel": "취소",
             "view_options": "보기 옵션",
             "cut": "잘라내기",

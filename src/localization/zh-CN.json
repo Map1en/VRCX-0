@@ -717,6 +717,8 @@
             "save": "保存",
             "search": "搜索",
             "select": "选择",
+            "show_secret": "显示",
+            "hide_secret": "隐藏",
             "cancel": "取消",
             "view_options": "显示选项",
             "cut": "剪切",

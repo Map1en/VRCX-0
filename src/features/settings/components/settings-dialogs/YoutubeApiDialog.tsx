@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { openExternalLink } from '@/services/entityMediaService';
+import { SecretInput } from '@/ui/secret-input';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -10,7 +11,6 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Textarea } from '@/ui/shadcn/textarea';
 
 import type { SettingsPageStateSections } from '../../settingsPageStateSections';
 import { Field, FieldGroup } from '../SettingsField';
@@ -52,13 +52,12 @@ export function YoutubeApiDialog({
                         label={t('dialog.youtube_api.header')}
                         controlId="settings-youtube-api-key"
                     >
-                        <Textarea
+                        <SecretInput
                             id="settings-youtube-api-key"
                             value={youtubeApiKeyDraft}
                             name="youtubeApiKey"
                             placeholder={t('dialog.youtube_api.placeholder')}
                             maxLength={39}
-                            rows={2}
                             onChange={(event) =>
                                 setYoutubeApiKeyDraft(event.target.value)
                             }

@@ -720,6 +720,8 @@
             "save": "Uložit",
             "search": "Vyhledat",
             "select": "Vybrat",
+            "show_secret": "Zobrazit",
+            "hide_secret": "Skrýt",
             "cancel": "Zrušit",
             "view_options": "Možnosti zobrazení",
             "cut": "Vyjmout",

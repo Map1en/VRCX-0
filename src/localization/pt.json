@@ -718,6 +718,8 @@
             "save": "Salvar",
             "search": "Pesquisar",
             "select": "Selecionar",
+            "show_secret": "Mostrar",
+            "hide_secret": "Ocultar",
             "cancel": "Cancelar",
             "view_options": "Opções de exibição",
             "cut": "Recortar",

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import type { LlmEndpointDto } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
 import { mergeModels, useLlmEndpointsStore } from '@/state/llmEndpointsStore';
+import { SecretInput } from '@/ui/secret-input';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -536,9 +537,8 @@ export function LlmEndpointsDialog({
                                     </Button>
                                 ) : null}
                             </div>
-                            <Input
+                            <SecretInput
                                 id="llm-endpoint-dialog-api-key"
-                                type="text"
                                 value={draft.apiKey}
                                 disabled={draft.clearKey}
                                 placeholder={

@@ -17,6 +17,7 @@ import type {
 } from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/entityMediaService';
 import { openLlmEndpointsManager } from '@/state/llmEndpointsStore';
+import { SecretInput } from '@/ui/secret-input';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -26,7 +27,6 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
@@ -411,9 +411,8 @@ export function TranslationApiDialog({
                             label={apiKeyLabel}
                             controlId="settings-translation-api-key"
                         >
-                            <Input
+                            <SecretInput
                                 id="settings-translation-api-key"
-                                type="text"
                                 name="translationApiKey"
                                 value={translationDraft.translationAPIKey}
                                 placeholder={apiKeyPlaceholder}

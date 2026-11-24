@@ -287,7 +287,7 @@ describe('LlmEndpointsDialog', () => {
             })
         );
         const apiKeyInput = inputByLabel('view.tools.llm_endpoints.api_key');
-        expect(apiKeyInput.type).toBe('text');
+        expect(apiKeyInput.type).toBe('password');
         expect(apiKeyInput.value).toBe('sk-existing');
         fireEvent.click(
             await screen.findByRole('button', {
