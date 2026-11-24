@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveProfileDecorationMutation } from '@/domain/entities/inventory';
@@ -100,7 +106,6 @@ export function useUserDialogProfileDecorations({
 }) {
     const { t } = useTranslation();
     const tRef = useRef(t);
-    tRef.current = t;
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -109,19 +114,14 @@ export function useUserDialogProfileDecorations({
         (state) => state.auth.currentUserWebsocket
     );
     const onProfileUpdatedRef = useRef(onProfileUpdated);
-    onProfileUpdatedRef.current = onProfileUpdated;
 
-    const authTargetRef = useRef<ProfileDecorationsAuthTarget>({
-        endpoint: '',
-        userId: '',
-        websocket: ''
-    });
-    authTargetRef.current = {
+    const authTarget: ProfileDecorationsAuthTarget = {
         endpoint: currentEndpoint || '',
         userId: currentUserId || '',
         websocket: currentUserWebsocket || ''
     };
-    const currentKey = authTargetKey(authTargetRef.current);
+    const authTargetRef = useRef(authTarget);
+    const currentKey = authTargetKey(authTarget);
 
     const [itemsBySlot, setItemsBySlot] =
         useState<ItemsBySlot>(emptyItemsBySlot);
@@ -134,7 +134,13 @@ export function useUserDialogProfileDecorations({
         value: UserDialogProfileAppearanceOverrides;
     }>({ key: '', value: {} });
     const appearanceOverrideStateRef = useRef(appearanceOverrideState);
-    appearanceOverrideStateRef.current = appearanceOverrideState;
+
+    useLayoutEffect(() => {
+        tRef.current = t;
+        onProfileUpdatedRef.current = onProfileUpdated;
+        authTargetRef.current = authTarget;
+        appearanceOverrideStateRef.current = appearanceOverrideState;
+    });
 
     const setAppearanceOverrides = useCallback(
         (key: string, value: UserDialogProfileAppearanceOverrides) => {

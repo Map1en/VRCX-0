@@ -189,24 +189,7 @@ export function useUserDialogTabData({
         userId: profileUserId,
         reloadToken
     });
-    const countContextRef = useRef<UserDialogCountContext>({
-        endpoint: currentEndpoint,
-        userId: profileUserId,
-        currentUserId: currentUserId || '',
-        avatarReleaseStatus: effectiveAvatarReleaseStatus,
-        includeMutualFriends:
-            !isCurrentUser && !currentUserHasSharedConnectionsOptOut,
-        reloadToken
-    });
-    const avatarSortLoadVersionRef = useRef(0);
-    const loadRequestIdRef = useRef(0);
-    const tabRequestIdsRef = useRef<Partial<Record<UserDialogDataTab, number>>>(
-        {}
-    );
-    const handledReloadTokenRef = useRef(reloadToken);
-    const resetTargetKeyRef = useRef('');
-    const handledCountReloadTokenRef = useRef(reloadToken);
-    countContextRef.current = {
+    const countContext: UserDialogCountContext = {
         endpoint: currentEndpoint,
         userId: profileUserId,
         currentUserId: currentUserId || '',
@@ -215,6 +198,18 @@ export function useUserDialogTabData({
             !isCurrentUser && !currentUserHasSharedConnectionsOptOut,
         reloadToken
     };
+    const countContextRef = useRef(countContext);
+    const avatarSortLoadVersionRef = useRef(0);
+    const loadRequestIdRef = useRef(0);
+    const tabRequestIdsRef = useRef<Partial<Record<UserDialogDataTab, number>>>(
+        {}
+    );
+    const handledReloadTokenRef = useRef(reloadToken);
+    const resetTargetKeyRef = useRef('');
+    const handledCountReloadTokenRef = useRef(reloadToken);
+    useLayoutEffect(() => {
+        countContextRef.current = countContext;
+    });
 
     const viewData = useMemo(
         () =>

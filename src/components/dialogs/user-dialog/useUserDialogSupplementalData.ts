@@ -2,6 +2,7 @@ import {
     useCallback,
     useEffect,
     useEffectEvent,
+    useLayoutEffect,
     useRef,
     useState,
     type SetStateAction
@@ -126,7 +127,9 @@ export function useUserDialogSupplementalData({
     );
     const profileId = profile?.id;
     const profileDisplayNameRef = useRef('');
-    profileDisplayNameRef.current = profileDisplayName;
+    useLayoutEffect(() => {
+        profileDisplayNameRef.current = profileDisplayName;
+    });
     const representedGroupMatchesTarget =
         representedGroupState.userId === normalizedUserId &&
         representedGroupState.endpoint === currentEndpoint;

@@ -5,7 +5,7 @@ import {
     SquarePenIcon,
     Trash2Icon
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -131,7 +131,9 @@ export function LlmEndpointsDialog({
         createEmptyLlmEndpointDraft
     );
     const draftRef = useRef(draft);
-    draftRef.current = draft;
+    useLayoutEffect(() => {
+        draftRef.current = draft;
+    });
     const [catalog, setCatalog] = useState<{
         target: EndpointDraft;
         models: string[];

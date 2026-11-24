@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { commands } from '@/platform/tauri/bindings';
@@ -52,7 +59,9 @@ export function useFriendLogResolvedNames(
         () => new Set<string>()
     );
     const retainedUserIdsRef = useRef(retainedUserIds);
-    retainedUserIdsRef.current = retainedUserIds;
+    useLayoutEffect(() => {
+        retainedUserIdsRef.current = retainedUserIds;
+    });
 
     useEffect(() => {
         setAttemptedUserIds((current) => {

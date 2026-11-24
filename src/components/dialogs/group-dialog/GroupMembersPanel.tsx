@@ -6,7 +6,7 @@ import {
     TagIcon,
     UsersIcon
 } from 'lucide-react';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListSectionHeader } from '@/components/layout/ListSectionHeader';
@@ -292,7 +292,9 @@ export function GroupMembersPanel({
     const [toggled, setToggled] = useState<Set<string>>(() => new Set());
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
     const loadMoreCallbackRef = useRef(onLoadMore);
-    loadMoreCallbackRef.current = onLoadMore;
+    useLayoutEffect(() => {
+        loadMoreCallbackRef.current = onLoadMore;
+    });
 
     const membersBusy = members.status === 'running';
     const memberTotal = members.totalCount ?? members.loadedCount;

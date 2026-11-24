@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { toast } from '@/services/toastService';
@@ -27,7 +27,9 @@ export function useGameIsolationAccountPrompt({
     );
     const promptedKeyRef = useRef<string | null>(null);
     const onTurnOffRef = useRef(onTurnOff);
-    onTurnOffRef.current = onTurnOff;
+    useLayoutEffect(() => {
+        onTurnOffRef.current = onTurnOff;
+    });
 
     useEffect(() => {
         if (!available || !currentUserId || !gameUserId) {

@@ -2,6 +2,7 @@ import { BanIcon, CheckIcon, ImageIcon, RefreshCcwIcon } from 'lucide-react';
 import {
     useCallback,
     useEffect,
+    useLayoutEffect,
     useRef,
     useState,
     type ReactNode
@@ -147,7 +148,11 @@ function useEmojiRows(
     const [error, setError] = useState('');
     const requestIdRef = useRef(0);
     const failedMessageRef = useRef('');
-    failedMessageRef.current = t('dialog.boop_dialog.failed_to_load_emojis');
+    useLayoutEffect(() => {
+        failedMessageRef.current = t(
+            'dialog.boop_dialog.failed_to_load_emojis'
+        );
+    });
 
     const load = useCallback(async () => {
         const requestId = ++requestIdRef.current;

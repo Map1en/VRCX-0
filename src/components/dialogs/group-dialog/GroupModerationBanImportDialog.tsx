@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { GroupBanImportStatus } from '@/platform/tauri/bindings';
@@ -42,11 +42,8 @@ export function GroupModerationBanImportDialog({
     const [resultMessage, setResultMessage] = useState('');
     const runIdRef = useRef<string | null>(null);
     const appliedItemsRef = useRef(0);
-    const applyStatusRef = useRef<(status: GroupBanImportStatus) => void>(
-        () => {}
-    );
 
-    applyStatusRef.current = (status: GroupBanImportStatus) => {
+    const applyStatus = useEffectEvent((status: GroupBanImportStatus) => {
         if (status.runId !== runIdRef.current) {
             return;
         }
@@ -90,7 +87,7 @@ export function GroupModerationBanImportDialog({
         if (status.succeeded > 0) {
             onImported();
         }
-    };
+    });
 
     useEffect(() => {
         if (!open) {
@@ -104,7 +101,7 @@ export function GroupModerationBanImportDialog({
             return;
         }
         const unsubscribe = subscribeGroupBanImportStatus((status) => {
-            applyStatusRef.current(status);
+            applyStatus(status);
         });
         void getGroupBanImportStatus()
             .then((status) => {
@@ -119,7 +116,7 @@ export function GroupModerationBanImportDialog({
                 setImporting(true);
                 setErrors('');
                 setResultMessage('');
-                applyStatusRef.current(status);
+                applyStatus(status);
             })
             .catch((error: unknown) => {
                 console.warn(

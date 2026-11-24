@@ -1,4 +1,10 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import {
+    useEffect,
+    useEffectEvent,
+    useLayoutEffect,
+    useRef,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { GroupMemberRow } from '@/domain/entities/group';
@@ -46,7 +52,11 @@ export function useGroupDialogMembers({
 }) {
     const { t } = useTranslation();
     const searchFailedMessageRef = useRef('');
-    searchFailedMessageRef.current = t('dialog.group.members.failed_to_search');
+    useLayoutEffect(() => {
+        searchFailedMessageRef.current = t(
+            'dialog.group.members.failed_to_search'
+        );
+    });
     const pages = useGroupMemberPages(
         (offset, force) =>
             groupProfileRepository.getGroupMembers({

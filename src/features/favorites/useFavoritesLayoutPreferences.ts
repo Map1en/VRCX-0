@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
 import { FAVORITES_LAYOUT_CONFIG_KEYS } from '@/repositories/configKeys';
@@ -38,9 +38,11 @@ function usePersistedPreference<T extends string>(
     const [value, setValue] = useState<T>(fallback);
     const loadVersionRef = useRef(0);
     const sanitizeRef = useRef(sanitize);
-    sanitizeRef.current = sanitize;
     const fallbackRef = useRef(fallback);
-    fallbackRef.current = fallback;
+    useLayoutEffect(() => {
+        sanitizeRef.current = sanitize;
+        fallbackRef.current = fallback;
+    });
 
     useEffect(() => {
         let active = true;

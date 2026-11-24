@@ -1,5 +1,5 @@
 import { arrayMove } from '@dnd-kit/sortable';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
 import { presenceOf, presenceLiveInstanceTag } from '@/domain/friends/presence';
@@ -168,7 +168,9 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
         (state) => state.revision
     );
     const refreshFavoritesRef = useRef(actions.refreshFavorites);
-    refreshFavoritesRef.current = actions.refreshFavorites;
+    useLayoutEffect(() => {
+        refreshFavoritesRef.current = actions.refreshFavorites;
+    });
     useEffect(() => {
         if (actions.refreshing) {
             return;

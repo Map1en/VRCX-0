@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import type { GroupMemberRow } from '@/domain/entities/group';
 import type { RemoteTabStatus } from '@/domain/shared/types';
@@ -51,8 +51,10 @@ export function useGroupMemberPages(
     const requestIdRef = useRef(0);
     const offsetRef = useRef(0);
     const loadingMoreRef = useRef(false);
-    fetchPageRef.current = fetchPage;
-    loadFailedMessageRef.current = loadFailedMessage;
+    useLayoutEffect(() => {
+        fetchPageRef.current = fetchPage;
+        loadFailedMessageRef.current = loadFailedMessage;
+    });
 
     const reset = useCallback((nextStatus: RemoteTabStatus = '') => {
         requestIdRef.current += 1;
