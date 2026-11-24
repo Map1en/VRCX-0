@@ -99,6 +99,16 @@ VRCX-0 は品質向上のため、匿名の利用データを送信します。�
 - 不具合報告・機能リクエスト：[GitHub Issues](https://github.com/Map1en/VRCX-0/issues)
 - 開発ブログ：[blog.vrcx-0.dev](https://blog.vrcx-0.dev/ja/)
 
+## 技術構成
+
+- ビジネスロジック、VRChat プロトコル、データ保存、バックグラウンド処理はすべて約 30 の crate からなる Rust ワークスペースが担い、React 19 の画面は描画に専念
+- デスクトップ版、ヘッドレスモード、MCP サーバー、AI アシスタントが同じランタイムで動作
+- Rust と画面の間の IPC はすべて型付きで、TypeScript のバインディングは Rust から自動生成
+- レイヤー間の境界は CI のアーキテクチャテストで担保
+- VR オーバーレイはネイティブ描画で、OpenVR と OpenXR の両方に対応
+
+詳しくは [ARCHITECTURE.md](ARCHITECTURE.md)（英語）をご覧ください。
+
 ## ソースからビルド
 
 以下の手順は、VRCX-0 の開発に参加する場合や、ローカルでビルドする場合に使用します。コントリビュートする前に [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。

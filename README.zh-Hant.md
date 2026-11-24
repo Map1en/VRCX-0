@@ -99,6 +99,16 @@ macOS 首次啟動若被系統阻擋，請前往 **系統設定 → 隱私權與
 - 問題回報與功能建議：[GitHub Issues](https://github.com/Map1en/VRCX-0/issues)
 - 開發 blog：[blog.vrcx-0.dev](https://blog.vrcx-0.dev/zh/)
 
+## 技術架構
+
+- 商業邏輯、VRChat 協定、儲存與背景工作全部由約 30 個 crate 組成的 Rust 工作區負責，React 19 介面只負責算繪
+- 桌面版、無介面模式、MCP 伺服器與 AI 助理共用同一套執行環境
+- Rust 與介面之間的 IPC 全部具備型別，TypeScript 綁定由 Rust 自動產生
+- 分層邊界由 CI 中的架構測試強制把關
+- VR 懸浮層原生算繪，同時支援 OpenVR 與 OpenXR
+
+完整說明請見 [ARCHITECTURE.md](ARCHITECTURE.md)（英文）。
+
 ## 從原始碼建置
 
 以下步驟適用於參與開發，或在本機自行建置 VRCX-0。參與貢獻前，請先閱讀 [CONTRIBUTING.md](CONTRIBUTING.md)。

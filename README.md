@@ -130,6 +130,16 @@ you.
 - Bug reports and feature requests: [GitHub Issues](https://github.com/Map1en/VRCX-0/issues)
 - Dev blog: [blog.vrcx-0.dev](https://blog.vrcx-0.dev/en/)
 
+## How it's built
+
+- A Rust workspace of about 30 crates owns all business logic, the VRChat protocol, storage and background work; the React 19 interface only renders
+- One runtime powers the desktop app, headless mode, the MCP server and the AI assistant
+- IPC between Rust and the interface is fully typed, with TypeScript bindings generated from Rust
+- Layer boundaries are enforced by architecture tests in CI
+- The VR overlay renders natively and supports both OpenVR and OpenXR
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full picture.
+
 ## Building from source
 
 Use these steps to contribute or build VRCX-0 locally. Before contributing, see [CONTRIBUTING.md](CONTRIBUTING.md).
