@@ -1,5 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
 
+import { setVrOverlayTestMode } from '@/services/vrOverlayTestService';
 import {
     type PreferencesSnapshot,
     usePreferencesStore
@@ -73,9 +74,6 @@ export function useSettingsVrTabState() {
     );
     const overlayTestMode = useVrOverlayTestStore((state) => state.testMode);
     const overlayTestPending = useVrOverlayTestStore((state) => state.pending);
-    const setOverlayTestMode = useVrOverlayTestStore(
-        (state) => state.setTestMode
-    );
     const {
         setHmdNotificationsDialogOpen,
         setVrNotificationsDialogOpen,
@@ -144,7 +142,7 @@ export function useSettingsVrTabState() {
             overlayTestPending ||
             (!overlayTestMode && isSteamVRRunning !== true),
         onOverlayTestModeChange: (enabled: boolean) => {
-            void setOverlayTestMode(enabled);
+            void setVrOverlayTestMode(enabled);
         },
         onOverlayToastChange: (value: string) => {
             saveStringPreference('overlayToast', 'overlayToast', value);

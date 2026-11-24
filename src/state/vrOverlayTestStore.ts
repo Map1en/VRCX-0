@@ -1,29 +1,20 @@
 import { create } from 'zustand';
 
-import { commands } from '@/platform/tauri/bindings';
-
 interface VrOverlayTestState {
     testMode: boolean;
     pending: boolean;
-    setTestMode: (testMode: boolean) => Promise<void>;
+    setTestMode: (testMode: boolean) => void;
+    setPending: (pending: boolean) => void;
 }
 
-export const useVrOverlayTestStore = create<VrOverlayTestState>((set, get) => ({
+export const useVrOverlayTestStore = create<VrOverlayTestState>((set) => ({
     testMode: false,
     pending: false,
-    async setTestMode(testMode) {
-        if (get().pending) {
-            return;
-        }
-        set({ pending: true });
-        try {
-            const snapshot = await commands.appVrOverlayTestModeSet(testMode);
-            set({ testMode: snapshot.testMode });
-        } catch (error) {
-            console.warn('Failed to set VR overlay test mode:', error);
-        } finally {
-            set({ pending: false });
-        }
+    setTestMode(testMode) {
+        set({ testMode });
+    },
+    setPending(pending) {
+        set({ pending });
     }
 }));
 
