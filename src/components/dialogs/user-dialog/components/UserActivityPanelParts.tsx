@@ -1,5 +1,5 @@
 import type { EChartsType } from 'echarts/core';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { echarts } from '@/lib/echarts';
@@ -178,6 +178,11 @@ export function HeatmapChart({
     const [chartElement, setChartElement] = useState<HTMLDivElement | null>(
         null
     );
+    const chartElementRef = useRef<HTMLDivElement | null>(null);
+    const setChartElementRef = useCallback((node: HTMLDivElement | null) => {
+        chartElementRef.current = node;
+        setChartElement(node);
+    }, []);
     const chartInstanceRef = useRef<EChartsType | null>(null);
     const chartThemeRef = useRef<string | null>(null);
     const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -199,7 +204,8 @@ export function HeatmapChart({
     );
 
     useEffect(() => {
-        if (!chartElement) {
+        const element = chartElementRef.current;
+        if (!chartElement || element !== chartElement) {
             return undefined;
         }
 
@@ -210,7 +216,7 @@ export function HeatmapChart({
 
         const resolveHeight = () =>
             squareCells
-                ? squareGridHeight(chartElement.clientWidth)
+                ? squareGridHeight(element.clientWidth)
                 : DEFAULT_HEIGHT;
 
         const renderChart = () => {
@@ -221,7 +227,7 @@ export function HeatmapChart({
                 resizeObserverRef.current?.disconnect();
                 chart?.dispose();
                 const nextChart = echarts.init(
-                    chartElement,
+                    element,
                     themeName || undefined,
                     {
                         height: resolveHeight()
@@ -232,10 +238,10 @@ export function HeatmapChart({
                 chartThemeRef.current = themeName;
                 resizeObserverRef.current = new ResizeObserver(() => {
                     const nextHeight = resolveHeight();
-                    chartElement.style.height = `${nextHeight}px`;
+                    element.style.height = `${nextHeight}px`;
                     nextChart.resize({ height: nextHeight });
                 });
-                resizeObserverRef.current.observe(chartElement);
+                resizeObserverRef.current.observe(element);
             }
 
             if (!chart) {
@@ -243,7 +249,7 @@ export function HeatmapChart({
             }
 
             const height = resolveHeight();
-            chartElement.style.height = `${height}px`;
+            element.style.height = `${height}px`;
             chart.resize({ height });
 
             if (!normalizedBuckets.length) {
@@ -313,7 +319,7 @@ export function HeatmapChart({
 
     return (
         <div
-            ref={setChartElement}
+            ref={setChartElementRef}
             className="min-w-0 shrink-0 overflow-hidden"
             style={{ width: '100%', height: DEFAULT_HEIGHT }}
             onContextMenu={(event) => {

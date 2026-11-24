@@ -201,7 +201,8 @@ export function PreviousInstanceInfoChart({
     );
 
     useEffect(() => {
-        if (!chartElement) {
+        const element = chartElementRef.current;
+        if (!chartElement || element !== chartElement) {
             return;
         }
 
@@ -210,11 +211,7 @@ export function PreviousInstanceInfoChart({
         async function renderChart() {
             const echartsModule =
                 echartsRef.current || (await import('@/lib/echarts'));
-            if (
-                cancelled ||
-                !chartElement ||
-                chartElementRef.current !== chartElement
-            ) {
+            if (cancelled || !element || chartElementRef.current !== element) {
                 return;
             }
             echartsRef.current = echartsModule;
@@ -228,7 +225,7 @@ export function PreviousInstanceInfoChart({
                 chart?.dispose();
 
                 const nextChart = echarts.init(
-                    chartElement,
+                    element,
                     themeName || undefined,
                     {
                         useDirtyRect: timelineRows.length > 80
@@ -241,7 +238,7 @@ export function PreviousInstanceInfoChart({
                 resizeObserverRef.current = new ResizeObserver(() => {
                     nextChart.resize();
                 });
-                resizeObserverRef.current.observe(chartElement);
+                resizeObserverRef.current.observe(element);
             }
 
             if (!chart) {
@@ -251,7 +248,7 @@ export function PreviousInstanceInfoChart({
             const chartRowCount =
                 chartPayload?.firstEntries.length || timelineRows.length;
             const chartHeight = infoChartHeight(chartRowCount, topInset);
-            chartElement.style.height = `${chartHeight}px`;
+            element.style.height = `${chartHeight}px`;
             chart.resize({ height: chartHeight });
             chart.off('click');
 

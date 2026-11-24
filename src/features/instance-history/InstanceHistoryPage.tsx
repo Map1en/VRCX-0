@@ -516,7 +516,7 @@ export function InstanceHistoryPage({
         [rawDayRows, setDetailRow]
     );
 
-    const activityChartLifecycle = useInstanceActivityChartLifecycle({
+    const { setMainChartElementRef } = useInstanceActivityChartLifecycle({
         barWidth: activitySettings.barWidth,
         chartRows,
         frozen: activityData.dataStatus === 'running',
@@ -885,9 +885,7 @@ export function InstanceHistoryPage({
                                 ) : (
                                     <div className="relative">
                                         <div
-                                            ref={
-                                                activityChartLifecycle.setMainChartElementRef
-                                            }
+                                            ref={setMainChartElementRef}
                                             className={cn(
                                                 'min-h-24 w-full bg-transparent',
                                                 dayStatus === 'running' &&

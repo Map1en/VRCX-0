@@ -70,7 +70,8 @@ export function useInstanceActivityChartLifecycle({
     }, []);
 
     useEffect(() => {
-        if (!mainChartElement || frozen) {
+        const element = chartElementRef.current;
+        if (!mainChartElement || element !== mainChartElement || frozen) {
             return;
         }
 
@@ -81,7 +82,7 @@ export function useInstanceActivityChartLifecycle({
             resizeObserverRef.current?.disconnect();
             chart?.dispose();
 
-            chart = echarts.init(mainChartElement, themeName || undefined);
+            chart = echarts.init(element, themeName || undefined);
             chartInstanceRef.current = chart;
             chartThemeRef.current = themeName;
             hasRenderedRef.current = false;
@@ -89,14 +90,14 @@ export function useInstanceActivityChartLifecycle({
             resizeObserverRef.current = new ResizeObserver(() => {
                 chartInstanceRef.current?.resize();
             });
-            resizeObserverRef.current.observe(mainChartElement);
+            resizeObserverRef.current.observe(element);
         }
 
         const chartHeight = Math.max(
             220,
             chartRows.length * (barWidth + 10) + 200
         );
-        mainChartElement.style.height = `${chartHeight}px`;
+        element.style.height = `${chartHeight}px`;
         chart.resize({ height: chartHeight });
         chart.off('click');
 
