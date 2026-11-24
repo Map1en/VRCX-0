@@ -31,5 +31,6 @@ export function useFeedTableMeta({
     };
     const metaRef = useRef(nextMeta);
 
+    // eslint-disable-next-line react/refs
     return Object.assign(metaRef.current, nextMeta);
 }

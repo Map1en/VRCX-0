@@ -12,7 +12,6 @@ export function useMyAvatarsTableMeta(
     const metaRef = useRef<MyAvatarsTableMeta>({
         onAvatarAction
     });
-    metaRef.current.onAvatarAction = onAvatarAction;
-
-    return metaRef.current;
+    // eslint-disable-next-line react/refs
+    return Object.assign(metaRef.current, { onAvatarAction });
 }

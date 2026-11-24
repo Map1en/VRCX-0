@@ -345,6 +345,7 @@ export function useLocationMetadataBatch(
                 settledWorldProfileIds,
                 worldProfilesById
             });
+            // eslint-disable-next-line react/refs
             const previous = previousMetadataByKey.get(entry.key);
             nextMetadataByKey.set(
                 entry.key,

@@ -96,6 +96,7 @@ export function useScreenshotGalleryController({
     const visibleGalleryImages =
         galleryImagesFolder === selectedGalleryFolder ? galleryImages : [];
     const selectedGalleryScrollTop =
+        // eslint-disable-next-line react/refs
         galleryScrollPositionsRef.current.get(selectedGalleryFolder) || 0;
     const shouldShowGalleryImagesLoading =
         isGalleryImagesLoading && visibleGalleryImages.length === 0;
