@@ -19,7 +19,7 @@ import type {
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import { getTimeZoneDateParts } from '@/shared/utils/dateTimeFormatters';
 
-import { getEventGroupId, getEventId } from './toolsDialogUtils';
+import { getEventGroupId, getEventId } from './groupEventFormat';
 
 const DATE_KEY_FORMAT = 'yyyy-MM-dd';
 

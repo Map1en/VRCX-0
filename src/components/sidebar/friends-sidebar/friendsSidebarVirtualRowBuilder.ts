@@ -1,9 +1,9 @@
+import type { SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import type { CurrentUserPresenceRecord } from '@/shared/utils/currentUserPresence';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 
 import type {
     SameInstanceGroup,
-    SidebarFriendRecord,
     SidebarPreferences
 } from './friendsSidebarModel';
 import type { FriendsSidebarOpenGroups } from './useFriendsSidebarPreferences';

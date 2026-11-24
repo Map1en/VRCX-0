@@ -1,6 +1,7 @@
 import { FolderOpenIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { formatDataDirMigrationBytes } from '@/services/dataDirMigrationI18n';
 import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
 import { dataDirectoryPathForDisplay } from '@/shared/utils/dataDirectoryPath';
@@ -27,7 +28,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { BrowseHistoryRetentionField } from '../BrowseHistoryRetentionField';
-import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { useSettingsAdvancedTabState } from '../useSettingsAdvancedTabState';

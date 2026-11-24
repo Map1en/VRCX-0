@@ -9,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/UserSelfEditDialogs';
+import { type SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { handleSidebarRowArrowNavigation } from '@/components/sidebar/sidebarRowArrowNavigation';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
@@ -52,7 +53,6 @@ import {
     normalizeSidebarFilterQuery,
     sortActiveRows,
     sortRows,
-    type SidebarFriendRecord,
     type SidebarPreferences
 } from './friends-sidebar/friendsSidebarModel';
 import {

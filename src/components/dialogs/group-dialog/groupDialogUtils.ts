@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 
-import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+import { getEventId } from '@/components/group-event/groupEventFormat';
 import type {
     GroupAnnouncementRecord,
     GroupProfileRecord

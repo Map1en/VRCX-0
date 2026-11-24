@@ -7,8 +7,8 @@ const commandMocks = vi.hoisted(() => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({ commands: commandMocks }));
 
-import { getUsers } from './vrchatSearchRepository';
-import { saveUserNote } from './vrchatToolsRepository';
+import vrchatSearchRepository from './vrchatSearchRepository';
+import vrchatToolsRepository from './vrchatToolsRepository';
 
 describe('VRChat repository structured error contract', () => {
     beforeEach(() => {
@@ -21,7 +21,7 @@ describe('VRChat repository structured error contract', () => {
             data: 'Rate limited'
         });
 
-        await expect(getUsers()).rejects.toMatchObject({
+        await expect(vrchatSearchRepository.getUsers()).rejects.toMatchObject({
             message: 'Rate limited',
             status: 429,
             endpoint: 'users',
@@ -37,7 +37,10 @@ describe('VRChat repository structured error contract', () => {
         });
 
         await expect(
-            saveUserNote({ targetUserId: 'usr_1', note: 'hello' })
+            vrchatToolsRepository.saveUserNote({
+                targetUserId: 'usr_1',
+                note: 'hello'
+            })
         ).rejects.toMatchObject({
             message: 'Note save failed',
             status: 500,

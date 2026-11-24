@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { HighlightedCodeBlock } from '@/components/HighlightedCodeBlock';
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import {
     commands,
     type ClientConfigSnippets,
@@ -22,7 +23,6 @@ import { Input } from '@/ui/shadcn/input';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/ui/shadcn/tabs';
 
-import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 
 type McpCommandOptions = {

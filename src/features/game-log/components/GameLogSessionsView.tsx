@@ -14,6 +14,16 @@ import {
     LogFilterContextMenu,
     LogFilterMenuItems
 } from '@/components/data-table/LogFilterContextMenu';
+import {
+    collectGameLogSessionFriends,
+    getGameLogSessionKey,
+    resolveGameLogSessionDuration as resolveSessionDuration,
+    resolveGameLogWorldTarget as resolveWorldTarget
+} from '@/components/game-log/gameLogRows';
+import type {
+    GameLogSession,
+    GameLogSessionEvent
+} from '@/components/game-log/gameLogTypes';
 import { Location } from '@/components/Location';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
@@ -44,15 +54,8 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { useGameLogFilterCommands } from '../gameLogFilterCommands';
-import {
-    collectGameLogSessionFriends,
-    getGameLogSessionKey,
-    resolveGameLogSessionDuration as resolveSessionDuration,
-    resolveGameLogWorldTarget as resolveWorldTarget
-} from '../gameLogRows';
 import { useGameLogSessionAffinity } from '../gameLogSessionAffinity';
 import { buildGameLogSessionDurationDetails } from '../gameLogSessionDurations';
-import type { GameLogSession, GameLogSessionEvent } from '../gameLogTypes';
 import { SessionEventGroups } from './GameLogSessionEventRow';
 import { useSessionScrollAnchor } from './useSessionScrollAnchor';
 

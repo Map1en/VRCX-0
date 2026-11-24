@@ -7,18 +7,17 @@ import {
     useState
 } from 'react';
 
+import {
+    GAME_LOG_SESSION_FILTER_TYPES,
+    type GameLogFilterType,
+    type GameLogViewMode
+} from '@/components/game-log/gameLogTypes';
 import { useTodayDate } from '@/lib/useTodayDate';
 import configRepository from '@/repositories/configRepository';
 import {
     GAME_LOG_FILTER_TYPES,
     isGameLogFilterType
 } from '@/repositories/gameLogRepository';
-
-import {
-    GAME_LOG_SESSION_FILTER_TYPES,
-    type GameLogFilterType,
-    type GameLogViewMode
-} from './gameLogTypes';
 
 function normalizeFilters(
     filters: unknown,

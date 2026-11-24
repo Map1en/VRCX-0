@@ -3,12 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AssistantChart, UIToolCall } from '@/domain/assistant/types';
+import { formatDateTime } from '@/lib/dateTime';
+import { echarts } from '@/lib/echarts';
 import {
     useActivityPalette,
     type ActivityPalette
-} from '@/features/activity/useActivityPalette';
-import { formatDateTime } from '@/lib/dateTime';
-import { echarts } from '@/lib/echarts';
+} from '@/lib/useActivityPalette';
 import { getResolvedThemeMode } from '@/services/themeService';
 import { useShellStore } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';

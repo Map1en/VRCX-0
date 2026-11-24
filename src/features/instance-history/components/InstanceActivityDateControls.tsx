@@ -6,17 +6,16 @@ import {
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    formatDateLabel,
+    parseLocalDayKey,
+    toLocalDayKey
+} from '@/lib/instanceActivityDate';
 import { useTodayDate } from '@/lib/useTodayDate';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Calendar } from '@/ui/shadcn/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-
-import {
-    formatDateLabel,
-    parseLocalDayKey,
-    toLocalDayKey
-} from '../instance-activity/instanceActivityDate';
 
 type InstanceActivityDateControlsProps = {
     selectedDate: string;

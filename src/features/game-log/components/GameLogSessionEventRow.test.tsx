@@ -61,8 +61,9 @@ vi.mock('@/ui/shadcn/button', () => ({
     )
 }));
 
+import type { GameLogSessionEvent } from '@/components/game-log/gameLogTypes';
+
 import { GameLogSessionAffinityContext } from '../gameLogSessionAffinity';
-import type { GameLogSessionEvent } from '../gameLogTypes';
 import { SessionEventGroups } from './GameLogSessionEventRow';
 
 const emptyAffinity = {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ScreenshotFacet } from '@/platform/tauri/bindings';
-import { getFriendLogHistory } from '@/repositories/friendLogHistoryRepository';
+import friendLogHistoryRepository from '@/repositories/friendLogHistoryRepository';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -53,7 +53,8 @@ export function useScreenshotPeopleSections(
             return;
         }
         let active = true;
-        getFriendLogHistory(currentUserId, { types: ['Unfriend'] })
+        friendLogHistoryRepository
+            .getFriendLogHistory(currentUserId, { types: ['Unfriend'] })
             .then((rows) => {
                 if (active) {
                     setUnfriended({

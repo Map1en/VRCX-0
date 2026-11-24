@@ -25,6 +25,21 @@ import type { ComponentProps } from 'react';
 import type { Locale } from 'react-day-picker';
 import { useTranslation } from 'react-i18next';
 
+import {
+    buildEventSeries,
+    buildEventsByDate,
+    buildFollowedCountByDate,
+    calendarDateKey,
+    calendarLocaleForLanguage,
+    dateKeyToLocalDate,
+    formatCalendarRequestDate,
+    monthDateFromKey
+} from '@/components/group-event/groupCalendarModel';
+import {
+    getEventGroupId,
+    getEventId
+} from '@/components/group-event/groupEventFormat';
+import { GroupEventRow } from '@/components/group-event/GroupEventRow';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateTime } from '@/lib/dateTime';
 import {
@@ -68,24 +83,8 @@ import {
 } from '@/ui/shadcn/toggle-group';
 
 import { GroupCalendarDiscoverView } from './GroupCalendarDiscoverView';
-import {
-    buildEventSeries,
-    buildEventsByDate,
-    buildFollowedCountByDate,
-    calendarDateKey,
-    calendarLocaleForLanguage,
-    dateKeyToLocalDate,
-    formatCalendarRequestDate,
-    monthDateFromKey
-} from './groupCalendarModel';
 import { GroupCalendarTimeline } from './GroupCalendarTimeline';
-import { GroupEventRow } from './GroupEventRow';
-import {
-    getEventGroupId,
-    getEventId,
-    selectedDateKey,
-    updateArrayValue
-} from './toolsDialogUtils';
+import { selectedDateKey, updateArrayValue } from './toolsDialogUtils';
 
 type GroupCalendarEvent = GroupCalendarEventRecord;
 type GroupCalendarDayButtonContextValue = {

@@ -1,8 +1,8 @@
+import type { SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import {
     firstFiniteLocationNumber,
     firstNonNegativeLocationNumber
 } from '@/components/location/locationModel';
-import type { SidebarFriendRecord } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import {
     presenceDotClassName,
     presenceLocationTag,

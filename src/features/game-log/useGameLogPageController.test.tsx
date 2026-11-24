@@ -5,13 +5,12 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { FavoriteGroupMap } from '@/domain/favorites/types';
-
 import type {
     GameLogRow,
     GameLogSession,
     GameLogViewMode
-} from './gameLogTypes';
+} from '@/components/game-log/gameLogTypes';
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 
 const mocks = vi.hoisted(
     (): {

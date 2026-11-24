@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -14,7 +15,6 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
-import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 

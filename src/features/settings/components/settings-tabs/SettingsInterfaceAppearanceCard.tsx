@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 import { ChevronDownIcon, Settings2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { getLanguageName, languageCodes } from '@/localization/index';
 import { supportsConfigurableCjkFontPack } from '@/services/themeService';
 import {
@@ -40,7 +41,6 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 
 import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
-import { SettingsCard } from '../SettingsCard';
 import { Field, SegmentedPreference } from '../SettingsField';
 
 type FontPreferencePrefs = {

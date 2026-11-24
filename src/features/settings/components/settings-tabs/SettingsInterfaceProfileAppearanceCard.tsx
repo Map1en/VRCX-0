@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import {
     ToggleGroup,
@@ -10,7 +11,6 @@ import {
 } from '@/ui/shadcn/toggle-group';
 
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
-import { SettingsCard } from '../SettingsCard';
 import { Field, FieldGroup, SettingsSectionHeading } from '../SettingsField';
 
 type ProfileDecorationKind =

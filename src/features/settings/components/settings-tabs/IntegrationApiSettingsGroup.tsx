@@ -7,6 +7,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { cn } from '@/lib/utils';
 import { commands, type IntegrationApiStatus } from '@/platform/tauri/bindings';
 import { PlatformCommandError } from '@/platform/tauri/errors';
@@ -34,7 +35,6 @@ import {
 } from '@/ui/shadcn/number-field';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 
 function IntegrationApiInformationTypesDialog({

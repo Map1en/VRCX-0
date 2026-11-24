@@ -2,6 +2,7 @@ import { ChevronDownIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { cn } from '@/lib/utils';
 import {
     TRUST_COLOR_DEFAULTS,
@@ -21,7 +22,6 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import type { SettingsPageStateSections } from '../../settingsPageStateSections';
-import { SettingsCard } from '../SettingsCard';
 import { Field, SegmentedPreference } from '../SettingsField';
 
 type InterfaceState = SettingsPageStateSections['interface'];

@@ -5,9 +5,8 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { useNavigationCacheStore } from '@/state/navigationCacheStore';
-
-import { SettingsCard } from './SettingsCard';
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
     BaseDirectory: { AppCache: 16 },

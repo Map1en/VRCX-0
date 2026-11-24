@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import type { NotificationLayout } from '@/state/shellStore';
 import {
     Select,
@@ -12,7 +13,6 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 
 import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
-import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 
 type SettingsNotificationsInAppCardProps = {

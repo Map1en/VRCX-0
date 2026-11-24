@@ -1,9 +1,5 @@
 import type { TFunction } from 'i18next';
 
-import {
-    getEventGroupId,
-    getEventId
-} from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
@@ -14,6 +10,8 @@ import {
 } from '@/services/shellIntegrationService';
 import { toast } from '@/services/toastService';
 import { vrchatGroupCalendarUrl } from '@/shared/constants/vrchatWebUrls';
+
+import { getEventGroupId, getEventId } from './groupEventFormat';
 
 async function getCalendarIcs(event: GroupCalendarEventRecord, t: TFunction) {
     const groupId = getEventGroupId(event);

@@ -17,6 +17,10 @@ import {
     getLogFilterRowAttributes
 } from '@/components/data-table/LogFilterContextMenu';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
+import type {
+    GameLogPaginationSetter,
+    GameLogRow
+} from '@/components/game-log/gameLogTypes';
 import { PageFooter } from '@/components/layout/PageScaffold';
 import { Table, TableBody } from '@/ui/shadcn/table';
 
@@ -25,7 +29,6 @@ import {
     useGameLogFilterCommands
 } from '../gameLogFilterCommands';
 import { resolveGameLogPageSize } from '../gameLogState';
-import type { GameLogPaginationSetter, GameLogRow } from '../gameLogTypes';
 
 type GameLogTableShellProps = {
     pageCount: number;

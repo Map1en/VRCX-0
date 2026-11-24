@@ -3,6 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/UserSelfEditDialogs';
+import {
+    resolveSidebarStatusDotClassName,
+    type SidebarFriendRecord
+} from '@/components/friends/friendStatusModel';
 import { useGameIsolationCardStore } from '@/components/layout/status-bar/gameIsolationCardStore';
 import { useLocationMetadata } from '@/components/location/useLocationMetadata';
 import {
@@ -19,10 +23,6 @@ import {
     resolveFriendRowLocationState,
     StaticSidebarLocation
 } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
-import {
-    resolveSidebarStatusDotClassName,
-    type SidebarFriendRecord
-} from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { useFriendsSidebarActions } from '@/components/sidebar/friends-sidebar/useFriendsSidebarActions';
 import { useFriendsSidebarPreferences } from '@/components/sidebar/friends-sidebar/useFriendsSidebarPreferences';
 import { SidePanelSelfAccountMenu } from '@/components/sidebar/side-panel/SidePanelSelfAccountMenu';

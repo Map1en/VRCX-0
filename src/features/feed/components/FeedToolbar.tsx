@@ -3,6 +3,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DateRangeFilter } from '@/components/date-range-filter/DateRangeFilter';
+import { FeedPersistenceDisabledIndicator } from '@/components/feed/FeedPersistenceDisabledIndicator';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
@@ -23,7 +24,6 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 
 import type { FeedViewMode } from '../feedColumnsState';
-import { FeedPersistenceDisabledIndicator } from './FeedPersistenceDisabledIndicator';
 import { FeedSearchBox } from './FeedSearchBox';
 import { FeedViewModeToggle } from './FeedViewModeToggle';
 

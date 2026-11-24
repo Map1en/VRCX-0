@@ -19,6 +19,7 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
+import { FeedPersistenceDisabledIndicator } from '@/components/feed/FeedPersistenceDisabledIndicator';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
@@ -46,7 +47,6 @@ import {
     DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
 
-import { FeedPersistenceDisabledIndicator } from '../components/FeedPersistenceDisabledIndicator';
 import { FeedViewModeToggle } from '../components/FeedViewModeToggle';
 import {
     FEED_COLUMN_DENSITY_OPTIONS,

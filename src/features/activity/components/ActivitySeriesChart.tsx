@@ -4,6 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import { formatDateTime } from '@/lib/dateTime';
 import { echarts } from '@/lib/echarts';
+import {
+    useActivityPalette,
+    type ActivityPalette
+} from '@/lib/useActivityPalette';
 import type {
     ActivityPageSeries,
     ActivitySeriesPoint
@@ -11,10 +15,6 @@ import type {
 import { useShellStore } from '@/state/shellStore';
 
 import { parseLocalDate } from '../activityPageModel';
-import {
-    useActivityPalette,
-    type ActivityPalette
-} from '../useActivityPalette';
 
 const CHART_HEIGHT = 210;
 

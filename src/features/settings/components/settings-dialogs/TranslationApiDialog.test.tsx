@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { RuntimeModelRef } from '@/features/assistant/components/RuntimeModelSelect';
+import type { RuntimeModelRef } from '@/components/llm/RuntimeModelSelect';
 import type { LlmEndpointDto } from '@/platform/tauri/bindings';
 
 import { TranslationApiDialog } from './TranslationApiDialog';

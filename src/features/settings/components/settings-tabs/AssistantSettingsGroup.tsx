@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { RuntimeModelSelect } from '@/features/assistant/components/RuntimeModelSelect';
+import { SettingsCard } from '@/components/layout/SettingsCard';
+import { RuntimeModelSelect } from '@/components/llm/RuntimeModelSelect';
 import {
     commands,
     type AssistantRuntimeSelection,
@@ -23,7 +24,6 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 
 const PLAYBOOK_MODES: PlaybookMode[] = ['auto', 'guided', 'open'];

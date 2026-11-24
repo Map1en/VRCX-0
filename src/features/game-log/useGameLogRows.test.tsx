@@ -57,7 +57,8 @@ vi.mock('@/state/sessionStore', () => ({
     ) => selector({ isFavoritesLoaded: true })
 }));
 
-import type { GameLogSession } from './gameLogTypes';
+import type { GameLogSession } from '@/components/game-log/gameLogTypes';
+
 import { useGameLogRows } from './useGameLogRows';
 
 function session(id: number): GameLogSession {

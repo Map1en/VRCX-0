@@ -160,5 +160,4 @@ const vrchatSearchRepository = Object.freeze({
     getInstanceFromShortName
 });
 
-export { getUsers };
 export default vrchatSearchRepository;

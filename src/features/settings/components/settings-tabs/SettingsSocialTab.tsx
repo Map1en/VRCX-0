@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { UserPickerRow } from '@/components/search/UserPickerRow';
 import { normalizeEndpoint, normalizeUserId } from '@/domain/users/userFacts';
@@ -46,7 +47,6 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
-import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 

@@ -12,6 +12,10 @@ import { useState, type HTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+    defaultOccurrenceIndex,
+    weeklySlotStart
+} from '@/components/group-event/groupCalendarModel';
+import {
     copyEventLink,
     downloadEventIcs,
     openCalendarEvent
@@ -41,8 +45,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 
-import { defaultOccurrenceIndex, weeklySlotStart } from './groupCalendarModel';
-import { getEventId } from './toolsDialogUtils';
+import { getEventId } from './groupEventFormat';
 
 const COLLAPSED_CHIP_COUNT = 7;
 

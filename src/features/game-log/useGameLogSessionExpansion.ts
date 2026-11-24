@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { getGameLogSessionKey } from './gameLogRows';
-import type { GameLogSession } from './gameLogTypes';
+import { getGameLogSessionKey } from '@/components/game-log/gameLogRows';
+import type { GameLogSession } from '@/components/game-log/gameLogTypes';
 
 export function useGameLogSessionExpansion(
     sessions: readonly GameLogSession[],

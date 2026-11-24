@@ -1,19 +1,18 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import gameLogRepository from '@/repositories/gameLogRepository';
-import { copyTextToClipboard } from '@/services/clipboardService';
-import { toast } from '@/services/toastService';
-import { useModalStore } from '@/state/modalStore';
-
 import {
     canDeleteGameLogRow,
     describeGameLogDetail,
     getGameLogCopyTarget,
     getGameLogRowKey,
     normalizeGameLogId as normalizeId
-} from './gameLogRows';
-import type { GameLogRow } from './gameLogTypes';
+} from '@/components/game-log/gameLogRows';
+import type { GameLogRow } from '@/components/game-log/gameLogTypes';
+import gameLogRepository from '@/repositories/gameLogRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
+import { toast } from '@/services/toastService';
+import { useModalStore } from '@/state/modalStore';
 
 type DeleteOptions = {
     skipConfirm?: boolean;

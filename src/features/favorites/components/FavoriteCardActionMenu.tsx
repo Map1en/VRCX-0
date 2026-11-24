@@ -2,7 +2,7 @@ import { ExternalLinkIcon, MoreHorizontalIcon, Share2Icon } from 'lucide-react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { registerWorldOpenShare } from '@/repositories/worldProfileRepository';
+import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { openExternalLink } from '@/services/entityMediaService';
 import {
@@ -96,7 +96,7 @@ export function FavoriteCardActionMenu({
                 })
             }
         );
-        registerWorldOpenShare(worldId);
+        worldProfileRepository.registerWorldOpenShare(worldId);
     }
 
     function copyAvatarShareLink() {

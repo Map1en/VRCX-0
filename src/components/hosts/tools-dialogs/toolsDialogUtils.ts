@@ -2,7 +2,6 @@ import { format } from 'date-fns';
 
 import { commands } from '@/platform/tauri/bindings';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
-import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import { formatCsvField } from '@/shared/utils/csv';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -133,14 +132,6 @@ export function normalizeExportMemo(value: unknown) {
 
 export function truncateExportMemo(value: unknown) {
     return normalizeExportMemo(value).slice(0, 256);
-}
-
-export function getEventGroupId(event: GroupCalendarEventRecord | null) {
-    return event?.ownerId || event?.groupId || event?.group?.id || '';
-}
-
-export function getEventId(event: GroupCalendarEventRecord | null) {
-    return event?.id || event?.eventId || '';
 }
 
 export function selectedDateKey(value?: Date | number | string | null) {

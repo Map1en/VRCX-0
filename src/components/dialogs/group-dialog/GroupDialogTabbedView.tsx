@@ -6,7 +6,7 @@ import { shallow } from 'zustand/shallow';
 import {
     getEventGroupId,
     getEventId
-} from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+} from '@/components/group-event/groupEventFormat';
 import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { useStableCommands } from '@/lib/useStableCommands';

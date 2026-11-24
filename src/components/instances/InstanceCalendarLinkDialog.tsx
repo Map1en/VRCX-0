@@ -6,7 +6,7 @@ import {
     normalizeGroupEvent
 } from '@/components/dialogs/group-dialog/groupDialogUtils';
 import { formatEventRange } from '@/components/group-event/groupEventFormat';
-import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+import { getEventId } from '@/components/group-event/groupEventFormat';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import vrchatToolsRepository, {
     type GroupCalendarEventRecord

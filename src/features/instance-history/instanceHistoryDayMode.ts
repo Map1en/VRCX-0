@@ -3,8 +3,8 @@ import {
     rowDurationValue,
     rowLocation
 } from '@/components/dialogs/previous-instances-table/previousInstancesRows';
+import { toLocalDayKey } from '@/lib/instanceActivityDate';
 
-import { toLocalDayKey } from './instance-activity/instanceActivityDate';
 import type {
     InstanceActivityChartRow,
     InstanceHistoryEntryRow

@@ -6,7 +6,7 @@ const commandMocks = vi.hoisted(() => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({ commands: commandMocks }));
 
-import { getFriendLogHistory } from './friendLogHistoryRepository';
+import friendLogHistoryRepository from './friendLogHistoryRepository';
 
 describe('friendLogHistoryRepository', () => {
     beforeEach(() => {
@@ -51,10 +51,13 @@ describe('friendLogHistoryRepository', () => {
             }
         ]);
 
-        const rows = await getFriendLogHistory(' owner_user ', {
-            targetUserId: ' target_user ',
-            types: ['Friend', 'DisplayName', 'TrustLevel']
-        });
+        const rows = await friendLogHistoryRepository.getFriendLogHistory(
+            ' owner_user ',
+            {
+                targetUserId: ' target_user ',
+                types: ['Friend', 'DisplayName', 'TrustLevel']
+            }
+        );
 
         expect(commandMocks.appFriendLogHistoryQuery).toHaveBeenCalledWith({
             userId: 'owner_user',
@@ -90,7 +93,7 @@ describe('friendLogHistoryRepository', () => {
     });
 
     it('passes the date range and cursor without applying a search result cap', async () => {
-        await getFriendLogHistory('usr_owner', {
+        await friendLogHistoryRepository.getFriendLogHistory('usr_owner', {
             dateFrom: '2026-09-01T00:00:00Z',
             dateTo: '2026-09-02T23:59:59.999Z'
         });
@@ -103,7 +106,7 @@ describe('friendLogHistoryRepository', () => {
             })
         );
         const cursor = { createdAt: '2026-09-01T00:00:00Z', rowId: 42 };
-        await getFriendLogHistory('usr_owner', {
+        await friendLogHistoryRepository.getFriendLogHistory('usr_owner', {
             cursor,
             limit: 80,
             excludedTypes: ['Unfriend']

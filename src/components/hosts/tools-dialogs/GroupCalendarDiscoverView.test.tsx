@@ -16,7 +16,8 @@ const mocks = vi.hoisted(() => ({
     discover: vi.fn()
 }));
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-i18next')>()),
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
@@ -38,7 +39,7 @@ vi.mock('@/ui/shadcn/scroll-area', () => ({
     ScrollArea: ({ children }: PropsWithChildren) => <div>{children}</div>
 }));
 
-vi.mock('./GroupEventRow', () => ({
+vi.mock('@/components/group-event/GroupEventRow', () => ({
     GroupEventRow: ({
         events,
         groupName

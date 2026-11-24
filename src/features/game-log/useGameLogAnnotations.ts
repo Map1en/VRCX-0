@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 
+import { normalizeGameLogId } from '@/components/game-log/gameLogRows';
+import type { GameLogRow } from '@/components/game-log/gameLogTypes';
 import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
-
-import { normalizeGameLogId } from './gameLogRows';
-import type { GameLogRow } from './gameLogTypes';
 
 export function useGameLogAnnotations({ rows }: { rows: GameLogRow[] }) {
     const localFriendFavorites = useFavoriteStore(

@@ -7,8 +7,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useAppTable } from '@/components/data-table/appTable';
 import type { DateTimeRangePicker } from '@/components/date-time-range-picker/DateTimeRangePicker';
+import type { GameLogRow } from '@/components/game-log/gameLogTypes';
 
-import type { GameLogRow } from '../gameLogTypes';
 import { GameLogToolbar } from './GameLogToolbar';
 
 const mocks = vi.hoisted(() => ({ picker: vi.fn() }));

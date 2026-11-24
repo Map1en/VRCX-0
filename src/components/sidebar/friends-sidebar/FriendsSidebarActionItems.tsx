@@ -9,12 +9,11 @@ import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { SocialStatusPreset } from '@/components/dialogs/user-dialog/userProfileFields';
+import type { SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { isActionRecent } from '@/services/recentActionService';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
-
-import type { SidebarFriendRecord } from './friendsSidebarModel';
 
 const statusOptions = [
     { value: 'join me', labelKey: 'dialog.user.status.join_me' },

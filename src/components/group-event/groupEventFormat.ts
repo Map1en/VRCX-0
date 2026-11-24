@@ -83,3 +83,11 @@ export function eventImageUrl(
 export function isCancelledEvent(event: GroupCalendarEventRecord) {
     return CANCELLED_TITLE_PATTERN.test(event.title || '');
 }
+
+export function getEventGroupId(event: GroupCalendarEventRecord | null) {
+    return event?.ownerId || event?.groupId || event?.group?.id || '';
+}
+
+export function getEventId(event: GroupCalendarEventRecord | null) {
+    return event?.id || event?.eventId || '';
+}

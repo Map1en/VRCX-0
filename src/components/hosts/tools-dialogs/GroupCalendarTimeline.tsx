@@ -3,6 +3,8 @@ import { StarIcon, UsersRoundIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { buildTimelineData } from '@/components/group-event/groupCalendarModel';
+import { getEventGroupId } from '@/components/group-event/groupEventFormat';
 import { GroupEventHoverCard } from '@/components/group-event/GroupEventHoverCard';
 import {
     Gantt,
@@ -28,9 +30,6 @@ import {
 } from '@/state/preferencesStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
-
-import { buildTimelineData } from './groupCalendarModel';
-import { getEventGroupId } from './toolsDialogUtils';
 
 const READ_ONLY_INTERACTIONS = {
     drag: false,

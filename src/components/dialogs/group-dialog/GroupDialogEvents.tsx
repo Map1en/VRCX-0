@@ -2,9 +2,9 @@ import { CalendarIcon, CalendarPlusIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { buildEventSeries } from '@/components/hosts/tools-dialogs/groupCalendarModel';
-import { GroupEventRow } from '@/components/hosts/tools-dialogs/GroupEventRow';
-import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+import { buildEventSeries } from '@/components/group-event/groupCalendarModel';
+import { getEventId } from '@/components/group-event/groupEventFormat';
+import { GroupEventRow } from '@/components/group-event/GroupEventRow';
 import {
     ToolbarActions,
     ToolbarIconButton,

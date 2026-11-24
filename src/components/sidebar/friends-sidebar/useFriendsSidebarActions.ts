@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { useCurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/useCurrentUserSocialStatusDialog';
+import type { SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type {
     CurrentUserUpdateRequest,
@@ -23,7 +24,6 @@ import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';
-import type { SidebarFriendRecord } from './friendsSidebarModel';
 
 type ModalStoreActions = ReturnType<typeof useModalStore.getState>;
 type CurrentUserRecord = Record<string, unknown>;

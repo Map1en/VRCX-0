@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { normalizeFeedId as normalizeId } from '@/components/feed/feedRows';
 import type { FeedLoadStatus, FeedRow } from '@/components/feed/feedTypes';
+import { useFeedHiddenUserFilters } from '@/components/feed/useFeedHiddenUserFilters';
 import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
 import feedRepository from '@/repositories/feedRepository';
 import type { FeedLiveMergeOptionsBuilder } from '@/services/feedLiveMergeService';
@@ -26,7 +27,6 @@ import {
     FEED_PAGE_SIZE,
     resolveLastFeedCursor
 } from '../feedPaging';
-import { useFeedHiddenUserFilters } from '../useFeedHiddenUserFilters';
 
 export function resolveFeedColumnInitialLiveSequence(value: number) {
     return Number.isFinite(value) && value > 0 ? value : 0;

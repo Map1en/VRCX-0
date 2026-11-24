@@ -123,5 +123,4 @@ const friendLogHistoryRepository = {
     deleteFriendLogHistory
 };
 
-export { getFriendLogHistory };
 export default friendLogHistoryRepository;

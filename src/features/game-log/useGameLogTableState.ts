@@ -3,6 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePersistedTableColumnSizing } from '@/components/data-table/dataTablePersistence';
 import {
+    GAME_LOG_SESSION_LIMIT_MAX,
+    GAME_LOG_SESSION_PAGE_SIZE
+} from '@/components/game-log/gameLogTypes';
+import type { GameLogViewMode } from '@/components/game-log/gameLogTypes';
+import {
     getTablePageSizePreference,
     getTablePageSizesPreference
 } from '@/services/preferencesService';
@@ -19,11 +24,6 @@ import {
     sanitizeGameLogSorting,
     writePersistedGameLogState
 } from './gameLogState';
-import {
-    GAME_LOG_SESSION_LIMIT_MAX,
-    GAME_LOG_SESSION_PAGE_SIZE
-} from './gameLogTypes';
-import type { GameLogViewMode } from './gameLogTypes';
 
 type UseGameLogTableStateOptions = {
     deferredSearchQuery: string;

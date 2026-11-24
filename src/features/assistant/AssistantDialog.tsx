@@ -12,12 +12,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import { RuntimeModelSelect } from '@/components/llm/RuntimeModelSelect';
 import {
     getEffectiveReasoningEffort,
     getModelReasoning,
     getValidReasoningEfforts,
     shouldShowReasoningEffortSelector
-} from '@/features/llm/reasoning';
+} from '@/lib/llmReasoning';
 import { cn } from '@/lib/utils';
 import {
     commands,
@@ -74,7 +75,6 @@ import { useDraftPrompts } from './components/AssistantFollowUps';
 import { AssistantTranscript } from './components/AssistantTranscript';
 import { Composer } from './components/Composer';
 import { EntityPanel } from './components/EntityPanel';
-import { RuntimeModelSelect } from './components/RuntimeModelSelect';
 import { SessionSidebar } from './components/SessionSidebar';
 import type { AssistantHealth } from './useAssistantHealth';
 import { useAssistantHealth } from './useAssistantHealth';

@@ -232,5 +232,4 @@ const gameLogRepository = Object.freeze({
     getAllUserStats
 });
 
-export { queryGameLog, queryLatestSessions };
 export default gameLogRepository;

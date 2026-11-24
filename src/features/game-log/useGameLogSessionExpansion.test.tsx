@@ -3,8 +3,9 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getGameLogSessionKey } from './gameLogRows';
-import type { GameLogSession } from './gameLogTypes';
+import { getGameLogSessionKey } from '@/components/game-log/gameLogRows';
+import type { GameLogSession } from '@/components/game-log/gameLogTypes';
+
 import { useGameLogSessionExpansion } from './useGameLogSessionExpansion';
 
 function session(id: number): GameLogSession {

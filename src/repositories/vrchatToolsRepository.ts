@@ -304,5 +304,4 @@ const vrchatToolsRepository = Object.freeze({
     editInviteMessage
 });
 
-export { saveUserNote };
 export default vrchatToolsRepository;

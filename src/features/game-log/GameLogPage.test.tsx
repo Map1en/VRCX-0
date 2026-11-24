@@ -5,14 +5,17 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { getGameLogSessionKey } from '@/components/game-log/gameLogRows';
+import type {
+    GameLogSession,
+    GameLogViewMode
+} from '@/components/game-log/gameLogTypes';
 import {
     createUnavailableHostCapabilities,
     useRuntimeStore
 } from '@/state/runtimeStore';
 
 import { GameLogPage } from './GameLogPage';
-import { getGameLogSessionKey } from './gameLogRows';
-import type { GameLogSession, GameLogViewMode } from './gameLogTypes';
 
 const mocks = vi.hoisted<{
     viewMode: GameLogViewMode;

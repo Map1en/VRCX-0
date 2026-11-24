@@ -16,7 +16,7 @@ import {
     defaultOccurrenceIndex,
     monthDateFromKey,
     weeklySlotStart
-} from './groupCalendarModel';
+} from '@/components/group-event/groupCalendarModel';
 
 describe('groupCalendarModel date helpers', () => {
     beforeEach(() => {

@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { resolveSidebarStatusDotClassName } from '@/components/friends/friendStatusModel';
 import {
     activePresence,
     onlinePresence,
     pendingPresence
 } from '@/test/presenceFixtures';
 
-import {
-    buildSameInstanceGroups,
-    resolveSidebarStatusDotClassName,
-    sortRows
-} from './friendsSidebarModel';
+import { buildSameInstanceGroups, sortRows } from './friendsSidebarModel';
 
 describe('friendsSidebarModel time in instance sorting', () => {
     it('orders online friends by their stay clock and keeps possibly offline friends last', () => {

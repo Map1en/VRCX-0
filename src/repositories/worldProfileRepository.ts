@@ -525,5 +525,4 @@ const worldProfileRepository = Object.freeze({
     registerWorldOpenShare
 });
 
-export { registerWorldOpenShare };
 export default worldProfileRepository;

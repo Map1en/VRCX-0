@@ -2,6 +2,7 @@ import { CheckCircle2Icon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { openExternalLink } from '@/services/entityMediaService';
 import { submitTelemetryFeedback } from '@/services/telemetry/telemetryEvent';
 import { toast } from '@/services/toastService';
@@ -13,7 +14,6 @@ import {
 import { Button } from '@/ui/shadcn/button';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-import { SettingsCard } from '../SettingsCard';
 import { SettingsTabContent } from '../SettingsViewParts';
 
 const MAX_FEEDBACK_LENGTH = 2000;

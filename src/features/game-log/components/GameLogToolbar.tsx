@@ -14,6 +14,12 @@ import {
     DateTimeRangePicker,
     type DateTimeRangeValue
 } from '@/components/date-time-range-picker/DateTimeRangePicker';
+import type {
+    GameLogFilterType,
+    GameLogLoadStatus,
+    GameLogRow,
+    GameLogViewMode
+} from '@/components/game-log/gameLogTypes';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     toolbarSearchDateRangeTrigger,
@@ -41,12 +47,6 @@ import {
 import { Tooltip } from '@/ui/shadcn/tooltip';
 
 import { GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS } from '../gameLogDateRange';
-import type {
-    GameLogFilterType,
-    GameLogLoadStatus,
-    GameLogRow,
-    GameLogViewMode
-} from '../gameLogTypes';
 
 function GameLogTypeFilterMenu({
     value,

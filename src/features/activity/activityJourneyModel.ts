@@ -1,4 +1,4 @@
-import { toLocalDayKey } from '@/features/instance-history/instance-activity/instanceActivityDate';
+import { toLocalDayKey } from '@/lib/instanceActivityDate';
 import type {
     ActivityJourneyCompanion,
     ActivityJourneyVisit

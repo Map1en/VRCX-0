@@ -11,11 +11,11 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
+import { FeedPersistenceDisabledIndicator } from '@/components/feed/FeedPersistenceDisabledIndicator';
 import type { FeedRow } from '@/components/feed/feedTypes';
+import { useFeedHiddenUserFilters } from '@/components/feed/useFeedHiddenUserFilters';
 import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import type { FeedReadModelResult } from '@/domain/feed/readModel';
-import { FeedPersistenceDisabledIndicator } from '@/features/feed/components/FeedPersistenceDisabledIndicator';
-import { useFeedHiddenUserFilters } from '@/features/feed/useFeedHiddenUserFilters';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import {
     FEED_FILTER_TYPES,

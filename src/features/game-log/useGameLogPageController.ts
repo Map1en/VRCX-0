@@ -3,12 +3,12 @@ import { useEffect, useMemo } from 'react';
 import { useAppTable } from '@/components/data-table/appTable';
 import type { LogFilterCommands } from '@/components/data-table/LogFilterContextMenu';
 import { sortTableRowsByDateAndType } from '@/components/data-table/sortRowsByDateAndType';
+import { GAME_LOG_SESSION_LIMIT_MAX } from '@/components/game-log/gameLogTypes';
 import { useShiftKeyHeld } from '@/components/keyboard/useShiftKeyHeld';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useGameLogColumns } from './components/GameLogColumns';
 import { resolveGameLogFilterType } from './gameLogFilterCommands';
-import { GAME_LOG_SESSION_LIMIT_MAX } from './gameLogTypes';
 import { useGameLogAnnotations } from './useGameLogAnnotations';
 import { useGameLogFilters } from './useGameLogFilters';
 import { useGameLogPreviousInstancesDialog } from './useGameLogPreviousInstancesDialog';

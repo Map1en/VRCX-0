@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+import type { SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import { ListSectionHeader } from '@/components/layout/ListSectionHeader';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { cn } from '@/lib/utils';
@@ -13,7 +14,6 @@ import { Skeleton } from '@/ui/shadcn/skeleton';
 import type { StatusPreset } from './FriendsSidebarActionItems';
 import { FriendRow } from './FriendsSidebarFriendRow';
 import { InstanceHeaderRow } from './FriendsSidebarHeaders';
-import type { SidebarFriendRecord } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
 import { sidebarAvatarSkeletonClassName } from './SidebarUserRowContent';
 import {

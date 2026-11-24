@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { EntityAvatar } from '@/components/EntityAvatar';
 import { FriendLocationTimer } from '@/components/friends/FriendInstanceTimer';
-import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { resolveSidebarStatusDotClassName } from '@/components/friends/friendStatusModel';
 import { UserListItem } from '@/components/UserListItem';
 import type { EntityRecord } from '@/domain/entities/shared';
 import {

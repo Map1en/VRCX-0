@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import {
     RuntimeModelSelect,
     type RuntimeModelRef
-} from '@/features/assistant/components/RuntimeModelSelect';
+} from '@/components/llm/RuntimeModelSelect';
 import {
     getEffectiveReasoningEffort,
     getModelReasoning,
     getValidReasoningEfforts,
     shouldShowReasoningEffortSelector
-} from '@/features/llm/reasoning';
+} from '@/lib/llmReasoning';
 import { getLanguageName, languageCodes } from '@/localization/index';
 import type {
     LlmEndpointDto,

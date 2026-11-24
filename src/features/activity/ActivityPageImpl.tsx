@@ -33,6 +33,7 @@ import {
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
 import { formatDateTime } from '@/lib/dateTime';
+import { useActivityPalette } from '@/lib/useActivityPalette';
 import { useTodayDate } from '@/lib/useTodayDate';
 import type {
     ActivityCompanionOrder,
@@ -91,7 +92,6 @@ import { useActivityAvatarUsage } from './useActivityAvatarUsage';
 import { useActivityHeatmap } from './useActivityHeatmap';
 import { useActivityJourneyFeed } from './useActivityJourney';
 import { useActivityPageResource } from './useActivityPageResource';
-import { useActivityPalette } from './useActivityPalette';
 
 function Staggered({
     index,

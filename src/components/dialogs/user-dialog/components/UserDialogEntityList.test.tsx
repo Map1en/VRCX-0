@@ -44,7 +44,7 @@ vi.mock('@/components/UserStatusAvatar', () => ({
     UserStatusAvatar: () => <span />
 }));
 
-vi.mock('@/components/sidebar/friends-sidebar/friendsSidebarModel', () => ({
+vi.mock('@/components/friends/friendStatusModel', () => ({
     resolveSidebarStatusDotClassName: () => ''
 }));
 

@@ -6,6 +6,10 @@ import {
     FriendInstanceTimer,
     FriendLocationTimer
 } from '@/components/friends/FriendInstanceTimer';
+import {
+    resolveSidebarStatusDotClassName,
+    type SidebarFriendRecord
+} from '@/components/friends/friendStatusModel';
 import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
 import { useRecentlyOnline } from '@/components/friends/useRecentlyOnline';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
@@ -51,11 +55,7 @@ import {
     resolveFriendRowLocationState,
     StaticSidebarLocation
 } from './FriendsSidebarLocation';
-import {
-    resolveSidebarStatusDotClassName,
-    resolveTrustNameColour,
-    type SidebarFriendRecord
-} from './friendsSidebarModel';
+import { resolveTrustNameColour } from './friendsSidebarModel';
 import { SidebarUserRowContent } from './SidebarUserRowContent';
 import { useSidebarMenuDoubleClick } from './useSidebarMenuDoubleClick';
 

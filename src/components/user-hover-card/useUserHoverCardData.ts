@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { resolveFriendRequestState } from '@/components/dialogs/user-dialog/userDialogContentHelpers';
 import { deriveUserRelationshipBadges } from '@/components/dialogs/user-dialog/userRelationshipBadges';
-import type { SidebarFriendRecord } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import type { SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import { localGameLocation } from '@/domain/friends/presence';
 import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
 import { useNowMs } from '@/lib/useNowMs';

@@ -1,11 +1,10 @@
-import { parseLocation } from '@/shared/utils/location';
-
-import { GAME_LOG_SESSION_HEAD_QUERY_LIMIT } from './gameLogTypes';
+import { GAME_LOG_SESSION_HEAD_QUERY_LIMIT } from '@/components/game-log/gameLogTypes';
 import type {
     GameLogRowView,
     GameLogSession,
     GameLogSessionEvent
-} from './gameLogTypes';
+} from '@/components/game-log/gameLogTypes';
+import { parseLocation } from '@/shared/utils/location';
 
 export const GAME_LOG_DETAILLESS_TYPES = new Set([
     'OnPlayerJoined',

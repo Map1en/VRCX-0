@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
     resolveSidebarStatusDotClassName,
     type SidebarFriendRecord
-} from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+} from '@/components/friends/friendStatusModel';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import {

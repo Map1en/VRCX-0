@@ -2,11 +2,10 @@ import { PaletteIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import { useCommunityThemeStore } from '@/state/communityThemeStore';
 import { Button } from '@/ui/shadcn/button';
-
-import { SettingsCard } from '../SettingsCard';
 
 export function SettingsInterfaceThemesCard() {
     const { t } = useTranslation();

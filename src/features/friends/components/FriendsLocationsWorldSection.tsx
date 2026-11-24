@@ -3,6 +3,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
+import { resolveSidebarStatusDotClassName } from '@/components/friends/friendStatusModel';
 import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
 import { useRecentlyOnline } from '@/components/friends/useRecentlyOnline';
 import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
@@ -16,7 +17,6 @@ import {
     ProfileNameplate,
     useDecorationHover
 } from '@/components/ProfileDecorations';
-import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import { presenceTravelingTag } from '@/domain/friends/presence';

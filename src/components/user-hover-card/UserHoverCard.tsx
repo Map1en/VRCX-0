@@ -7,8 +7,8 @@ import {
     type ReactElement
 } from 'react';
 
+import type { SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import { MountOnIntent } from '@/components/MountOnIntent';
-import type { SidebarFriendRecord } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { cn } from '@/lib/utils';
 import { nextHoverCardToken, useHoverCardStore } from '@/state/hoverCardStore';
 import {

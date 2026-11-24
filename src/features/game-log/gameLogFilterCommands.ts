@@ -5,9 +5,11 @@ import type {
     LogFilterCommands,
     LogFilterTarget
 } from '@/components/data-table/LogFilterContextMenu';
-
-import { normalizeGameLogId, resolveGameLogWorldId } from './gameLogRows';
-import type { GameLogRow } from './gameLogTypes';
+import {
+    normalizeGameLogId,
+    resolveGameLogWorldId
+} from '@/components/game-log/gameLogRows';
+import type { GameLogRow } from '@/components/game-log/gameLogTypes';
 
 export const GameLogFilterCommandsContext =
     createContext<LogFilterCommands | null>(null);

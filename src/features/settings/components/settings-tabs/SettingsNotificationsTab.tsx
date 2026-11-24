@@ -1,6 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import type { TtsVoice } from '@/platform/tauri/bindings';
 import {
     normalizeNotificationTtsNameMode,
@@ -22,7 +23,6 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { desktopWidgetOrderOptions } from '../../settingsOptions';
-import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { useSettingsNotificationsTabState } from '../useSettingsNotificationsTabState';

@@ -52,15 +52,12 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
     };
 });
 
-vi.mock(
-    '@/components/sidebar/friends-sidebar/friendsSidebarModel',
-    async (importOriginal) => ({
-        ...(await importOriginal<
-            typeof import('@/components/sidebar/friends-sidebar/friendsSidebarModel')
-        >()),
-        resolveSidebarStatusDotClassName: () => ''
-    })
-);
+vi.mock('@/components/friends/friendStatusModel', async (importOriginal) => ({
+    ...(await importOriginal<
+        typeof import('@/components/friends/friendStatusModel')
+    >()),
+    resolveSidebarStatusDotClassName: () => ''
+}));
 
 vi.mock('@/components/UserListItem', () => ({
     UserListItem: ({

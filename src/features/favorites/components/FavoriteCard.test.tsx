@@ -34,7 +34,7 @@ vi.mock('@/components/UserStatusDot', () => ({
 }));
 
 vi.mock('@/repositories/worldProfileRepository', () => ({
-    registerWorldOpenShare: mocks.registerWorldOpenShare
+    default: { registerWorldOpenShare: mocks.registerWorldOpenShare }
 }));
 
 vi.mock('@/services/clipboardService', () => ({

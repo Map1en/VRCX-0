@@ -1,14 +1,17 @@
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { LogFilterMenuItems } from '@/components/data-table/LogFilterContextMenu';
+import {
+    getGameLogLocationTarget,
+    resolveGameLogWorldId
+} from '@/components/game-log/gameLogRows';
+import {
+    type GameLogDetailValue,
+    type GameLogRow
+} from '@/components/game-log/gameLogTypes';
 import { Location } from '@/components/Location';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { useGameLogFilterCommands } from '../gameLogFilterCommands';
-import {
-    getGameLogLocationTarget,
-    resolveGameLogWorldId
-} from '../gameLogRows';
-import { type GameLogDetailValue, type GameLogRow } from '../gameLogTypes';
 
 function EmptyTableValue(): null {
     return null;

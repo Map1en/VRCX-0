@@ -16,14 +16,6 @@ import {
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
 import { TimestampText } from '@/components/data-table/TimestampText';
-import { openWorldDialog } from '@/services/dialogService';
-import { openExternalLink } from '@/services/entityMediaService';
-import { openGameLogUser } from '@/services/gameLogUserDialogService';
-import { HintTooltip } from '@/ui/hint-tooltip';
-import { Button } from '@/ui/shadcn/button';
-import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
-
 import {
     canDeleteGameLogRow,
     describeGameLogDetail,
@@ -35,8 +27,19 @@ import {
     resolveGameLogWorldId as resolveWorldId,
     resolveGameLogWorldTarget as resolveWorldTarget,
     shouldLinkGameLogPrimaryDetailToWorld as shouldLinkPrimaryDetailToWorld
-} from '../gameLogRows';
-import type { GameLogColumns, GameLogRow } from '../gameLogTypes';
+} from '@/components/game-log/gameLogRows';
+import type {
+    GameLogColumns,
+    GameLogRow
+} from '@/components/game-log/gameLogTypes';
+import { openWorldDialog } from '@/services/dialogService';
+import { openExternalLink } from '@/services/entityMediaService';
+import { openGameLogUser } from '@/services/gameLogUserDialogService';
+import { HintTooltip } from '@/ui/hint-tooltip';
+import { Button } from '@/ui/shadcn/button';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+
 import {
     EmptyTableValue,
     GameLogLocationDetail,

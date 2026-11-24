@@ -2,13 +2,13 @@ import { useTranslation } from 'react-i18next';
 
 import { HeatmapChart } from '@/components/dialogs/user-dialog/components/UserActivityPanelParts';
 import { USER_ACTIVITY_HOUR_LABELS } from '@/components/dialogs/user-dialog/userActivityPanelModel';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
-
-import { hourTotals, lateNightShare, peakHour } from '../activityPageModel';
 import {
     heatmapScaleColors,
     type ActivityPalette
-} from '../useActivityPalette';
+} from '@/lib/useActivityPalette';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+
+import { hourTotals, lateNightShare, peakHour } from '../activityPageModel';
 import { Exhibit } from './ActivityExhibit';
 
 const HEAT_STEPS = [

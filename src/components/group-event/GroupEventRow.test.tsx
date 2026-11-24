@@ -7,7 +7,7 @@ vi.mock('@/services/dialogService', () => ({
     openGroupDialog: vi.fn()
 }));
 
-import { GroupEventRow } from './GroupEventRow';
+import { GroupEventRow } from '@/components/group-event/GroupEventRow';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

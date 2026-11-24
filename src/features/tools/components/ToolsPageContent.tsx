@@ -37,8 +37,8 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { ToolbarSearch } from '@/components/layout/ToolbarControls';
-import { SettingsCard } from '@/features/settings/components/SettingsCard';
 import { useActiveScrollSection } from '@/lib/useActiveScrollSection';
 import { useRouteScrollMemory } from '@/lib/useRouteScrollMemory';
 import { cn } from '@/lib/utils';

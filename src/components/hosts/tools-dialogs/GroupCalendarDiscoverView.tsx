@@ -2,6 +2,11 @@ import { RefreshCwIcon } from 'lucide-react';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    getEventGroupId,
+    getEventId
+} from '@/components/group-event/groupEventFormat';
+import { GroupEventRow } from '@/components/group-event/GroupEventRow';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import {
     commands,
@@ -28,9 +33,6 @@ import {
     ToggleGroupItem,
     ToggleGroupSeparator
 } from '@/ui/shadcn/toggle-group';
-
-import { GroupEventRow } from './GroupEventRow';
-import { getEventGroupId, getEventId } from './toolsDialogUtils';
 
 const DISCOVER_PAGE_SIZE = 30;
 

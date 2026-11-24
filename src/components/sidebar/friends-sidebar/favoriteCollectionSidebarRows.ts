@@ -1,3 +1,4 @@
+import { type SidebarFriendRecord } from '@/components/friends/friendStatusModel';
 import type { SameInstanceLastLocation } from '@/domain/friends/sameInstanceFriends';
 import type { FriendSortContext } from '@/shared/utils/friend';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
@@ -6,7 +7,6 @@ import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 import {
     buildSameInstanceGroups,
     type SameInstanceGroup,
-    type SidebarFriendRecord,
     type SidebarPreferences
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';

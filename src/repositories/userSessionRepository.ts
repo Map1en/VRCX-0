@@ -65,5 +65,4 @@ const userSessionRepository: UserSessionRepository = {
     ensureUserTables
 };
 
-export { ensureUserTables, normalizeUserTablePrefix };
 export default userSessionRepository;

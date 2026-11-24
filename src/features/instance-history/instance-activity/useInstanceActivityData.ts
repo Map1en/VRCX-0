@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import type { LoadStatus } from '@/domain/shared/types';
+import { toLocalDayKey } from '@/lib/instanceActivityDate';
 import instanceActivityRepository from '@/repositories/instanceActivityRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 
-import { toLocalDayKey } from './instanceActivityDate';
 import { getLocalDayBounds } from './instanceActivityRows';
 import type {
     InstanceActivityRawRow,

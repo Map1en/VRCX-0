@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { shallow } from 'zustand/shallow';
 
-import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { resolveSidebarStatusDotClassName } from '@/components/friends/friendStatusModel';
 import type { FriendRosterById } from '@/domain/friends/types';
 import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import { useStableCommands } from '@/lib/useStableCommands';

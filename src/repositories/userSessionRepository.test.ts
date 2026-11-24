@@ -8,10 +8,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: commandMocks
 }));
 
-import {
-    ensureUserTables,
-    normalizeUserTablePrefix
-} from './userSessionRepository';
+import userSessionRepository from './userSessionRepository';
 
 describe('userSessionRepository', () => {
     beforeEach(() => {
@@ -19,26 +16,31 @@ describe('userSessionRepository', () => {
         commandMocks.appUserTablesEnsure.mockImplementation((userId: string) =>
             Promise.resolve({
                 userId,
-                userPrefix: normalizeUserTablePrefix(userId)
+                userPrefix:
+                    userSessionRepository.normalizeUserTablePrefix(userId)
             })
         );
     });
 
     it('normalizes safe user ids into SQLite table prefixes', () => {
-        expect(normalizeUserTablePrefix(' usr_123-abc ')).toBe('usr123abc');
-        expect(normalizeUserTablePrefix('123')).toBe('_123');
-        expect(() => normalizeUserTablePrefix('')).toThrow(
-            'requires a user id'
+        expect(
+            userSessionRepository.normalizeUserTablePrefix(' usr_123-abc ')
+        ).toBe('usr123abc');
+        expect(userSessionRepository.normalizeUserTablePrefix('123')).toBe(
+            '_123'
         );
-        expect(() => normalizeUserTablePrefix('usr/unsafe')).toThrow(
-            'invalid characters'
-        );
+        expect(() =>
+            userSessionRepository.normalizeUserTablePrefix('')
+        ).toThrow('requires a user id');
+        expect(() =>
+            userSessionRepository.normalizeUserTablePrefix('usr/unsafe')
+        ).toThrow('invalid characters');
     });
 
     it('coalesces repeated ensure calls for the same normalized prefix', async () => {
         await Promise.all([
-            ensureUserTables('usr_cache-1'),
-            ensureUserTables('usr_cache_1')
+            userSessionRepository.ensureUserTables('usr_cache-1'),
+            userSessionRepository.ensureUserTables('usr_cache_1')
         ]);
 
         expect(commandMocks.appUserTablesEnsure).toHaveBeenCalledTimes(1);
@@ -55,10 +57,12 @@ describe('userSessionRepository', () => {
                 userPrefix: 'usrretry'
             });
 
-        await expect(ensureUserTables('usr_retry')).rejects.toThrow(
-            'init failed'
-        );
-        await expect(ensureUserTables('usr_retry')).resolves.toEqual({
+        await expect(
+            userSessionRepository.ensureUserTables('usr_retry')
+        ).rejects.toThrow('init failed');
+        await expect(
+            userSessionRepository.ensureUserTables('usr_retry')
+        ).resolves.toEqual({
             userId: 'usr_retry',
             userPrefix: 'usrretry'
         });

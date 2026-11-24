@@ -25,7 +25,7 @@ vi.mock('./gameLogPersistenceRepository', () => ({
     default: persistenceMocks
 }));
 
-import { queryGameLog, queryLatestSessions } from './gameLogRepository';
+import gameLogRepository from './gameLogRepository';
 
 describe('gameLogRepository', () => {
     beforeEach(() => {
@@ -45,7 +45,7 @@ describe('gameLogRepository', () => {
     });
 
     it('treats date-only session filters as local calendar days', async () => {
-        await queryLatestSessions({
+        await gameLogRepository.queryLatestSessions({
             dateFrom: '2026-07-04',
             dateTo: '2026-07-04'
         });
@@ -63,7 +63,7 @@ describe('gameLogRepository', () => {
             key === 'maxTableSize_v2' ? 500 : 50000
         );
 
-        await queryGameLog({ filters: ['Location'] });
+        await gameLogRepository.queryGameLog({ filters: ['Location'] });
 
         expect(persistenceMocks.lookupGameLogDatabase).toHaveBeenLastCalledWith(
             ['Location'],
@@ -72,7 +72,10 @@ describe('gameLogRepository', () => {
             500
         );
 
-        await queryGameLog({ filters: ['Location'], limit: 200 });
+        await gameLogRepository.queryGameLog({
+            filters: ['Location'],
+            limit: 200
+        });
 
         expect(persistenceMocks.lookupGameLogDatabase).toHaveBeenCalledWith(
             ['Location'],
@@ -85,7 +88,10 @@ describe('gameLogRepository', () => {
             key === 'maxTableSize_v2' ? 75 : 50000
         );
 
-        await queryGameLog({ filters: ['Location'], limit: 200 });
+        await gameLogRepository.queryGameLog({
+            filters: ['Location'],
+            limit: 200
+        });
 
         expect(persistenceMocks.lookupGameLogDatabase).toHaveBeenLastCalledWith(
             ['Location'],
@@ -100,7 +106,7 @@ describe('gameLogRepository', () => {
             key === 'maxTableSize_v2' ? 500 : 50000
         );
 
-        await queryGameLog({
+        await gameLogRepository.queryGameLog({
             currentUserId: 'usr_self',
             search: 'Friend',
             limit: 200
@@ -119,7 +125,7 @@ describe('gameLogRepository', () => {
             key === 'searchLimit' ? 75 : 500
         );
 
-        await queryGameLog({ search: 'Friend', limit: 200 });
+        await gameLogRepository.queryGameLog({ search: 'Friend', limit: 200 });
 
         expect(persistenceMocks.searchGameLogDatabase).toHaveBeenLastCalledWith(
             'Friend',

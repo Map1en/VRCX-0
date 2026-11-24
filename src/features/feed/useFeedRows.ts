@@ -12,6 +12,7 @@ import type {
     FeedLoadStatus,
     FeedRow
 } from '@/components/feed/feedTypes';
+import { useFeedHiddenUserFilters } from '@/components/feed/useFeedHiddenUserFilters';
 import { toIsoRangeStart, toIsoRangeEnd } from '@/lib/dateRange';
 import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
 import feedRepository from '@/repositories/feedRepository';
@@ -37,7 +38,6 @@ import {
     retainFeedRowWindow,
     resolveLastFeedCursor
 } from './feedPaging';
-import { useFeedHiddenUserFilters } from './useFeedHiddenUserFilters';
 
 type UseFeedRowsOptions = {
     activeFilters: FeedFilterType[];

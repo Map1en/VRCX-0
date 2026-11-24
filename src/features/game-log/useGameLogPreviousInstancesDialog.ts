@@ -1,15 +1,17 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import gameLogRepository from '@/repositories/gameLogRepository';
-import { toast } from '@/services/toastService';
-
 import {
     getGameLogRowKey,
     normalizeGameLogId as normalizeId,
     resolveGameLogWorldId as resolveWorldId
-} from './gameLogRows';
-import type { GameLogPreviousInstanceRow, GameLogRow } from './gameLogTypes';
+} from '@/components/game-log/gameLogRows';
+import type {
+    GameLogPreviousInstanceRow,
+    GameLogRow
+} from '@/components/game-log/gameLogTypes';
+import gameLogRepository from '@/repositories/gameLogRepository';
+import { toast } from '@/services/toastService';
 
 export function useGameLogPreviousInstancesDialog() {
     const { t } = useTranslation();

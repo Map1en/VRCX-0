@@ -11,7 +11,7 @@ const configMocks = vi.hoisted(() => ({
 vi.mock('@/platform/tauri/bindings', () => ({ commands: commandMocks }));
 vi.mock('./configRepository', () => ({ default: configMocks }));
 
-import { queryNotifications } from './notificationPersistenceRepository';
+import notificationPersistenceRepository from './notificationPersistenceRepository';
 
 describe('notificationPersistenceRepository', () => {
     beforeEach(() => {
@@ -34,7 +34,9 @@ describe('notificationPersistenceRepository', () => {
         ]);
 
         await expect(
-            queryNotifications({ userId: ' usr_1 ' })
+            notificationPersistenceRepository.queryNotifications({
+                userId: ' usr_1 '
+            })
         ).resolves.toEqual([
             {
                 id: 'notification_1',
@@ -58,7 +60,7 @@ describe('notificationPersistenceRepository', () => {
             key === 'searchLimit' ? 1200 : 250
         );
 
-        await queryNotifications({
+        await notificationPersistenceRepository.queryNotifications({
             userId: 'usr_1',
             search: ' sender ',
             filters: [' invite ', '']
@@ -75,7 +77,11 @@ describe('notificationPersistenceRepository', () => {
     });
 
     it('skips list IPC when no current user id is available', async () => {
-        await expect(queryNotifications({ userId: ' ' })).resolves.toEqual([]);
+        await expect(
+            notificationPersistenceRepository.queryNotifications({
+                userId: ' '
+            })
+        ).resolves.toEqual([]);
         expect(configMocks.getInt).not.toHaveBeenCalled();
         expect(commandMocks.appNotificationListQuery).not.toHaveBeenCalled();
     });

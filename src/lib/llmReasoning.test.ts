@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import type {
-    LlmEndpointDto,
-    LlmModelReasoning
-} from '@/platform/tauri/bindings';
-
 import {
     getEffectiveReasoningEffort,
     getModelReasoning,
     getValidReasoningEfforts,
     isOpenRouterBaseUrl,
     shouldShowReasoningEffortSelector
-} from './reasoning';
+} from '@/lib/llmReasoning';
+import type {
+    LlmEndpointDto,
+    LlmModelReasoning
+} from '@/platform/tauri/bindings';
 
 function reasoning(
     modelId: string,
