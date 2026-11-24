@@ -30,7 +30,6 @@ import {
 } from '@/services/toolActionService';
 import { getRecentToolKeys } from '@/services/toolRecentService';
 import {
-    publishToolsQuickAccessUpdated,
     type ToolDefinition
 } from '@/shared/constants/tools';
 import { useDashboardStore } from '@/state/dashboardStore';
@@ -83,7 +82,6 @@ function useToolsQuickAccessState() {
             const nextKeys = normalizeQuickAccessToolKeys(value);
             configRepository
                 .setString(quickAccessConfigKey, JSON.stringify(nextKeys))
-                .then(() => publishToolsQuickAccessUpdated())
                 .catch(() => {});
             return nextKeys;
         });

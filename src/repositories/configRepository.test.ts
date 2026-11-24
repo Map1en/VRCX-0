@@ -60,9 +60,9 @@ describe('ConfigRepository', () => {
             repository.getString('unknownKey', 'fallback')
         ).resolves.toBe('fallback');
         await expect(repository.getInt('maxTableSize_v2')).resolves.toBe(500);
-        await expect(repository.getBool('autoUpdateVRCX', true)).resolves.toBe(
-            true
-        );
+        await expect(
+            repository.getBool('isFriendsGroupActive', true)
+        ).resolves.toBe(true);
     });
 
     it('reads initialized values from the cache without waiting for I/O', async () => {

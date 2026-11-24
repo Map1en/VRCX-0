@@ -1,7 +1,6 @@
 const sidePanelHiddenPaths = [
     '/friends-locations',
     '/social/friend-list',
-    '/charts/instance',
     '/charts/mutual'
 ];
 
