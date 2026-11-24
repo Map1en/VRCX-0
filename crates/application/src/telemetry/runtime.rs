@@ -14,8 +14,8 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_contracts::telemetry::{
     AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, DialogTabUsagePayload,
-    PageHealthPayload, TelemetryConfigSnapshot, TelemetryContext, TelemetryOfflineRecord,
-    TelemetryRuntimeMode, TelemetryVrcxOrigin, ToolUsagePayload,
+    PageHealthPayload, PerformancePayload, TelemetryConfigSnapshot, TelemetryContext,
+    TelemetryOfflineRecord, TelemetryRuntimeMode, TelemetryVrcxOrigin, ToolUsagePayload,
 };
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};
@@ -585,7 +585,7 @@ impl TelemetryRuntime {
     }
 
     async fn flush_collectors_locked(&self, session: &TelemetrySession) {
-        let (routes, tools, dialog_tabs, assistant_health) = {
+        let (routes, tools, dialog_tabs, performance, assistant_health) = {
             let Ok(state) = self.inner.state.lock() else {
                 return;
             };
@@ -593,6 +593,7 @@ impl TelemetryRuntime {
                 state.acc.route_snapshot(),
                 state.acc.tool_snapshot(),
                 state.acc.dialog_tab_snapshot(),
+                state.acc.performance_snapshot(),
                 state.acc.assistant_health_snapshot(),
             )
         };
@@ -636,6 +637,21 @@ impl TelemetryRuntime {
             {
                 if let Ok(mut state) = self.inner.state.lock() {
                     state.acc.mark_dialog_tabs_sent(dialog_tabs.revision);
+                }
+            }
+        }
+        if let Some(performance) = performance {
+            let payload = PerformancePayload {
+                context: context.clone(),
+                frames: performance.frames,
+                commands: performance.commands,
+            };
+            if self
+                .post_debug("/api/v1/telemetry/performance", &payload, "performance")
+                .await
+            {
+                if let Ok(mut state) = self.inner.state.lock() {
+                    state.acc.mark_performance_sent(performance.revision);
                 }
             }
         }

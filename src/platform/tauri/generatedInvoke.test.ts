@@ -66,4 +66,41 @@ describe('generatedInvoke', () => {
         ]);
         expect(mocks.notifySQLiteError).toHaveBeenCalledWith(normalizedError);
     });
+
+    it('reports commands that take at least 200ms as slow command telemetry', async () => {
+        const now = vi.spyOn(performance, 'now');
+        now.mockReturnValueOnce(1_000).mockReturnValueOnce(1_350.4);
+        mocks.invokeTauri.mockResolvedValue(null);
+
+        await invoke('app__example');
+        await Promise.resolve();
+
+        expect(mocks.invokeTauri).toHaveBeenLastCalledWith(
+            'app__telemetry_record_event',
+            {
+                event: {
+                    type: 'slowCommand',
+                    command: 'app__example',
+                    duration_ms: 350
+                }
+            }
+        );
+        now.mockRestore();
+    });
+
+    it('does not report fast commands or its own telemetry command', async () => {
+        const now = vi.spyOn(performance, 'now');
+        now.mockReturnValueOnce(0)
+            .mockReturnValueOnce(150)
+            .mockReturnValueOnce(0)
+            .mockReturnValueOnce(900);
+        mocks.invokeTauri.mockResolvedValue(null);
+
+        await invoke('app__example');
+        await invoke('app__telemetry_record_event', { event: {} });
+        await Promise.resolve();
+
+        expect(mocks.invokeTauri).toHaveBeenCalledTimes(2);
+        now.mockRestore();
+    });
 });

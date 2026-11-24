@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use vrcx_0_contracts::telemetry::{
-    DialogTabUsageEntry, RouteUsageEntry, TelemetryErrorDetail, ToolUsageEntry,
+    DialogTabUsageEntry, LongFrameEntry, RouteUsageEntry, SlowCommandEntry, SlowDurationStats,
+    TelemetryErrorDetail, ToolUsageEntry,
 };
 
 use super::event::TelemetryClientEvent;
@@ -10,6 +11,13 @@ use super::privacy::{build_error_detail, sanitize_error_summary};
 const MAX_ROUTE_KEYS: usize = 64;
 const MAX_TOOL_KEYS: usize = 32;
 const MAX_DIALOG_TAB_KEYS: usize = 64;
+const MAX_LONG_FRAME_KEYS: usize = 128;
+const MAX_SLOW_COMMAND_KEYS: usize = 64;
+const SLOW_DURATION_THRESHOLD_MS: u32 = 200;
+const SLOW_DURATION_REPORT_MIN_TOTAL_MS: u32 = 1_000;
+const SLOW_DURATION_BUCKET_BOUNDS_MS: [u32; 3] = [500, 1_000, 3_000];
+const MAX_DURATION_MS: u32 = 600_000;
+const MAX_TOTAL_MS: u32 = 1_000_000_000;
 const MAX_VALUE_LENGTH: usize = 64;
 const MAX_DETAILS_PER_CHANNEL: usize = 64;
 pub(super) const MAX_DETAILS_PER_PAYLOAD: usize = 20;
@@ -22,12 +30,15 @@ pub struct TelemetryAccumulator {
     routes: HashMap<String, RouteUsage>,
     tools: HashMap<String, ToolUsage>,
     dialog_tabs: HashMap<(String, String), DialogTabUsage>,
+    long_frames: HashMap<(String, Option<String>), SlowDurationUsage>,
+    slow_commands: HashMap<String, SlowDurationUsage>,
     assistant: AssistantHealthAccumulator,
     client_errors: DetailAccumulator,
     revision: u64,
     routes_sent_revision: u64,
     tools_sent_revision: u64,
     dialog_tabs_sent_revision: u64,
+    performance_sent_revision: u64,
     assistant_sent_revision: u64,
     client_errors_revision: u64,
     client_errors_sent_revision: u64,
@@ -53,6 +64,15 @@ struct ToolUsage {
 struct DialogTabUsage {
     views: u32,
     landings: u32,
+    revision: u64,
+}
+
+#[derive(Default)]
+struct SlowDurationUsage {
+    count: u32,
+    total_ms: u32,
+    max_ms: u32,
+    buckets: [u32; 4],
     revision: u64,
 }
 
@@ -91,6 +111,12 @@ pub(super) struct DialogTabSnapshot {
     pub revision: u64,
 }
 
+pub(super) struct PerformanceSnapshot {
+    pub frames: Vec<LongFrameEntry>,
+    pub commands: Vec<SlowCommandEntry>,
+    pub revision: u64,
+}
+
 pub(super) struct AssistantHealthSnapshot {
     pub entry: AssistantHealthEntry,
     pub revision: u64,
@@ -113,6 +139,15 @@ impl TelemetryAccumulator {
                 tab,
                 landing,
             } => self.record_dialog_tab_view(dialog, tab, landing),
+            TelemetryClientEvent::LongFrame {
+                route,
+                dialog,
+                duration_ms,
+            } => self.record_long_frame(route, dialog, duration_ms),
+            TelemetryClientEvent::SlowCommand {
+                command,
+                duration_ms,
+            } => self.record_slow_command(command, duration_ms),
             TelemetryClientEvent::RouteError {
                 error_class,
                 name,
@@ -301,6 +336,44 @@ impl TelemetryAccumulator {
         self.dialog_tabs_sent_revision = self.dialog_tabs_sent_revision.max(revision);
     }
 
+    pub(super) fn performance_snapshot(&self) -> Option<PerformanceSnapshot> {
+        let sent = self.performance_sent_revision;
+        let mut frames = self
+            .long_frames
+            .iter()
+            .filter(|(_, usage)| usage.is_reportable_since(sent))
+            .map(|((route, dialog), usage)| LongFrameEntry {
+                route: route.clone(),
+                dialog: dialog.clone(),
+                stats: usage.stats(),
+            })
+            .collect::<Vec<_>>();
+        frames.sort_by(|left, right| {
+            left.route
+                .cmp(&right.route)
+                .then_with(|| left.dialog.cmp(&right.dialog))
+        });
+        let mut commands = self
+            .slow_commands
+            .iter()
+            .filter(|(_, usage)| usage.is_reportable_since(sent))
+            .map(|(command, usage)| SlowCommandEntry {
+                command: command.clone(),
+                stats: usage.stats(),
+            })
+            .collect::<Vec<_>>();
+        commands.sort_by(|left, right| left.command.cmp(&right.command));
+        (!frames.is_empty() || !commands.is_empty()).then_some(PerformanceSnapshot {
+            frames,
+            commands,
+            revision: self.revision,
+        })
+    }
+
+    pub(super) fn mark_performance_sent(&mut self, revision: u64) {
+        self.performance_sent_revision = self.performance_sent_revision.max(revision);
+    }
+
     pub(super) fn assistant_health_snapshot(&self) -> Option<AssistantHealthSnapshot> {
         if self.assistant.revision <= self.assistant_sent_revision {
             return None;
@@ -374,6 +447,34 @@ impl TelemetryAccumulator {
         if let Some(usage) = self.dialog_tabs.get_mut(&key) {
             usage.revision = revision;
         }
+    }
+
+    fn record_long_frame(&mut self, route: String, dialog: Option<String>, duration_ms: u32) {
+        let Some(route) = sanitize_dimension_value(route) else {
+            return;
+        };
+        let dialog = dialog.and_then(sanitize_dimension_value);
+        let key = (route, dialog);
+        record_slow_duration(
+            &mut self.long_frames,
+            key,
+            MAX_LONG_FRAME_KEYS,
+            duration_ms,
+            &mut self.revision,
+        );
+    }
+
+    fn record_slow_command(&mut self, command: String, duration_ms: u32) {
+        let Some(command) = sanitize_dimension_value(command) else {
+            return;
+        };
+        record_slow_duration(
+            &mut self.slow_commands,
+            command,
+            MAX_SLOW_COMMAND_KEYS,
+            duration_ms,
+            &mut self.revision,
+        );
     }
 
     fn record_visit(&mut self, route: String, landing: bool) {
@@ -463,6 +564,57 @@ impl DetailAccumulator {
         details.truncate(limit);
         Some(details)
     }
+}
+
+impl SlowDurationUsage {
+    fn record(&mut self, duration_ms: u32) -> bool {
+        if self.count >= MAX_COUNT {
+            return false;
+        }
+        let duration_ms = duration_ms.min(MAX_DURATION_MS);
+        self.count += 1;
+        self.total_ms = self.total_ms.saturating_add(duration_ms).min(MAX_TOTAL_MS);
+        self.max_ms = self.max_ms.max(duration_ms);
+        let bucket = SLOW_DURATION_BUCKET_BOUNDS_MS
+            .iter()
+            .take_while(|bound| duration_ms >= **bound)
+            .count();
+        self.buckets[bucket] += 1;
+        true
+    }
+
+    fn is_reportable_since(&self, sent_revision: u64) -> bool {
+        self.revision > sent_revision && self.total_ms >= SLOW_DURATION_REPORT_MIN_TOTAL_MS
+    }
+
+    fn stats(&self) -> SlowDurationStats {
+        SlowDurationStats {
+            count: self.count,
+            total_ms: self.total_ms,
+            max_ms: self.max_ms,
+            buckets: self.buckets,
+        }
+    }
+}
+
+fn record_slow_duration<K: Eq + std::hash::Hash + std::fmt::Debug + Clone>(
+    map: &mut HashMap<K, SlowDurationUsage>,
+    key: K,
+    cap: usize,
+    duration_ms: u32,
+    revision: &mut u64,
+) {
+    if duration_ms < SLOW_DURATION_THRESHOLD_MS {
+        return;
+    }
+    let Some(usage) = ensure_entry(map, key, cap) else {
+        return;
+    };
+    if !usage.record(duration_ms) {
+        return;
+    }
+    *revision = revision.saturating_add(1);
+    usage.revision = *revision;
 }
 
 fn route_usage_entry(route: &str, usage: &RouteUsage) -> RouteUsageEntry {
@@ -788,6 +940,95 @@ mod tests {
         let second = acc.dialog_tab_snapshot().expect("new view should be dirty");
         assert_eq!(second.entries.len(), 1);
         assert_eq!(second.entries[0].views, 2);
+    }
+
+    fn long_frame(route: &str, dialog: Option<&str>, duration_ms: u32) -> TelemetryClientEvent {
+        TelemetryClientEvent::LongFrame {
+            route: route.into(),
+            dialog: dialog.map(Into::into),
+            duration_ms,
+        }
+    }
+
+    #[test]
+    fn long_frames_below_threshold_or_report_floor_stay_unreported() {
+        let mut acc = TelemetryAccumulator::default();
+        acc.record(long_frame("feed", None, 199));
+        acc.record(long_frame("feed", None, 400));
+        acc.record(long_frame("feed", None, 500));
+        assert!(acc.performance_snapshot().is_none());
+
+        acc.record(long_frame("feed", None, 3_000));
+        acc.record(long_frame("feed", Some("user"), 1_200));
+        let snapshot = acc.performance_snapshot().expect("frames over the floor");
+        let rows = snapshot
+            .frames
+            .iter()
+            .map(|entry| {
+                (
+                    entry.route.as_str(),
+                    entry.dialog.as_deref(),
+                    entry.stats.clone(),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            rows,
+            vec![
+                (
+                    "feed",
+                    None,
+                    SlowDurationStats {
+                        count: 3,
+                        total_ms: 3_900,
+                        max_ms: 3_000,
+                        buckets: [1, 1, 0, 1],
+                    }
+                ),
+                (
+                    "feed",
+                    Some("user"),
+                    SlowDurationStats {
+                        count: 1,
+                        total_ms: 1_200,
+                        max_ms: 1_200,
+                        buckets: [0, 0, 1, 0],
+                    }
+                ),
+            ]
+        );
+        assert!(snapshot.commands.is_empty());
+    }
+
+    #[test]
+    fn slow_commands_resend_cumulative_stats_only_after_new_slow_calls() {
+        let mut acc = TelemetryAccumulator::default();
+        for duration_ms in [150, 600, 700] {
+            acc.record(TelemetryClientEvent::SlowCommand {
+                command: "app__example".into(),
+                duration_ms,
+            });
+        }
+        let first = acc.performance_snapshot().expect("command over the floor");
+        assert_eq!(first.commands.len(), 1);
+        assert_eq!(first.commands[0].stats.count, 2);
+        assert_eq!(first.commands[0].stats.total_ms, 1_300);
+        acc.mark_performance_sent(first.revision);
+        assert!(acc.performance_snapshot().is_none());
+
+        acc.record(TelemetryClientEvent::SlowCommand {
+            command: "app__example".into(),
+            duration_ms: 100,
+        });
+        assert!(acc.performance_snapshot().is_none());
+
+        acc.record(TelemetryClientEvent::SlowCommand {
+            command: "app__example".into(),
+            duration_ms: 250,
+        });
+        let second = acc.performance_snapshot().expect("new slow call");
+        assert_eq!(second.commands[0].stats.count, 3);
+        assert_eq!(second.commands[0].stats.buckets, [1, 2, 0, 0]);
     }
 
     #[test]

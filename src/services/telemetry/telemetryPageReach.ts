@@ -28,6 +28,10 @@ const EXACT_ROUTES: Record<string, TelemetryPageRouteKey> = {
 let currentRoute: TelemetryPageRouteKey | null = null;
 let landingPending = true;
 
+export function currentTelemetryRoute(): TelemetryPageRouteKey | null {
+    return currentRoute;
+}
+
 function normalizePath(pathname: string): string {
     return pathname.split('?')[0].replace(/\/+$/, '') || '/';
 }

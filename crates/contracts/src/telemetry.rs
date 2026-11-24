@@ -135,6 +135,44 @@ pub struct ToolUsagePayload {
     pub tools: Vec<ToolUsageEntry>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SlowDurationStats {
+    pub count: u32,
+    pub total_ms: u32,
+    pub max_ms: u32,
+    pub buckets: [u32; 4],
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LongFrameEntry {
+    pub route: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dialog: Option<String>,
+    #[serde(flatten)]
+    pub stats: SlowDurationStats,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SlowCommandEntry {
+    pub command: String,
+    #[serde(flatten)]
+    pub stats: SlowDurationStats,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PerformancePayload {
+    #[serde(flatten)]
+    pub context: TelemetryContext,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub frames: Vec<LongFrameEntry>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub commands: Vec<SlowCommandEntry>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DialogTabUsageEntry {

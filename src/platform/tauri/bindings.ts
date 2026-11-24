@@ -7677,6 +7677,13 @@ export type TelemetryClientEvent =
     | { type: 'toolOpen'; tool: string }
     | { type: 'dialogTabView'; dialog: string; tab: string; landing: boolean }
     | {
+          type: 'longFrame';
+          route: string;
+          dialog: string | null;
+          duration_ms: number;
+      }
+    | { type: 'slowCommand'; command: string; duration_ms: number }
+    | {
           type: 'routeError';
           error_class: string;
           name: string | null;
