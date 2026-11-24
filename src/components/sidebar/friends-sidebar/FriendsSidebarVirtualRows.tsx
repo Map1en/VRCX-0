@@ -271,7 +271,7 @@ function FriendsSidebarVirtualRow({
             return (
                 <FriendVirtualRow
                     appearance={appearance}
-                    canBoop={Boolean(runtime.currentUser?.isBoopingEnabled)}
+                    canBoop={runtime.currentUser?.isBoopingEnabled === true}
                     canSendInvite={Boolean(instanceActionGates?.canInvite)}
                     canUseFriendInstance={Boolean(instanceActionGates?.canJoin)}
                     currentLocationStartedAt={

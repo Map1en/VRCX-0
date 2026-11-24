@@ -50,7 +50,7 @@ export function useFriendsLocationsRuntime() {
             runtimeCurrentLocation
         ]
     );
-    const canBoop = Boolean(currentUserSnapshot?.isBoopingEnabled);
+    const canBoop = currentUserSnapshot?.isBoopingEnabled === true;
 
     return {
         canBoop,

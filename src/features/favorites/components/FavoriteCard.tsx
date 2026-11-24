@@ -81,7 +81,7 @@ const FavoriteCard = memo(function FavoriteCard({
     );
     const normalizedCurrentUserId = normalizeEntityId(currentUserId);
     const canSendInvite = Boolean(instanceActionGate?.canInvite);
-    const canBoop = Boolean(currentUserSnapshot?.isBoopingEnabled);
+    const canBoop = currentUserSnapshot?.isBoopingEnabled === true;
     const currentAvatarId = currentUserSnapshot?.currentAvatar || '';
     const isFriendCard = item.kind === 'friend';
     const friendHoverCardProps = {

@@ -67,6 +67,27 @@ type ParsedBooleanField =
     | 'ageGate';
 
 const SHORT_NAME_QUALIFIER = '&shortName=';
+const NON_INSTANCE_LOCATIONS = new Set([
+    ':',
+    'offline',
+    'offline:offline',
+    'private',
+    'private:private',
+    'traveling',
+    'traveling:traveling'
+]);
+
+function isRealInstance(location: unknown): location is string {
+    if (typeof location !== 'string') {
+        return false;
+    }
+    const normalized = location.trim().toLowerCase();
+    return (
+        normalized !== '' &&
+        !normalized.startsWith('local') &&
+        !NON_INSTANCE_LOCATIONS.has(normalized)
+    );
+}
 
 const PARSED_LOCATION_STRING_FIELDS: ParsedStringField[] = [
     'tag',
@@ -372,9 +393,8 @@ function parseLocationTag(tag: string): ParsedLocation {
         ctx.isPrivate = true;
     } else if (_tag === 'traveling' || _tag === 'traveling:traveling') {
         ctx.isTraveling = true;
-    } else if (_tag && !_tag.startsWith('local')) {
+    } else if (isRealInstance(_tag)) {
         ctx.isRealInstance = true;
-        const sep = _tag.indexOf(':');
         const shortNameIndex = _tag.indexOf(SHORT_NAME_QUALIFIER);
         if (shortNameIndex >= 0) {
             ctx.shortName = _tag.slice(
@@ -382,6 +402,7 @@ function parseLocationTag(tag: string): ParsedLocation {
             );
             _tag = _tag.slice(0, shortNameIndex);
         }
+        const sep = _tag.indexOf(':');
         if (sep >= 0) {
             ctx.worldId = _tag.slice(0, sep);
             ctx.instanceId = _tag.slice(sep + 1);
@@ -440,7 +461,13 @@ function translateAccessType(
     return t(key);
 }
 
-export { parseLocation, displayLocation, resolveRegion, translateAccessType };
+export {
+    isRealInstance,
+    parseLocation,
+    displayLocation,
+    resolveRegion,
+    translateAccessType
+};
 
 interface LocationTextOptions {
     hint?: string;

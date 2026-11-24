@@ -12,7 +12,6 @@ import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
 import {
     localGameLocation,
-    presenceCanRequestInvite,
     presenceLiveInstanceTag
 } from '@/domain/friends/presence';
 import type { FriendRecord } from '@/domain/friends/types';
@@ -255,8 +254,7 @@ export const FriendsLocationCardItem = memo(function FriendsLocationCardItem({
             capabilities={{
                 useLocation: !friendIsCurrentUser && friendLocationAvailable,
                 sendInvite: !friendIsCurrentUser && canSendInvite,
-                requestInvite:
-                    !friendIsCurrentUser && presenceCanRequestInvite(presence),
+                requestInvite: !friendIsCurrentUser,
                 boop: !friendIsCurrentUser && canBoop
             }}
             actions={{

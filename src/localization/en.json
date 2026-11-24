@@ -801,6 +801,14 @@
             "kvk": "Korean Sign Language",
             "nzs": "New Zealand Sign Language",
             "tws": "Teochew"
+        },
+        "friend_action": {
+            "request_invite_title": "Request invite?",
+            "request_invite_confirm": "Request Invite",
+            "invite_request_sent": "Invite request sent",
+            "failed_to_request_invite": "Failed to request invite",
+            "boop_sent": "Boop sent",
+            "failed_to_send_boop": "Failed to send boop"
         }
     },
     "economy": {
@@ -1393,8 +1401,6 @@
         },
         "success": {
             "vrchat_launch_request_sent": "Opened in VRChat",
-            "invite_request_sent": "Invite request sent",
-            "boop_sent": "Boop sent",
             "friend_and_favorite_snapshots_refreshed": "Friends refreshed"
         },
         "error": {
@@ -1538,7 +1544,6 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "Cannot invite: you're not in an instance right now",
                 "cannot_invite_from_the_current_instance_type": "Cannot invite: your current instance doesn't allow invites",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Cannot invite: you're not currently in a joinable instance",
-                "cannot_request_invite_friend_is_not_online": "Cannot request invite: friend is not online",
                 "feed_query_failed": "Couldn't load the feed"
             },
             "label": {
@@ -1552,9 +1557,7 @@
                 "stayed": "Stayed {duration}"
             },
             "success": {
-                "vrchat_launch_request_sent": "Opened in VRChat",
-                "invite_request_sent": "Invite request sent",
-                "boop_sent": "Boop sent"
+                "vrchat_launch_request_sent": "Opened in VRChat"
             },
             "loading": {
                 "loading_feed_rows": "Loading feed entries"
@@ -1573,15 +1576,11 @@
                 "failed_to_load_instance_history": "Failed to load instance history",
                 "failed_to_launch_instance": "Failed to launch instance",
                 "failed_to_send_self_invite": "Failed to send self-invite",
-                "failed_to_send_invite": "Failed to send invite",
-                "failed_to_request_invite": "Failed to request invite",
-                "failed_to_send_boop": "Failed to send boop"
+                "failed_to_send_invite": "Failed to send invite"
             },
             "modal": {
                 "send_invite": "Send invite?",
                 "invite": "Invite",
-                "request_invite": "Request invite?",
-                "request_invite_2": "Request Invite",
                 "send": "Send"
             },
             "dynamic": {
@@ -1950,8 +1949,6 @@
                 "local_favorite_group_deleted": "Local favorite group deleted",
                 "avatar_history_cleared": "Avatar history cleared",
                 "vrchat_launch_request_sent": "Opened in VRChat",
-                "invite_request_sent": "Invite request sent",
-                "boop_sent": "Boop sent",
                 "avatar_selected": "Avatar selected",
                 "copied_selected_favorite_ids": "Copied selected favorite IDs",
                 "selected_favorites_removed": "Selected favorites removed",
@@ -2288,9 +2285,7 @@
             "success": {
                 "friend_detail_loading_cancelled": "Friend detail loading cancelled",
                 "roster_bootstrap_did_not_complete": "Couldn't load your friends",
-                "vrchat_launch_request_sent": "Opened in VRChat",
-                "invite_request_sent": "Invite request sent",
-                "boop_sent": "Boop sent"
+                "vrchat_launch_request_sent": "Opened in VRChat"
             },
             "empty": {
                 "no_friends_are_available_for_mutual_friends_loading": "You have no friends to load mutual friends for.",
@@ -4149,8 +4144,6 @@
                 "failed_to_launch_instance": "Failed to launch instance",
                 "failed_to_send_self_invite": "Failed to send self-invite",
                 "failed_to_send_invite": "Failed to send invite",
-                "failed_to_request_invite": "Failed to request invite",
-                "failed_to_send_boop": "Failed to send boop",
                 "failed_to_select_avatar": "Failed to select avatar",
                 "failed_to_create_local_favorite_group": "Failed to create local favorite group",
                 "failed_to_copy_selected_favorites": "Failed to copy selected favorites",
@@ -4173,8 +4166,6 @@
                 "clear_avatar_history": "Clear avatar history?",
                 "send_invite": "Send invite?",
                 "invite": "Invite",
-                "request_invite": "Request invite?",
-                "request_invite_2": "Request Invite",
                 "send": "Send",
                 "delete_value_favorites": "Delete {value} favorites?",
                 "this_action_cannot_be_undone": "This action cannot be undone",
@@ -4216,17 +4207,13 @@
                 "failed_to_unfriend_value": "Failed to unfriend {value}",
                 "failed_to_launch_instance": "Failed to launch instance",
                 "failed_to_send_self_invite": "Failed to send self-invite",
-                "failed_to_send_invite": "Failed to send invite",
-                "failed_to_request_invite": "Failed to request invite",
-                "failed_to_send_boop": "Failed to send boop"
+                "failed_to_send_invite": "Failed to send invite"
             },
             "modal": {
                 "unfriend_user": "Unfriend user?",
                 "unfriend": "Unfriend",
                 "send_invite": "Send invite?",
                 "invite": "Invite",
-                "request_invite": "Request invite?",
-                "request_invite_2": "Request Invite",
                 "send": "Send"
             },
             "dynamic": {
@@ -4969,7 +4956,6 @@
                 "shared_connections_setting_updated": "Shared connections setting updated",
                 "discord_connections_setting_updated": "Discord connections setting updated",
                 "report_sent": "Report sent",
-                "boop_sent": "Boop sent",
                 "profile_details_updated": "Profile details updated",
                 "group_invite_sent": "Group invite sent",
                 "left_group": "Left group",
@@ -5026,9 +5012,6 @@
                 "invite_message_sent": "Invite message sent",
                 "failed_to_send_invite": "Failed to send invite",
                 "invite_request_message_sent": "Invite request message sent",
-                "invite_request_sent": "Invite request sent",
-                "failed_to_request_invite": "Failed to request invite",
-                "failed_to_send_boop": "Failed to send boop",
                 "already_viewing_user": "Already viewing this user",
                 "failed_to_open_discord_profile": "Failed to open Discord profile",
                 "translation_failed": "Translation failed",
@@ -7758,8 +7741,6 @@
                 "failed_to_launch_instance": "Failed to launch instance",
                 "failed_to_send_self_invite": "Failed to send self-invite",
                 "failed_to_send_invite": "Failed to send invite",
-                "failed_to_request_invite": "Failed to request invite",
-                "failed_to_send_boop": "Failed to send boop",
                 "failed_to_update_social_status": "Failed to update social status",
                 "failed_to_update_status_description": "Failed to update status description",
                 "failed_to_update_status": "Failed to update status"
@@ -7767,8 +7748,6 @@
             "modal": {
                 "send_invite": "Send invite?",
                 "invite": "Invite",
-                "request_invite": "Request invite?",
-                "request_invite_2": "Request Invite",
                 "send": "Send",
                 "edit_status_description": "Edit status description"
             }

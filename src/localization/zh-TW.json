@@ -800,6 +800,14 @@
             "kvk": "韓國手語",
             "nzs": "紐西蘭手語",
             "tws": "潮州話"
+        },
+        "friend_action": {
+            "request_invite_title": "申請加入？",
+            "request_invite_confirm": "申請加入",
+            "invite_request_sent": "已傳送加入申請",
+            "failed_to_request_invite": "申請加入失敗",
+            "boop_sent": "已傳送戳戳",
+            "failed_to_send_boop": "傳送戳戳失敗"
         }
     },
     "economy": {
@@ -1390,8 +1398,6 @@
         },
         "success": {
             "vrchat_launch_request_sent": "已在 VRChat 中開啟",
-            "invite_request_sent": "已傳送加入申請",
-            "boop_sent": "已傳送戳戳",
             "friend_and_favorite_snapshots_refreshed": "已重新整理好友"
         },
         "error": {
@@ -1535,7 +1541,6 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "無法邀請：你目前不在任何房間中",
                 "cannot_invite_from_the_current_instance_type": "無法邀請：你目前的房間不允許邀請",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "無法邀請：你目前不在可加入的房間",
-                "cannot_request_invite_friend_is_not_online": "無法申請加入：好友不在線上",
                 "feed_query_failed": "無法載入動態"
             },
             "label": {
@@ -1549,9 +1554,7 @@
                 "stayed": "停留 {duration}"
             },
             "success": {
-                "vrchat_launch_request_sent": "已在 VRChat 中開啟",
-                "invite_request_sent": "已傳送加入申請",
-                "boop_sent": "已傳送戳戳"
+                "vrchat_launch_request_sent": "已在 VRChat 中開啟"
             },
             "loading": {
                 "loading_feed_rows": "正在載入動態"
@@ -1570,15 +1573,11 @@
                 "failed_to_load_instance_history": "載入房間歷史失敗",
                 "failed_to_launch_instance": "啟動房間失敗",
                 "failed_to_send_self_invite": "傳送自我邀請失敗",
-                "failed_to_send_invite": "傳送邀請失敗",
-                "failed_to_request_invite": "申請加入失敗",
-                "failed_to_send_boop": "傳送戳戳失敗"
+                "failed_to_send_invite": "傳送邀請失敗"
             },
             "modal": {
                 "send_invite": "傳送邀請？",
                 "invite": "邀請",
-                "request_invite": "申請加入？",
-                "request_invite_2": "申請加入",
                 "send": "傳送"
             },
             "dynamic": {
@@ -1942,8 +1941,6 @@
                 "local_favorite_group_deleted": "本機收藏分組已刪除",
                 "avatar_history_cleared": "角色歷史已清空",
                 "vrchat_launch_request_sent": "已在 VRChat 中開啟",
-                "invite_request_sent": "已傳送加入申請",
-                "boop_sent": "已傳送戳戳",
                 "avatar_selected": "角色已切換",
                 "copied_selected_favorite_ids": "已複製所選收藏 ID",
                 "selected_favorites_removed": "已移除所選收藏",
@@ -2278,9 +2275,7 @@
             "success": {
                 "friend_detail_loading_cancelled": "好友詳細資訊載入已取消",
                 "roster_bootstrap_did_not_complete": "無法載入你的好友",
-                "vrchat_launch_request_sent": "已在 VRChat 中開啟",
-                "invite_request_sent": "已傳送加入申請",
-                "boop_sent": "已傳送戳戳"
+                "vrchat_launch_request_sent": "已在 VRChat 中開啟"
             },
             "empty": {
                 "no_friends_are_available_for_mutual_friends_loading": "沒有可用於載入共同好友的好友",
@@ -4138,8 +4133,6 @@
                 "failed_to_launch_instance": "啟動房間失敗",
                 "failed_to_send_self_invite": "傳送自我邀請失敗",
                 "failed_to_send_invite": "傳送邀請失敗",
-                "failed_to_request_invite": "申請加入失敗",
-                "failed_to_send_boop": "傳送戳戳失敗",
                 "failed_to_select_avatar": "切換角色失敗",
                 "failed_to_create_local_favorite_group": "建立本機收藏分組失敗",
                 "failed_to_copy_selected_favorites": "複製所選收藏失敗",
@@ -4162,8 +4155,6 @@
                 "clear_avatar_history": "清空角色歷史？",
                 "send_invite": "傳送邀請？",
                 "invite": "邀請",
-                "request_invite": "申請加入？",
-                "request_invite_2": "申請加入",
                 "send": "傳送",
                 "delete_value_favorites": "刪除 {value} 個收藏？",
                 "this_action_cannot_be_undone": "此操作無法復原",
@@ -4205,17 +4196,13 @@
                 "failed_to_unfriend_value": "解除{value}的好友關係失敗",
                 "failed_to_launch_instance": "啟動房間失敗",
                 "failed_to_send_self_invite": "傳送自我邀請失敗",
-                "failed_to_send_invite": "傳送邀請失敗",
-                "failed_to_request_invite": "申請加入失敗",
-                "failed_to_send_boop": "傳送戳戳失敗"
+                "failed_to_send_invite": "傳送邀請失敗"
             },
             "modal": {
                 "unfriend_user": "解除好友關係？",
                 "unfriend": "解除好友",
                 "send_invite": "傳送邀請？",
                 "invite": "邀請",
-                "request_invite": "申請加入？",
-                "request_invite_2": "申請加入",
                 "send": "傳送"
             },
             "dynamic": {
@@ -4954,7 +4941,6 @@
                 "shared_connections_setting_updated": "共享連線設定已更新",
                 "discord_connections_setting_updated": "Discord 連線設定已更新",
                 "report_sent": "檢舉已傳送",
-                "boop_sent": "戳戳已傳送",
                 "profile_details_updated": "個人資料詳細資訊已更新",
                 "group_invite_sent": "群組邀請已傳送",
                 "left_group": "已退出群組",
@@ -5011,9 +4997,6 @@
                 "invite_message_sent": "邀請訊息已傳送",
                 "failed_to_send_invite": "傳送邀請失敗",
                 "invite_request_message_sent": "加入申請訊息已傳送",
-                "invite_request_sent": "加入申請已傳送",
-                "failed_to_request_invite": "申請加入失敗",
-                "failed_to_send_boop": "傳送戳戳失敗",
                 "already_viewing_user": "已在查看此用戶",
                 "failed_to_open_discord_profile": "開啟 Discord 資料失敗",
                 "translation_failed": "翻譯失敗",
@@ -7733,8 +7716,6 @@
                 "failed_to_launch_instance": "啟動房間失敗",
                 "failed_to_send_self_invite": "傳送自我邀請失敗",
                 "failed_to_send_invite": "傳送邀請失敗",
-                "failed_to_request_invite": "申請加入失敗",
-                "failed_to_send_boop": "傳送戳戳失敗",
                 "failed_to_update_social_status": "更新社交狀態失敗",
                 "failed_to_update_status_description": "更新狀態訊息失敗",
                 "failed_to_update_status": "更新狀態失敗"
@@ -7742,8 +7723,6 @@
             "modal": {
                 "send_invite": "傳送邀請？",
                 "invite": "邀請",
-                "request_invite": "申請加入？",
-                "request_invite_2": "申請加入",
                 "send": "傳送",
                 "edit_status_description": "編輯狀態訊息"
             }

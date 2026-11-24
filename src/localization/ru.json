@@ -803,6 +803,14 @@
             "kvk": "Корейский жестовый язык",
             "nzs": "Новозеландский жестовый язык",
             "tws": "Чаошаньский"
+        },
+        "friend_action": {
+            "request_invite_title": "Запросить приглашение?",
+            "request_invite_confirm": "Просьба о приглашении",
+            "invite_request_sent": "Направлено приглашение",
+            "failed_to_request_invite": "Не удалось запросить приглашение",
+            "boop_sent": "Буп отправлен",
+            "failed_to_send_boop": "Не удалось отправить буп"
         }
     },
     "economy": {
@@ -1407,8 +1415,6 @@
         },
         "success": {
             "vrchat_launch_request_sent": "Открыто VRChat",
-            "invite_request_sent": "Направлено приглашение",
-            "boop_sent": "Буп отправлен",
             "friend_and_favorite_snapshots_refreshed": "Друзья обновлены"
         },
         "error": {
@@ -1552,7 +1558,6 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "Невозможно пригласить: нет доступного текущего местоположения VRChat",
                 "cannot_invite_from_the_current_instance_type": "Невозможно пригласить из текущего типа",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Невозможно пригласить: вы сейчас не в инстансе, куда можно пригласить.",
-                "cannot_request_invite_friend_is_not_online": "Невозможно запросить приглашение: друг не в сети",
                 "feed_query_failed": "Не удалось загрузить ленту"
             },
             "label": {
@@ -1566,9 +1571,7 @@
                 "stayed": "Пребывание: {duration}"
             },
             "success": {
-                "vrchat_launch_request_sent": "Открыто VRChat",
-                "invite_request_sent": "Направлено приглашение",
-                "boop_sent": "Буп отправлен"
+                "vrchat_launch_request_sent": "Открыто VRChat"
             },
             "loading": {
                 "loading_feed_rows": "Загрузка записей ленты"
@@ -1587,15 +1590,11 @@
                 "failed_to_load_instance_history": "Не удалось загрузить историю инстанса",
                 "failed_to_launch_instance": "Ошибка запуска",
                 "failed_to_send_self_invite": "Не удалось отправить самоприглашение",
-                "failed_to_send_invite": "Не удалось отправить приглашение",
-                "failed_to_request_invite": "Не удалось запросить приглашение",
-                "failed_to_send_boop": "Не удалось отправить буп"
+                "failed_to_send_invite": "Не удалось отправить приглашение"
             },
             "modal": {
                 "send_invite": "Послать приглашение?",
                 "invite": "Приглашение",
-                "request_invite": "Запросить приглашение?",
-                "request_invite_2": "Просьба о приглашении",
                 "send": "Отправить"
             },
             "dynamic": {
@@ -1972,8 +1971,6 @@
                 "local_favorite_group_deleted": "Локальная группа избранного удалена",
                 "avatar_history_cleared": "Очистить историю Аватара",
                 "vrchat_launch_request_sent": "Открыто VRChat",
-                "invite_request_sent": "Направлено приглашение",
-                "boop_sent": "Буп отправлен",
                 "avatar_selected": "Выбран Аватар",
                 "copied_selected_favorite_ids": "Выбранные избранные идентификаторы",
                 "selected_favorites_removed": "Выбранные избранное удалены",
@@ -2308,9 +2305,7 @@
             "success": {
                 "friend_detail_loading_cancelled": "Загрузка отменена",
                 "roster_bootstrap_did_not_complete": "Не удалось загрузить список друзей",
-                "vrchat_launch_request_sent": "Открыто VRChat",
-                "invite_request_sent": "Направлено приглашение",
-                "boop_sent": "Буп отправлен"
+                "vrchat_launch_request_sent": "Открыто VRChat"
             },
             "empty": {
                 "no_friends_are_available_for_mutual_friends_loading": "Нет друзей, которые могли бы погрузить их.",
@@ -4171,8 +4166,6 @@
                 "failed_to_launch_instance": "Ошибка запуска",
                 "failed_to_send_self_invite": "Не удалось отправить самоприглашение",
                 "failed_to_send_invite": "Не удалось отправить приглашение",
-                "failed_to_request_invite": "Не удалось запросить приглашение",
-                "failed_to_send_boop": "Не удалось отправить буп",
                 "failed_to_select_avatar": "Не удалось выбрать аватар",
                 "failed_to_create_local_favorite_group": "Не удалось создать местную избранную группу",
                 "failed_to_copy_selected_favorites": "Не удалось скопировать выбранные элементы избранного",
@@ -4195,8 +4188,6 @@
                 "clear_avatar_history": "Очистить историю аватара?",
                 "send_invite": "Послать приглашение?",
                 "invite": "Приглашение",
-                "request_invite": "Запросить приглашение?",
-                "request_invite_2": "Просьба о приглашении",
                 "send": "Отправить",
                 "delete_value_favorites": "Удалить {value} избранных?",
                 "this_action_cannot_be_undone": "Это действие не может быть отменено",
@@ -4238,17 +4229,13 @@
                 "failed_to_unfriend_value": "Не удалось удалить из друзей {value}",
                 "failed_to_launch_instance": "Ошибка запуска",
                 "failed_to_send_self_invite": "Не удалось отправить самоприглашение",
-                "failed_to_send_invite": "Не удалось отправить приглашение",
-                "failed_to_request_invite": "Не удалось запросить приглашение",
-                "failed_to_send_boop": "Не удалось отправить буп"
+                "failed_to_send_invite": "Не удалось отправить приглашение"
             },
             "modal": {
                 "unfriend_user": "Удалить пользователя из друзей?",
                 "unfriend": "Удалить из друзей",
                 "send_invite": "Послать приглашение?",
                 "invite": "Приглашение",
-                "request_invite": "Запросить приглашение?",
-                "request_invite_2": "Просьба о приглашении",
                 "send": "Отправить"
             },
             "dynamic": {
@@ -4999,7 +4986,6 @@
                 "shared_connections_setting_updated": "Настройка общих подключений обновлена",
                 "discord_connections_setting_updated": "Настройка подключений Discord обновлена",
                 "report_sent": "Направлено сообщение",
-                "boop_sent": "Буп отправлен",
                 "profile_details_updated": "Сведения профиля обновлены",
                 "group_invite_sent": "Приглашение в группу отправлено",
                 "left_group": "Левая группа",
@@ -5056,9 +5042,6 @@
                 "invite_message_sent": "Сообщение с приглашением отправлено",
                 "failed_to_send_invite": "Не удалось отправить приглашение",
                 "invite_request_message_sent": "Сообщение с запросом приглашения отправлено",
-                "invite_request_sent": "Направлено приглашение",
-                "failed_to_request_invite": "Не удалось запросить приглашение",
-                "failed_to_send_boop": "Не удалось отправить буп",
                 "already_viewing_user": "Вы уже просматриваете этого пользователя",
                 "failed_to_open_discord_profile": "Не удалось открыть профиль Discord",
                 "translation_failed": "Ошибка перевода",
@@ -7701,8 +7684,6 @@
                 "failed_to_launch_instance": "Ошибка запуска",
                 "failed_to_send_self_invite": "Не удалось отправить самоприглашение",
                 "failed_to_send_invite": "Не удалось отправить приглашение",
-                "failed_to_request_invite": "Не удалось запросить приглашение",
-                "failed_to_send_boop": "Не удалось отправить буп",
                 "failed_to_update_social_status": "Не удалось обновить социальный статус",
                 "failed_to_update_status_description": "Не удалось обновить описание состояния",
                 "failed_to_update_status": "Не удалось обновить статус"
@@ -7710,8 +7691,6 @@
             "modal": {
                 "send_invite": "Послать приглашение?",
                 "invite": "Приглашение",
-                "request_invite": "Запросить приглашение?",
-                "request_invite_2": "Просьба о приглашении",
                 "send": "Отправить",
                 "edit_status_description": "Описание состояния"
             }

@@ -317,7 +317,7 @@ export function useUserInviteActions({
                 title:
                     requestSlot !== null
                         ? t('dialog.user.toast.invite_request_message_sent')
-                        : t('dialog.user.toast.invite_request_sent')
+                        : t('common.friend_action.invite_request_sent')
             });
             return true;
         } catch (error) {
@@ -326,7 +326,7 @@ export function useUserInviteActions({
                 title:
                     error instanceof Error
                         ? error.message
-                        : t('dialog.user.toast.failed_to_request_invite')
+                        : t('common.friend_action.failed_to_request_invite')
             });
             return false;
         } finally {

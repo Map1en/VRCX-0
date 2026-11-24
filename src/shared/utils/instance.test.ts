@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildLegacyInstanceTag, isRealInstance } from './instance';
-import { parseLocation } from './location';
+import { buildLegacyInstanceTag } from './instance';
+import { isRealInstance, parseLocation } from './location';
 
 describe('instance utils', () => {
     it('filters sentinel and local locations from real instance logic', () => {

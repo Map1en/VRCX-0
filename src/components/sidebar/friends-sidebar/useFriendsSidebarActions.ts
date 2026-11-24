@@ -9,10 +9,10 @@ import type {
 import currentUserProfileService from '@/services/currentUserProfileService';
 import { openUserDialog } from '@/services/dialogService';
 import {
-    sendBoopToUser,
-    sendInviteToLocation,
-    sendRequestInviteToUser
-} from '@/services/inviteDeliveryService';
+    boopFriend,
+    requestInviteFromFriend
+} from '@/services/friendActionService';
+import { sendInviteToLocation } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { recordRecentAction } from '@/services/recentActionService';
 import { toast } from '@/services/toastService';
@@ -49,7 +49,6 @@ export function useFriendsSidebarActions({
     currentUserId
 }: FriendsSidebarActionsInput) {
     const { t } = useTranslation();
-    const boopPrompt = useModalStore((state) => state.boopPrompt);
     const {
         dialog: socialStatusDialog,
         openDialog: editCurrentUserSocialStatus
@@ -173,73 +172,18 @@ export function useFriendsSidebarActions({
         }
     }
 
-    async function requestFriendInvite(friend: SidebarFriendRecord) {
-        const friendId = normalizeId(friend?.id);
-        if (!friendId || friendId === normalizeId(currentUserId)) {
-            return;
-        }
-        const result = await confirm({
-            title: t('component.friends_sidebar.modal.request_invite'),
-            description: friend.displayName || friendId,
-            confirmText: t('component.friends_sidebar.modal.request_invite_2'),
-            cancelText: t('common.actions.cancel')
+    function requestFriendInvite(friend: SidebarFriendRecord) {
+        return requestInviteFromFriend({
+            id: friend?.id,
+            label: friend?.displayName || ''
         });
-        if (!result.ok) {
-            return;
-        }
-        try {
-            await sendRequestInviteToUser({
-                receiverUserId: friendId
-            });
-            recordRecentAction(friendId, 'Request Invite');
-            toast.add({
-                type: 'success',
-                title: t('side_panel.success.invite_request_sent')
-            });
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title:
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.friends_sidebar.toast.failed_to_request_invite'
-                          )
-            });
-        }
     }
 
-    async function sendFriendBoop(friend: SidebarFriendRecord) {
-        const friendId = normalizeId(friend?.id);
-        if (!friendId || friendId === normalizeId(currentUserId)) {
-            return;
-        }
-        try {
-            const result = await boopPrompt({
-                targetLabel: friend?.displayName || friend?.username || friendId
-            });
-            if (!result.ok) {
-                return;
-            }
-            await sendBoopToUser({
-                userId: friendId,
-                emoji: result.value ?? null
-            });
-            toast.add({
-                type: 'success',
-                title: t('side_panel.success.boop_sent')
-            });
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title:
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.friends_sidebar.toast.failed_to_send_boop'
-                          )
-            });
-        }
+    function sendFriendBoop(friend: SidebarFriendRecord) {
+        return boopFriend({
+            id: friend?.id,
+            label: friend?.displayName || friend?.username || ''
+        });
     }
 
     async function saveCurrentUserPatch(

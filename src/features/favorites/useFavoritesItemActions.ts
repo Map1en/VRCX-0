@@ -12,10 +12,10 @@ import { copyTextToClipboard } from '@/services/clipboardService';
 import { openWorldDialog } from '@/services/dialogService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import {
-    sendBoopToUser,
-    sendInviteToLocation,
-    sendRequestInviteToUser
-} from '@/services/inviteDeliveryService';
+    boopFriend,
+    requestInviteFromFriend
+} from '@/services/friendActionService';
+import { sendInviteToLocation } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { toast } from '@/services/toastService';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
@@ -73,7 +73,6 @@ export function useFavoritesItemActions({
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
-    const boopPrompt = useModalStore((state) => state.boopPrompt);
     function friendText(value: unknown): string {
         return typeof value === 'string' ? value : String(value ?? '');
     }
@@ -310,75 +309,22 @@ export function useFavoritesItemActions({
         }
     }
 
-    async function requestFavoriteFriendInvite(item: FavoriteItem) {
+    function requestFavoriteFriendInvite(item: FavoriteItem) {
         const friend = getFavoriteFriend(item);
-        const friendId = normalizeEntityId(friend.id || item.id);
-        if (!friendId || friendId === normalizeEntityId(currentUserId)) {
-            return;
-        }
-        const result = await confirm({
-            title: t('view.favorites.modal.request_invite'),
-            description:
+        return requestInviteFromFriend({
+            id: friend.id || item.id,
+            label:
                 normalizeEntityId(friend.displayName) ||
-                t('view.favorites.description.this_user'),
-            confirmText: t('view.favorites.modal.request_invite_2'),
-            cancelText: t('common.actions.cancel')
+                t('view.favorites.description.this_user')
         });
-        if (!result.ok) {
-            return;
-        }
-        try {
-            await sendRequestInviteToUser({
-                receiverUserId: friendId
-            });
-            toast.add({
-                type: 'success',
-                title: t('view.favorite.success.invite_request_sent')
-            });
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title:
-                    error instanceof Error
-                        ? error.message
-                        : t('view.favorites.toast.failed_to_request_invite')
-            });
-        }
     }
 
-    async function sendFavoriteFriendBoop(item: FavoriteItem) {
+    function sendFavoriteFriendBoop(item: FavoriteItem) {
         const friend = getFavoriteFriend(item);
-        const friendId = normalizeEntityId(friend.id || item.id);
-        if (!friendId || friendId === normalizeEntityId(currentUserId)) {
-            return;
-        }
-        try {
-            const result = await boopPrompt({
-                targetLabel:
-                    friendText(friend.displayName) ||
-                    friendText(friend.username) ||
-                    friendId
-            });
-            if (!result.ok) {
-                return;
-            }
-            await sendBoopToUser({
-                userId: friendId,
-                emoji: result.value ?? null
-            });
-            toast.add({
-                type: 'success',
-                title: t('view.favorite.success.boop_sent')
-            });
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title:
-                    error instanceof Error
-                        ? error.message
-                        : t('view.favorites.toast.failed_to_send_boop')
-            });
-        }
+        return boopFriend({
+            id: friend.id || item.id,
+            label: friendText(friend.displayName) || friendText(friend.username)
+        });
     }
 
     function openWorldNewInstance(

@@ -14,12 +14,11 @@ import {
     commands,
     type SocialFriendMutationOutcome
 } from '@/platform/tauri/bindings';
+import { deliverFriendBoop } from '@/services/friendActionService';
 import { signalFriendLogChanged } from '@/services/friendLogMutationService';
 import friendRelationshipService from '@/services/friendRelationshipService';
-import { sendBoopToUser } from '@/services/inviteDeliveryService';
 import {
     acceptFriendRequestNotification,
-    dismissBoopNotifications,
     expireNotificationLocally,
     findIncomingFriendRequestNotification,
     hideRemoteAndExpireNotification
@@ -534,18 +533,11 @@ export function useUserDialogActions({
         actionStatusRef.current = 'boop';
         setActionStatus('boop');
         try {
-            await dismissBoopNotifications({
-                currentUserId: currentUserId || '',
-                senderUserId: context.userId
-            });
-            await sendBoopToUser({
-                userId: context.userId,
-                emoji
-            });
+            await deliverFriendBoop(context.userId, emoji);
             setBoopDialogRequest(null);
             toast.add({
                 type: 'success',
-                title: t('dialog.user.success.boop_sent')
+                title: t('common.friend_action.boop_sent')
             });
         } catch (error) {
             toast.add({
@@ -553,7 +545,7 @@ export function useUserDialogActions({
                 title:
                     error instanceof Error
                         ? error.message
-                        : t('dialog.user.toast.failed_to_send_boop')
+                        : t('common.friend_action.failed_to_send_boop')
             });
             throw error;
         } finally {

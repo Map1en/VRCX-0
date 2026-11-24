@@ -36,7 +36,7 @@ export function useFavoritesRuntime() {
     } = useCurrentInviteContext();
 
     return {
-        canBoop: Boolean(currentUserSnapshot?.isBoopingEnabled),
+        canBoop: currentUserSnapshot?.isBoopingEnabled === true,
         canInviteFromCurrentLocation,
         canSendInvite,
         currentAvatarId: currentUserSnapshot?.currentAvatar || '',

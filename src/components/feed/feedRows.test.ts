@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { onlinePresence, pendingPresence } from '@/test/presenceFixtures';
-
 import {
     buildFeedFavoriteIdSet,
     canExpandFeedRow,
-    canRequestInviteFromFeedFriend,
     getFeedRowCreatedAtMs,
     getFeedRowId,
     isUserIdLike,
@@ -56,22 +53,6 @@ describe('feed row helpers', () => {
                 location: 'wrld_1:instance'
             })
         ).toBe(`GPS:2026-05-15T00:00:00Z:${USER_ID}:wrld_1:instance`);
-    });
-
-    it('resolves invite requests from presence and the current invite location', () => {
-        expect(
-            canRequestInviteFromFeedFriend({
-                id: USER_ID,
-                $presence: onlinePresence()
-            })
-        ).toBe(true);
-        expect(
-            canRequestInviteFromFeedFriend({
-                id: USER_ID,
-                $presence: pendingPresence()
-            })
-        ).toBe(false);
-        expect(canRequestInviteFromFeedFriend({ id: USER_ID })).toBe(false);
     });
 
     it('hides stale offline locations only for online feed display rows', () => {

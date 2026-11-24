@@ -18,7 +18,6 @@ import {
 import { DeferredContextMenu } from '@/components/DeferredContextMenu';
 import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
 import {
-    canRequestInviteFromFeedFriend,
     normalizeFeedId as normalizeId,
     resolveFeedUserDisplayName,
     resolveFeedUserId,
@@ -117,7 +116,6 @@ function FeedUserLink({
     const isCurrentUser = Boolean(
         userId && userId === normalizeId(currentUserId)
     );
-    const canRequestInvite = canRequestInviteFromFeedFriend(friend);
     const canUseFriendLocation = Boolean(
         !isCurrentUser &&
         parsedLocation.isRealInstance &&
@@ -274,7 +272,7 @@ function FeedUserLink({
                         {t('dialog.user.actions.invite')}
                     </ContextMenuItem>
                     <ContextMenuItem
-                        disabled={isCurrentUser || !canRequestInvite}
+                        disabled={isCurrentUser}
                         onClick={() => {
                             actions.requestFeedFriendInvite(actionTarget);
                         }}

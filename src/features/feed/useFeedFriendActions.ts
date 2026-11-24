@@ -2,10 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
-import {
-    canRequestInviteFromFeedFriend,
-    normalizeFeedId as normalizeId
-} from '@/components/feed/feedRows';
+import { normalizeFeedId as normalizeId } from '@/components/feed/feedRows';
 import type {
     FeedFriendActionTarget,
     FeedFriendActions,
@@ -14,10 +11,10 @@ import type {
 import { useCurrentInviteContext } from '@/lib/useCurrentInviteContext';
 import { openWorldDialog } from '@/services/dialogService';
 import {
-    sendBoopToUser,
-    sendInviteToLocation,
-    sendRequestInviteToUser
-} from '@/services/inviteDeliveryService';
+    boopFriend,
+    requestInviteFromFriend
+} from '@/services/friendActionService';
+import { sendInviteToLocation } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
 import {
     addFeedHiddenUserPreference,
@@ -38,8 +35,8 @@ function resolveActionFriendId(friend: FeedFriendActionTarget) {
 export function useFeedFriendActions(): FeedFriendActions {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const canBoopFromFeed = useRuntimeStore((state) =>
-        Boolean(state.auth.currentUserSnapshot?.isBoopingEnabled)
+    const canBoopFromFeed = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot?.isBoopingEnabled === true
     );
     const friendIds = useFriendRosterStore(
         useShallow((state) => Object.keys(state.friendsById))
@@ -48,7 +45,6 @@ export function useFeedFriendActions(): FeedFriendActions {
         (state) => state.feedHiddenUsers
     );
     const confirm = useModalStore((state) => state.confirm);
-    const boopPrompt = useModalStore((state) => state.boopPrompt);
     const normalizedCurrentUserId = normalizeId(currentUserId);
     const friendIdSet = useMemo(() => new Set(friendIds), [friendIds]);
     const hiddenUserIdSet = useMemo(
@@ -229,87 +225,24 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const requestFeedFriendInvite = useCallback(
-        async (friend: FeedFriendActionTarget) => {
-            const friendId = resolveActionFriendId(friend);
-            if (!friendId || friendId === normalizedCurrentUserId) {
-                return;
-            }
-            if (!canRequestInviteFromFeedFriend(friend)) {
-                toast.add({
-                    type: 'error',
-                    title: t(
-                        'view.feed.error.cannot_request_invite_friend_is_not_online'
-                    )
-                });
-                return;
-            }
-            const result = await confirm({
-                title: t('view.feed.modal.request_invite'),
-                description:
+        (friend: FeedFriendActionTarget) =>
+            requestInviteFromFriend({
+                id: resolveActionFriendId(friend),
+                label:
                     typeof friend?.displayName === 'string'
                         ? friend.displayName
-                        : 'this user',
-                confirmText: t('view.feed.modal.request_invite_2'),
-                cancelText: t('common.actions.cancel')
-            });
-            if (!result.ok) {
-                return;
-            }
-            try {
-                await sendRequestInviteToUser({
-                    receiverUserId: friendId
-                });
-                toast.add({
-                    type: 'success',
-                    title: t('view.feed.success.invite_request_sent')
-                });
-            } catch (error) {
-                toast.add({
-                    type: 'error',
-                    title:
-                        error instanceof Error
-                            ? error.message
-                            : t('view.feed.toast.failed_to_request_invite')
-                });
-            }
-        },
-        [confirm, normalizedCurrentUserId, t]
+                        : ''
+            }),
+        []
     );
 
     const sendFeedFriendBoop = useCallback(
-        async (friend: FeedFriendActionTarget) => {
-            const friendId = resolveActionFriendId(friend);
-            if (!friendId || friendId === normalizedCurrentUserId) {
-                return;
-            }
-            try {
-                const result = await boopPrompt({
-                    targetLabel:
-                        normalizeId(friend?.displayName || friend?.username) ||
-                        friendId
-                });
-                if (!result.ok) {
-                    return;
-                }
-                await sendBoopToUser({
-                    userId: friendId,
-                    emoji: result.value ?? null
-                });
-                toast.add({
-                    type: 'success',
-                    title: t('view.feed.success.boop_sent')
-                });
-            } catch (error) {
-                toast.add({
-                    type: 'error',
-                    title:
-                        error instanceof Error
-                            ? error.message
-                            : t('view.feed.toast.failed_to_send_boop')
-                });
-            }
-        },
-        [boopPrompt, normalizedCurrentUserId, t]
+        (friend: FeedFriendActionTarget) =>
+            boopFriend({
+                id: resolveActionFriendId(friend),
+                label: normalizeId(friend?.displayName || friend?.username)
+            }),
+        []
     );
 
     const openFeedNewInstance = useCallback(

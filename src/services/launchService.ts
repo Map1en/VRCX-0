@@ -9,8 +9,8 @@ import {
     sendSelfInviteToInstance
 } from '@/services/instanceActionService';
 import { toast } from '@/services/toastService';
-import { getLaunchURL, isRealInstance } from '@/shared/utils/instance';
-import { parseLocation } from '@/shared/utils/location';
+import { getLaunchURL } from '@/shared/utils/instance';
+import { isRealInstance, parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 
 export type LaunchDialogDetails = {

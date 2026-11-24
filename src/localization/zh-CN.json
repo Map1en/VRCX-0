@@ -800,6 +800,14 @@
             "kvk": "韩国手语",
             "nzs": "新西兰手语",
             "tws": "潮州话"
+        },
+        "friend_action": {
+            "request_invite_title": "确定要发送加入申请吗？",
+            "request_invite_confirm": "申请加入",
+            "invite_request_sent": "已发送加入请求",
+            "failed_to_request_invite": "申请加入失败",
+            "boop_sent": "已发送戳一戳",
+            "failed_to_send_boop": "发送戳一戳失败"
         }
     },
     "economy": {
@@ -1390,8 +1398,6 @@
         },
         "success": {
             "vrchat_launch_request_sent": "已在 VRChat 中打开",
-            "invite_request_sent": "已发送加入请求",
-            "boop_sent": "已发送戳一戳",
             "friend_and_favorite_snapshots_refreshed": "好友已刷新"
         },
         "error": {
@@ -1535,7 +1541,6 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "无法邀请：你当前不在房间中",
                 "cannot_invite_from_the_current_instance_type": "无法邀请：你当前所在的房间不允许邀请",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "无法邀请：你当前不在可加入的房间",
-                "cannot_request_invite_friend_is_not_online": "无法请求加入：好友不在线",
                 "feed_query_failed": "无法加载动态"
             },
             "label": {
@@ -1549,9 +1554,7 @@
                 "stayed": "停留 {duration}"
             },
             "success": {
-                "vrchat_launch_request_sent": "已在 VRChat 中打开",
-                "invite_request_sent": "已发送加入请求",
-                "boop_sent": "已发送戳一戳"
+                "vrchat_launch_request_sent": "已在 VRChat 中打开"
             },
             "loading": {
                 "loading_feed_rows": "正在加载动态"
@@ -1570,15 +1573,11 @@
                 "failed_to_load_instance_history": "加载房间历史失败",
                 "failed_to_launch_instance": "启动房间失败",
                 "failed_to_send_self_invite": "发送自我邀请失败",
-                "failed_to_send_invite": "发送邀请失败",
-                "failed_to_request_invite": "申请加入失败",
-                "failed_to_send_boop": "发送戳一戳失败"
+                "failed_to_send_invite": "发送邀请失败"
             },
             "modal": {
                 "send_invite": "确定要发送邀请吗？",
                 "invite": "邀请",
-                "request_invite": "确定要发送加入申请吗？",
-                "request_invite_2": "申请加入",
                 "send": "发送"
             },
             "dynamic": {
@@ -1942,8 +1941,6 @@
                 "local_favorite_group_deleted": "本地收藏分组已删除",
                 "avatar_history_cleared": "已清空模型历史",
                 "vrchat_launch_request_sent": "已在 VRChat 中打开",
-                "invite_request_sent": "已发送加入请求",
-                "boop_sent": "已发送戳一戳",
                 "avatar_selected": "已选择模型",
                 "copied_selected_favorite_ids": "已复制所选收藏 ID",
                 "selected_favorites_removed": "已移除所选收藏",
@@ -2278,9 +2275,7 @@
             "success": {
                 "friend_detail_loading_cancelled": "已取消好友详情加载",
                 "roster_bootstrap_did_not_complete": "无法加载好友列表",
-                "vrchat_launch_request_sent": "已在 VRChat 中打开",
-                "invite_request_sent": "加入请求已发送",
-                "boop_sent": "戳一戳已发送"
+                "vrchat_launch_request_sent": "已在 VRChat 中打开"
             },
             "empty": {
                 "no_friends_are_available_for_mutual_friends_loading": "没有可用于加载共同好友的好友",
@@ -4138,8 +4133,6 @@
                 "failed_to_launch_instance": "启动房间失败",
                 "failed_to_send_self_invite": "发送自我邀请失败",
                 "failed_to_send_invite": "发送邀请失败",
-                "failed_to_request_invite": "请求加入失败",
-                "failed_to_send_boop": "发送戳一戳失败",
                 "failed_to_select_avatar": "切换模型失败",
                 "failed_to_create_local_favorite_group": "创建本地收藏分组失败",
                 "failed_to_copy_selected_favorites": "复制所选收藏失败",
@@ -4162,8 +4155,6 @@
                 "clear_avatar_history": "清空模型历史？",
                 "send_invite": "确定要发送邀请吗？",
                 "invite": "邀请",
-                "request_invite": "确定要请求加入吗？",
-                "request_invite_2": "请求加入",
                 "send": "发送",
                 "delete_value_favorites": "删除 {value} 个收藏？",
                 "this_action_cannot_be_undone": "此操作无法撤销",
@@ -4205,17 +4196,13 @@
                 "failed_to_unfriend_value": "移除好友 {value} 失败",
                 "failed_to_launch_instance": "启动房间失败",
                 "failed_to_send_self_invite": "发送自我邀请失败",
-                "failed_to_send_invite": "发送邀请失败",
-                "failed_to_request_invite": "请求加入失败",
-                "failed_to_send_boop": "发送戳一戳失败"
+                "failed_to_send_invite": "发送邀请失败"
             },
             "modal": {
                 "unfriend_user": "移除好友？",
                 "unfriend": "删除好友",
                 "send_invite": "发送邀请？",
                 "invite": "邀请",
-                "request_invite": "请求加入？",
-                "request_invite_2": "申请加入",
                 "send": "发送"
             },
             "dynamic": {
@@ -4954,7 +4941,6 @@
                 "shared_connections_setting_updated": "共享连接设置已更新",
                 "discord_connections_setting_updated": "Discord 连接设置已更新",
                 "report_sent": "举报已发送",
-                "boop_sent": "戳一戳已发送",
                 "profile_details_updated": "个人资料详情已更新",
                 "group_invite_sent": "群组邀请已发送",
                 "left_group": "已退出群组",
@@ -5011,9 +4997,6 @@
                 "invite_message_sent": "邀请消息已发送",
                 "failed_to_send_invite": "发送邀请失败",
                 "invite_request_message_sent": "请求加入消息已发送",
-                "invite_request_sent": "加入请求已发送",
-                "failed_to_request_invite": "请求加入失败",
-                "failed_to_send_boop": "发送戳一戳失败",
                 "already_viewing_user": "已在查看此玩家",
                 "failed_to_open_discord_profile": "打开 Discord 资料失败",
                 "translation_failed": "翻译失败",
@@ -7742,8 +7725,6 @@
                 "failed_to_launch_instance": "启动房间失败",
                 "failed_to_send_self_invite": "发送自我邀请失败",
                 "failed_to_send_invite": "发送邀请失败",
-                "failed_to_request_invite": "请求加入失败",
-                "failed_to_send_boop": "发送戳一戳失败",
                 "failed_to_update_social_status": "更新社交状态失败",
                 "failed_to_update_status_description": "更新签名失败",
                 "failed_to_update_status": "更新状态失败"
@@ -7751,8 +7732,6 @@
             "modal": {
                 "send_invite": "确定要发送邀请吗？",
                 "invite": "邀请",
-                "request_invite": "确定要发送加入申请吗？",
-                "request_invite_2": "申请加入",
                 "send": "发送",
                 "edit_status_description": "编辑签名"
             }

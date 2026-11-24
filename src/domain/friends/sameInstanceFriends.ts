@@ -8,8 +8,10 @@ import type {
     FriendRecordInput
 } from '@/domain/friends/types';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
-import { isRealInstance } from '@/shared/utils/instance';
-import { normalizeLocationValue } from '@/shared/utils/location';
+import {
+    isRealInstance,
+    normalizeLocationValue
+} from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 
 type FriendPresenceRecord = FriendRecordInput &

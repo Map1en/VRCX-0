@@ -278,7 +278,7 @@ describe('FriendsLocationCardItem', () => {
         expect(html).toContain('data-can-use-location="false"');
     });
 
-    it('withholds invite requests while the friend is pending offline', () => {
+    it('offers invite requests even while the friend is pending offline', () => {
         const friend = friendAt(pendingPresence('private'));
         const html = renderToStaticMarkup(
             <FriendsLocationCardItem
@@ -298,7 +298,7 @@ describe('FriendsLocationCardItem', () => {
             />
         );
 
-        expect(html).toContain('data-can-request-invite="false"');
+        expect(html).toContain('data-can-request-invite="true"');
     });
 
     it('disables every social and location action for the current user', () => {

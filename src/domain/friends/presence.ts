@@ -221,7 +221,3 @@ export function presenceTravelingTag(view: PresenceView): string {
         ? place.travelingTo.tag
         : '';
 }
-
-export function presenceCanRequestInvite(view: PresenceView): boolean {
-    return view.kind === 'online';
-}

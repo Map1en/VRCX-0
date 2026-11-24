@@ -803,6 +803,14 @@
             "kvk": "Korejský znakový jazyk",
             "nzs": "Novozélandský znakový jazyk",
             "tws": "Teochew"
+        },
+        "friend_action": {
+            "request_invite_title": "Požádat o pozvání?",
+            "request_invite_confirm": "Požádat o pozvání",
+            "invite_request_sent": "Žádost o pozvání odeslána",
+            "failed_to_request_invite": "Nepodařilo se odeslat žádost o pozvání",
+            "boop_sent": "Boop odeslán",
+            "failed_to_send_boop": "Nepodařilo se odeslat boop"
         }
     },
     "economy": {
@@ -1407,8 +1415,6 @@
         },
         "success": {
             "vrchat_launch_request_sent": "Otevřeno ve VRChat",
-            "invite_request_sent": "Žádost o pozvání odeslána",
-            "boop_sent": "Boop odeslán",
             "friend_and_favorite_snapshots_refreshed": "Přátelé obnoveni"
         },
         "error": {
@@ -1552,7 +1558,6 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "Pozvání nelze odeslat: aktuální lokace ve VRChatu není dostupná",
                 "cannot_invite_from_the_current_instance_type": "Z tohoto typu instance nelze pozvat",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Pozvání nelze odeslat: momentálně nejste v instanci, do které lze pozvat",
-                "cannot_request_invite_friend_is_not_online": "Žádost o pozvání nelze odeslat: přítel není online",
                 "feed_query_failed": "Nepodařilo se načíst zdroj"
             },
             "label": {
@@ -1566,9 +1571,7 @@
                 "stayed": "Pobyt {duration}"
             },
             "success": {
-                "vrchat_launch_request_sent": "Otevřeno ve VRChatu",
-                "invite_request_sent": "Žádost o pozvání odeslána",
-                "boop_sent": "Boop odeslán"
+                "vrchat_launch_request_sent": "Otevřeno ve VRChatu"
             },
             "loading": {
                 "loading_feed_rows": "Načítání řádků Zdroje"
@@ -1587,15 +1590,11 @@
                 "failed_to_load_instance_history": "Nepodařilo se načíst historii instancí",
                 "failed_to_launch_instance": "Nepodařilo se spustit instanci",
                 "failed_to_send_self_invite": "Nepodařilo se odeslat pozvání sobě",
-                "failed_to_send_invite": "Nepodařilo se odeslat pozvání",
-                "failed_to_request_invite": "Nepodařilo se odeslat žádost o pozvání",
-                "failed_to_send_boop": "Nepodařilo se odeslat boop"
+                "failed_to_send_invite": "Nepodařilo se odeslat pozvání"
             },
             "modal": {
                 "send_invite": "Odeslat pozvání?",
                 "invite": "Pozvat",
-                "request_invite": "Požádat o pozvání?",
-                "request_invite_2": "Požádat o pozvání",
                 "send": "Odeslat"
             },
             "dynamic": {
@@ -1972,8 +1971,6 @@
                 "local_favorite_group_deleted": "Lokální skupina oblíbených smazána",
                 "avatar_history_cleared": "Historie avatarů vymazána",
                 "vrchat_launch_request_sent": "Otevřeno ve VRChat",
-                "invite_request_sent": "Žádost o pozvánku odeslána",
-                "boop_sent": "Boop odeslán",
                 "avatar_selected": "Avatar vybrán",
                 "copied_selected_favorite_ids": "ID vybraných oblíbených zkopírována",
                 "selected_favorites_removed": "Vybrané oblíbené odebrány",
@@ -2310,9 +2307,7 @@
             "success": {
                 "friend_detail_loading_cancelled": "Načítání podrobností o příteli zrušeno",
                 "roster_bootstrap_did_not_complete": "Nepodařilo se načíst přátele",
-                "vrchat_launch_request_sent": "Otevřeno ve VRChat",
-                "invite_request_sent": "Žádost o pozvánku odeslána",
-                "boop_sent": "Boop odeslán"
+                "vrchat_launch_request_sent": "Otevřeno ve VRChat"
             },
             "empty": {
                 "no_friends_are_available_for_mutual_friends_loading": "Nejsou k dispozici žádní přátelé pro načtení společných přátel",
@@ -4173,8 +4168,6 @@
                 "failed_to_launch_instance": "Nepodařilo se spustit instanci",
                 "failed_to_send_self_invite": "Nepodařilo se odeslat pozvánku sobě",
                 "failed_to_send_invite": "Nepodařilo se odeslat pozvánku",
-                "failed_to_request_invite": "Nepodařilo se vyžádat pozvánku",
-                "failed_to_send_boop": "Nepodařilo se odeslat Boop",
                 "failed_to_select_avatar": "Nepodařilo se vybrat avatara",
                 "failed_to_create_local_favorite_group": "Nepodařilo se vytvořit lokální skupinu oblíbených",
                 "failed_to_copy_selected_favorites": "Nepodařilo se zkopírovat vybrané oblíbené položky",
@@ -4197,8 +4190,6 @@
                 "clear_avatar_history": "Vymazat historii avatarů?",
                 "send_invite": "Odeslat pozvánku?",
                 "invite": "Pozvat",
-                "request_invite": "Vyžádat pozvánku?",
-                "request_invite_2": "Vyžádat pozvánku",
                 "send": "Odeslat",
                 "delete_value_favorites": "Odstranit {value} oblíbených položek?",
                 "this_action_cannot_be_undone": "Tuto akci nelze vrátit zpět",
@@ -4244,17 +4235,13 @@
                 "failed_to_unfriend_value": "Nepodařilo se odebrat z přátel {value}",
                 "failed_to_launch_instance": "Nepodařilo se spustit instanci",
                 "failed_to_send_self_invite": "Nepodařilo se odeslat pozvánku sobě",
-                "failed_to_send_invite": "Nepodařilo se odeslat pozvánku",
-                "failed_to_request_invite": "Nepodařilo se vyžádat pozvánku",
-                "failed_to_send_boop": "Nepodařilo se odeslat Boop"
+                "failed_to_send_invite": "Nepodařilo se odeslat pozvánku"
             },
             "modal": {
                 "unfriend_user": "Odebrat uživatele z přátel?",
                 "unfriend": "Odebrat z přátel",
                 "send_invite": "Odeslat pozvánku?",
                 "invite": "Pozvat",
-                "request_invite": "Vyžádat pozvánku?",
-                "request_invite_2": "Vyžádat pozvánku",
                 "send": "Odeslat"
             },
             "dynamic": {
@@ -5005,7 +4992,6 @@
                 "shared_connections_setting_updated": "Nastavení sdílených propojení aktualizováno",
                 "discord_connections_setting_updated": "Nastavení propojení s Discordem aktualizováno",
                 "report_sent": "Nahlášení odesláno",
-                "boop_sent": "Boop odeslán",
                 "profile_details_updated": "Údaje profilu aktualizovány",
                 "group_invite_sent": "Pozvánka do skupiny odeslána",
                 "left_group": "Opustili jste skupinu",
@@ -5062,9 +5048,6 @@
                 "invite_message_sent": "Pozvánková zpráva odeslána",
                 "failed_to_send_invite": "Nepodařilo se odeslat pozvánku",
                 "invite_request_message_sent": "Zpráva se žádostí o pozvánku odeslána",
-                "invite_request_sent": "Žádost o pozvánku odeslána",
-                "failed_to_request_invite": "Nepodařilo se odeslat žádost o pozvánku",
-                "failed_to_send_boop": "Nepodařilo se odeslat Boop",
                 "already_viewing_user": "Tento uživatel je již zobrazen",
                 "failed_to_open_discord_profile": "Nepodařilo se otevřít profil na Discordu",
                 "translation_failed": "Překlad se nezdařil",
@@ -7707,8 +7690,6 @@
                 "failed_to_launch_instance": "Nepodařilo se spustit instanci",
                 "failed_to_send_self_invite": "Nepodařilo se odeslat pozvánku sobě",
                 "failed_to_send_invite": "Nepodařilo se odeslat pozvánku",
-                "failed_to_request_invite": "Nepodařilo se vyžádat pozvánku",
-                "failed_to_send_boop": "Nepodařilo se odeslat Boop",
                 "failed_to_update_social_status": "Nepodařilo se aktualizovat sociální stav",
                 "failed_to_update_status_description": "Nepodařilo se aktualizovat popis stavu",
                 "failed_to_update_status": "Nepodařilo se aktualizovat stav"
@@ -7716,8 +7697,6 @@
             "modal": {
                 "send_invite": "Odeslat pozvánku?",
                 "invite": "Pozvat",
-                "request_invite": "Vyžádat pozvánku?",
-                "request_invite_2": "Vyžádat pozvánku",
                 "send": "Odeslat",
                 "edit_status_description": "Upravit popis stavu"
             }

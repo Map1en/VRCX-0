@@ -801,6 +801,14 @@
             "kvk": "Lengua de señas coreana",
             "nzs": "Lengua de señas neozelandesa",
             "tws": "Teochew"
+        },
+        "friend_action": {
+            "request_invite_title": "¿Solicitar invitación?",
+            "request_invite_confirm": "Solicitar invitación",
+            "invite_request_sent": "Solicitud de invitación enviada",
+            "failed_to_request_invite": "No se pudo solicitar la invitación",
+            "boop_sent": "Boop enviado",
+            "failed_to_send_boop": "No se pudo enviar el boop"
         }
     },
     "economy": {
@@ -1393,8 +1401,6 @@
         },
         "success": {
             "vrchat_launch_request_sent": "Abierto en VRChat",
-            "invite_request_sent": "Solicitud de invitación enviada",
-            "boop_sent": "Boop enviado",
             "friend_and_favorite_snapshots_refreshed": "Amigos actualizados"
         },
         "error": {
@@ -1538,7 +1544,6 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "No se puede invitar: ahora mismo no estás en ninguna instancia",
                 "cannot_invite_from_the_current_instance_type": "No se puede invitar: tu instancia actual no permite invitaciones",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "No se puede invitar: no estás en una instancia a la que se pueda invitar gente",
-                "cannot_request_invite_friend_is_not_online": "No se puede solicitar invitación: el amigo no está en línea",
                 "feed_query_failed": "No se pudo cargar el feed"
             },
             "label": {
@@ -1552,9 +1557,7 @@
                 "stayed": "{duration} de estancia"
             },
             "success": {
-                "vrchat_launch_request_sent": "Abierto en VRChat",
-                "invite_request_sent": "Solicitud de invitación enviada",
-                "boop_sent": "Boop enviado"
+                "vrchat_launch_request_sent": "Abierto en VRChat"
             },
             "loading": {
                 "loading_feed_rows": "Cargando entradas del feed"
@@ -1573,15 +1576,11 @@
                 "failed_to_load_instance_history": "No se pudo cargar el historial de la instancia",
                 "failed_to_launch_instance": "No se pudo iniciar la instancia",
                 "failed_to_send_self_invite": "No se pudo enviar la autoinvitación",
-                "failed_to_send_invite": "No se pudo enviar la invitación",
-                "failed_to_request_invite": "No se pudo solicitar la invitación",
-                "failed_to_send_boop": "No se pudo enviar el boop"
+                "failed_to_send_invite": "No se pudo enviar la invitación"
             },
             "modal": {
                 "send_invite": "¿Enviar invitación?",
                 "invite": "Invitar",
-                "request_invite": "¿Solicitar invitación?",
-                "request_invite_2": "Solicitar invitación",
                 "send": "Enviar"
             },
             "dynamic": {
@@ -1950,8 +1949,6 @@
                 "local_favorite_group_deleted": "Grupo de favoritos local eliminado",
                 "avatar_history_cleared": "Historial de avatares borrado",
                 "vrchat_launch_request_sent": "Abierto en VRChat",
-                "invite_request_sent": "Solicitud de invitación enviada",
-                "boop_sent": "Boop enviado",
                 "avatar_selected": "Avatar seleccionado",
                 "copied_selected_favorite_ids": "Se copiaron los ID de los favoritos seleccionados",
                 "selected_favorites_removed": "Favoritos seleccionados eliminados",
@@ -2288,9 +2285,7 @@
             "success": {
                 "friend_detail_loading_cancelled": "Se canceló la carga de los detalles del amigo",
                 "roster_bootstrap_did_not_complete": "No se pudieron cargar tus amigos",
-                "vrchat_launch_request_sent": "Abierto en VRChat",
-                "invite_request_sent": "Solicitud para unirse enviada",
-                "boop_sent": "Boop enviado"
+                "vrchat_launch_request_sent": "Abierto en VRChat"
             },
             "empty": {
                 "no_friends_are_available_for_mutual_friends_loading": "No tienes amigos para los que cargar amigos en común.",
@@ -4149,8 +4144,6 @@
                 "failed_to_launch_instance": "No se pudo iniciar la instancia",
                 "failed_to_send_self_invite": "No se pudo enviar la autoinvitación",
                 "failed_to_send_invite": "No se pudo enviar la invitación",
-                "failed_to_request_invite": "No se pudo solicitar la invitación",
-                "failed_to_send_boop": "No se pudo enviar el boop",
                 "failed_to_select_avatar": "No se pudo seleccionar el avatar",
                 "failed_to_create_local_favorite_group": "No se pudo crear el grupo de favoritos local",
                 "failed_to_copy_selected_favorites": "No se pudieron copiar los favoritos seleccionados",
@@ -4173,8 +4166,6 @@
                 "clear_avatar_history": "¿Borrar el historial de avatares?",
                 "send_invite": "¿Enviar invitación?",
                 "invite": "Invitar",
-                "request_invite": "¿Solicitar invitación?",
-                "request_invite_2": "Solicitar invitación",
                 "send": "Enviar",
                 "delete_value_favorites": "¿Eliminar {value} favoritos?",
                 "this_action_cannot_be_undone": "Esta acción no se puede deshacer",
@@ -4216,17 +4207,13 @@
                 "failed_to_unfriend_value": "No se pudo eliminar a {value} de tus amigos",
                 "failed_to_launch_instance": "No se pudo iniciar la instancia",
                 "failed_to_send_self_invite": "No se pudo enviar la autoinvitación",
-                "failed_to_send_invite": "No se pudo enviar la invitación",
-                "failed_to_request_invite": "No se pudo solicitar la invitación",
-                "failed_to_send_boop": "No se pudo enviar el boop"
+                "failed_to_send_invite": "No se pudo enviar la invitación"
             },
             "modal": {
                 "unfriend_user": "¿Eliminar al usuario de tus amigos?",
                 "unfriend": "Eliminar de amigos",
                 "send_invite": "¿Enviar invitación?",
                 "invite": "Invitar",
-                "request_invite": "¿Solicitar invitación?",
-                "request_invite_2": "Solicitar invitación",
                 "send": "Enviar"
             },
             "dynamic": {
@@ -4969,7 +4956,6 @@
                 "shared_connections_setting_updated": "Ajuste de conexiones compartidas actualizado",
                 "discord_connections_setting_updated": "Ajuste de conexiones de Discord actualizado",
                 "report_sent": "Denuncia enviada",
-                "boop_sent": "Boop enviado",
                 "profile_details_updated": "Detalles del perfil actualizados",
                 "group_invite_sent": "Invitación al grupo enviada",
                 "left_group": "Saliste del grupo",
@@ -5026,9 +5012,6 @@
                 "invite_message_sent": "Mensaje de invitación enviado",
                 "failed_to_send_invite": "No se pudo enviar la invitación",
                 "invite_request_message_sent": "Mensaje de solicitud de invitación enviado",
-                "invite_request_sent": "Solicitud de invitación enviada",
-                "failed_to_request_invite": "No se pudo solicitar la invitación",
-                "failed_to_send_boop": "No se pudo enviar el boop",
                 "already_viewing_user": "Ya estás viendo a este usuario",
                 "failed_to_open_discord_profile": "No se pudo abrir el perfil de Discord",
                 "translation_failed": "La traducción falló",
@@ -7727,8 +7710,6 @@
                 "failed_to_launch_instance": "Error al iniciar la instancia",
                 "failed_to_send_self_invite": "No se pudo enviar la autoinvitación",
                 "failed_to_send_invite": "Error al enviar la invitación",
-                "failed_to_request_invite": "Error al solicitar la invitación",
-                "failed_to_send_boop": "Error al enviar el boop",
                 "failed_to_update_social_status": "Error al actualizar el estado social",
                 "failed_to_update_status_description": "Error al actualizar la descripción del estado",
                 "failed_to_update_status": "Error al actualizar el estado"
@@ -7736,8 +7717,6 @@
             "modal": {
                 "send_invite": "¿Enviar invitación?",
                 "invite": "Invitar",
-                "request_invite": "¿Solicitar invitación?",
-                "request_invite_2": "Solicitar invitación",
                 "send": "Enviar",
                 "edit_status_description": "Editar la descripción del estado"
             }

@@ -17,26 +17,6 @@ interface LegacyInstanceTagOptions {
     strict?: boolean;
 }
 
-function isRealInstance(instanceId: unknown): instanceId is string {
-    if (typeof instanceId !== 'string' || !instanceId) {
-        return false;
-    }
-    switch (instanceId) {
-        case ':':
-        case 'offline':
-        case 'offline:offline':
-        case 'private':
-        case 'private:private':
-        case 'traveling':
-        case 'traveling:traveling':
-            return false;
-    }
-    if (instanceId.startsWith('local')) {
-        return false;
-    }
-    return true;
-}
-
 function getLaunchURL(instance: LaunchableInstance): string {
     return vrchatLaunchUrl(instance);
 }
@@ -108,4 +88,4 @@ function buildLegacyInstanceTag({
     return tags.join('');
 }
 
-export { isRealInstance, getLaunchURL, buildLegacyInstanceTag };
+export { getLaunchURL, buildLegacyInstanceTag };

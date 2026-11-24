@@ -419,7 +419,7 @@ export function UserDialogContent({
                         currentUserSnapshot?.hasSharedConnectionsOptOut
                     ),
                     currentUserBoopingEnabled:
-                        currentUserSnapshot?.isBoopingEnabled !== false,
+                        currentUserSnapshot?.isBoopingEnabled === true,
                     currentUserAccountStanding:
                         typeof currentUserSnapshot?.accountStanding === 'string'
                             ? currentUserSnapshot.accountStanding
