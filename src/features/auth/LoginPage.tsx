@@ -6,6 +6,7 @@ import { usePendingLoginAccountStore } from '@/state/pendingLoginAccountStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 
 import { DeleteSavedAccountDialog } from './components/DeleteSavedAccountDialog';
+import { LoginAccountExplainer } from './components/LoginAccountExplainer';
 import { LoginFormCard } from './components/LoginFormCard';
 import { LoginPageFooter } from './components/LoginPageFooter';
 import { LoginPageHeader } from './components/LoginPageHeader';
@@ -146,6 +147,9 @@ export function LoginPage() {
                             }
                         />
                     )}
+                    {!showQrLogin && !showSavedAccounts ? (
+                        <LoginAccountExplainer />
+                    ) : null}
                     <LoginPageUtilities
                         disabled={utilities.disabled}
                         isValidatingRestore={utilities.isValidatingRestore}

@@ -1434,7 +1434,8 @@
             "field": {
                 "username": "Benutzername oder E-Mail",
                 "password": "Passwort",
-                "saveCredentials": "Konto speichern"
+                "saveCredentials": "Konto speichern",
+                "saveCredentialsHint": "Meldet dich automatisch wieder an, wenn die Sitzung abbricht"
             },
             "placeholder": {
                 "account": "VRChat-Konto",
@@ -1455,7 +1456,8 @@
             "qr": {
                 "button": "Mit QR-Code anmelden",
                 "title": "Mit QR-Code anmelden",
-                "use_password": "Stattdessen Passwort verwenden"
+                "use_password": "Stattdessen Passwort verwenden",
+                "requirements": "Erfordert ein Handy, auf dem du bei VRChat angemeldet bist. Bei der QR-Anmeldung wird kein Passwort gespeichert – bricht die Sitzung ab, musst du erneut scannen."
             },
             "saved_group": {
                 "with_password": "Passwort gespeichert",
@@ -1468,6 +1470,15 @@
             "expired_account": {
                 "title": "Sitzung von {name} abgelaufen",
                 "description": "Für dieses Konto ist kein Passwort gespeichert, daher meldet sich VRCX-0 nicht automatisch erneut an. Gib dein Passwort ein oder scanne einen neuen QR-Code."
+            },
+            "tagline": "Desktop-Begleiter für VRChat: Freundes-Feed, Spielprotokoll, Favoriten",
+            "unofficial": "Kein offizielles VRChat-Produkt",
+            "account_explainer": {
+                "title": "Warum muss ich mich mit meinem VRChat-Konto anmelden?",
+                "account_data": "Online-Status, Feed und Favoriten deiner Freunde stammen aus deinem Konto – dieselben Infos, die du auch im Spiel siehst.",
+                "password_destination": "Benutzername und Passwort werden nur an die offiziellen VRChat-Server gesendet.",
+                "local_storage": "Anmeldedaten werden auf diesem Computer gespeichert und können jederzeit entfernt werden.",
+                "open_source": "Der Quellcode ist auf GitHub öffentlich einsehbar."
             }
         },
         "feed": {
@@ -7017,7 +7028,7 @@
         },
         "email_otp": {
             "header": "Zwei-Faktor-Authentifizierung",
-            "description": "Gib den numerischen Code ein, der an deine E-Mail gesendet wurde",
+            "description": "Gib den Code ein, den VRChat dir per E-Mail geschickt hat. VRChat sendet diese E-Mail bei der Anmeldung auf einem neuen Gerät – das ist eine normale Sicherheitsprüfung.",
             "resend": "E-Mail erneut senden",
             "verify": "Bestätigen",
             "input_error": "Ungültiger Code"

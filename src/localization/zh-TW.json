@@ -1431,7 +1431,8 @@
             "field": {
                 "username": "用戶名稱或電子信箱",
                 "password": "密碼",
-                "saveCredentials": "儲存登入資料"
+                "saveCredentials": "儲存登入資料",
+                "saveCredentialsHint": "斷線後自動重新登入，不必再輸入一次密碼"
             },
             "placeholder": {
                 "account": "VRChat 帳號",
@@ -1452,7 +1453,8 @@
             "qr": {
                 "button": "掃碼登入",
                 "title": "掃碼登入",
-                "use_password": "改用密碼登入"
+                "use_password": "改用密碼登入",
+                "requirements": "需要手機已登入 VRChat。掃碼登入不會儲存密碼，斷線後需要重新掃碼。"
             },
             "saved_group": {
                 "with_password": "已儲存密碼",
@@ -1465,6 +1467,15 @@
             "expired_account": {
                 "title": "{name} 的工作階段已失效",
                 "description": "這個帳號沒有儲存密碼，不會自動重新登入。請輸入密碼或重新掃碼。"
+            },
+            "tagline": "VRChat 桌面夥伴：好友動態、遊戲紀錄、收藏整理",
+            "unofficial": "非 VRChat 官方產品",
+            "account_explainer": {
+                "title": "為什麼需要登入 VRChat 帳號？",
+                "account_data": "好友上線狀態、動態和收藏都來自你的帳號，和你在遊戲裡看到的一樣。",
+                "password_destination": "帳號密碼只會傳送到 VRChat 官方伺服器。",
+                "local_storage": "登入資料儲存在這台電腦上，可以隨時移除。",
+                "open_source": "原始碼公開，可以在 GitHub 上查看。"
             }
         },
         "feed": {
@@ -7055,7 +7066,7 @@
         },
         "email_otp": {
             "header": "雙重認證",
-            "description": "輸入寄送到電子信箱的數字代碼",
+            "description": "輸入 VRChat 寄到你電子信箱的驗證碼。在新裝置上登入時 VRChat 會寄出這封驗證信，這是正常的安全驗證。",
             "resend": "重新發送郵件",
             "verify": "驗證",
             "input_error": "無效的代碼"

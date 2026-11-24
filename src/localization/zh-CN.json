@@ -1431,7 +1431,8 @@
             "field": {
                 "username": "用户名或邮箱地址",
                 "password": "密码",
-                "saveCredentials": "保存登录数据"
+                "saveCredentials": "保存登录数据",
+                "saveCredentialsHint": "掉线后自动重新登录，不用再输一次密码"
             },
             "placeholder": {
                 "account": "VRChat 账号",
@@ -1452,7 +1453,8 @@
             "qr": {
                 "button": "扫码登录",
                 "title": "扫码登录",
-                "use_password": "改用密码登录"
+                "use_password": "改用密码登录",
+                "requirements": "需要手机已登录 VRChat。扫码登录不保存密码，掉线后要重新扫码。"
             },
             "saved_group": {
                 "with_password": "已保存密码",
@@ -1465,6 +1467,15 @@
             "expired_account": {
                 "title": "{name} 的会话已失效",
                 "description": "这个账号没有保存密码，不会自动重新登录。请输入密码或重新扫码。"
+            },
+            "tagline": "VRChat 桌面伴侣：好友动态、游戏日志、收藏整理",
+            "unofficial": "非 VRChat 官方产品",
+            "account_explainer": {
+                "title": "为什么需要登录 VRChat 账号？",
+                "account_data": "好友在线状态、动态和收藏都来自你的账号，和你在游戏里能看到的一样。",
+                "password_destination": "账号密码只发送给 VRChat 官方服务器。",
+                "local_storage": "登录信息保存在这台电脑上，可以随时移除。",
+                "open_source": "源代码公开，可以在 GitHub 查看。"
             }
         },
         "feed": {
@@ -7064,7 +7075,7 @@
         },
         "email_otp": {
             "header": "双重认证",
-            "description": "输入发送到邮箱的验证码",
+            "description": "输入 VRChat 发到你邮箱的验证码。在新设备上登录时 VRChat 会发送这封验证邮件，属于正常的安全验证。",
             "resend": "重新发送验证码",
             "verify": "验证",
             "input_error": "无效的验证码"

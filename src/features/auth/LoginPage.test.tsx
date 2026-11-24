@@ -47,6 +47,10 @@ vi.mock('./components/LoginFormCard', () => ({
     )
 }));
 
+vi.mock('./components/LoginAccountExplainer', () => ({
+    LoginAccountExplainer: () => <div>account-explainer</div>
+}));
+
 vi.mock('./components/LoginPageUtilities', () => ({
     LoginPageUtilities: ({
         onRestoreProfileBackup
@@ -162,11 +166,14 @@ describe('LoginPage', () => {
         render(<LoginPage />);
 
         expect(screen.queryByText('manual-login')).toBeNull();
+        expect(screen.queryByText('account-explainer')).toBeNull();
         fireEvent.click(screen.getByText('use-other-account'));
         expect(screen.getByText('manual-login')).toBeTruthy();
+        expect(screen.getByText('account-explainer')).toBeTruthy();
 
         fireEvent.click(screen.getByText('back-to-accounts'));
         expect(screen.queryByText('manual-login')).toBeNull();
+        expect(screen.queryByText('account-explainer')).toBeNull();
     });
 
     it('shows manual login immediately without saved accounts', () => {
@@ -174,6 +181,7 @@ describe('LoginPage', () => {
         render(<LoginPage />);
 
         expect(screen.getByText('manual-login')).toBeTruthy();
+        expect(screen.getByText('account-explainer')).toBeTruthy();
         expect(screen.queryByText('back-to-accounts')).toBeNull();
     });
 

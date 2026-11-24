@@ -1434,7 +1434,8 @@
             "field": {
                 "username": "Nombre de usuario o correo electrónico",
                 "password": "Contraseña",
-                "saveCredentials": "Guardar cuenta"
+                "saveCredentials": "Guardar cuenta",
+                "saveCredentialsHint": "Vuelve a iniciar sesión automáticamente si se cae la sesión"
             },
             "placeholder": {
                 "account": "Cuenta de VRChat",
@@ -1455,7 +1456,8 @@
             "qr": {
                 "button": "Iniciar sesión con código QR",
                 "title": "Iniciar sesión con código QR",
-                "use_password": "Usar la contraseña"
+                "use_password": "Usar la contraseña",
+                "requirements": "Necesitas un móvil con la sesión de VRChat iniciada. El inicio con QR no guarda la contraseña, así que tendrás que volver a escanear si se cae la sesión."
             },
             "saved_group": {
                 "with_password": "Contraseña guardada",
@@ -1468,6 +1470,15 @@
             "expired_account": {
                 "title": "La sesión de {name} ha caducado",
                 "description": "Esta cuenta no tiene contraseña guardada, así que VRCX-0 no volverá a iniciar sesión automáticamente. Introduce la contraseña o escanea un código QR nuevo."
+            },
+            "tagline": "Compañero de escritorio para VRChat: feed de amigos, registro de juego y favoritos",
+            "unofficial": "No es un producto oficial de VRChat",
+            "account_explainer": {
+                "title": "¿Por qué hace falta iniciar sesión con mi cuenta de VRChat?",
+                "account_data": "El estado, el feed y los favoritos de tus amigos vienen de tu cuenta: lo mismo que ves dentro del juego.",
+                "password_destination": "Tu usuario y contraseña solo se envían a los servidores oficiales de VRChat.",
+                "local_storage": "Los datos de inicio de sesión se guardan en este ordenador y puedes eliminarlos cuando quieras.",
+                "open_source": "El código fuente es público en GitHub."
             }
         },
         "feed": {
@@ -7070,7 +7081,7 @@
         },
         "email_otp": {
             "header": "Autenticación de dos factores",
-            "description": "Introduce el código numérico que te hemos enviado por correo electrónico",
+            "description": "Introduce el código que VRChat te envió por correo. VRChat envía este correo al iniciar sesión desde un dispositivo nuevo; es una comprobación de seguridad normal.",
             "resend": "Reenviar correo",
             "verify": "Verificar",
             "input_error": "Código inválido"

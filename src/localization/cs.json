@@ -1448,7 +1448,8 @@
             "field": {
                 "username": "Jméno nebo Email",
                 "password": "Heslo",
-                "saveCredentials": "Uložit přihlašovací údaje"
+                "saveCredentials": "Uložit přihlašovací údaje",
+                "saveCredentialsHint": "Při výpadku relace se automaticky znovu přihlásí"
             },
             "placeholder": {
                 "account": "VRChat účet",
@@ -1469,7 +1470,8 @@
             "qr": {
                 "button": "Přihlásit QR kódem",
                 "title": "Přihlášení QR kódem",
-                "use_password": "Použít heslo"
+                "use_password": "Použít heslo",
+                "requirements": "Vyžaduje telefon přihlášený do VRChatu. Přihlášení QR kódem neukládá heslo, takže po výpadku relace bude nutné kód naskenovat znovu."
             },
             "saved_group": {
                 "with_password": "Heslo uloženo",
@@ -1482,6 +1484,15 @@
             "expired_account": {
                 "title": "Relace účtu {name} vypršela",
                 "description": "U tohoto účtu není uložené heslo, proto se VRCX-0 automaticky znovu nepřihlásí. Zadejte heslo nebo naskenujte nový QR kód."
+            },
+            "tagline": "Desktopový společník pro VRChat: přehled přátel, herní záznam, oblíbené",
+            "unofficial": "Nejde o oficiální produkt VRChatu",
+            "account_explainer": {
+                "title": "Proč se musím přihlásit účtem VRChat?",
+                "account_data": "Stav přátel, přehled a oblíbené pocházejí z vašeho účtu – jsou to stejné informace, jaké vidíte ve hře.",
+                "password_destination": "Uživatelské jméno a heslo se odesílají pouze na oficiální servery VRChatu.",
+                "local_storage": "Přihlašovací údaje se ukládají v tomto počítači a můžete je kdykoli odstranit.",
+                "open_source": "Zdrojový kód je veřejně dostupný na GitHubu."
             }
         },
         "feed": {
@@ -7057,7 +7068,7 @@
         },
         "email_otp": {
             "header": "Dvoufaktorové ověření",
-            "description": "Zadejte číselný kód zaslaný na váš e-mail",
+            "description": "Zadejte kód, který vám VRChat poslal e-mailem. VRChat tento e-mail posílá při přihlášení z nového zařízení – jde o běžné bezpečnostní ověření.",
             "resend": "Znovu odeslat e-mail",
             "verify": "Ověřit",
             "input_error": "Neplatný kód"

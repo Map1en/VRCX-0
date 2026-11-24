@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { getLanguageName, languageCodes } from '@/localization/index';
 import {
     Select,
@@ -17,9 +19,15 @@ export function LoginPageHeader({
     locale,
     onLanguageChange
 }: LoginPageHeaderProps) {
+    const { t } = useTranslation();
     return (
         <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0 truncate text-lg font-semibold">VRCX-0</div>
+            <div className="flex min-w-0 flex-col gap-0.5">
+                <div className="truncate text-lg font-semibold">VRCX-0</div>
+                <div className="text-muted-foreground text-xs">
+                    {t('view.login.tagline')}
+                </div>
+            </div>
             <Select
                 value={locale}
                 onValueChange={(value) => {

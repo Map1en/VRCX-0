@@ -1368,7 +1368,8 @@
             "field": {
                 "username": "사용자 이름 또는 이메일",
                 "password": "비밀번호",
-                "saveCredentials": "로그인 정보 저장"
+                "saveCredentials": "로그인 정보 저장",
+                "saveCredentialsHint": "연결이 끊기면 자동으로 다시 로그인합니다"
             },
             "placeholder": {
                 "account": "VRChat 계정",
@@ -1389,7 +1390,8 @@
             "qr": {
                 "button": "QR 코드로 로그인",
                 "title": "QR 코드로 로그인",
-                "use_password": "비밀번호로 로그인"
+                "use_password": "비밀번호로 로그인",
+                "requirements": "VRChat에 로그인된 휴대폰이 필요합니다. QR 로그인은 비밀번호를 저장하지 않으므로 연결이 끊기면 다시 스캔해야 합니다."
             },
             "saved_group": {
                 "with_password": "비밀번호 저장됨",
@@ -1402,6 +1404,15 @@
             "expired_account": {
                 "title": "{name}의 세션이 만료되었습니다",
                 "description": "이 계정은 비밀번호가 저장되어 있지 않아 자동으로 다시 로그인하지 않습니다. 비밀번호를 입력하거나 QR 코드를 다시 스캔하세요."
+            },
+            "tagline": "VRChat 데스크톱 도우미: 친구 피드, 게임 로그, 즐겨찾기 정리",
+            "unofficial": "VRChat 공식 제품이 아닙니다",
+            "account_explainer": {
+                "title": "왜 VRChat 계정으로 로그인해야 하나요?",
+                "account_data": "친구 접속 상태, 피드, 즐겨찾기는 내 계정에서 가져옵니다. 게임에서 볼 수 있는 것과 같은 정보입니다.",
+                "password_destination": "아이디와 비밀번호는 VRChat 공식 서버로만 전송됩니다.",
+                "local_storage": "로그인 정보는 이 컴퓨터에 저장되며 언제든 삭제할 수 있습니다.",
+                "open_source": "소스 코드는 GitHub에 공개되어 있습니다."
             }
         },
         "feed": {
@@ -6979,7 +6990,7 @@
         },
         "email_otp": {
             "header": "2단계 인증",
-            "description": "이메일로 전송된 숫자 코드를 입력하세요",
+            "description": "VRChat이 이메일로 보낸 코드를 입력하세요. 새 기기에서 로그인하면 보내는 일반적인 보안 확인입니다.",
             "resend": "이메일 재전송",
             "verify": "확인",
             "input_error": "잘못된 코드"

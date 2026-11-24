@@ -8,7 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Checkbox } from '@/ui/shadcn/checkbox';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import {
+    Field,
+    FieldContent,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel
+} from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 
@@ -175,25 +182,28 @@ export function LoginFormCard({
                         </Field>
                     </FieldGroup>
 
-                    <div className="flex flex-wrap items-center justify-end gap-4">
-                        <Field orientation="horizontal" className="w-auto">
-                            <Checkbox
-                                id="react-login-save-credentials"
-                                checked={loginForm.saveCredentials}
-                                disabled={busy}
-                                onCheckedChange={(checked) => {
-                                    onCancelAutoLogin();
-                                    setLoginForm((current) => ({
-                                        ...current,
-                                        saveCredentials: checked === true
-                                    }));
-                                }}
-                            />
+                    <Field orientation="horizontal">
+                        <Checkbox
+                            id="react-login-save-credentials"
+                            checked={loginForm.saveCredentials}
+                            disabled={busy}
+                            onCheckedChange={(checked) => {
+                                onCancelAutoLogin();
+                                setLoginForm((current) => ({
+                                    ...current,
+                                    saveCredentials: checked === true
+                                }));
+                            }}
+                        />
+                        <FieldContent>
                             <FieldLabel htmlFor="react-login-save-credentials">
                                 {t('view.login.field.saveCredentials')}
                             </FieldLabel>
-                        </Field>
-                    </div>
+                            <FieldDescription className="text-xs">
+                                {t('view.login.field.saveCredentialsHint')}
+                            </FieldDescription>
+                        </FieldContent>
+                    </Field>
 
                     <Button
                         type="submit"
@@ -227,6 +237,9 @@ export function LoginFormCard({
                     <QrCodeIcon data-icon="inline-start" />
                     {t('view.login.qr.button')}
                 </Button>
+                <p className="text-muted-foreground -mt-2 text-center text-xs leading-relaxed">
+                    {t('view.login.qr.requirements')}
+                </p>
                 <div className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
                     <Button
                         type="button"

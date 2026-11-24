@@ -1427,7 +1427,8 @@
             "field": {
                 "username": "ユーザー名またはメールアドレス",
                 "password": "パスワード",
-                "saveCredentials": "ログイン情報を保存"
+                "saveCredentials": "ログイン情報を保存",
+                "saveCredentialsHint": "接続が切れても自動で再ログインします"
             },
             "placeholder": {
                 "account": "VRChat アカウント",
@@ -1448,7 +1449,8 @@
             "qr": {
                 "button": "QR コードでログイン",
                 "title": "QR コードでログイン",
-                "use_password": "パスワードでログイン"
+                "use_password": "パスワードでログイン",
+                "requirements": "VRChat にログイン済みのスマートフォンが必要です。QR ログインではパスワードを保存しないため、接続が切れたら読み取り直しになります。"
             },
             "saved_group": {
                 "with_password": "パスワード保存済み",
@@ -1461,6 +1463,15 @@
             "expired_account": {
                 "title": "{name} のセッションが切れました",
                 "description": "このアカウントはパスワードが保存されていないため、自動では再ログインしません。パスワードを入力するか、QR コードを読み取り直してください。"
+            },
+            "tagline": "VRChat のデスクトップコンパニオン：フレンドのフィード、ゲームログ、お気に入り整理",
+            "unofficial": "VRChat 公式の製品ではありません",
+            "account_explainer": {
+                "title": "なぜ VRChat アカウントでログインするの？",
+                "account_data": "フレンドのオンライン状況やフィード、お気に入りはアカウントから取得します。見られるのはゲーム内と同じ情報です。",
+                "password_destination": "ID とパスワードは VRChat 公式サーバーにだけ送信されます。",
+                "local_storage": "ログイン情報はこのパソコンに保存され、いつでも削除できます。",
+                "open_source": "ソースコードは GitHub で公開しています。"
             }
         },
         "feed": {
@@ -7037,7 +7048,7 @@
         },
         "email_otp": {
             "header": "二要素認証",
-            "description": "メールに送られてきた数字を入力してください。",
+            "description": "VRChat からメールで届いたコードを入力してください。新しい端末からログインしたときに届く、通常のセキュリティ確認です。",
             "resend": "メールを再送信",
             "verify": "認証",
             "input_error": "無効なコードです。"

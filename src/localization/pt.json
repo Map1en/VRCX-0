@@ -1434,7 +1434,8 @@
             "field": {
                 "username": "Usuário ou E-mail",
                 "password": "Senha",
-                "saveCredentials": "Salvar Credenciais"
+                "saveCredentials": "Salvar Credenciais",
+                "saveCredentialsHint": "Entra novamente de forma automática se a sessão cair"
             },
             "placeholder": {
                 "account": "Conta do VRChat",
@@ -1455,7 +1456,8 @@
             "qr": {
                 "button": "Entrar com código QR",
                 "title": "Entrar com código QR",
-                "use_password": "Usar senha"
+                "use_password": "Usar senha",
+                "requirements": "Requer um celular conectado ao VRChat. O login por QR não salva a senha, então será preciso escanear de novo se a sessão cair."
             },
             "saved_group": {
                 "with_password": "Senha salva",
@@ -1468,6 +1470,15 @@
             "expired_account": {
                 "title": "A sessão de {name} expirou",
                 "description": "Esta conta não tem senha salva, então o VRCX-0 não vai entrar de novo automaticamente. Digite a senha ou escaneie um novo código QR."
+            },
+            "tagline": "Companheiro de desktop para o VRChat: feed de amigos, registro de jogo e favoritos",
+            "unofficial": "Não é um produto oficial do VRChat",
+            "account_explainer": {
+                "title": "Por que preciso entrar com minha conta do VRChat?",
+                "account_data": "Status, feed e favoritos dos seus amigos vêm da sua conta — as mesmas informações que você vê no jogo.",
+                "password_destination": "Seu usuário e senha são enviados apenas aos servidores oficiais do VRChat.",
+                "local_storage": "Os dados de login ficam salvos neste computador e podem ser removidos a qualquer momento.",
+                "open_source": "O código-fonte é público no GitHub."
             }
         },
         "feed": {
@@ -7022,7 +7033,7 @@
         },
         "email_otp": {
             "header": "Autenticação de Dois Fatores",
-            "description": "Insira um código numérico enviado para o seu e-mail",
+            "description": "Digite o código que o VRChat enviou para o seu e-mail. O VRChat envia esse e-mail quando você entra por um dispositivo novo — é uma verificação de segurança normal.",
             "resend": "Reenviar E-mail",
             "verify": "Verificar",
             "input_error": "Código Inválido"
