@@ -398,4 +398,43 @@ describe('useUserDialogSelfActions', () => {
         );
         expect(rendered.actionStatusRef.current).toBe('idle');
     });
+
+    it('re-adds languages in draft order when only their order changes', async () => {
+        const reorderProfile: UserDialogProfileRecord = {
+            ...profile,
+            tags: ['language_jpn', 'language_zho', 'language_eng']
+        };
+        mocks.removeTags.mockResolvedValue({
+            ...reorderProfile,
+            tags: ['language_jpn']
+        });
+        mocks.addTags.mockResolvedValue(reorderProfile);
+        const rendered = renderActions(reorderProfile);
+
+        act(() =>
+            rendered.result.current.actions.resetSelfProfileDetailsDraft()
+        );
+        act(() =>
+            rendered.result.current.profileDetails.setDraft({
+                ...rendered.result.current.profileDetails.draft,
+                languageKeys: ['jpn', 'eng', 'zho']
+            })
+        );
+        await act(async () => {
+            await rendered.result.current.profileDetails.onSave();
+        });
+
+        expect(mocks.removeTags).toHaveBeenCalledTimes(1);
+        expect(mocks.removeTags).toHaveBeenCalledWith({
+            userId: 'usr_self',
+            tags: ['language_zho', 'language_eng']
+        });
+        expect(mocks.addTags.mock.calls).toEqual([
+            [{ userId: 'usr_self', tags: ['language_eng'] }],
+            [{ userId: 'usr_self', tags: ['language_zho'] }]
+        ]);
+        expect(mocks.removeTags.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.addTags.mock.invocationCallOrder[0]
+        );
+    });
 });
