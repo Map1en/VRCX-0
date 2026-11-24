@@ -124,6 +124,7 @@ type UseUserDialogSelfActionsProps = {
     currentEndpoint: string;
     baseProfile: UserDialogProfileRecord | null;
     setBaseProfile: Dispatch<SetStateAction<UserDialogProfileRecord | null>>;
+    actionStatus: string;
     actionStatusRef: MutableRefObject<string>;
     setActionStatus: Dispatch<SetStateAction<string>>;
 };
@@ -140,6 +141,7 @@ export function useUserDialogSelfActions({
     currentEndpoint,
     baseProfile,
     setBaseProfile,
+    actionStatus,
     actionStatusRef,
     setActionStatus
 }: UseUserDialogSelfActionsProps) {
@@ -187,7 +189,7 @@ export function useUserDialogSelfActions({
         useCurrentUserSocialStatusDialog({
             profile: isCurrentUser ? profile : null,
             currentUserSnapshot,
-            busy: actionStatusRef.current !== 'idle',
+            busy: actionStatus !== 'idle',
             onSave: (patch) =>
                 saveCurrentUserPatch(patch, {
                     successMessage: t('dialog.user.success.status_updated'),

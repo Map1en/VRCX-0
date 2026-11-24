@@ -106,6 +106,7 @@ function renderActions(currentProfile: UserDialogProfileRecord = profile) {
             currentEndpoint: 'https://api.vrchat.cloud/api/1',
             baseProfile: currentProfile,
             setBaseProfile,
+            actionStatus: 'idle',
             actionStatusRef,
             setActionStatus
         })

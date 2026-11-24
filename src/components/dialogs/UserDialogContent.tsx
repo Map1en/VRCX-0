@@ -312,6 +312,7 @@ export function UserDialogContent({
         currentEndpoint,
         baseProfile,
         setBaseProfile,
+        actionStatus,
         actionStatusRef,
         setActionStatus
     });

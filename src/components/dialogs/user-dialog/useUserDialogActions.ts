@@ -1,5 +1,4 @@
 import {
-    useLayoutEffect,
     useState,
     type Dispatch,
     type MutableRefObject,
@@ -102,8 +101,24 @@ export function useUserDialogActions({
     setModerationState
 }: UseUserDialogActionsProps) {
     const { t } = useTranslation();
-    const [boopDialogRequest, setBoopDialogRequest] =
-        useState<BoopDialogRequest | null>(null);
+    const boopTargetKey = [
+        currentEndpoint,
+        normalizedUserId,
+        openNonce,
+        profile?.id ?? ''
+    ].join('|');
+    const [boopDialogState, setBoopDialogState] = useState<{
+        request: BoopDialogRequest;
+        targetKey: string;
+    } | null>(null);
+    const boopDialogRequest =
+        boopDialogState?.targetKey === boopTargetKey
+            ? boopDialogState.request
+            : null;
+    const setBoopDialogRequest = (request: BoopDialogRequest | null) =>
+        setBoopDialogState(
+            request ? { request, targetKey: boopTargetKey } : null
+        );
 
     const {
         handleInviteMessageDialogOpenChange,
@@ -144,10 +159,6 @@ export function useUserDialogActions({
         setExtendedModerationState,
         setModerationState
     });
-
-    useLayoutEffect(() => {
-        setBoopDialogRequest(null);
-    }, [currentEndpoint, normalizedUserId, openNonce, profile?.id]);
 
     async function unfriendUser() {
         const rosterUserId = normalizeUserId(profile?.id);
