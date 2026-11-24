@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type ValueThrottle<T> = {
     push: (value: T, intervalMs: number) => void;
@@ -41,11 +41,9 @@ export function createValueThrottle<T>(
 
 export function useThrottledValue<T>(value: T, intervalMs: number): T {
     const [throttledValue, setThrottledValue] = useState(value);
-    const throttleRef = useRef<ValueThrottle<T> | null>(null);
-    if (throttleRef.current === null) {
-        throttleRef.current = createValueThrottle<T>(setThrottledValue);
-    }
-    const throttle = throttleRef.current;
+    const [throttle] = useState(() =>
+        createValueThrottle<T>(setThrottledValue)
+    );
 
     useEffect(() => {
         throttle.push(value, intervalMs);

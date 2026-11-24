@@ -73,8 +73,8 @@ export function useTextTranslation({
     entityId,
     cache: sharedCache
 }: UseTextTranslationArgs): UseTextTranslationResult {
-    const ownCacheRef = useRef<Map<string, TranslatedEntry>>(new Map());
-    const cache = sharedCache ?? ownCacheRef.current;
+    const [ownCache] = useState(() => new Map<string, TranslatedEntry>());
+    const cache = sharedCache ?? ownCache;
     const cacheKey = JSON.stringify([entityId, source]);
     const entityIdRef = useRef(entityId);
     const [mode, setMode] = useState<TranslationViewMode>('original');
@@ -87,14 +87,14 @@ export function useTextTranslation({
     useEffect(() => {
         if (entityIdRef.current !== entityId) {
             if (!sharedCache) {
-                ownCacheRef.current.clear();
+                ownCache.clear();
             }
             entityIdRef.current = entityId;
         }
         setMode('original');
         setStatus('idle');
         setErrorKind(null);
-    }, [source, entityId, sharedCache]);
+    }, [source, entityId, ownCache, sharedCache]);
 
     useEffect(() => {
         let cancelled = false;

@@ -2,7 +2,7 @@ import {
     createContext,
     useContext,
     useLayoutEffect,
-    useRef,
+    useState,
     type ReactNode
 } from 'react';
 import { useStore } from 'zustand';
@@ -184,17 +184,14 @@ export function SettingsPageStateProvider({
     children: ReactNode;
 }) {
     const sections = useSettingsPageState();
-    const sectionStoreRef = useRef<SettingsPageSectionStore | null>(null);
-    if (!sectionStoreRef.current) {
-        sectionStoreRef.current = createSettingsPageSectionStore(sections);
-    }
+    const [sectionStore] = useState(() =>
+        createSettingsPageSectionStore(sections)
+    );
     useLayoutEffect(() => {
-        sectionStoreRef.current?.update(sections);
-    }, [sections]);
+        sectionStore.update(sections);
+    }, [sectionStore, sections]);
     return (
-        <SettingsPageStateContext.Provider
-            value={sectionStoreRef.current.store}
-        >
+        <SettingsPageStateContext.Provider value={sectionStore.store}>
             {children}
         </SettingsPageStateContext.Provider>
     );
