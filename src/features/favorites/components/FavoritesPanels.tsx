@@ -336,19 +336,20 @@ export function FavoritesContentPanel({
         () => getFavoritesDensityConfig(kind, layout.density),
         [kind, layout.density]
     );
-    const virtualGrid = useFavoritesVirtualGrid({
-        densityConfig,
-        items: viewData.contentItems,
-        resetKey: [
-            kind,
-            filters.selectedSource,
-            filters.selectedGroupKey,
-            filters.searchMode,
-            filters.searchQuery,
-            layout.sortValue
-        ].join(':'),
-        showGroupLabel: viewData.isSearchActive
-    });
+    const { viewportRef: virtualGridViewportRef, ...virtualGrid } =
+        useFavoritesVirtualGrid({
+            densityConfig,
+            items: viewData.contentItems,
+            resetKey: [
+                kind,
+                filters.selectedSource,
+                filters.selectedGroupKey,
+                filters.searchMode,
+                filters.searchQuery,
+                layout.sortValue
+            ].join(':'),
+            showGroupLabel: viewData.isSearchActive
+        });
     const visibleWorldIdsKey =
         kind === 'world'
             ? virtualGrid.visibleRows
@@ -610,7 +611,7 @@ export function FavoritesContentPanel({
             </div>
             <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
                 <div
-                    ref={virtualGrid.viewportRef}
+                    ref={virtualGridViewportRef}
                     className="min-h-0 min-w-0 flex-1 overflow-auto pr-2"
                 >
                     {collections.favoriteLoadStatus === 'running' &&

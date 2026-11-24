@@ -87,13 +87,14 @@ export function GalleryFileTab({
         () => selectedFileIds.filter((fileId) => fileId !== activeFileId),
         [activeFileId, selectedFileIds]
     );
-    const tileGrid = useVirtualTileGrid({
-        items: files,
-        minTileWidth: gridDensityConfig.fileTileMinWidth,
-        gap: gridDensityConfig.tileGridGap,
-        aspectRatio: UPLOAD_ASPECT_RATIOS[tab],
-        resetKey: tab
-    });
+    const { viewportRef: tileGridViewportRef, ...tileGrid } =
+        useVirtualTileGrid({
+            items: files,
+            minTileWidth: gridDensityConfig.fileTileMinWidth,
+            gap: gridDensityConfig.tileGridGap,
+            aspectRatio: UPLOAD_ASPECT_RATIOS[tab],
+            resetKey: tab
+        });
 
     return (
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -169,7 +170,7 @@ export function GalleryFileTab({
                 <VrcPlusLockedNotice className="mb-2" />
             ) : null}
             <div
-                ref={tileGrid.viewportRef}
+                ref={tileGridViewportRef}
                 className="min-h-0 flex-1 overflow-y-auto pr-1"
             >
                 {loading ? (

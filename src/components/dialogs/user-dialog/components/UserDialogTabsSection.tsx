@@ -213,10 +213,8 @@ export function UserDialogTabsSection({
         visibleHomeLocationTarget
     } = info;
     const { remoteData, remoteErrors, remoteStatus, search } = remote;
-    const tabScrollMemory = useTabScrollMemory(
-        activeTab,
-        String(profile?.id ?? '')
-    );
+    const { containerRef: tabScrollContainerRef, onScrollCapture } =
+        useTabScrollMemory(activeTab, String(profile?.id ?? ''));
     const visitedTabs = useVisitedTabs(activeTab, String(profile?.id ?? ''));
     const {
         filteredMutualFriends,
@@ -366,9 +364,9 @@ export function UserDialogTabsSection({
 
     return (
         <div
-            ref={tabScrollMemory.containerRef}
+            ref={tabScrollContainerRef}
             className="contents"
-            onScrollCapture={tabScrollMemory.onScrollCapture}
+            onScrollCapture={onScrollCapture}
         >
             <EntityDialogTabs
                 value={activeTab}

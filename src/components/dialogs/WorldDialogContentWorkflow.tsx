@@ -197,17 +197,18 @@ export function WorldDialogContentWorkflow({
     });
     const { openNewInstanceDialog } = instanceActions;
 
-    const imageUpload = useWorldImageUpload({
-        world,
-        canManageWorld,
-        currentEndpoint,
-        profileWorldId,
-        actionStatusRef,
-        setActionStatus,
-        activeWorldTargetRef,
-        setWorld,
-        setDetail
-    });
+    const { imageUploadInputRef: worldImageUploadInputRef, ...imageUpload } =
+        useWorldImageUpload({
+            world,
+            canManageWorld,
+            currentEndpoint,
+            profileWorldId,
+            actionStatusRef,
+            setActionStatus,
+            activeWorldTargetRef,
+            setWorld,
+            setDetail
+        });
 
     const ownerActions = useWorldDialogOwnerActions({
         actionStatusRef,
@@ -475,7 +476,7 @@ export function WorldDialogContentWorkflow({
                 }}
             />
             <Input
-                ref={imageUpload.imageUploadInputRef}
+                ref={worldImageUploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
@@ -488,8 +489,7 @@ export function WorldDialogContentWorkflow({
                 title={t('dialog.world.action.change_world_image')}
                 onOpenChange={(open: boolean) => {
                     if (!open) {
-                        imageUpload.setImageCropRequest(null);
-                        imageUpload.imageUploadWorldRef.current = null;
+                        imageUpload.cancelWorldImageCrop();
                     }
                 }}
                 onConfirm={(blob: Blob) =>

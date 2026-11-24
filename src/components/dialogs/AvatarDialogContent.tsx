@@ -57,8 +57,9 @@ export function AvatarDialogContent({
         imageUrl,
         labels,
         ownerEditor,
-        refs,
-        setImageCropRequest,
+        cancelImageCrop,
+        galleryUploadInputRef,
+        imageUploadInputRef,
         setActiveTab,
         setOwnerEditor,
         viewState
@@ -145,14 +146,14 @@ export function AvatarDialogContent({
                 }
             />
             <Input
-                ref={refs.imageUploadInputRef}
+                ref={imageUploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
                 onChange={avatarActions.onFileChangeAvatarImage}
             />
             <Input
-                ref={refs.galleryUploadInputRef}
+                ref={galleryUploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"
@@ -165,8 +166,7 @@ export function AvatarDialogContent({
                 title={labels.cropTitle}
                 onOpenChange={(open: boolean) => {
                     if (!open) {
-                        setImageCropRequest(null);
-                        refs.imageUploadAvatarRef.current = null;
+                        cancelImageCrop();
                     }
                 }}
                 onConfirm={(blob: Blob) =>

@@ -13,12 +13,13 @@ import { useGalleryPageController } from './useGalleryPageController';
 
 export function GalleryPage() {
     const { t } = useTranslation();
-    const pageState = useGalleryPageController();
+    const { pasteScopeRef, uploadInputRef, ...pageState } =
+        useGalleryPageController();
 
     return (
-        <PageScaffold ref={pageState.pasteScopeRef} className="gallery-page">
+        <PageScaffold ref={pasteScopeRef} className="gallery-page">
             <GalleryHeader
-                uploadInputRef={pageState.uploadInputRef}
+                uploadInputRef={uploadInputRef}
                 uploadingTab={pageState.uploadingTab}
                 onUploadChange={(event: ChangeEvent<HTMLInputElement>) => {
                     pageState.uploadSelectedFile(event);

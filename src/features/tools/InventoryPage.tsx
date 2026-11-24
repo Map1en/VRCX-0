@@ -365,10 +365,11 @@ function InventoryRows({
 
 export function InventoryPage() {
     const { t } = useTranslation();
-    const inventory = useInventoryPageState();
+    const { pasteScopeRef, uploadInputRef, ...inventory } =
+        useInventoryPageState();
 
     return (
-        <PageScaffold ref={inventory.pasteScopeRef} className="gallery-page">
+        <PageScaffold ref={pasteScopeRef} className="gallery-page">
             <FileDropOverlay
                 active={inventory.fileDropActive}
                 label={t('view.tools.file_drop.upload_to', {
@@ -378,7 +379,7 @@ export function InventoryPage() {
                 })}
             />
             <Input
-                ref={inventory.uploadInputRef}
+                ref={uploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"

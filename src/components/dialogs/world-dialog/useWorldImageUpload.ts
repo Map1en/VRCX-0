@@ -156,11 +156,15 @@ export function useWorldImageUpload({
         }
     }
 
+    function cancelWorldImageCrop() {
+        setImageCropRequest(null);
+        imageUploadWorldRef.current = null;
+    }
+
     return {
         imageCropRequest,
-        setImageCropRequest,
+        cancelWorldImageCrop,
         imageUploadInputRef,
-        imageUploadWorldRef,
         beginWorldImageUpload,
         onFileChangeWorldImage,
         confirmWorldImageUpload

@@ -368,6 +368,7 @@ export function useAvatarDialogState({
         });
     }
 
+    // eslint-disable-next-line react/refs
     const avatarActions = createAvatarDialogActions({
         actionStatusRef,
         activeAvatarTargetRef,
@@ -401,6 +402,11 @@ export function useAvatarDialogState({
         t
     });
 
+    function cancelImageCrop() {
+        setImageCropRequest(null);
+        imageUploadAvatarRef.current = null;
+    }
+
     function setActiveTab(tab: AvatarDialogTab) {
         setActiveTabState({
             avatarId: normalizedAvatarId,
@@ -419,12 +425,9 @@ export function useAvatarDialogState({
         currentUserId,
         imageCropRequest,
         imageUrl,
-        refs: {
-            galleryUploadInputRef,
-            imageUploadAvatarRef,
-            imageUploadInputRef
-        },
-        setImageCropRequest,
+        cancelImageCrop,
+        galleryUploadInputRef,
+        imageUploadInputRef,
         setOwnerEditor,
         viewState: {
             actionStatus,

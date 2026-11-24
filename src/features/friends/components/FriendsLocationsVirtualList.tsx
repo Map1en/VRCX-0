@@ -33,7 +33,7 @@ export function FriendsLocationsVirtualList({
     load,
     locationCommands,
     runtime,
-    scroll
+    scroll: { scrollRef }
 }: FriendsLocationsVirtualListProps) {
     const { t } = useTranslation();
     const privateCollapsed = filters.collapsedGroups.has('private-location');
@@ -41,7 +41,7 @@ export function FriendsLocationsVirtualList({
 
     return (
         <div
-            ref={scroll.scrollRef}
+            ref={scrollRef}
             className="friend-view__scroll min-h-0 flex-1 overflow-auto"
         >
             {derived.isLoading ? (

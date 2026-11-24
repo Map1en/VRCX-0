@@ -86,14 +86,15 @@ export function ScreenshotAlbumGrid({
     onOpen: (facet: ScreenshotFacet) => void;
 }) {
     const { t } = useTranslation();
-    const tileGrid = useVirtualTileGrid({
-        sections,
-        minTileWidth: ALBUM_TILE_MIN_WIDTH,
-        gap: ALBUM_TILE_GAP,
-        aspectRatio: ALBUM_COVER_ASPECT_RATIO,
-        extraHeight: ALBUM_CAPTION_HEIGHT,
-        resetKey
-    });
+    const { viewportRef: tileGridViewportRef, ...tileGrid } =
+        useVirtualTileGrid({
+            sections,
+            minTileWidth: ALBUM_TILE_MIN_WIDTH,
+            gap: ALBUM_TILE_GAP,
+            aspectRatio: ALBUM_COVER_ASPECT_RATIO,
+            extraHeight: ALBUM_CAPTION_HEIGHT,
+            resetKey
+        });
 
     if (!sections.some((section) => section.items.length)) {
         return (
@@ -108,7 +109,7 @@ export function ScreenshotAlbumGrid({
 
     return (
         <div
-            ref={tileGrid.viewportRef}
+            ref={tileGridViewportRef}
             className="min-h-0 flex-1 overflow-auto pr-1"
         >
             <VirtualTileGridRows

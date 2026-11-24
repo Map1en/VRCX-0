@@ -20,7 +20,7 @@ export function MyAvatarsPage({
     const { t } = useTranslation();
     const {
         actions,
-        dialogs,
+        dialogs: { imageUploadInputRef, ...dialogs },
         filters,
         grid,
         rowsState,
@@ -38,7 +38,7 @@ export function MyAvatarsPage({
     return (
         <PageScaffold embedded={embedded}>
             <Input
-                ref={dialogs.imageUploadInputRef}
+                ref={imageUploadInputRef}
                 type="file"
                 accept={IMAGE_UPLOAD_ACCEPT}
                 className="hidden"

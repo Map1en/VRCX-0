@@ -143,13 +143,14 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
         () => selectedPrintIds.filter((id) => !favoritePrintIds.has(id)),
         [favoritePrintIds, selectedPrintIds]
     );
-    const tileGrid = useVirtualTileGrid({
-        items: visiblePrints,
-        minTileWidth: gridDensityConfig.printsTileMinWidth,
-        gap: gridDensityConfig.tileGridGap,
-        aspectRatio: PRINT_TILE_ASPECT_RATIO,
-        resetKey: favoriteFilter
-    });
+    const { viewportRef: tileGridViewportRef, ...tileGrid } =
+        useVirtualTileGrid({
+            items: visiblePrints,
+            minTileWidth: gridDensityConfig.printsTileMinWidth,
+            gap: gridDensityConfig.tileGridGap,
+            aspectRatio: PRINT_TILE_ASPECT_RATIO,
+            resetKey: favoriteFilter
+        });
     const warningKey = printFavoriteWarningMessageKey(favoriteWarning);
     const cleanupWarningKey = printCleanupWarningMessageKey(
         lastCleanup?.warning
@@ -310,7 +311,7 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                 </Alert>
             ) : null}
             <div
-                ref={tileGrid.viewportRef}
+                ref={tileGridViewportRef}
                 className="min-h-0 flex-1 overflow-y-auto pr-1"
             >
                 {loading ? (
