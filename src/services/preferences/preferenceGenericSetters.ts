@@ -29,6 +29,12 @@ import {
     readRecentActionCooldown
 } from '../recentActionService';
 import {
+    removeShellMenuNotify,
+    setShellNotificationIconDot,
+    setShellNotificationLayout,
+    setShellTaskbarIconDot
+} from '../shellNotificationDotService';
+import {
     applyAppFontPreferences,
     applyThemeColor,
     applyThemeMode,
@@ -143,7 +149,7 @@ export async function setNotificationLayoutPreference(
     layout: NotificationLayout
 ) {
     await configRepository.setString('notificationLayout', layout);
-    useShellStore.getState().setNotificationLayout(layout);
+    setShellNotificationLayout(layout);
     patchPreferences({ notificationLayout: layout });
     publishPreferenceChanged('notificationLayout', layout);
     return layout;
@@ -304,11 +310,11 @@ export async function setBoolConfigPreference(
     await configRepository.setBool(key, enabled);
     const normalizedKey = normalizePreferenceKey(key);
     if (normalizedKey === 'notificationIconDot') {
-        useShellStore.getState().setNotificationIconDot(enabled);
+        setShellNotificationIconDot(enabled);
     } else if (normalizedKey === 'taskbarIconDot') {
-        useShellStore.getState().setTaskbarIconDot(enabled);
+        setShellTaskbarIconDot(enabled);
     } else if (normalizedKey === 'friendLogNotificationDot' && !enabled) {
-        useShellStore.getState().removeNotify('friend-log');
+        removeShellMenuNotify('friend-log');
     } else if (normalizedKey === 'hideNicknames') {
         useShellStore.getState().setAppearancePreferences({
             hideNicknames: enabled

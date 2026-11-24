@@ -11,6 +11,7 @@ import type { Dashboard } from '@/repositories/dashboardRepository';
 import { startInventoryBundleWatch } from '@/services/inventoryBundleService';
 import { markAllNotificationsSeenWithFeedback } from '@/services/notificationMarkAllSeenService';
 import { setNavbarCollapsedPreference } from '@/services/preferencesService';
+import { removeShellMenuNotify } from '@/services/shellNotificationDotService';
 import { toast } from '@/services/toastService';
 import { triggerToolByKey } from '@/services/toolActionService';
 import { DASHBOARD_NAV_KEY_PREFIX } from '@/shared/constants/dashboard';
@@ -186,7 +187,6 @@ function useAppNavNotifications({
 }) {
     const { t } = useTranslation();
     const notifiedMenus = useShellStore((state) => state.notifiedMenus);
-    const removeNavNotification = useShellStore((state) => state.removeNotify);
     const vrcUnseenNotificationCount = useVrcNotificationStore(
         (state) => state.unseenCount
     );
@@ -224,8 +224,8 @@ function useAppNavNotifications({
         if (!activeIndex) {
             return;
         }
-        removeNavNotification(activeIndex);
-    }, [activeIndex, removeNavNotification]);
+        removeShellMenuNotify(activeIndex);
+    }, [activeIndex]);
 
     async function markAllRead() {
         await markAllNotificationsSeenWithFeedback(
@@ -233,7 +233,7 @@ function useAppNavNotifications({
                 'component.app_nav_menu.toast.failed_to_mark_notifications_as_seen'
             )
         );
-        removeNavNotification('notification');
+        removeShellMenuNotify('notification');
     }
 
     return {

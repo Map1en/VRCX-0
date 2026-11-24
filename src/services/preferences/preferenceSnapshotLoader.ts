@@ -42,6 +42,11 @@ import {
 import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from '../changelogService';
 import { configureRecentActionCooldown } from '../recentActionService';
 import {
+    setShellNotificationIconDot,
+    setShellNotificationLayout,
+    setShellTaskbarIconDot
+} from '../shellNotificationDotService';
+import {
     normalizeAppCjkFontPack,
     normalizeAppFontFamily
 } from '../themeService';
@@ -416,15 +421,11 @@ export async function loadPreferenceSnapshot() {
     useShellStore.getState().setSidebarOpen(!navIsCollapsed);
     useShellStore.getState().setNavWidth(navPanelWidth);
     useShellStore.getState().setRightSidebarOpen(rightSidebarOpen);
-    useShellStore
-        .getState()
-        .setNotificationLayout(
-            notificationLayout === 'table'
-                ? 'table'
-                : DEFAULT_NOTIFICATION_LAYOUT
-        );
-    useShellStore.getState().setNotificationIconDot(notificationIconDot);
-    useShellStore.getState().setTaskbarIconDot(taskbarIconDot);
+    setShellNotificationLayout(
+        notificationLayout === 'table' ? 'table' : DEFAULT_NOTIFICATION_LAYOUT
+    );
+    setShellNotificationIconDot(notificationIconDot);
+    setShellTaskbarIconDot(taskbarIconDot);
     useShellStore.getState().setAppearancePreferences({ hideNicknames });
     const resolvedTableDensity = normalizeTableDensity(
         tableDensity || (compactTableMode ? 'compact' : 'standard')

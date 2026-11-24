@@ -12,7 +12,6 @@ import { isRecord } from '@/shared/utils/record';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { recordCurrentUserSnapshot } from './domainIngestionService';
@@ -22,6 +21,10 @@ import {
     queueRealtimeFriendRosterUpdate,
     queueRealtimeUserFactsUpdate
 } from './realtimeRosterUpdateQueue';
+import {
+    notifyShellMenu,
+    removeShellMenuNotify
+} from './shellNotificationDotService';
 
 type ProjectionRecord = Record<string, unknown>;
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
@@ -126,7 +129,7 @@ function handleRealtimeFeedProjection(payload: RealtimeFeedProjectionPayload) {
 
 function clearNotificationMenuIfNoUnseen() {
     if (useVrcNotificationStore.getState().unseenCount === 0) {
-        useShellStore.getState().removeNotify('notification');
+        removeShellMenuNotify('notification');
     }
 }
 
@@ -134,7 +137,7 @@ function notifyNotificationMenu(notification: ProjectionRecord) {
     if (notification.version === 2 && notification.seen !== false) {
         return;
     }
-    useShellStore.getState().notifyMenu('notification');
+    notifyShellMenu('notification');
 }
 
 function parseStringArray(value: unknown): string[] {
@@ -304,7 +307,7 @@ async function handleRealtimeInstanceClosedProjection(
     }
     useVrcNotificationStore.getState().upsertNotification(notification);
     if (await shouldNotifyInstanceClosed()) {
-        useShellStore.getState().notifyMenu('notification');
+        notifyShellMenu('notification');
     }
 }
 

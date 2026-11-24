@@ -1,10 +1,10 @@
+import { notifyShellMenu } from '@/services/shellNotificationDotService';
 import { useFriendLogStore } from '@/state/friendLogStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
-import { useShellStore } from '@/state/shellStore';
 
 export function signalFriendLogChanged() {
     useFriendLogStore.getState().bumpRevision();
     if (usePreferencesStore.getState().friendLogNotificationDot) {
-        useShellStore.getState().notifyMenu('friend-log');
+        notifyShellMenu('friend-log');
     }
 }

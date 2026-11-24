@@ -14,6 +14,10 @@ import type {
 import i18n from '@/services/i18nService';
 import { sendNotificationButtonResponse } from '@/services/notificationActionService';
 import {
+    setShellVrcUnseenNotificationCount,
+    syncShellNotificationDot
+} from '@/services/shellNotificationDotService';
+import {
     getNotificationCategory,
     getNotificationTs
 } from '@/shared/utils/notificationCategory';
@@ -26,7 +30,6 @@ import {
 } from '@/shared/utils/notificationSeen';
 import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useShellStore } from '@/state/shellStore';
 
 const pendingReadEffects = new Map<string, NotificationMarkSeenEffect>();
 let notificationScopeGeneration = 0;
@@ -446,9 +449,9 @@ async function runMarkReadBatch(
 }
 
 function syncShellUnseenCount(unseenCount: number, force = false) {
-    useShellStore.getState().setVrcUnseenNotificationCount(unseenCount);
+    setShellVrcUnseenNotificationCount(unseenCount);
     if (force) {
-        useShellStore.getState().updateTrayIconNotification(true);
+        syncShellNotificationDot(true);
     }
 }
 

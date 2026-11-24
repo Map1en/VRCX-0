@@ -30,6 +30,7 @@ import {
 } from '@/services/background-image/backgroundImageService';
 import { markAllNotificationsSeenWithFeedback } from '@/services/notificationMarkAllSeenService';
 import { setThemeModePreference } from '@/services/preferencesService';
+import { removeShellMenuNotify } from '@/services/shellNotificationDotService';
 import { useResolvedThemeMode } from '@/services/themeService';
 import { toast } from '@/services/toastService';
 import {
@@ -191,7 +192,6 @@ export function useTitleBarActions(
     const isMarkingAllVrcNotificationsSeen = useVrcNotificationStore(
         (state) => state.markAllSeenProgress !== null
     );
-    const removeNavNotification = useShellStore((state) => state.removeNotify);
     const hostPlatform = useRuntimeStore(
         (state) => state.hostCapabilities.platform
     );
@@ -339,7 +339,7 @@ export function useTitleBarActions(
                 'component.app_title_bar.toast.failed_to_mark_notifications_as_seen'
             )
         );
-        removeNavNotification('notification');
+        removeShellMenuNotify('notification');
     }
 
     function openNotifications() {

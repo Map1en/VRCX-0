@@ -20,10 +20,8 @@ vi.mock('@/state/preferencesStore', () => ({
     }
 }));
 
-vi.mock('@/state/shellStore', () => ({
-    useShellStore: {
-        getState: () => ({ notifyMenu: mocks.notifyMenu })
-    }
+vi.mock('@/services/shellNotificationDotService', () => ({
+    notifyShellMenu: mocks.notifyMenu
 }));
 
 import { signalFriendLogChanged } from './friendLogMutationService';
