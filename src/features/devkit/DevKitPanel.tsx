@@ -9,6 +9,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { getLanguageName, languageCodes } from '@/localization/index';
@@ -43,9 +48,9 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 
-const STORAGE_THEME_PATH = 'devkit:theme:folderPath';
-const STORAGE_I18N_PATH = 'devkit:i18n:filePath';
-const STORAGE_I18N_LANG = 'devkit:i18n:targetLang';
+const STORAGE_THEME_PATH = STORAGE_KEYS.devkitThemeFolderPath;
+const STORAGE_I18N_PATH = STORAGE_KEYS.devkitI18nFilePath;
+const STORAGE_I18N_LANG = STORAGE_KEYS.devkitI18nTargetLang;
 
 export function DevKitPanel() {
     if (!isDevKitBuild()) {
@@ -64,7 +69,7 @@ function DevKitPanelInner() {
         (s) => s.localPreviewWatch
     );
     const [themeFolderPath, setThemeFolderPath] = useState(() => {
-        const stored = localStorage.getItem(STORAGE_THEME_PATH);
+        const stored = readStoredText(STORAGE_THEME_PATH);
         if (stored) return stored;
         const s = useCommunityThemeStore.getState();
         return (
@@ -75,10 +80,10 @@ function DevKitPanelInner() {
     const [themeError, setThemeError] = useState<string | null>(null);
 
     const [i18nFilePath, setI18nFilePath] = useState(
-        () => localStorage.getItem(STORAGE_I18N_PATH) || ''
+        () => readStoredText(STORAGE_I18N_PATH) || ''
     );
     const [i18nTargetLang, setI18nTargetLang] = useState(() => {
-        const stored = localStorage.getItem(STORAGE_I18N_LANG) ?? '';
+        const stored = readStoredText(STORAGE_I18N_LANG) ?? '';
         return languageCodes.includes(stored) ? stored : 'en';
     });
     const [i18nWatchEnabled, setI18nWatchEnabled] = useState(() =>
@@ -94,15 +99,15 @@ function DevKitPanelInner() {
 
     useEffect(() => {
         if (themeFolderPath)
-            localStorage.setItem(STORAGE_THEME_PATH, themeFolderPath);
+            writeStoredText(STORAGE_THEME_PATH, themeFolderPath);
     }, [themeFolderPath]);
 
     useEffect(() => {
-        if (i18nFilePath) localStorage.setItem(STORAGE_I18N_PATH, i18nFilePath);
+        if (i18nFilePath) writeStoredText(STORAGE_I18N_PATH, i18nFilePath);
     }, [i18nFilePath]);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_I18N_LANG, i18nTargetLang);
+        writeStoredText(STORAGE_I18N_LANG, i18nTargetLang);
     }, [i18nTargetLang]);
 
     async function doLoadTheme(path: string = themeFolderPath) {

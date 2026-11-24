@@ -1,3 +1,8 @@
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import type {
     QueryOrder,
     ReleaseStatusFilter,
@@ -57,16 +62,16 @@ export type UserDialogMutualFriendSort =
 
 export type UserDialogMutualView = 'list' | 'graph';
 
-const MUTUAL_VIEW_STORAGE_KEY = 'VRCX_0_UserDialogMutualView';
+const MUTUAL_VIEW_STORAGE_KEY = STORAGE_KEYS.userDialogMutualView;
 
 export function readUserDialogMutualView(): UserDialogMutualView {
-    return localStorage.getItem(MUTUAL_VIEW_STORAGE_KEY) === 'graph'
+    return readStoredText(MUTUAL_VIEW_STORAGE_KEY) === 'graph'
         ? 'graph'
         : 'list';
 }
 
 export function writeUserDialogMutualView(view: UserDialogMutualView) {
-    localStorage.setItem(MUTUAL_VIEW_STORAGE_KEY, view);
+    writeStoredText(MUTUAL_VIEW_STORAGE_KEY, view);
 }
 
 export const userDialogAvatarSortingOptions = [

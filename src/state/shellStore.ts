@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 
 import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
+import {
     setTaskbarOverlayNotification,
     setTrayIconNotification
 } from '@/services/shellIntegrationService';
@@ -15,26 +20,26 @@ export type TableDensity = 'standard' | 'compact';
 export type NotificationLayout = 'notification-center' | 'table';
 type WindowDisplayMode = 'normal' | 'sidebar';
 
-const WINDOW_DISPLAY_MODE_STORAGE_KEY = 'VRCX_0_WindowDisplayMode';
+const WINDOW_DISPLAY_MODE_STORAGE_KEY = STORAGE_KEYS.windowDisplayMode;
 
 function loadWindowDisplayMode(): WindowDisplayMode {
-    return localStorage.getItem(WINDOW_DISPLAY_MODE_STORAGE_KEY) === 'sidebar'
+    return readStoredText(WINDOW_DISPLAY_MODE_STORAGE_KEY) === 'sidebar'
         ? 'sidebar'
         : 'normal';
 }
 
 function saveWindowDisplayMode(windowDisplayMode: WindowDisplayMode): void {
-    localStorage.setItem(WINDOW_DISPLAY_MODE_STORAGE_KEY, windowDisplayMode);
+    writeStoredText(WINDOW_DISPLAY_MODE_STORAGE_KEY, windowDisplayMode);
 }
 
-const WINDOW_ALWAYS_ON_TOP_STORAGE_KEY = 'VRCX_0_WindowAlwaysOnTop';
+const WINDOW_ALWAYS_ON_TOP_STORAGE_KEY = STORAGE_KEYS.windowAlwaysOnTop;
 
 function loadWindowAlwaysOnTop(): boolean {
-    return localStorage.getItem(WINDOW_ALWAYS_ON_TOP_STORAGE_KEY) === 'true';
+    return readStoredText(WINDOW_ALWAYS_ON_TOP_STORAGE_KEY) === 'true';
 }
 
 function saveWindowAlwaysOnTop(windowAlwaysOnTop: boolean): void {
-    localStorage.setItem(
+    writeStoredText(
         WINDOW_ALWAYS_ON_TOP_STORAGE_KEY,
         String(windowAlwaysOnTop)
     );

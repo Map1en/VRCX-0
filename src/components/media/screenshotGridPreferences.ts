@@ -1,3 +1,8 @@
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import { createDensityPreset } from '@/lib/densityPreset';
 import { resolveScreenshotCapturedTime } from '@/shared/utils/screenshot';
 
@@ -93,23 +98,21 @@ export function sortScreenshotGridImages<
     );
 }
 
-const DENSITY_STORAGE_KEY = 'VRCX_0_ScreenshotGridDensity';
-const SORT_STORAGE_KEY = 'VRCX_0_ScreenshotGridSort';
+const DENSITY_STORAGE_KEY = STORAGE_KEYS.screenshotGridDensity;
+const SORT_STORAGE_KEY = STORAGE_KEYS.screenshotGridSort;
 
 export function readScreenshotGridDensity(): ScreenshotGridDensity {
-    return sanitizeScreenshotGridDensity(
-        localStorage.getItem(DENSITY_STORAGE_KEY)
-    );
+    return sanitizeScreenshotGridDensity(readStoredText(DENSITY_STORAGE_KEY));
 }
 
 export function writeScreenshotGridDensity(value: ScreenshotGridDensity) {
-    localStorage.setItem(DENSITY_STORAGE_KEY, value);
+    writeStoredText(DENSITY_STORAGE_KEY, value);
 }
 
 export function readScreenshotGridSort(): ScreenshotGridSort {
-    return sanitizeScreenshotGridSort(localStorage.getItem(SORT_STORAGE_KEY));
+    return sanitizeScreenshotGridSort(readStoredText(SORT_STORAGE_KEY));
 }
 
 export function writeScreenshotGridSort(value: ScreenshotGridSort) {
-    localStorage.setItem(SORT_STORAGE_KEY, value);
+    writeStoredText(SORT_STORAGE_KEY, value);
 }

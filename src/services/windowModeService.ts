@@ -1,3 +1,9 @@
+import {
+    STORAGE_KEYS,
+    readStoredJson,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import { tauriClient } from '@/platform/tauri/client';
 import { tauriEvents } from '@/platform/tauri/events';
 import type {
@@ -5,7 +11,6 @@ import type {
     WindowGeometry,
     WindowWorkArea
 } from '@/platform/tauri/webview';
-import { safeJsonParse } from '@/shared/utils/json';
 import { isRecord } from '@/shared/utils/record';
 import { isCriticalTaskActive } from '@/state/criticalTaskStore';
 import { useDialogStore } from '@/state/dialogStore';
@@ -19,8 +24,8 @@ const DEFAULT_SIDEBAR_WINDOW_WIDTH = 360;
 
 const NORMAL_WINDOW_MIN_HEIGHT = 240;
 const DEFAULT_NORMAL_WINDOW_WIDTH = 1024;
-const NORMAL_WINDOW_BOUNDS_STORAGE_KEY = 'VRCX_0_NormalWindowBounds';
-const SIDEBAR_WINDOW_WIDTH_STORAGE_KEY = 'VRCX_0_SidebarWindowWidth';
+const NORMAL_WINDOW_BOUNDS_STORAGE_KEY = STORAGE_KEYS.normalWindowBounds;
+const SIDEBAR_WINDOW_WIDTH_STORAGE_KEY = STORAGE_KEYS.sidebarWindowWidth;
 
 type SavedNormalWindowBounds = {
     version: 1;
@@ -42,9 +47,7 @@ function clamp(value: number, minimum: number, maximum: number): number {
 }
 
 function readSavedNormalWindowBounds(): SavedNormalWindowBounds | null {
-    const value = safeJsonParse(
-        localStorage.getItem(NORMAL_WINDOW_BOUNDS_STORAGE_KEY)
-    );
+    const value = readStoredJson(NORMAL_WINDOW_BOUNDS_STORAGE_KEY);
     if (
         !isRecord(value) ||
         value.version !== 1 ||
@@ -73,15 +76,12 @@ function saveNormalWindowBounds(geometry: WindowGeometry): void {
         y: geometry.outerPosition.y,
         width: geometry.innerSize.width / geometry.scaleFactor
     };
-    localStorage.setItem(
-        NORMAL_WINDOW_BOUNDS_STORAGE_KEY,
-        JSON.stringify(bounds)
-    );
+    writeStoredText(NORMAL_WINDOW_BOUNDS_STORAGE_KEY, JSON.stringify(bounds));
 }
 
 function readSidebarWindowWidth(): number | null {
     const width = Number.parseFloat(
-        localStorage.getItem(SIDEBAR_WINDOW_WIDTH_STORAGE_KEY) ?? ''
+        readStoredText(SIDEBAR_WINDOW_WIDTH_STORAGE_KEY) ?? ''
     );
     return Number.isFinite(width)
         ? clamp(width, SIDEBAR_WINDOW_MIN_WIDTH, SIDEBAR_WINDOW_MAX_WIDTH)
@@ -94,7 +94,7 @@ function saveSidebarWindowWidth(geometry: WindowGeometry): void {
         SIDEBAR_WINDOW_MIN_WIDTH,
         SIDEBAR_WINDOW_MAX_WIDTH
     );
-    localStorage.setItem(SIDEBAR_WINDOW_WIDTH_STORAGE_KEY, String(width));
+    writeStoredText(SIDEBAR_WINDOW_WIDTH_STORAGE_KEY, String(width));
 }
 
 function containsPoint(area: WindowWorkArea, x: number, y: number): boolean {

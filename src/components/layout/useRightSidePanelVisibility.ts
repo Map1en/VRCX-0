@@ -1,22 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import {
+    STORAGE_KEYS,
+    readStoredJson,
+    writeStoredText
+} from '@/lib/browserStorage';
 import { setRightSidebarOpenPreference } from '@/services/preferencesService';
-import { safeJsonParse } from '@/shared/utils/json';
 import { isRecord } from '@/shared/utils/record';
 import { useShellStore } from '@/state/shellStore';
 
 import { getDefaultHiddenSidePanelPath } from './sidePanelRoutes';
 
-const sidePanelRouteOpenStateStorageKey = 'VRCX_0_RightSidebarRouteOpenState';
+const sidePanelRouteOpenStateStorageKey =
+    STORAGE_KEYS.rightSidebarRouteOpenState;
 const sidePanelRouteOpenStateEvent =
     'vrcx-main-layout-right-sidebar-route-open-state-change';
 
 type SidePanelRouteOpenState = Record<string, boolean>;
 
 function readSidePanelRouteOpenState(): SidePanelRouteOpenState {
-    const value = safeJsonParse(
-        localStorage.getItem(sidePanelRouteOpenStateStorageKey)
-    );
+    const value = readStoredJson(sidePanelRouteOpenStateStorageKey);
     if (!isRecord(value)) {
         return {};
     }
@@ -33,7 +36,7 @@ function writeSidePanelRouteOpenState(routeKey: string, open: boolean) {
         [routeKey]: Boolean(open)
     };
 
-    localStorage.setItem(
+    writeStoredText(
         sidePanelRouteOpenStateStorageKey,
         JSON.stringify(nextState)
     );

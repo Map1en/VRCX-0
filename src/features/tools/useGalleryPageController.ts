@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
+
 import { isRuntimeAuthTarget } from './galleryAuthTarget';
 import {
     canUploadGalleryTarget,
@@ -24,16 +30,16 @@ import { useGalleryBulkActions } from './useGalleryBulkActions';
 import { useGalleryRuntimeState } from './useGalleryRuntimeState';
 import { useImageUploadIntake } from './useImageUploadIntake';
 
-const GALLERY_GRID_DENSITY_STORAGE_KEY = 'VRCX_0_GalleryGridDensity';
+const GALLERY_GRID_DENSITY_STORAGE_KEY = STORAGE_KEYS.galleryGridDensity;
 
 function readGalleryGridDensityPreference() {
     return sanitizeGalleryGridDensity(
-        localStorage.getItem(GALLERY_GRID_DENSITY_STORAGE_KEY)
+        readStoredText(GALLERY_GRID_DENSITY_STORAGE_KEY)
     );
 }
 
 function writeGalleryGridDensityPreference(value: GalleryGridDensity) {
-    localStorage.setItem(GALLERY_GRID_DENSITY_STORAGE_KEY, value);
+    writeStoredText(GALLERY_GRID_DENSITY_STORAGE_KEY, value);
 }
 
 export function useGalleryPageController() {

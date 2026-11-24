@@ -21,6 +21,11 @@ import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { FullscreenImageViewer } from '@/components/media/FullscreenImageViewer';
 import { preloadImages } from '@/components/media/imageDecodeCache';
 import { getRememberedScreenshotThumbnailUrl } from '@/components/media/screenshotThumbnailUrlCache';
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import { commands, type ScreenshotFacet } from '@/platform/tauri/bindings';
 import mediaFileRepository from '@/repositories/mediaFileRepository';
@@ -67,14 +72,14 @@ import { useScreenshotPeopleSections } from './useScreenshotPeopleSections';
 import { useScreenshotSearchFacets } from './useScreenshotSearchFacets';
 import { useScreenshotZipExport } from './useScreenshotZipExport';
 
-const DETAILS_VISIBLE_STORAGE_KEY = 'VRCX_0_ScreenshotDetailsVisible';
+const DETAILS_VISIBLE_STORAGE_KEY = STORAGE_KEYS.screenshotDetailsVisible;
 
 function readDetailsVisible() {
-    return localStorage.getItem(DETAILS_VISIBLE_STORAGE_KEY) !== 'false';
+    return readStoredText(DETAILS_VISIBLE_STORAGE_KEY) !== 'false';
 }
 
 function writeDetailsVisible(visible: boolean) {
-    localStorage.setItem(DETAILS_VISIBLE_STORAGE_KEY, String(visible));
+    writeStoredText(DETAILS_VISIBLE_STORAGE_KEY, String(visible));
 }
 
 function hasTextSelection() {

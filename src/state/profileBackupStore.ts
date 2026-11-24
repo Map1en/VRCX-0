@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 
+import {
+    STORAGE_KEYS,
+    readSessionText,
+    writeSessionText
+} from '@/lib/browserStorage';
 import type {
     ProfileBackupStatus,
     ProfileRestoreProgress,
@@ -8,36 +13,20 @@ import type {
     ProfileRestoreValidation
 } from '@/services/profileBackupService';
 
-const NOTIFIED_OUTCOME_REVISION_KEY =
-    'vrcx-0.profile-backup.notified-outcome-revision';
-
 function readNotifiedOutcomeRevision(): number {
-    if (typeof window === 'undefined') {
-        return -1;
-    }
-    try {
-        const revision = Number.parseInt(
-            window.sessionStorage.getItem(NOTIFIED_OUTCOME_REVISION_KEY) || '',
-            10
-        );
-        return Number.isSafeInteger(revision) && revision >= 0 ? revision : -1;
-    } catch {
-        return -1;
-    }
+    const revision = Number.parseInt(
+        readSessionText(STORAGE_KEYS.profileBackupNotifiedOutcomeRevision) ||
+            '',
+        10
+    );
+    return Number.isSafeInteger(revision) && revision >= 0 ? revision : -1;
 }
 
 function writeNotifiedOutcomeRevision(revision: number) {
-    if (typeof window === 'undefined') {
-        return;
-    }
-    try {
-        window.sessionStorage.setItem(
-            NOTIFIED_OUTCOME_REVISION_KEY,
-            String(revision)
-        );
-    } catch {
-        return;
-    }
+    writeSessionText(
+        STORAGE_KEYS.profileBackupNotifiedOutcomeRevision,
+        String(revision)
+    );
 }
 
 type ProfileRestoreFlow = 'idle' | 'validating' | 'confirm' | 'preparing';

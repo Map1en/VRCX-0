@@ -10,9 +10,9 @@ vi.mock('react-i18next', async (importOriginal) => {
     };
 });
 
-if (typeof window === 'undefined') {
+function createMemoryStorage(): Storage {
     const values = new Map<string, string>();
-    const memoryStorage: Storage = {
+    return {
         get length() {
             return values.size;
         },
@@ -26,8 +26,15 @@ if (typeof window === 'undefined') {
             values.set(key, String(value));
         }
     };
+}
+
+if (typeof window === 'undefined') {
     Object.defineProperty(globalThis, 'localStorage', {
         configurable: true,
-        value: memoryStorage
+        value: createMemoryStorage()
+    });
+    Object.defineProperty(globalThis, 'sessionStorage', {
+        configurable: true,
+        value: createMemoryStorage()
     });
 }

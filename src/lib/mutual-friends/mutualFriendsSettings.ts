@@ -1,4 +1,8 @@
-import { safeJsonParse } from '@/shared/utils/json';
+import {
+    STORAGE_KEYS,
+    readStoredJson,
+    writeStoredText
+} from '@/lib/browserStorage';
 
 import type {
     MutualFriendsLayoutSettingKey,
@@ -25,7 +29,7 @@ export const MUTUAL_GRAPH_LAYOUT_DEFAULTS: MutualFriendsLayoutSettings = {
 export const MUTUAL_GRAPH_EMPTY_USER_ID =
     'usr_00000000-0000-0000-0000-000000000000';
 export const MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY =
-    'VRCX_MutualGraphExcludedFriends';
+    STORAGE_KEYS.mutualGraphExcludedFriends;
 export const MUTUAL_GRAPH_AUTO_FETCH_PARAM = 'fetch';
 
 export function clampMutualGraphNumber(
@@ -60,12 +64,12 @@ export function normalizeExcludedMutualFriendIds(value: unknown): string[] {
 
 export function readExcludedMutualFriendIds() {
     return normalizeExcludedMutualFriendIds(
-        safeJsonParse(localStorage.getItem(MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY))
+        readStoredJson(MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY)
     );
 }
 
 export function writeExcludedMutualFriendIds(value: unknown) {
-    localStorage.setItem(
+    writeStoredText(
         MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY,
         JSON.stringify(normalizeExcludedMutualFriendIds(value))
     );

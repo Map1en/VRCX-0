@@ -1,5 +1,10 @@
 import { PROFILE_DECORATION_ITEM_TYPES } from '@/domain/entities/inventory';
 import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
+import {
     commands,
     type EmojiUploadParams,
     type InventoryItemsCollectInput,
@@ -24,7 +29,7 @@ import {
     type GalleryGridDensity
 } from './galleryDensity';
 
-const INVENTORY_GRID_DENSITY_STORAGE_KEY = 'VRCX_0_InventoryGridDensity';
+const INVENTORY_GRID_DENSITY_STORAGE_KEY = STORAGE_KEYS.inventoryGridDensity;
 
 export const CATEGORY_ORDER = [
     'emojis',
@@ -219,12 +224,12 @@ export function scopeKey(category: string, tab: string) {
 
 export function readGridDensityPreference() {
     return sanitizeGalleryGridDensity(
-        localStorage.getItem(INVENTORY_GRID_DENSITY_STORAGE_KEY)
+        readStoredText(INVENTORY_GRID_DENSITY_STORAGE_KEY)
     );
 }
 
 export function writeGridDensityPreference(value: GalleryGridDensity) {
-    localStorage.setItem(INVENTORY_GRID_DENSITY_STORAGE_KEY, value);
+    writeStoredText(INVENTORY_GRID_DENSITY_STORAGE_KEY, value);
 }
 
 export function getInventoryGridDensityConfig(gridDensity: GalleryGridDensity) {

@@ -1,3 +1,10 @@
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    removeStored,
+    writeStoredText
+} from '@/lib/browserStorage';
+
 import vrcx0RgbCss from '@/styles/vrcx-0-rgb.css?inline';
 
 const RGB = 'vrcx-0-rgb';
@@ -22,7 +29,7 @@ const layerSnapshots: Record<VrcxCssLayer, string> = {
     [RGB]: ''
 };
 const suppressedLayers = new Set<VrcxCssLayer>();
-const RGB_STORAGE_KEY = 'vrcx-0-rgb-enabled';
+const RGB_STORAGE_KEY = STORAGE_KEYS.rgbEnabled;
 
 function isKnownLayer(value: string | null): value is VrcxCssLayer {
     return VRCX_CSS_LAYERS.some((layer) => layer === value);
@@ -106,10 +113,10 @@ function applyRgb(enabled: boolean): void {
 export function setRgb(enabled: boolean): void {
     applyRgb(enabled);
     if (enabled) {
-        localStorage.setItem(RGB_STORAGE_KEY, 'true');
+        writeStoredText(RGB_STORAGE_KEY, 'true');
     } else {
-        localStorage.removeItem(RGB_STORAGE_KEY);
+        removeStored(RGB_STORAGE_KEY);
     }
 }
 
-applyRgb(localStorage.getItem(RGB_STORAGE_KEY) === 'true');
+applyRgb(readStoredText(RGB_STORAGE_KEY) === 'true');

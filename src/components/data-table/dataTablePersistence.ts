@@ -1,9 +1,13 @@
 import type { ColumnSizingState, OnChangeFn } from '@tanstack/react-table';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { safeJsonParse } from '@/shared/utils/json';
+import {
+    STORAGE_KEYS,
+    readStoredJson,
+    writeStoredText
+} from '@/lib/browserStorage';
 
-const DATA_TABLE_STORAGE_PREFIX = 'vrcx-0:table:';
+const DATA_TABLE_STORAGE_PREFIX = STORAGE_KEYS.dataTablePrefix;
 const COLUMN_SIZING_SAVE_DELAY_MS = 300;
 type PersistedTableState = Record<string, unknown>;
 type TableColumnSizing = Record<string, number>;
@@ -81,7 +85,7 @@ export function readPersistedTableState(
         return {};
     }
 
-    const parsed = safeJsonParse(localStorage.getItem(storageKey));
+    const parsed = readStoredJson(storageKey);
     return parsed && typeof parsed === 'object'
         ? Object.fromEntries(Object.entries(parsed))
         : {};
@@ -95,7 +99,7 @@ export function writePersistedTableState(
         return;
     }
 
-    localStorage.setItem(
+    writeStoredText(
         storageKey,
         JSON.stringify({
             ...readPersistedTableState(storageKey),
