@@ -8,6 +8,7 @@ pub mod discord_rpc;
 pub mod game_launch;
 pub mod game_window;
 pub mod gpu_usage;
+pub mod heart_rate_ble;
 pub mod host_capabilities;
 #[cfg(target_os = "linux")]
 pub mod linux_registry;

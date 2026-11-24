@@ -2,6 +2,8 @@
 pub(crate) enum OscArg<'a> {
     Str(&'a str),
     Bool(bool),
+    Int(i32),
+    Float(f32),
 }
 
 pub(crate) fn encode_message(address: &str, args: &[OscArg<'_>]) -> Vec<u8> {
@@ -14,12 +16,17 @@ pub(crate) fn encode_message(address: &str, args: &[OscArg<'_>]) -> Vec<u8> {
             OscArg::Str(_) => 's',
             OscArg::Bool(true) => 'T',
             OscArg::Bool(false) => 'F',
+            OscArg::Int(_) => 'i',
+            OscArg::Float(_) => 'f',
         });
     }
     push_padded_str(&mut buffer, &type_tags);
     for arg in args {
-        if let OscArg::Str(value) = arg {
-            push_padded_str(&mut buffer, value);
+        match arg {
+            OscArg::Str(value) => push_padded_str(&mut buffer, value),
+            OscArg::Int(value) => buffer.extend(value.to_be_bytes()),
+            OscArg::Float(value) => buffer.extend(value.to_be_bytes()),
+            OscArg::Bool(_) => {}
         }
     }
     buffer
@@ -59,5 +66,14 @@ mod tests {
 
         assert_eq!(&encoded[..8], b"/abc\0\0\0\0");
         assert_eq!(&encoded[8..], b",\0\0\0");
+    }
+
+    #[test]
+    fn numbers_are_big_endian_four_byte_arguments() {
+        let encoded = encode_message("/n", &[OscArg::Int(72), OscArg::Float(0.5)]);
+
+        assert_eq!(&encoded[4..8], b",if\0");
+        assert_eq!(&encoded[8..12], &72_i32.to_be_bytes());
+        assert_eq!(&encoded[12..], &0.5_f32.to_be_bytes());
     }
 }

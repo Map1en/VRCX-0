@@ -8,9 +8,11 @@ description = "Desktop host capabilities"
 [dependencies]
 arboard = "3"
 base64 = { workspace = true }
+btleplug = "0.13.5"
 chrono = { workspace = true }
 dirs = { workspace = true }
 fontdb = "0.24"
+futures-util = "0.3"
 hex = "0.4"
 image = { workspace = true }
 open = "5"
@@ -64,8 +66,7 @@ windows = { version = "0.62", features = [
 winreg = "0.56"
 
 [target.'cfg(any(windows, target_os = "linux"))'.dependencies]
-futures-util = "0.3"
-tokio = { workspace = true, features = ["net"] }
+tokio ={ workspace = true, features = ["net"] }
 tokio-tungstenite = { version = "0.30", features = ["rustls-tls-native-roots"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]

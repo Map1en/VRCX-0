@@ -100,6 +100,7 @@ struct BackendRuntimeEventPayloadMap {
     game_isolation_state: vrcx_0_runtime_host_desktop::GameIsolationSnapshot,
     chatbox_state: vrcx_0_application_game::chatbox::ChatboxStatus,
     chatbox_config: vrcx_0_application_game::chatbox::ChatboxConfig,
+    heart_rate_state: vrcx_0_application_game::heart_rate::HeartRateStatus,
     privacy_lock_state: PrivacyLockSnapshot,
     desktop_widget_state: vrcx_0_runtime_host_desktop::desktop_widget::DesktopWidgetSnapshot,
 }
@@ -176,6 +177,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::chatbox::app__chatbox_afk_set,
             commands::application::chatbox::app__chatbox_typing_set,
             commands::application::chatbox::app__chatbox_samples_render,
+            commands::application::heart_rate::app__heart_rate_status_get,
+            commands::application::heart_rate::app__heart_rate_connected_set,
             commands::application::background_mode::app__start_background_mode,
             commands::application::background_mode::app__backend_runtime_combined_snapshot_get,
             commands::application::background_mode::app__ensure_main_window,

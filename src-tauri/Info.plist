@@ -4,5 +4,7 @@
 <dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>VRCX-0 connects to the Self-hosted Recorder you run on your local network.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>VRCX-0 connects to your heart rate band or watch when you turn on Heart rate in Chatbox.</string>
 </dict>
 </plist>

@@ -3024,7 +3024,8 @@
                     "gpu": "GPU-Auslastung",
                     "vram": "VRAM",
                     "gputemp": "GPU-Temperatur",
-                    "session": "Spielzeit dieser Sitzung"
+                    "session": "Spielzeit dieser Sitzung",
+                    "heartrate": "Herzfrequenz"
                 },
                 "formats": {
                     "hour12": "12 Stunden",
@@ -3053,7 +3054,24 @@
                     "time": "Uhrzeit",
                     "music": "Musik",
                     "system": "System",
-                    "session": "Spielzeit"
+                    "session": "Spielzeit",
+                    "heart_rate": "Herzfrequenz"
+                },
+                "heart_rate": {
+                    "title": "Herzfrequenz",
+                    "connect": "Verbinden",
+                    "disconnect": "Trennen",
+                    "off": "Nicht verbunden",
+                    "unavailable": "Kein Bluetooth gefunden oder Bluetooth ist aus",
+                    "waiting": "Warte auf {device} …",
+                    "connected": "Verbunden mit {device} · {bpm} bpm",
+                    "no_reading": "Verbunden mit {device} · kein Messwert",
+                    "incompatible": "Dieses Gerät liefert keine Herzfrequenz. Verbinde erneut, um ein anderes zu wählen.",
+                    "permission_denied": "Der Bluetooth-Zugriff ist blockiert. Erlaube ihn in den Systemeinstellungen und verbinde dann erneut.",
+                    "device": "Herzfrequenzgerät",
+                    "hint": "Manche Geräte verbinden sich nur mit einem Gerät gleichzeitig, deine Handy-App kann sich dann trennen. Füge {variable} in eine Statuszeile ein, um die Herzfrequenz anzuzeigen. Die Avatar-Parameter nutzen die gängigen Namen HR und isHRBeat (Pulsoid und viele Booth-Prefabs) sowie VRCOSC/Heartrate von VRCOSC.",
+                    "save_failed": "Die Herzfrequenzverbindung konnte nicht geändert werden.",
+                    "devices": "Funktioniert mit Standard-Bluetooth-Herzfrequenzgeräten: Brustgurte und Armbänder, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 und mehr. Schalte am Gerät die Herzfrequenzübertragung ein."
                 }
             }
         },

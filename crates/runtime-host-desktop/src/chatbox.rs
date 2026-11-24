@@ -20,6 +20,7 @@ use vrcx_0_i18n::{text, ChatboxKey};
 use vrcx_0_osc::{chatbox_input_message, chatbox_typing_message};
 
 use crate::game_isolation::GameIsolationRuntime;
+use crate::heart_rate::HeartRateRuntime;
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 
@@ -28,6 +29,7 @@ pub struct ChatboxRuntime {
     session: HostSessionRuntime,
     game_isolation: GameIsolationRuntime,
     event_bus: RuntimeEventBus,
+    heart_rate: Arc<HeartRateRuntime>,
     previewing: AtomicBool,
     state: Mutex<ChatboxRuntimeState>,
 }
@@ -56,12 +58,14 @@ impl ChatboxRuntime {
         session: HostSessionRuntime,
         game_isolation: GameIsolationRuntime,
         event_bus: RuntimeEventBus,
+        heart_rate: Arc<HeartRateRuntime>,
     ) -> Self {
         Self {
             config,
             session,
             game_isolation,
             event_bus,
+            heart_rate,
             previewing: AtomicBool::new(false),
             state: Mutex::new(ChatboxRuntimeState::default()),
         }
@@ -103,6 +107,7 @@ impl ChatboxRuntime {
 
     pub fn set_previewing(&self, previewing: bool) {
         self.previewing.store(previewing, Ordering::Release);
+        self.heart_rate.set_watching(previewing);
     }
 
     pub fn send_manual(&self, text: &str) -> vrcx_0_application_core::Result<ChatboxSendOutcome> {
@@ -155,6 +160,7 @@ impl ChatboxRuntime {
         needs: ChatboxFactNeeds,
         is_game_running: bool,
         last_game_started_at: Option<&str>,
+        heart_rate: Option<u16>,
     ) -> ChatboxFacts {
         let media_session = needs
             .media
@@ -194,6 +200,7 @@ impl ChatboxRuntime {
             gpu,
             is_game_running,
             last_game_started_at,
+            heart_rate,
         })
     }
 
@@ -210,6 +217,7 @@ impl ChatboxRuntime {
             needs,
             session.is_game_running,
             session.last_game_started_at.as_deref(),
+            self.heart_rate.current_bpm(),
         );
         let output = state.scheduler.tick(ChatboxTickInput {
             now: Instant::now(),

@@ -28,7 +28,8 @@ export const CHATBOX_VARIABLE_LABEL_KEYS: Record<ChatboxVariable, string> = {
     gpu: 'view.tools.chatbox.variables.gpu',
     vram: 'view.tools.chatbox.variables.vram',
     gputemp: 'view.tools.chatbox.variables.gputemp',
-    session: 'view.tools.chatbox.variables.session'
+    session: 'view.tools.chatbox.variables.session',
+    heartrate: 'view.tools.chatbox.variables.heartrate'
 };
 
 export function createChatboxLine(

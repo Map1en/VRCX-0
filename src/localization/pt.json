@@ -3024,7 +3024,8 @@
                     "gpu": "Uso de GPU",
                     "vram": "VRAM",
                     "gputemp": "Temperatura da GPU",
-                    "session": "Tempo desta sessão"
+                    "session": "Tempo desta sessão",
+                    "heartrate": "Frequência cardíaca"
                 },
                 "formats": {
                     "hour12": "12 horas",
@@ -3053,7 +3054,24 @@
                     "time": "Hora",
                     "music": "Música",
                     "system": "Sistema",
-                    "session": "Sessão"
+                    "session": "Sessão",
+                    "heart_rate": "Frequência cardíaca"
+                },
+                "heart_rate": {
+                    "title": "Frequência cardíaca",
+                    "connect": "Conectar",
+                    "disconnect": "Desconectar",
+                    "off": "Não conectado",
+                    "unavailable": "Bluetooth não encontrado ou desligado",
+                    "waiting": "Aguardando {device}…",
+                    "connected": "Conectado a {device} · {bpm} bpm",
+                    "no_reading": "Conectado a {device} · sem leitura",
+                    "incompatible": "Esse dispositivo não fornece frequência cardíaca. Conecte de novo para escolher outro.",
+                    "permission_denied": "O acesso ao Bluetooth está bloqueado. Permita nas configurações do sistema e conecte de novo.",
+                    "device": "dispositivo de frequência cardíaca",
+                    "hint": "Alguns dispositivos só se conectam a um aparelho por vez, então o app do celular pode desconectar. Insira {variable} em uma linha de status para mostrá-la. Os parâmetros do avatar usam os nomes comuns HR e isHRBeat (Pulsoid e muitos prefabs do Booth) e também VRCOSC/Heartrate do VRCOSC.",
+                    "save_failed": "Não foi possível alterar a conexão de frequência cardíaca.",
+                    "devices": "Funciona com dispositivos Bluetooth padrão de frequência cardíaca: cintas de peito e braçadeiras, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 e outros. Ative a transmissão de frequência cardíaca no dispositivo."
                 }
             }
         },

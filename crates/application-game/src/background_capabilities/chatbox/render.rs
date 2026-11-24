@@ -35,6 +35,7 @@ pub struct ChatboxFacts {
     pub system: Option<ChatboxSystemStats>,
     pub gpu: Option<ChatboxGpuStats>,
     pub game_session_seconds: Option<u64>,
+    pub heart_rate: Option<u16>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

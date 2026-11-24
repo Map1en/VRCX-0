@@ -3013,7 +3013,8 @@
                     "gpu": "GPU 使用率",
                     "vram": "VRAM",
                     "gputemp": "GPU 温度",
-                    "session": "今回のプレイ時間"
+                    "session": "今回のプレイ時間",
+                    "heartrate": "心拍数"
                 },
                 "formats": {
                     "hour12": "12 時間表示",
@@ -3042,7 +3043,24 @@
                     "time": "時刻",
                     "music": "音楽",
                     "system": "システム",
-                    "session": "プレイ時間"
+                    "session": "プレイ時間",
+                    "heart_rate": "心拍数"
+                },
+                "heart_rate": {
+                    "title": "心拍数",
+                    "connect": "接続",
+                    "disconnect": "切断",
+                    "off": "未接続",
+                    "unavailable": "Bluetoothが見つからないか、オフになっています",
+                    "waiting": "{device}を待っています…",
+                    "connected": "{device}に接続中 · {bpm} bpm",
+                    "no_reading": "{device}に接続中 · 測定値なし",
+                    "incompatible": "このデバイスは心拍数に対応していません。もう一度接続すると別のデバイスを選びます",
+                    "permission_denied": "Bluetoothへのアクセスが許可されていません。システム設定で許可してから、もう一度接続してください",
+                    "device": "心拍計",
+                    "hint": "同時に1台しかつながらないデバイスでは、スマホのアプリが切断されることがあります。ステータスの行に{variable}を入れると心拍数を表示できます。アバターパラメーターは、よく使われる HR・isHRBeat（Pulsoid や BOOTH の多くのプレハブ）と、VRCOSC の VRCOSC/Heartrate 系の両方を送信します。",
+                    "save_failed": "心拍数の接続を変更できませんでした。",
+                    "devices": "標準のBluetooth心拍計に対応しています。胸ベルト・アームバンド、Garmin、COROS、Huawei、Amazfit、Xiaomi Smart Band 10 など。デバイス側で心拍数のブロードキャストをオンにしてください。"
                 }
             }
         },

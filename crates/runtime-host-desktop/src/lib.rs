@@ -24,6 +24,7 @@ mod game_media;
 mod game_state_store;
 mod group;
 mod group_order;
+mod heart_rate;
 mod host_actions;
 mod host_file_access;
 mod instance_launch;

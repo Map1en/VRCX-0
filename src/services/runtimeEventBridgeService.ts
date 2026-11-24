@@ -204,6 +204,11 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
+    if (event.name === 'heartRateState') {
+        useChatboxStore.getState().setHeartRate(event.payload);
+        return;
+    }
+
     if (event.name === 'privacyLockState') {
         runtimeStore.setPrivacyLock(event.payload);
         return;
@@ -515,6 +520,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'gameIsolationState',
         'chatboxState',
         'chatboxConfig',
+        'heartRateState',
         'privacyLockState',
         'desktopWidgetState',
         'gameLogProjection',

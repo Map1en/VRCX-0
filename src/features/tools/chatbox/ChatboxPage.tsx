@@ -17,6 +17,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { chatboxStatusLabelKey } from './chatboxConfig';
 import { ChatboxAfkCard } from './components/ChatboxAfkCard';
 import { ChatboxComposer } from './components/ChatboxComposer';
+import { ChatboxHeartRateCard } from './components/ChatboxHeartRateCard';
 import { ChatboxPagesCard } from './components/ChatboxPagesCard';
 import { ChatboxPreviewCard } from './components/ChatboxPreviewCard';
 import { ChatboxSettingsCard } from './components/ChatboxSettingsCard';
@@ -80,10 +81,13 @@ export function ChatboxPage() {
                                         void commands.appChatboxAfkSet(afk)
                                     }
                                 />
-                                <ChatboxSettingsCard
-                                    config={config}
-                                    onUpdate={onUpdate}
-                                />
+                                <div className="flex flex-col gap-3">
+                                    <ChatboxSettingsCard
+                                        config={config}
+                                        onUpdate={onUpdate}
+                                    />
+                                    <ChatboxHeartRateCard />
+                                </div>
                             </div>
                             <ChatboxPagesCard
                                 config={config}

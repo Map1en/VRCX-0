@@ -3028,7 +3028,8 @@
                     "gpu": "Uso de GPU",
                     "vram": "VRAM",
                     "gputemp": "Temperatura de GPU",
-                    "session": "Tiempo de esta sesión"
+                    "session": "Tiempo de esta sesión",
+                    "heartrate": "Frecuencia cardíaca"
                 },
                 "formats": {
                     "hour12": "12 horas",
@@ -3057,7 +3058,24 @@
                     "time": "Hora",
                     "music": "Música",
                     "system": "Sistema",
-                    "session": "Sesión"
+                    "session": "Sesión",
+                    "heart_rate": "Frecuencia cardíaca"
+                },
+                "heart_rate": {
+                    "title": "Frecuencia cardíaca",
+                    "connect": "Conectar",
+                    "disconnect": "Desconectar",
+                    "off": "Sin conectar",
+                    "unavailable": "No se encontró Bluetooth o está desactivado",
+                    "waiting": "Esperando a {device}…",
+                    "connected": "Conectado a {device} · {bpm} lpm",
+                    "no_reading": "Conectado a {device} · sin lectura",
+                    "incompatible": "Ese dispositivo no ofrece frecuencia cardíaca. Vuelve a conectar para elegir otro.",
+                    "permission_denied": "El acceso a Bluetooth está bloqueado. Permítelo en la configuración del sistema y vuelve a conectar.",
+                    "device": "dispositivo de frecuencia cardíaca",
+                    "hint": "Algunos dispositivos solo se conectan a un aparato a la vez, así que la app del móvil puede desconectarse. Inserta {variable} en una línea de estado para mostrarla. Los parámetros del avatar usan los nombres habituales HR e isHRBeat (Pulsoid y muchos prefabs de Booth) y también VRCOSC/Heartrate de VRCOSC.",
+                    "save_failed": "No se pudo cambiar la conexión de frecuencia cardíaca.",
+                    "devices": "Compatible con dispositivos Bluetooth estándar de frecuencia cardíaca: bandas de pecho y brazaletes, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 y más. Activa la transmisión de frecuencia cardíaca en el dispositivo."
                 }
             }
         },

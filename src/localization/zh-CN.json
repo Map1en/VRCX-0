@@ -3017,7 +3017,8 @@
                     "gpu": "显卡占用",
                     "vram": "显存",
                     "gputemp": "显卡温度",
-                    "session": "本次游戏时长"
+                    "session": "本次游戏时长",
+                    "heartrate": "心率"
                 },
                 "formats": {
                     "hour12": "12 小时制",
@@ -3046,7 +3047,24 @@
                     "time": "时间",
                     "music": "音乐",
                     "system": "系统",
-                    "session": "游戏时长"
+                    "session": "游戏时长",
+                    "heart_rate": "心率"
+                },
+                "heart_rate": {
+                    "title": "心率",
+                    "connect": "连接",
+                    "disconnect": "断开",
+                    "off": "未连接",
+                    "unavailable": "未检测到蓝牙，或蓝牙已关闭",
+                    "waiting": "正在等待 {device}…",
+                    "connected": "已连接 {device} · {bpm} bpm",
+                    "no_reading": "已连接 {device} · 没有读数",
+                    "incompatible": "该设备不提供心率，重新连接即可换一台设备",
+                    "permission_denied": "蓝牙权限被拒绝，请在系统设置中允许后重新连接",
+                    "device": "心率设备",
+                    "hint": "部分设备只能连接一台，手机 App 可能会断开。在状态行中插入 {variable} 即可显示心率。模型参数同时发送常见心率预制件使用的 HR、isHRBeat（Pulsoid、Booth 上的多数预制件）和 VRCOSC 的 VRCOSC/Heartrate 系列参数。",
+                    "save_failed": "无法更改心率连接。",
+                    "devices": "支持标准蓝牙心率设备，如心率带、臂带、Garmin、COROS、华为、Amazfit、小米手环 10 等，需在设备上开启心率广播。"
                 }
             }
         },

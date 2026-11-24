@@ -28,6 +28,7 @@ use vrcx_0_persistence::DatabaseService;
 
 use crate::chatbox::ChatboxRuntime;
 use crate::game_isolation::GameIsolationRuntime;
+use crate::heart_rate::HeartRateRuntime;
 use crate::host_actions::RuntimeHost;
 use crate::notification::{
     migrate_legacy_overlay_notification_keys, seed_hmd_notifications_default, DesktopNotifier,
@@ -79,6 +80,7 @@ pub struct DesktopRuntimeServices {
     game_log_snapshot: RuntimeSnapshotStore,
     now_playing: NowPlayingStore,
     chatbox: Arc<ChatboxRuntime>,
+    heart_rate: Arc<HeartRateRuntime>,
 }
 
 impl DesktopRuntimeServices {
@@ -137,11 +139,18 @@ impl DesktopRuntimeServices {
                 policy: Arc::clone(&notification_policy),
             }));
         deps.activity_sinks.add(notification_sink);
+        let heart_rate = Arc::new(HeartRateRuntime::new(
+            deps.config.clone(),
+            deps.session.clone(),
+            game_isolation.clone(),
+            deps.event_bus.clone(),
+        ));
         let chatbox = Arc::new(ChatboxRuntime::new(
             deps.config.clone(),
             deps.session.clone(),
             game_isolation.clone(),
             deps.event_bus.clone(),
+            Arc::clone(&heart_rate),
         ));
         Ok(Self {
             web: deps.web,
@@ -167,6 +176,7 @@ impl DesktopRuntimeServices {
             game_log_snapshot: RuntimeSnapshotStore::default(),
             now_playing: NowPlayingStore::default(),
             chatbox,
+            heart_rate,
         })
     }
 
@@ -249,6 +259,10 @@ impl DesktopRuntimeServices {
 
     pub fn chatbox(&self) -> Arc<ChatboxRuntime> {
         Arc::clone(&self.chatbox)
+    }
+
+    pub fn heart_rate(&self) -> Arc<HeartRateRuntime> {
+        Arc::clone(&self.heart_rate)
     }
 
     pub fn event_bus(&self) -> RuntimeEventBus {

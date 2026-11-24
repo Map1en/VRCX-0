@@ -2954,7 +2954,8 @@
                     "gpu": "GPU 사용률",
                     "vram": "VRAM",
                     "gputemp": "GPU 온도",
-                    "session": "이번 플레이 시간"
+                    "session": "이번 플레이 시간",
+                    "heartrate": "심박수"
                 },
                 "formats": {
                     "hour12": "12시간제",
@@ -2983,7 +2984,24 @@
                     "time": "시간",
                     "music": "음악",
                     "system": "시스템",
-                    "session": "플레이 시간"
+                    "session": "플레이 시간",
+                    "heart_rate": "심박수"
+                },
+                "heart_rate": {
+                    "title": "심박수",
+                    "connect": "연결",
+                    "disconnect": "연결 해제",
+                    "off": "연결 안 됨",
+                    "unavailable": "블루투스를 찾을 수 없거나 꺼져 있습니다",
+                    "waiting": "{device} 기다리는 중…",
+                    "connected": "{device} 연결됨 · {bpm} bpm",
+                    "no_reading": "{device} 연결됨 · 측정값 없음",
+                    "incompatible": "이 기기는 심박수를 제공하지 않습니다. 다시 연결하면 다른 기기를 고릅니다",
+                    "permission_denied": "블루투스 권한이 거부되었습니다. 시스템 설정에서 허용한 뒤 다시 연결하세요",
+                    "device": "심박수 기기",
+                    "hint": "한 번에 하나만 연결되는 기기는 휴대폰 앱 연결이 끊길 수 있습니다. 상태 줄에 {variable}를 넣으면 심박수가 표시됩니다. 아바타 파라미터는 널리 쓰이는 HR·isHRBeat(Pulsoid, Booth의 많은 프리팹)와 VRCOSC의 VRCOSC/Heartrate 계열을 함께 보냅니다.",
+                    "save_failed": "심박수 연결을 변경하지 못했습니다.",
+                    "devices": "표준 블루투스 심박수 기기를 지원합니다. 가슴 스트랩·암밴드, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 등. 기기에서 심박수 브로드캐스트를 켜세요."
                 }
             }
         },

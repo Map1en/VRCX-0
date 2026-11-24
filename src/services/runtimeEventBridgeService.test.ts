@@ -134,6 +134,7 @@ vi.mock('./authSessionRecoveryService', () => ({
 import { getCachedQueryData, queryKeys } from '@/lib/entityQueryCache';
 import { toast } from '@/services/toastService';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
+import { useChatboxStore } from '@/state/chatboxStore';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -585,6 +586,21 @@ describe('runtimeEventBridgeService', () => {
                 )
             )
         ).toBe(2450);
+    });
+
+    it('keeps the heart rate card live from the heart rate event', async () => {
+        const { handlers } = await bindCapturedRuntimeEvents();
+        const status = {
+            enabled: true,
+            phase: 'connected',
+            deviceName: 'Band',
+            bpm: 72,
+            problem: null
+        } as const;
+
+        handlers.get('heartRateState')?.(status);
+
+        expect(useChatboxStore.getState().heartRate).toEqual(status);
     });
 
     it('records the browser focus time and refreshes VRChat status on focus', async () => {

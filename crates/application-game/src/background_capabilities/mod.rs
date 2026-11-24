@@ -1,5 +1,6 @@
 pub mod chatbox;
 mod discord;
+pub mod heart_rate;
 mod presence_automation;
 mod presence_facts;
 mod shared;

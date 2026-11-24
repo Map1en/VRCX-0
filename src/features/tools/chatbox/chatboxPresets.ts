@@ -9,7 +9,7 @@ export type ChatboxPreset = {
 };
 
 export type ChatboxPresetGroup = {
-    id: 'time' | 'music' | 'system' | 'session';
+    id: 'time' | 'music' | 'system' | 'session' | 'heart_rate';
     presets: ChatboxPreset[];
 };
 
@@ -92,6 +92,13 @@ export const CHATBOX_PRESET_GROUPS: ChatboxPresetGroup[] = [
                 template: localized('game_session', { duration: '{session}' })
             },
             { id: 'session-timer', template: literal('⏱ {session}') }
+        ]
+    },
+    {
+        id: 'heart_rate',
+        presets: [
+            { id: 'heart-rate', template: literal('❤ {heartrate}') },
+            { id: 'heart-rate-bpm', template: literal('❤ {heartrate} bpm') }
         ]
     }
 ];

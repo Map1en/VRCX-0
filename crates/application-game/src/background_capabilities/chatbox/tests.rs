@@ -17,6 +17,7 @@ fn facts() -> ChatboxFacts {
         system: None,
         gpu: None,
         game_session_seconds: None,
+        heart_rate: None,
     }
 }
 
@@ -325,6 +326,23 @@ fn album_line_hides_when_the_player_reports_no_album() {
     assert_eq!(
         render(module(&["♪ {title}", "💿 {album}"]), facts).as_deref(),
         Some("♪ Idol")
+    );
+}
+
+#[test]
+fn heart_rate_line_shows_the_current_reading_and_hides_without_one() {
+    let with_heart_rate = ChatboxFacts {
+        heart_rate: Some(72),
+        ..facts()
+    };
+
+    assert_eq!(
+        render(module(&["❤ {heartrate} bpm", "{time}"]), with_heart_rate).as_deref(),
+        Some("❤ 72 bpm\n21:05")
+    );
+    assert_eq!(
+        render(module(&["❤ {heartrate} bpm", "{time}"]), facts()).as_deref(),
+        Some("21:05")
     );
 }
 
@@ -696,6 +714,7 @@ fn fact_sources() -> ChatboxFactSources<'static> {
         gpu: None,
         is_game_running: true,
         last_game_started_at: Some("2026-11-03T10:30:00Z"),
+        heart_rate: None,
     }
 }
 

@@ -29,10 +29,12 @@ pub enum ChatboxVariable {
     #[serde(rename = "gputemp")]
     GpuTemp,
     Session,
+    #[serde(rename = "heartrate")]
+    HeartRate,
 }
 
 impl ChatboxVariable {
-    pub const ALL: [Self; 14] = [
+    pub const ALL: [Self; 15] = [
         Self::Time,
         Self::Track,
         Self::Title,
@@ -47,6 +49,7 @@ impl ChatboxVariable {
         Self::Vram,
         Self::GpuTemp,
         Self::Session,
+        Self::HeartRate,
     ];
 
     fn name(self) -> &'static str {
@@ -65,6 +68,7 @@ impl ChatboxVariable {
             Self::Vram => "vram",
             Self::GpuTemp => "gputemp",
             Self::Session => "session",
+            Self::HeartRate => "heartrate",
         }
     }
 
@@ -161,6 +165,7 @@ impl ChatboxVariable {
             Self::Session => facts
                 .game_session_seconds
                 .map(|seconds| session(seconds, formats.show_seconds)),
+            Self::HeartRate => facts.heart_rate.map(|bpm| bpm.to_string()),
         }
     }
 }
