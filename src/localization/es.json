@@ -4001,7 +4001,8 @@
                 "game_log_unavailable": "Registro del juego no disponible",
                 "game_log_widget_failed": "Error en el widget del registro del juego",
                 "instance_widget_failed": "El widget de instancia falló",
-                "current_players_are_not_available_yet": "Los jugadores actuales aún no están disponibles"
+                "current_players_are_not_available_yet": "Los jugadores actuales aún no están disponibles",
+                "changes_not_saved_after_reset": "Los paneles se restablecieron antes de guardar el cambio. Inténtalo de nuevo."
             },
             "empty": {
                 "no_feed_rows": "Sin entradas en el feed",

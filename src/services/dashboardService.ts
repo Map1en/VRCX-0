@@ -2,6 +2,7 @@ import dashboardRepository, {
     sanitizeDashboard,
     type Dashboard
 } from '@/repositories/dashboardRepository';
+import i18n from '@/services/i18nService';
 import { DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard';
 import { useDashboardStore } from '@/state/dashboardStore';
 
@@ -35,7 +36,9 @@ async function ensureLoadedForMutation(): Promise<number> {
     const generation = dashboardGeneration;
     await ensureDashboardsLoaded();
     if (generation !== dashboardGeneration) {
-        throw new Error('Dashboard state was reset.');
+        throw new Error(
+            i18n.t('view.dashboard.error.changes_not_saved_after_reset')
+        );
     }
     return generation;
 }

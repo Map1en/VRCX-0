@@ -3986,7 +3986,8 @@
                 "game_log_unavailable": "ゲームログを取得できません",
                 "game_log_widget_failed": "ゲームログウィジェットでエラーが発生しました",
                 "instance_widget_failed": "インスタンスウィジェットでエラーが発生しました",
-                "current_players_are_not_available_yet": "現在のプレイヤー情報はまだ取得できていません"
+                "current_players_are_not_available_yet": "現在のプレイヤー情報はまだ取得できていません",
+                "changes_not_saved_after_reset": "ダッシュボードがリセットされたため、変更は保存されていません。もう一度お試しください。"
             },
             "empty": {
                 "no_feed_rows": "フィードはありません",

@@ -3997,7 +3997,8 @@
                 "game_log_unavailable": "Game Log nicht verfügbar",
                 "game_log_widget_failed": "Game-Log-Widget fehlgeschlagen",
                 "instance_widget_failed": "Instanz-Widget fehlgeschlagen",
-                "current_players_are_not_available_yet": "Aktuelle Spieler sind noch nicht verfügbar"
+                "current_players_are_not_available_yet": "Aktuelle Spieler sind noch nicht verfügbar",
+                "changes_not_saved_after_reset": "Die Dashboards wurden zurückgesetzt, bevor die Änderung gespeichert wurde. Versuche es erneut."
             },
             "empty": {
                 "no_feed_rows": "Keine Feed-Einträge",

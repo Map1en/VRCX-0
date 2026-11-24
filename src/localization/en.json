@@ -4001,7 +4001,8 @@
                 "game_log_unavailable": "Game log unavailable",
                 "game_log_widget_failed": "Game log widget failed",
                 "instance_widget_failed": "Instance widget failed",
-                "current_players_are_not_available_yet": "Current players are not available yet"
+                "current_players_are_not_available_yet": "Current players are not available yet",
+                "changes_not_saved_after_reset": "Dashboards were reset before this change was saved. Try again."
             },
             "empty": {
                 "no_feed_rows": "No feed entries",

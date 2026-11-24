@@ -4024,7 +4024,8 @@
                 "game_log_unavailable": "Záznam hry není dostupný",
                 "game_log_widget_failed": "Widget záznamu hry selhal",
                 "instance_widget_failed": "Widget instance selhal",
-                "current_players_are_not_available_yet": "Aktuální hráči zatím nejsou dostupní"
+                "current_players_are_not_available_yet": "Aktuální hráči zatím nejsou dostupní",
+                "changes_not_saved_after_reset": "Dashboardy byly resetovány dřív, než se změna uložila. Zkuste to znovu."
             },
             "empty": {
                 "no_feed_rows": "Žádné řádky zdroje",

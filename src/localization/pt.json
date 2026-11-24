@@ -3997,7 +3997,8 @@
                 "game_log_unavailable": "Game log indisponível",
                 "game_log_widget_failed": "Falha no widget do game log",
                 "instance_widget_failed": "Falha no widget de instância",
-                "current_players_are_not_available_yet": "Os jogadores atuais ainda não estão disponíveis"
+                "current_players_are_not_available_yet": "Os jogadores atuais ainda não estão disponíveis",
+                "changes_not_saved_after_reset": "Os dashboards foram redefinidos antes de a alteração ser salva. Tente novamente."
             },
             "empty": {
                 "no_feed_rows": "Nenhuma linha de feed",

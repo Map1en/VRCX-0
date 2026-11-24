@@ -3927,7 +3927,8 @@
                 "game_log_unavailable": "게임 로그를 사용할 수 없습니다",
                 "game_log_widget_failed": "게임 로그 위젯을 불러오지 못했습니다.",
                 "instance_widget_failed": "인스턴스 위젯을 불러오지 못했습니다.",
-                "current_players_are_not_available_yet": "현재 플레이어 정보를 아직 확인할 수 없습니다."
+                "current_players_are_not_available_yet": "현재 플레이어 정보를 아직 확인할 수 없습니다.",
+                "changes_not_saved_after_reset": "대시보드가 초기화되어 변경 사항이 저장되지 않았습니다. 다시 시도해 주세요."
             },
             "empty": {
                 "no_feed_rows": "피드 항목 없음",

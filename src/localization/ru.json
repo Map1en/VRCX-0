@@ -4023,7 +4023,8 @@
                 "game_log_unavailable": "Недоступный журнал игры",
                 "game_log_widget_failed": "Ошибка виджета журнала игры",
                 "instance_widget_failed": "Неверный виджет случая",
-                "current_players_are_not_available_yet": "Нынешних игроков пока нет."
+                "current_players_are_not_available_yet": "Нынешних игроков пока нет.",
+                "changes_not_saved_after_reset": "Приборные панели были сброшены до сохранения изменения. Попробуйте ещё раз."
             },
             "empty": {
                 "no_feed_rows": "Нет рядов передач",

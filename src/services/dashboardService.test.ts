@@ -20,6 +20,7 @@ vi.mock('@/repositories/dashboardRepository', async (importOriginal) => {
     };
 });
 
+import i18n from '@/services/i18nService';
 import { DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard';
 import { useDashboardStore } from '@/state/dashboardStore';
 
@@ -303,7 +304,9 @@ describe('dashboardStore persistence ownership', () => {
         resetDashboardState();
         stale.resolve([existingDashboard]);
 
-        await expect(creating).rejects.toThrow('Dashboard state was reset.');
+        await expect(creating).rejects.toThrow(
+            i18n.t('view.dashboard.error.changes_not_saved_after_reset')
+        );
         expect(mocks.saveDashboards).not.toHaveBeenCalled();
     });
 
