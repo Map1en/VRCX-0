@@ -113,21 +113,22 @@ export function UserDialogMutualGraph({
         [userId]
     );
 
-    const sigma = useMutualFriendsSigmaLifecycle({
-        graph: egoGraph,
-        layoutSettings,
-        communityIndexById,
-        namedCommunityIndexes,
-        resolvedTheme,
-        crossCommunityOnly: false,
-        selectedNodeId: '',
-        selectedNodeIdRef,
-        onSelectNode: openNode,
-        forceLabels: true,
-        minNodeSize: EGO_MIN_NODE_SIZE,
-        emphasizedNodeId: userId,
-        nodeImageUrlById
-    });
+    const { isLayoutRunning, setGraphElementRef } =
+        useMutualFriendsSigmaLifecycle({
+            graph: egoGraph,
+            layoutSettings,
+            communityIndexById,
+            namedCommunityIndexes,
+            resolvedTheme,
+            crossCommunityOnly: false,
+            selectedNodeId: '',
+            selectedNodeIdRef,
+            onSelectNode: openNode,
+            forceLabels: true,
+            minNodeSize: EGO_MIN_NODE_SIZE,
+            emphasizedNodeId: userId,
+            nodeImageUrlById
+        });
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-1.5">
@@ -138,10 +139,7 @@ export function UserDialogMutualGraph({
                 />
             ) : null}
             <div className="relative min-h-0 w-full flex-1 overflow-hidden rounded-md border">
-                <div
-                    ref={sigma.setGraphElementRef}
-                    className="absolute inset-0"
-                />
+                <div ref={setGraphElementRef} className="absolute inset-0" />
                 <Popover>
                     <HintTooltip
                         label={t('view.charts.mutual_friend.settings.title')}
@@ -186,7 +184,7 @@ export function UserDialogMutualGraph({
                         </Button>
                     </PopoverContent>
                 </Popover>
-                {sigma.isLayoutRunning ? (
+                {isLayoutRunning ? (
                     <div className="absolute inset-0 flex items-center justify-center">
                         <Spinner className="text-muted-foreground size-4" />
                     </div>

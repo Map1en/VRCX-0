@@ -13,8 +13,15 @@ import {
 import { useMutualFriendsPageState } from './mutual-friends/useMutualFriendsPageState';
 
 export function MutualFriendsPage() {
-    const { actions, exclusions, fetch, graph, layout, selection, view } =
-        useMutualFriendsPageState();
+    const {
+        actions,
+        exclusions,
+        fetch,
+        graph: { setGraphElementRef, ...graph },
+        layout,
+        selection,
+        view
+    } = useMutualFriendsPageState();
     const roomScanRunning = useRoomMutualScanStore((state) => state.running);
 
     const hasActiveFilters = Boolean(
@@ -37,10 +44,7 @@ export function MutualFriendsPage() {
                 onFetch={actions.fetchGraph}
             />
             <div className="relative min-h-0 flex-1 overflow-hidden">
-                <div
-                    ref={graph.setGraphElementRef}
-                    className="absolute inset-0"
-                />
+                <div ref={setGraphElementRef} className="absolute inset-0" />
 
                 <MutualFriendsHud
                     baseNodeCount={graph.baseNodeCount}

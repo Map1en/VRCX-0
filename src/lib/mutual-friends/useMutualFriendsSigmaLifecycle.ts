@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildMutualFriendsGraphTheme } from '@/lib/mutual-friends/mutualFriendsPalette';
@@ -67,31 +74,23 @@ export function useMutualFriendsSigmaLifecycle({
     const openNodeRef = useRef(onOpenNode);
     const [renderRetryToken, setRenderRetryToken] = useState(0);
     const [isLayoutRunning, setIsLayoutRunning] = useState(false);
-
-    selectNodeRef.current = onSelectNode;
-    openNodeRef.current = onOpenNode;
+    const [containerElement, setContainerElement] =
+        useState<HTMLElement | null>(null);
 
     const isDarkMode = resolvedTheme === 'dark';
     const theme = useMemo(
-        () => buildMutualFriendsGraphTheme(isDarkMode, containerRef.current),
-        [isDarkMode]
+        () => buildMutualFriendsGraphTheme(isDarkMode, containerElement),
+        [containerElement, isDarkMode]
     );
     const themeRef = useRef(theme);
-    themeRef.current = theme;
     const crossCommunityOnlyRef = useRef(crossCommunityOnly);
-    crossCommunityOnlyRef.current = crossCommunityOnly;
     const nodeImageUrlByIdRef = useRef(nodeImageUrlById);
-    nodeImageUrlByIdRef.current = nodeImageUrlById;
-    const hoverCardStringsRef = useRef({
-        connections: '',
-        lastFetched: '',
-        unavailable: ''
-    });
-    hoverCardStringsRef.current = {
+    const hoverCardStrings = {
         connections: t('view.charts.label.connections'),
         lastFetched: t('view.charts.mutual_friend.context_menu.last_fetched'),
         unavailable: t('view.charts.mutual_friend.label.mutuals_unavailable')
     };
+    const hoverCardStringsRef = useRef(hoverCardStrings);
 
     const {
         layoutIterations,
@@ -100,7 +99,16 @@ export function useMutualFriendsSigmaLifecycle({
         communitySeparation
     } = layoutSettings;
     const layoutSettingsRef = useRef(layoutSettings);
-    layoutSettingsRef.current = layoutSettings;
+
+    useLayoutEffect(() => {
+        selectNodeRef.current = onSelectNode;
+        openNodeRef.current = onOpenNode;
+        themeRef.current = theme;
+        crossCommunityOnlyRef.current = crossCommunityOnly;
+        nodeImageUrlByIdRef.current = nodeImageUrlById;
+        hoverCardStringsRef.current = hoverCardStrings;
+        layoutSettingsRef.current = layoutSettings;
+    });
 
     const teardownGraph = useCallback(() => {
         const controller = controllerRef.current;
@@ -116,6 +124,7 @@ export function useMutualFriendsSigmaLifecycle({
                 teardownGraph();
             }
             containerRef.current = node;
+            setContainerElement(node);
         },
         [teardownGraph]
     );
