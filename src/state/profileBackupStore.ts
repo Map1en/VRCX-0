@@ -11,7 +11,7 @@ import type {
     ProfileRestoreResult,
     ProfileRestoreRollbackState,
     ProfileRestoreValidation
-} from '@/services/profileBackupService';
+} from '@/platform/tauri/bindings';
 
 function readNotifiedOutcomeRevision(): number {
     const revision = Number.parseInt(

@@ -8,7 +8,7 @@ import type {
     ProfileRestoreResult,
     ProfileRestoreRollbackState,
     ProfileRestoreValidation
-} from '@/services/profileBackupService';
+} from '@/platform/tauri/bindings';
 
 import { useProfileBackupStore } from './profileBackupStore';
 
