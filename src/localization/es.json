@@ -4002,7 +4002,10 @@
                 "game_log_widget_failed": "Error en el widget del registro del juego",
                 "instance_widget_failed": "El widget de instancia falló",
                 "current_players_are_not_available_yet": "Los jugadores actuales aún no están disponibles",
-                "changes_not_saved_after_reset": "Los paneles se restablecieron antes de guardar el cambio. Inténtalo de nuevo."
+                "changes_not_saved_after_reset": "Los paneles se restablecieron antes de guardar el cambio. Inténtalo de nuevo.",
+                "dashboard_not_found": "Este panel ya no existe",
+                "create_produced_invalid_config": "No se pudo crear el panel porque su configuración no es válida.",
+                "update_produced_invalid_config": "No se pudo guardar el panel porque su configuración no es válida."
             },
             "empty": {
                 "no_feed_rows": "Sin entradas en el feed",

@@ -207,7 +207,7 @@ describe('dashboardStore persistence ownership', () => {
         });
 
         await expect(updateDashboard('missing', {})).rejects.toThrow(
-            'Dashboard not found.'
+            i18n.t('view.dashboard.error.dashboard_not_found')
         );
         expect(mocks.saveDashboards).not.toHaveBeenCalled();
     });

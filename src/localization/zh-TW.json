@@ -3991,7 +3991,10 @@
                 "game_log_widget_failed": "遊戲紀錄小工具失敗",
                 "instance_widget_failed": "房間小工具失敗",
                 "current_players_are_not_available_yet": "目前用戶暫無法使用",
-                "changes_not_saved_after_reset": "儀錶板已重設，本次變更未儲存，請重試"
+                "changes_not_saved_after_reset": "儀錶板已重設，本次變更未儲存，請重試",
+                "dashboard_not_found": "此儀表板已不存在",
+                "create_produced_invalid_config": "儀錶板設定無效，無法建立",
+                "update_produced_invalid_config": "儀錶板設定無效，無法儲存"
             },
             "empty": {
                 "no_feed_rows": "沒有動態項目",

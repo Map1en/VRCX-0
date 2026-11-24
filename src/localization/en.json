@@ -4002,7 +4002,10 @@
                 "game_log_widget_failed": "Game log widget failed",
                 "instance_widget_failed": "Instance widget failed",
                 "current_players_are_not_available_yet": "Current players are not available yet",
-                "changes_not_saved_after_reset": "Dashboards were reset before this change was saved. Try again."
+                "changes_not_saved_after_reset": "Dashboards were reset before this change was saved. Try again.",
+                "dashboard_not_found": "This dashboard no longer exists",
+                "create_produced_invalid_config": "Couldn't create the dashboard because its settings are invalid.",
+                "update_produced_invalid_config": "Couldn't save the dashboard because its settings are invalid."
             },
             "empty": {
                 "no_feed_rows": "No feed entries",

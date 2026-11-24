@@ -3998,7 +3998,10 @@
                 "game_log_widget_failed": "Game-Log-Widget fehlgeschlagen",
                 "instance_widget_failed": "Instanz-Widget fehlgeschlagen",
                 "current_players_are_not_available_yet": "Aktuelle Spieler sind noch nicht verfügbar",
-                "changes_not_saved_after_reset": "Die Dashboards wurden zurückgesetzt, bevor die Änderung gespeichert wurde. Versuche es erneut."
+                "changes_not_saved_after_reset": "Die Dashboards wurden zurückgesetzt, bevor die Änderung gespeichert wurde. Versuche es erneut.",
+                "dashboard_not_found": "Dieses Dashboard existiert nicht mehr",
+                "create_produced_invalid_config": "Das Dashboard konnte nicht erstellt werden, weil seine Einstellungen ungültig sind.",
+                "update_produced_invalid_config": "Das Dashboard konnte nicht gespeichert werden, weil seine Einstellungen ungültig sind."
             },
             "empty": {
                 "no_feed_rows": "Keine Feed-Einträge",

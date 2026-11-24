@@ -3987,7 +3987,10 @@
                 "game_log_widget_failed": "ゲームログウィジェットでエラーが発生しました",
                 "instance_widget_failed": "インスタンスウィジェットでエラーが発生しました",
                 "current_players_are_not_available_yet": "現在のプレイヤー情報はまだ取得できていません",
-                "changes_not_saved_after_reset": "ダッシュボードがリセットされたため、変更は保存されていません。もう一度お試しください。"
+                "changes_not_saved_after_reset": "ダッシュボードがリセットされたため、変更は保存されていません。もう一度お試しください。",
+                "dashboard_not_found": "このダッシュボードは存在しません",
+                "create_produced_invalid_config": "ダッシュボードの設定が無効なため、作成できませんでした。",
+                "update_produced_invalid_config": "ダッシュボードの設定が無効なため、保存できませんでした。"
             },
             "empty": {
                 "no_feed_rows": "フィードはありません",

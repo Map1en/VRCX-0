@@ -3991,7 +3991,10 @@
                 "game_log_widget_failed": "游戏日志小组件加载失败",
                 "instance_widget_failed": "房间小组件加载失败",
                 "current_players_are_not_available_yet": "当前玩家暂不可用",
-                "changes_not_saved_after_reset": "仪表板已重置，本次修改未保存，请重试"
+                "changes_not_saved_after_reset": "仪表板已重置，本次修改未保存，请重试",
+                "dashboard_not_found": "该仪表板已不存在",
+                "create_produced_invalid_config": "仪表板配置无效，无法创建",
+                "update_produced_invalid_config": "仪表板配置无效，无法保存"
             },
             "empty": {
                 "no_feed_rows": "没有动态",

@@ -4024,7 +4024,10 @@
                 "game_log_widget_failed": "Ошибка виджета журнала игры",
                 "instance_widget_failed": "Неверный виджет случая",
                 "current_players_are_not_available_yet": "Нынешних игроков пока нет.",
-                "changes_not_saved_after_reset": "Приборные панели были сброшены до сохранения изменения. Попробуйте ещё раз."
+                "changes_not_saved_after_reset": "Приборные панели были сброшены до сохранения изменения. Попробуйте ещё раз.",
+                "dashboard_not_found": "Эта панель управления больше не существует",
+                "create_produced_invalid_config": "Не удалось создать приборную панель: недопустимые настройки.",
+                "update_produced_invalid_config": "Не удалось сохранить приборную панель: недопустимые настройки."
             },
             "empty": {
                 "no_feed_rows": "Нет рядов передач",

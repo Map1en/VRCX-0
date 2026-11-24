@@ -77,7 +77,7 @@ export async function createDashboard(
     });
     if (!nextDashboard) {
         throw new Error(
-            'Dashboard creation produced an invalid configuration.'
+            i18n.t('view.dashboard.error.create_produced_invalid_config')
         );
     }
 
@@ -101,7 +101,7 @@ export async function updateDashboard(
     const dashboards = useDashboardStore.getState().dashboards;
     const index = dashboards.findIndex((dashboard) => dashboard.id === id);
     if (index < 0) {
-        throw new Error('Dashboard not found.');
+        throw new Error(i18n.t('view.dashboard.error.dashboard_not_found'));
     }
 
     const nextDashboard = sanitizeDashboard({
@@ -110,7 +110,9 @@ export async function updateDashboard(
         id
     });
     if (!nextDashboard) {
-        throw new Error('Dashboard update produced an invalid configuration.');
+        throw new Error(
+            i18n.t('view.dashboard.error.update_produced_invalid_config')
+        );
     }
 
     const nextDashboards = dashboards.slice();

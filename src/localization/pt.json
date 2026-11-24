@@ -3998,7 +3998,10 @@
                 "game_log_widget_failed": "Falha no widget do game log",
                 "instance_widget_failed": "Falha no widget de instância",
                 "current_players_are_not_available_yet": "Os jogadores atuais ainda não estão disponíveis",
-                "changes_not_saved_after_reset": "Os dashboards foram redefinidos antes de a alteração ser salva. Tente novamente."
+                "changes_not_saved_after_reset": "Os dashboards foram redefinidos antes de a alteração ser salva. Tente novamente.",
+                "dashboard_not_found": "Este dashboard não existe mais",
+                "create_produced_invalid_config": "Não foi possível criar o dashboard porque as configurações são inválidas.",
+                "update_produced_invalid_config": "Não foi possível salvar o dashboard porque as configurações são inválidas."
             },
             "empty": {
                 "no_feed_rows": "Nenhuma linha de feed",
