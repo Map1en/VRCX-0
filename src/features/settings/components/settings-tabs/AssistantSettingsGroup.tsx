@@ -8,11 +8,12 @@ import {
     type AssistantRuntimeSelection,
     type PlaybookMode
 } from '@/platform/tauri/bindings';
-import { toast } from '@/services/toastService';
 import {
-    openLlmEndpointsManager,
-    useLlmEndpointsStore
-} from '@/state/llmEndpointsStore';
+    loadLlmEndpoints,
+    openLlmEndpointsManager
+} from '@/services/llmEndpointsService';
+import { toast } from '@/services/toastService';
+import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Select,
@@ -47,7 +48,6 @@ export function AssistantSettingsGroup({
 }: AssistantSettingsGroupProps) {
     const { t } = useTranslation();
     const endpoints = useLlmEndpointsStore((state) => state.endpoints);
-    const loadEndpoints = useLlmEndpointsStore((state) => state.load);
     const [selection, setSelection] =
         useState<AssistantRuntimeSelection>(EMPTY_SELECTION);
     const [followCustomProxy, setFollowCustomProxy] = useState(true);
@@ -62,7 +62,7 @@ export function AssistantSettingsGroup({
             return;
         }
         let stale = false;
-        loadEndpoints()
+        loadLlmEndpoints()
             .catch(() => {})
             .finally(() => {
                 if (!stale) {
@@ -88,7 +88,7 @@ export function AssistantSettingsGroup({
         return () => {
             stale = true;
         };
-    }, [active, loadEndpoints]);
+    }, [active]);
 
     async function updateSelection(patch: Partial<AssistantRuntimeSelection>) {
         setSelection((current) => ({ ...current, ...patch }));

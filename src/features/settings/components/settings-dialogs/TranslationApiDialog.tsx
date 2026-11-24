@@ -16,7 +16,7 @@ import type {
     TranslationProvider
 } from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/entityMediaService';
-import { openLlmEndpointsManager } from '@/state/llmEndpointsStore';
+import { openLlmEndpointsManager } from '@/services/llmEndpointsService';
 import { SecretInput } from '@/ui/secret-input';
 import { Button } from '@/ui/shadcn/button';
 import {

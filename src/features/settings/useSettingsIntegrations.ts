@@ -15,6 +15,7 @@ import {
     type LlmEndpointDto
 } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
+import { loadLlmEndpoints } from '@/services/llmEndpointsService';
 import {
     setDiscordBoolPreference,
     setTranslationApiConfigPreference,
@@ -222,10 +223,7 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
     }
 
     function openTranslationApiDialog() {
-        useLlmEndpointsStore
-            .getState()
-            .load()
-            .catch(() => {});
+        loadLlmEndpoints().catch(() => {});
         setTranslationDefaultModel(undefined);
         loadTranslationDefaultModel().catch(() => {});
         const assignment = translationAssignment({

@@ -10,6 +10,12 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import type { LlmEndpointDto } from '@/platform/tauri/bindings';
+import {
+    deleteLlmEndpoint,
+    detectLlmEndpointModels,
+    loadLlmEndpoints,
+    upsertLlmEndpoint
+} from '@/services/llmEndpointsService';
 import { toast } from '@/services/toastService';
 import { mergeModels, useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import { SecretInput } from '@/ui/secret-input';
@@ -120,12 +126,6 @@ export function LlmEndpointsDialog({
     const { t } = useTranslation();
     const endpoints = useLlmEndpointsStore((state) => state.endpoints);
     const loading = useLlmEndpointsStore((state) => state.loading);
-    const load = useLlmEndpointsStore((state) => state.load);
-    const upsert = useLlmEndpointsStore((state) => state.upsert);
-    const deleteEndpoint = useLlmEndpointsStore(
-        (state) => state.deleteEndpoint
-    );
-    const detectModels = useLlmEndpointsStore((state) => state.detectModels);
     const [view, setView] = useState<'list' | 'edit'>('list');
     const [draft, setDraft] = useState<EndpointDraft>(
         createEmptyLlmEndpointDraft
@@ -169,7 +169,7 @@ export function LlmEndpointsDialog({
             return;
         }
         setView('list');
-        load().catch((error: unknown) => {
+        loadLlmEndpoints().catch((error: unknown) => {
             toast.add({
                 type: 'error',
                 title:
@@ -181,7 +181,7 @@ export function LlmEndpointsDialog({
         return () => {
             detectionRevision.current += 1;
         };
-    }, [open, load, t]);
+    }, [open, t]);
 
     function closeEditView() {
         detectionRevision.current += 1;
@@ -232,7 +232,7 @@ export function LlmEndpointsDialog({
         const revision = ++detectionRevision.current;
         try {
             const useSavedEndpoint = shouldUseSavedLlmEndpointForDetect(target);
-            const result = await detectModels({
+            const result = await detectLlmEndpointModels({
                 id: useSavedEndpoint ? target.id : null,
                 baseUrl: useSavedEndpoint
                     ? null
@@ -291,7 +291,7 @@ export function LlmEndpointsDialog({
         setSaving(true);
         try {
             const { models } = target;
-            await upsert({
+            await upsertLlmEndpoint({
                 id: target.id,
                 name: target.name.trim(),
                 baseUrl: target.baseUrl.trim(),
@@ -353,7 +353,7 @@ export function LlmEndpointsDialog({
 
     async function deleteEndpointWithFeedback(endpoint: LlmEndpointDto) {
         try {
-            await deleteEndpoint(endpoint.id);
+            await deleteLlmEndpoint(endpoint.id);
             toast.add({
                 type: 'success',
                 title: t('view.tools.llm_endpoints.deleted')

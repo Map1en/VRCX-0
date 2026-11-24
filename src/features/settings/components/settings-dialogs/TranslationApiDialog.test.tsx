@@ -28,8 +28,11 @@ vi.mock('@/services/entityMediaService', () => ({
     openExternalLink: vi.fn()
 }));
 
+vi.mock('@/services/llmEndpointsService', () => ({
+    openLlmEndpointsManager: vi.fn()
+}));
+
 vi.mock('@/state/llmEndpointsStore', () => ({
-    openLlmEndpointsManager: vi.fn(),
     useLlmEndpointsStore: (
         selector: (state: { endpoints: LlmEndpointDto[] }) => unknown
     ) => selector({ endpoints: mocks.endpoints })

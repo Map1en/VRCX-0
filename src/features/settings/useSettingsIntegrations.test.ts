@@ -38,8 +38,7 @@ vi.mock('@/services/toastService', () => ({
 
 vi.mock('@/state/llmEndpointsStore', () => {
     const getState = () => ({
-        endpoints: mocks.endpoints,
-        load: mocks.load
+        endpoints: mocks.endpoints
     });
     return {
         useLlmEndpointsStore: Object.assign(
@@ -49,6 +48,10 @@ vi.mock('@/state/llmEndpointsStore', () => {
         )
     };
 });
+
+vi.mock('@/services/llmEndpointsService', () => ({
+    loadLlmEndpoints: mocks.load
+}));
 
 import { useSettingsIntegrations } from './useSettingsIntegrations';
 

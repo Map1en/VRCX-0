@@ -26,6 +26,7 @@ import {
     type PlaybookMode,
     type Session
 } from '@/platform/tauri/bindings';
+import { loadLlmEndpoints } from '@/services/llmEndpointsService';
 import { toast } from '@/services/toastService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
@@ -116,7 +117,6 @@ export function AssistantDialog() {
     const navigate = useNavigate();
     const runtimeStatus = useAssistantRuntimeStatus();
     const endpoints = useLlmEndpointsStore((state) => state.endpoints);
-    const loadEndpoints = useLlmEndpointsStore((state) => state.load);
     const [runtimeSelection, setRuntimeSelection] =
         useState<AssistantRuntimeSelection>(DEFAULT_RUNTIME_SELECTION);
     const [assistantReasoningEffort, setAssistantReasoningEffort] =
@@ -179,7 +179,7 @@ export function AssistantDialog() {
     useEffect(() => {
         if (open) {
             refreshSessions();
-            loadEndpoints()
+            loadLlmEndpoints()
                 .catch(() => {})
                 .finally(() => setEndpointsLoaded(true));
             commands
@@ -187,7 +187,7 @@ export function AssistantDialog() {
                 .then((effort) => setAssistantReasoningEffort(effort))
                 .catch(() => {});
         }
-    }, [loadEndpoints, open]);
+    }, [open]);
 
     useEffect(() => {
         if (open && activeSessionId && !messages) {
@@ -250,7 +250,7 @@ export function AssistantDialog() {
     }
 
     function refreshSelectableModels() {
-        loadEndpoints().catch(() => {});
+        loadLlmEndpoints().catch(() => {});
     }
 
     async function updateReasoningEffort(effort: string) {
