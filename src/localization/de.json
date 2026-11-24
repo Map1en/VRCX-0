@@ -1431,15 +1431,12 @@
             "backToSavedAccounts": "Zurück zu gespeicherten Konten",
             "proxy_settings": "Proxy-Einstellungen",
             "proxy_description": "Lege den Proxy-Server fest, der vor der Anmeldung verwendet wird. Unterstützt 127.0.0.1:7890, http://127.0.0.1:7890 und socks5://127.0.0.1:7890.",
+            "more_options": "Weitere Optionen",
             "field": {
                 "username": "Benutzername oder E-Mail",
                 "password": "Passwort",
                 "saveCredentials": "Konto speichern",
                 "saveCredentialsHint": "Meldet dich automatisch wieder an, wenn die Sitzung abbricht"
-            },
-            "placeholder": {
-                "account": "VRChat-Konto",
-                "password": "VRChat-Passwort"
             },
             "validation": {
                 "username_required": "Benutzername oder E-Mail ist erforderlich",
@@ -1456,8 +1453,7 @@
             "qr": {
                 "button": "Mit QR-Code anmelden",
                 "title": "Mit QR-Code anmelden",
-                "use_password": "Stattdessen Passwort verwenden",
-                "requirements": "Erfordert ein Handy, auf dem du bei VRChat angemeldet bist. Bei der QR-Anmeldung wird kein Passwort gespeichert – bricht die Sitzung ab, musst du erneut scannen."
+                "use_password": "Stattdessen Passwort verwenden"
             },
             "saved_group": {
                 "with_password": "Passwort gespeichert",

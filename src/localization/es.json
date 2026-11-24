@@ -1431,15 +1431,12 @@
             "backToSavedAccounts": "Volver a las cuentas guardadas",
             "proxy_settings": "Ajustes del proxy",
             "proxy_description": "Servidor proxy usado para conectarse a VRChat, incluido el inicio de sesión. Admite 127.0.0.1:7890, http://127.0.0.1:7890 y socks5://127.0.0.1:7890.",
+            "more_options": "Más opciones",
             "field": {
                 "username": "Nombre de usuario o correo electrónico",
                 "password": "Contraseña",
                 "saveCredentials": "Guardar cuenta",
                 "saveCredentialsHint": "Vuelve a iniciar sesión automáticamente si se cae la sesión"
-            },
-            "placeholder": {
-                "account": "Cuenta de VRChat",
-                "password": "Contraseña de VRChat"
             },
             "validation": {
                 "username_required": "Se requiere el nombre de usuario o el correo electrónico",
@@ -1456,8 +1453,7 @@
             "qr": {
                 "button": "Iniciar sesión con código QR",
                 "title": "Iniciar sesión con código QR",
-                "use_password": "Usar la contraseña",
-                "requirements": "Necesitas un móvil con la sesión de VRChat iniciada. El inicio con QR no guarda la contraseña, así que tendrás que volver a escanear si se cae la sesión."
+                "use_password": "Usar la contraseña"
             },
             "saved_group": {
                 "with_password": "Contraseña guardada",

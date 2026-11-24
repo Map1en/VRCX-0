@@ -19,16 +19,16 @@ export function LoginAccountExplainer() {
     const { t } = useTranslation();
 
     return (
-        <Collapsible className="rounded-lg border">
+        <Collapsible className="flex flex-col items-center">
             <CollapsibleTrigger
                 render={
                     <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="group text-muted-foreground w-full justify-between aria-expanded:bg-transparent"
+                        size="xs"
+                        className="group text-muted-foreground max-w-full aria-expanded:bg-transparent"
                     >
-                        <span className="min-w-0 flex-1 truncate text-left">
+                        <span className="min-w-0 truncate">
                             {t('view.login.account_explainer.title')}
                         </span>
                         <ChevronDownIcon
@@ -38,8 +38,8 @@ export function LoginAccountExplainer() {
                     </Button>
                 }
             />
-            <CollapsibleContent>
-                <ul className="text-muted-foreground list-disc space-y-1 px-3 pt-1 pb-3 pl-7 text-xs leading-relaxed">
+            <CollapsibleContent className="w-full">
+                <ul className="text-muted-foreground list-disc space-y-1 rounded-lg border px-3 py-2 pl-7 text-xs leading-relaxed">
                     {EXPLAINER_KEYS.map((key) => (
                         <li key={key}>{t(key)}</li>
                     ))}

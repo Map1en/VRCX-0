@@ -1,3 +1,4 @@
+import { GlobeIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { getLanguageName, languageCodes } from '@/localization/index';
@@ -36,7 +37,11 @@ export function LoginPageHeader({
                     }
                 }}
             >
-                <SelectTrigger size="sm" className="w-36">
+                <SelectTrigger
+                    size="sm"
+                    className="text-muted-foreground w-auto border-transparent bg-transparent shadow-none"
+                >
+                    <GlobeIcon />
                     <SelectValue>{getLanguageName(locale || 'en')}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>

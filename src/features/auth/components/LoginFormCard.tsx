@@ -1,23 +1,18 @@
-import { ArrowLeftIcon, QrCodeIcon } from 'lucide-react';
+import { ArrowLeftIcon, InfoIcon, QrCodeIcon } from 'lucide-react';
 import type { Dispatch, FormEventHandler, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { cn } from '@/lib/utils';
 import type { SavedCredentialRecord } from '@/repositories/authRepository';
 import { userImage } from '@/services/entityMediaService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import { Card, CardContent, CardHeader } from '@/ui/shadcn/card';
 import { Checkbox } from '@/ui/shadcn/checkbox';
-import {
-    Field,
-    FieldContent,
-    FieldDescription,
-    FieldError,
-    FieldGroup,
-    FieldLabel
-} from '@/ui/shadcn/field';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { getLoginUserDisplayName } from '../loginDisplay';
 
@@ -71,9 +66,14 @@ export function LoginFormCard({
         : '';
 
     return (
-        <Card className="flex flex-1 flex-col gap-3 pt-2">
-            <CardHeader>
-                {showBackToSavedAccounts ? (
+        <Card
+            className={cn(
+                'flex flex-1 flex-col gap-3',
+                showBackToSavedAccounts && 'pt-2'
+            )}
+        >
+            {showBackToSavedAccounts ? (
+                <CardHeader>
                     <Button
                         type="button"
                         variant="link"
@@ -83,11 +83,8 @@ export function LoginFormCard({
                         <ArrowLeftIcon data-icon="inline-start" />
                         {t('view.login.backToSavedAccounts')}
                     </Button>
-                ) : null}
-                <CardTitle className="text-center">
-                    {t('view.login.login')}
-                </CardTitle>
-            </CardHeader>
+                </CardHeader>
+            ) : null}
             <CardContent className="flex flex-1 flex-col gap-4">
                 {preparedAccount ? (
                     <div className="bg-muted/40 flex items-center gap-3 rounded-lg border px-3 py-2.5">
@@ -128,9 +125,6 @@ export function LoginFormCard({
                                 }
                                 autoComplete="username"
                                 disabled={busy}
-                                placeholder={t(
-                                    'view.login.placeholder.account'
-                                )}
                                 value={loginForm.username}
                                 onChange={(event) => {
                                     onCancelAutoLogin();
@@ -149,9 +143,19 @@ export function LoginFormCard({
                             <FieldError>{loginErrors.username}</FieldError>
                         </Field>
                         <Field data-invalid={Boolean(loginErrors.password)}>
-                            <FieldLabel htmlFor="react-login-password">
-                                {t('view.login.field.password')}
-                            </FieldLabel>
+                            <div className="flex items-center justify-between gap-2">
+                                <FieldLabel htmlFor="react-login-password">
+                                    {t('view.login.field.password')}
+                                </FieldLabel>
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="text-muted-foreground h-auto p-0 text-xs"
+                                    onClick={onOpenForgotPassword}
+                                >
+                                    {t('view.login.forgotPassword')}
+                                </Button>
+                            </div>
                             <Input
                                 id="react-login-password"
                                 aria-invalid={
@@ -160,9 +164,6 @@ export function LoginFormCard({
                                 type="password"
                                 autoComplete="current-password"
                                 disabled={busy}
-                                placeholder={t(
-                                    'view.login.placeholder.password'
-                                )}
                                 value={loginForm.password}
                                 onChange={(event) => {
                                     onCancelAutoLogin();
@@ -195,14 +196,29 @@ export function LoginFormCard({
                                 }));
                             }}
                         />
-                        <FieldContent>
+                        <div className="flex items-center gap-1.5">
                             <FieldLabel htmlFor="react-login-save-credentials">
                                 {t('view.login.field.saveCredentials')}
                             </FieldLabel>
-                            <FieldDescription className="text-xs">
-                                {t('view.login.field.saveCredentialsHint')}
-                            </FieldDescription>
-                        </FieldContent>
+                            <Tooltip>
+                                <TooltipTrigger
+                                    render={
+                                        <button
+                                            type="button"
+                                            aria-label={t(
+                                                'view.login.field.saveCredentialsHint'
+                                            )}
+                                            className="text-muted-foreground hover:text-foreground inline-flex"
+                                        />
+                                    }
+                                >
+                                    <InfoIcon className="size-3.5" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {t('view.login.field.saveCredentialsHint')}
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
                     </Field>
 
                     <Button
@@ -237,28 +253,14 @@ export function LoginFormCard({
                     <QrCodeIcon data-icon="inline-start" />
                     {t('view.login.qr.button')}
                 </Button>
-                <p className="text-muted-foreground -mt-2 text-center text-xs leading-relaxed">
-                    {t('view.login.qr.requirements')}
-                </p>
-                <div className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
-                    <Button
-                        type="button"
-                        variant="link"
-                        className="text-muted-foreground h-auto p-0 text-xs"
-                        onClick={onOpenRegister}
-                    >
-                        {t('view.login.register')}
-                    </Button>
-                    <span aria-hidden="true">·</span>
-                    <Button
-                        type="button"
-                        variant="link"
-                        className="text-muted-foreground h-auto p-0 text-xs"
-                        onClick={onOpenForgotPassword}
-                    >
-                        {t('view.login.forgotPassword')}
-                    </Button>
-                </div>
+                <Button
+                    type="button"
+                    variant="link"
+                    className="text-muted-foreground mx-auto h-auto p-0 text-xs"
+                    onClick={onOpenRegister}
+                >
+                    {t('view.login.register')}
+                </Button>
             </CardContent>
         </Card>
     );

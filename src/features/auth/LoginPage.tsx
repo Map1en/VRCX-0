@@ -1,9 +1,10 @@
-import { TriangleAlertIcon } from 'lucide-react';
+import { DatabaseIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePendingLoginAccountStore } from '@/state/pendingLoginAccountStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
+import { Button } from '@/ui/shadcn/button';
 
 import { DeleteSavedAccountDialog } from './components/DeleteSavedAccountDialog';
 import { LoginAccountExplainer } from './components/LoginAccountExplainer';
@@ -60,10 +61,22 @@ export function LoginPage() {
         >
             <div className="flex flex-1 items-center justify-center">
                 <div className="flex w-full max-w-lg flex-col gap-4">
-                    <LoginPageHeader
-                        locale={header.locale}
-                        onLanguageChange={header.onLanguageChange}
-                    />
+                    <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                            <LoginPageHeader
+                                locale={header.locale}
+                                onLanguageChange={header.onLanguageChange}
+                            />
+                        </div>
+                        <LoginPageUtilities
+                            disabled={utilities.disabled}
+                            isValidatingRestore={utilities.isValidatingRestore}
+                            onOpenProxyDialog={utilities.onOpenProxyDialog}
+                            onRestoreProfileBackup={
+                                utilities.onRestoreProfileBackup
+                            }
+                        />
+                    </div>
                     <LoginServerStatusAlert
                         indicator={serverStatus.indicator}
                         status={serverStatus.status}
@@ -150,18 +163,19 @@ export function LoginPage() {
                     {!showQrLogin && !showSavedAccounts ? (
                         <LoginAccountExplainer />
                     ) : null}
-                    <LoginPageUtilities
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground mx-auto"
                         disabled={utilities.disabled}
-                        isValidatingRestore={utilities.isValidatingRestore}
-                        onOpenProxyDialog={utilities.onOpenProxyDialog}
-                        onRestoreProfileBackup={
-                            utilities.onRestoreProfileBackup
-                        }
-                        showLegacyMigration={utilities.showLegacyMigration}
-                        onMigrateLegacyVrcxData={
-                            utilities.onMigrateLegacyVrcxData
-                        }
-                    />
+                        onClick={utilities.onMigrateLegacyVrcxData}
+                    >
+                        <DatabaseIcon data-icon="inline-start" />
+                        {t(
+                            'view.settings.advanced.advanced.database_cleanup.legacy_migration'
+                        )}
+                    </Button>
                 </div>
             </div>
             <LoginPageFooter

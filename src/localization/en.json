@@ -1431,15 +1431,12 @@
             "backToSavedAccounts": "Back to saved accounts",
             "proxy_settings": "Proxy Settings",
             "proxy_description": "The proxy server used to connect to VRChat, including sign-in. Supports 127.0.0.1:7890, http://127.0.0.1:7890, and socks5://127.0.0.1:7890.",
+            "more_options": "More options",
             "field": {
                 "username": "Username or Email",
                 "password": "Password",
                 "saveCredentials": "Save Account",
                 "saveCredentialsHint": "Signs you back in automatically if the session drops"
-            },
-            "placeholder": {
-                "account": "VRChat account",
-                "password": "VRChat password"
             },
             "validation": {
                 "username_required": "Username or email is required",
@@ -1456,8 +1453,7 @@
             "qr": {
                 "button": "Sign in with QR code",
                 "title": "Sign In with QR Code",
-                "use_password": "Use password instead",
-                "requirements": "Requires a phone signed in to VRChat. QR sign-in doesn’t save your password, so you’ll need to scan again if the session drops."
+                "use_password": "Use password instead"
             },
             "saved_group": {
                 "with_password": "Password saved",

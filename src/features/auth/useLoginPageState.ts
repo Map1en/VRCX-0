@@ -41,10 +41,7 @@ import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 
 import type { QrLoginView } from './components/QrLoginCard';
-import {
-    getLoginUserDisplayName as getUserDisplayName,
-    shouldShowLegacyMigrationAction
-} from './loginDisplay';
+import { getLoginUserDisplayName as getUserDisplayName } from './loginDisplay';
 import { useLoginAutoLogin } from './useLoginAutoLogin';
 
 type LoginFormState = {
@@ -476,10 +473,6 @@ export function useLoginPageState() {
 
     const savedAccounts = snapshot?.savedCredentialsList ?? [];
     const hasSavedAccounts = !isLoading && savedAccounts.length > 0;
-    const showLegacyMigrationAction = shouldShowLegacyMigrationAction(
-        isLoading,
-        savedAccounts
-    );
 
     return {
         activeSavedUserId,
@@ -522,7 +515,6 @@ export function useLoginPageState() {
         setProxyEnabledInput,
         setProxyInput,
         startQrLogin,
-        testProxySettings,
-        showLegacyMigrationAction
+        testProxySettings
     };
 }

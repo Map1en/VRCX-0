@@ -147,8 +147,7 @@ function controllerValue(hasSavedAccounts: boolean) {
             isValidatingRestore: false,
             onMigrateLegacyVrcxData: noop,
             onOpenProxyDialog: noop,
-            onRestoreProfileBackup: mocks.restore,
-            showLegacyMigration: false
+            onRestoreProfileBackup: mocks.restore
         }
     };
 }

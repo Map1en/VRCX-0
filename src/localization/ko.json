@@ -1365,15 +1365,12 @@
             "backToSavedAccounts": "저장된 계정 목록으로 돌아가기",
             "proxy_settings": "프록시 설정",
             "proxy_description": "로그인을 포함해 VRChat에 연결할 때 사용할 프록시 서버입니다. 127.0.0.1:7890, http://127.0.0.1:7890, socks5://127.0.0.1:7890 형식을 지원합니다.",
+            "more_options": "더보기",
             "field": {
                 "username": "사용자 이름 또는 이메일",
                 "password": "비밀번호",
                 "saveCredentials": "로그인 정보 저장",
                 "saveCredentialsHint": "연결이 끊기면 자동으로 다시 로그인합니다"
-            },
-            "placeholder": {
-                "account": "VRChat 계정",
-                "password": "VRChat 비밀번호"
             },
             "validation": {
                 "username_required": "사용자 이름 또는 이메일이 필요합니다",
@@ -1390,8 +1387,7 @@
             "qr": {
                 "button": "QR 코드로 로그인",
                 "title": "QR 코드로 로그인",
-                "use_password": "비밀번호로 로그인",
-                "requirements": "VRChat에 로그인된 휴대폰이 필요합니다. QR 로그인은 비밀번호를 저장하지 않으므로 연결이 끊기면 다시 스캔해야 합니다."
+                "use_password": "비밀번호로 로그인"
             },
             "saved_group": {
                 "with_password": "비밀번호 저장됨",

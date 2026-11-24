@@ -1428,15 +1428,12 @@
             "backToSavedAccounts": "返回已儲存的帳號",
             "proxy_settings": "代理設定",
             "proxy_description": "連線至 VRChat（包括登入）時使用的代理伺服器。支援 127.0.0.1:7890、http://127.0.0.1:7890 和 socks5://127.0.0.1:7890。",
+            "more_options": "更多選項",
             "field": {
                 "username": "用戶名稱或電子信箱",
                 "password": "密碼",
                 "saveCredentials": "儲存登入資料",
                 "saveCredentialsHint": "斷線後自動重新登入，不必再輸入一次密碼"
-            },
-            "placeholder": {
-                "account": "VRChat 帳號",
-                "password": "VRChat 密碼"
             },
             "validation": {
                 "username_required": "需要用戶名稱或電子信箱",
@@ -1453,8 +1450,7 @@
             "qr": {
                 "button": "掃碼登入",
                 "title": "掃碼登入",
-                "use_password": "改用密碼登入",
-                "requirements": "需要手機已登入 VRChat。掃碼登入不會儲存密碼，斷線後需要重新掃碼。"
+                "use_password": "改用密碼登入"
             },
             "saved_group": {
                 "with_password": "已儲存密碼",

@@ -1424,15 +1424,12 @@
             "backToSavedAccounts": "アカウント一覧に戻る",
             "proxy_settings": "プロキシ設定",
             "proxy_description": "ログインを含め、VRChat への接続に使うプロキシサーバーです。127.0.0.1:7890、http://127.0.0.1:7890、socks5://127.0.0.1:7890 に対応しています。",
+            "more_options": "その他のオプション",
             "field": {
                 "username": "ユーザー名またはメールアドレス",
                 "password": "パスワード",
                 "saveCredentials": "ログイン情報を保存",
                 "saveCredentialsHint": "接続が切れても自動で再ログインします"
-            },
-            "placeholder": {
-                "account": "VRChat アカウント",
-                "password": "VRChat パスワード"
             },
             "validation": {
                 "username_required": "ユーザー名またはメールアドレスを入力してください",
@@ -1449,8 +1446,7 @@
             "qr": {
                 "button": "QR コードでログイン",
                 "title": "QR コードでログイン",
-                "use_password": "パスワードでログイン",
-                "requirements": "VRChat にログイン済みのスマートフォンが必要です。QR ログインではパスワードを保存しないため、接続が切れたら読み取り直しになります。"
+                "use_password": "パスワードでログイン"
             },
             "saved_group": {
                 "with_password": "パスワード保存済み",

@@ -1445,15 +1445,12 @@
             "backToSavedAccounts": "Zpět na uložené účty",
             "proxy_settings": "Nastavení proxy",
             "proxy_description": "Nastavte proxy server, který se použije před přihlášením. Podporováno je 127.0.0.1:7890, http://127.0.0.1:7890 a socks5://127.0.0.1:7890.",
+            "more_options": "Další možnosti",
             "field": {
                 "username": "Jméno nebo Email",
                 "password": "Heslo",
                 "saveCredentials": "Uložit přihlašovací údaje",
                 "saveCredentialsHint": "Při výpadku relace se automaticky znovu přihlásí"
-            },
-            "placeholder": {
-                "account": "VRChat účet",
-                "password": "VRChat heslo"
             },
             "validation": {
                 "username_required": "Uživatelské jméno nebo email je povinné",
@@ -1470,8 +1467,7 @@
             "qr": {
                 "button": "Přihlásit QR kódem",
                 "title": "Přihlášení QR kódem",
-                "use_password": "Použít heslo",
-                "requirements": "Vyžaduje telefon přihlášený do VRChatu. Přihlášení QR kódem neukládá heslo, takže po výpadku relace bude nutné kód naskenovat znovu."
+                "use_password": "Použít heslo"
             },
             "saved_group": {
                 "with_password": "Heslo uloženo",

@@ -1428,15 +1428,12 @@
             "backToSavedAccounts": "返回账号列表",
             "proxy_settings": "代理设置",
             "proxy_description": "设置登录前使用的代理服务器。支持 Socks5 和 Http 协议",
+            "more_options": "更多选项",
             "field": {
                 "username": "用户名或邮箱地址",
                 "password": "密码",
                 "saveCredentials": "保存登录数据",
                 "saveCredentialsHint": "掉线后自动重新登录，不用再输一次密码"
-            },
-            "placeholder": {
-                "account": "VRChat 账号",
-                "password": "VRChat 密码"
             },
             "validation": {
                 "username_required": "请输入用户名或邮箱",
@@ -1453,8 +1450,7 @@
             "qr": {
                 "button": "扫码登录",
                 "title": "扫码登录",
-                "use_password": "改用密码登录",
-                "requirements": "需要手机已登录 VRChat。扫码登录不保存密码，掉线后要重新扫码。"
+                "use_password": "改用密码登录"
             },
             "saved_group": {
                 "with_password": "已保存密码",

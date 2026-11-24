@@ -63,8 +63,7 @@ export function useLoginPageController() {
             isValidatingRestore: page.isValidatingRestore,
             onMigrateLegacyVrcxData: page.migrateLegacyVrcxData,
             onOpenProxyDialog: page.openProxyDialog,
-            onRestoreProfileBackup: page.restoreProfileBackup,
-            showLegacyMigration: page.showLegacyMigrationAction
+            onRestoreProfileBackup: page.restoreProfileBackup
         },
         proxyDialog: {
             enabled: page.proxyEnabledInput,
