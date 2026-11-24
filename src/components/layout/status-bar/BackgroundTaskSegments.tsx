@@ -17,15 +17,8 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useWorldCollectionImportStore } from '@/state/worldCollectionImportStore';
 
 import { isFriendProfileLoadStatusVisible } from './statusBarFriendProfileLoad';
+import { isMutualGraphSegmentVisible } from './statusBarMutualGraph';
 import { StatusSegment } from './StatusBarParts';
-
-const VISIBLE_MUTUAL_GRAPH_STATUSES = [
-    'running',
-    'cancelling',
-    'completed',
-    'cancelled',
-    'error'
-];
 
 export function DataDirMigrationSegment() {
     const { t } = useTranslation();
@@ -162,6 +155,9 @@ export function FriendProfileLoadSegment() {
 export function MutualGraphSegment() {
     const { t } = useTranslation();
     const status = useRuntimeStore((state) => state.mutualGraph.status);
+    const visible = useRuntimeStore((state) =>
+        isMutualGraphSegmentVisible(state.mutualGraph, state.auth.currentUserId)
+    );
     const processed = useRuntimeStore(
         (state) => state.mutualGraph.processedFriends
     );
@@ -184,7 +180,7 @@ export function MutualGraphSegment() {
 
     return (
         <StatusSegment
-            visible={VISIBLE_MUTUAL_GRAPH_STATUSES.includes(status)}
+            visible={visible}
             showDot={false}
             label={
                 fetching

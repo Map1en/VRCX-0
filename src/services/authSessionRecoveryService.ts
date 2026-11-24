@@ -98,6 +98,7 @@ async function runRuntimeAuthRecovery(
         return;
     }
 
+    const previousTask = runtimeStore.startup.auth;
     runtimeStore.setStartupTask('auth', 'running', title);
     toast.add({ type: 'warning', title: title, description });
 
@@ -106,12 +107,26 @@ async function runRuntimeAuthRecovery(
         snapshot = await authRepository.endSession(endInput);
     } catch (endError) {
         console.warn('Failed to end the invalid VRChat session:', endError);
+        if (isCurrentAuthAttempt(attempt)) {
+            resetCurrentUserRuntimeAuth();
+            setSignedOutSessionState();
+            runtimeStore.setStartupTask(
+                'auth',
+                'error',
+                endError instanceof Error ? endError.message : String(endError)
+            );
+        }
         return;
     }
     if (!isCurrentAuthAttempt(attempt)) {
         return;
     }
     if (!snapshot) {
+        runtimeStore.setStartupTask(
+            'auth',
+            previousTask.status,
+            previousTask.detail
+        );
         return;
     }
     resetCurrentUserRuntimeAuth();

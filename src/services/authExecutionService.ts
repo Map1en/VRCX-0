@@ -215,6 +215,20 @@ export function resetCurrentUserRuntimeAuth() {
     clearCurrentUserRuntimeAuthState();
 }
 
+function resetAccountUiState() {
+    useDialogStore.getState().clearDialogState();
+    useModalStore.getState().resetModalState();
+    useVrcNotificationStore.getState().resetVrcNotificationState();
+}
+
+function resetPreviousAccountState() {
+    resetAccountUiState();
+    const runtimeStore = useRuntimeStore.getState();
+    runtimeStore.resetTransportState();
+    runtimeStore.clearInstanceQueueState();
+    runtimeStore.resetMutualGraphState();
+}
+
 function setCurrentUserRuntimeAuth(
     user: AuthUserRecord | null,
     { endpoint = '', websocket = '' }: Record<string, string> = {}
@@ -477,9 +491,7 @@ export async function logoutWithoutConfirmation() {
     const currentUserDisplayName = runtimeStore.auth.currentUserDisplayName;
     const sessionPhase = useSessionStore.getState().sessionPhase;
 
-    useDialogStore.getState().clearDialogState();
-    useModalStore.getState().resetModalState();
-    useVrcNotificationStore.getState().resetVrcNotificationState();
+    resetAccountUiState();
 
     if (!currentUserId && sessionPhase !== 'authenticating') {
         resetCurrentUserRuntimeAuth();
@@ -535,6 +547,9 @@ async function executeLoginAttempt({
     transformError?: (error: AuthExecutionError) => void;
 }) {
     const attempt = beginAuthAttempt();
+    if (useRuntimeStore.getState().auth.currentUserId) {
+        resetPreviousAccountState();
+    }
     useRuntimeStore.getState().setStartupTask('auth', 'running', startupDetail);
     setAuthenticatingSessionState();
 

@@ -105,10 +105,12 @@ import {
     readCachedUserStats
 } from '@/services/userDialogSessionCacheService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { useDialogStore } from '@/state/dialogStore';
 import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
+import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import {
     executeDeviceLogin,
@@ -862,6 +864,76 @@ describe('authExecutionService characterization', () => {
                 currentUserEndpoint: 'https://api.vrchat.cloud/api/1',
                 currentUserWebsocket: 'wss://pipeline.vrchat.cloud'
             });
+        });
+
+        it('drops the previous account notifications, dialogs and runtime progress when switching directly', async () => {
+            const initialRuntime = useRuntimeStore.getState();
+            useRuntimeStore.getState().setAuthBootstrap({
+                currentUserId: 'usr_self',
+                currentUserDisplayName: 'Self'
+            });
+            useSessionStore.getState().setSessionState({
+                isLoggedIn: true,
+                sessionPhase: 'ready'
+            });
+            useVrcNotificationStore.setState({
+                rows: [
+                    {
+                        id: 'notif_previous_account',
+                        type: 'invite',
+                        version: 2,
+                        seen: false
+                    }
+                ],
+                unseenCount: 1,
+                markAllSeenProgress: {
+                    total: 1,
+                    done: 0,
+                    activeId: 'notif_previous_account',
+                    queuedIds: []
+                }
+            });
+            useDialogStore.getState().openDialog({
+                kind: 'user',
+                entityId: 'usr_friend',
+                title: 'Friend'
+            });
+            useModalStore.getState().openImagePreview({
+                url: 'https://example.test/previous.png'
+            });
+            useRuntimeStore.getState().setTransportState({
+                websocketConnected: true,
+                websocketDomain: 'wss://pipeline.vrchat.cloud'
+            });
+            useRuntimeStore.getState().setInstanceQueueState({
+                active: true,
+                instanceLocation: 'wrld_previous:1',
+                position: 3,
+                queueSize: 9
+            });
+            useRuntimeStore.getState().setMutualGraphState({
+                runId: 4,
+                status: 'running',
+                ownerUserId: 'usr_self'
+            });
+            mocks.startLoginSession.mockResolvedValueOnce(
+                authenticatedState('usr_saved')
+            );
+
+            await executeSavedCredentialLogin(savedCredential('usr_saved'));
+
+            expect(useVrcNotificationStore.getState()).toMatchObject({
+                rows: [],
+                unseenCount: 0,
+                markAllSeenProgress: null
+            });
+            expect(useDialogStore.getState().activeDialog).toBeNull();
+            expect(useModalStore.getState().imageDialog.open).toBe(false);
+            const runtime = useRuntimeStore.getState();
+            expect(runtime.transport).toEqual(initialRuntime.transport);
+            expect(runtime.instanceQueue).toEqual(initialRuntime.instanceQueue);
+            expect(runtime.mutualGraph).toEqual(initialRuntime.mutualGraph);
+            expect(runtime.auth.currentUserId).toBe('usr_saved');
         });
 
         it('rejects with the typed failure and applies the backend snapshot for a session-invalidated failure', async () => {

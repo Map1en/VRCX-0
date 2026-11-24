@@ -258,6 +258,49 @@ describe('authSessionRecoveryService public guardrails', () => {
         expect(recoveryMocks.setSignedOutSessionState).not.toHaveBeenCalled();
     });
 
+    it('restores the auth startup task when the backend rejects a stale invalidation', async () => {
+        recoveryMocks.endSession.mockResolvedValueOnce(null);
+        useSessionStore.getState().setSessionState({
+            sessionPhase: 'ready',
+            isLoggedIn: true
+        });
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1'
+        });
+        useRuntimeStore
+            .getState()
+            .setStartupTask('auth', 'completed', 'Authenticated.');
+
+        await handleRuntimeAuthFailure(failure({ authScopeGeneration: 9 }));
+
+        expect(useRuntimeStore.getState().startup.auth).toMatchObject({
+            status: 'completed',
+            detail: 'Authenticated.'
+        });
+    });
+
+    it('signs out locally when the backend fails to end the invalid session', async () => {
+        recoveryMocks.endSession.mockRejectedValueOnce(
+            new Error('end session failed')
+        );
+        useSessionStore.getState().setSessionState({
+            sessionPhase: 'ready',
+            isLoggedIn: true
+        });
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1'
+        });
+
+        await handleRuntimeAuthFailure(failure());
+
+        expect(recoveryMocks.resetCurrentUserRuntimeAuth).toHaveBeenCalled();
+        expect(recoveryMocks.setSignedOutSessionState).toHaveBeenCalled();
+        expect(useRuntimeStore.getState().startup.auth).toMatchObject({
+            status: 'error',
+            detail: 'end session failed'
+        });
+    });
+
     it('does not let a delayed recovery clear a newer auth attempt', async () => {
         const finishTranslations: Array<(value: string) => void> = [];
         recoveryMocks.t.mockImplementation(
