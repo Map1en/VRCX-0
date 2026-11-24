@@ -1471,7 +1471,7 @@
             "unofficial": "Not an official VRChat product",
             "account_explainer": {
                 "title": "Why do I need to sign in with my VRChat account?",
-                "account_data": "Your friends’ status, feed and favorites come from your account — the same things you can see in game.",
+                "account_data": "Your friends’ status, feed and favorites come from your account. It’s the same information you can see in game.",
                 "password_destination": "Your username and password are sent only to VRChat’s official servers.",
                 "local_storage": "Sign-in data is stored on this computer, and you can remove it at any time.",
                 "open_source": "The source code is public on GitHub."
@@ -3884,7 +3884,7 @@
                         "legacy_migration": "Migrate VRCX Data",
                         "legacy_migration_description": "Replace the current VRCX-0 configuration and database with data from the fixed VRCX data folder.",
                         "legacy_migration_confirm_title": "Replace VRCX-0 data with VRCX data?",
-                        "legacy_migration_confirm_description": "This will delete and replace the current VRCX-0 settings and local database with the data found at {path}. VRCX-0 will restart to complete the migration. The original VRCX data will not be modified.",
+                        "legacy_migration_confirm_description": "This deletes the current VRCX-0 settings and local database and replaces them with the data from:\n{path}\n\nVRCX-0 will restart to finish the migration. The original VRCX data will not be modified.",
                         "legacy_migration_confirm": "Migrate and Restart",
                         "legacy_migration_not_available": "No supported VRCX database was found.",
                         "legacy_migration_restart_manually": "Migration is ready. Restart VRCX-0 to complete it.",

@@ -3869,7 +3869,7 @@
                         "legacy_migration": "VRCX データを移行",
                         "legacy_migration_description": "固定の VRCX データフォルダにあるデータで、現在の VRCX-0 の設定とデータベースを置き換えます。",
                         "legacy_migration_confirm_title": "VRCX-0 のデータを VRCX のデータで置き換えますか？",
-                        "legacy_migration_confirm_description": "現在の VRCX-0 設定とローカルデータベースを削除し、{path} で見つかったデータに置き換えます。移行を完了するため VRCX-0 は再起動します。元の VRCX データは変更されません。",
+                        "legacy_migration_confirm_description": "現在の VRCX-0 の設定とローカルデータベースを削除し、次の場所のデータに置き換えます。\n{path}\n\n移行を完了するため VRCX-0 は再起動します。元の VRCX のデータは変更されません。",
                         "legacy_migration_confirm": "移行して再起動",
                         "legacy_migration_not_available": "対応する VRCX データベースが見つかりません。",
                         "legacy_migration_restart_manually": "移行の準備ができました。完了するには VRCX-0 を再起動してください。",

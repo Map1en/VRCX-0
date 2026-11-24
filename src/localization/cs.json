@@ -1485,7 +1485,7 @@
             "unofficial": "Nejde o oficiální produkt VRChatu",
             "account_explainer": {
                 "title": "Proč se musím přihlásit účtem VRChat?",
-                "account_data": "Stav přátel, přehled a oblíbené pocházejí z vašeho účtu – jsou to stejné informace, jaké vidíte ve hře.",
+                "account_data": "Stav přátel, přehled a oblíbené pocházejí z vašeho účtu. Jsou to stejné informace, jaké vidíte ve hře.",
                 "password_destination": "Uživatelské jméno a heslo se odesílají pouze na oficiální servery VRChatu.",
                 "local_storage": "Přihlašovací údaje se ukládají v tomto počítači a můžete je kdykoli odstranit.",
                 "open_source": "Zdrojový kód je veřejně dostupný na GitHubu."
@@ -3907,7 +3907,7 @@
                         "legacy_migration": "Migrovat data VRCX",
                         "legacy_migration_description": "Nahradí aktuální konfiguraci a databázi VRCX-0 daty z pevné datové složky VRCX.",
                         "legacy_migration_confirm_title": "Nahradit data VRCX-0 daty z VRCX?",
-                        "legacy_migration_confirm_description": "Tímto se odstraní a nahradí aktuální nastavení a místní databáze VRCX-0 daty nalezenými na {path}. VRCX-0 se pro dokončení migrace restartuje. Původní data VRCX zůstanou nezměněna.",
+                        "legacy_migration_confirm_description": "Aktuální nastavení a místní databáze VRCX-0 se odstraní a nahradí daty z tohoto umístění:\n{path}\n\nVRCX-0 se pro dokončení migrace restartuje. Původní data VRCX zůstanou nezměněna.",
                         "legacy_migration_confirm": "Migrovat a restartovat",
                         "legacy_migration_not_available": "Nebyla nalezena žádná podporovaná databáze VRCX.",
                         "legacy_migration_restart_manually": "Migrace je připravena. Restartujte VRCX-0, aby se dokončila.",

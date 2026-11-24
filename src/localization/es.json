@@ -3884,7 +3884,7 @@
                         "legacy_migration": "Migrar datos de VRCX",
                         "legacy_migration_description": "Reemplaza la configuración y la base de datos actuales de VRCX-0 con los datos de la carpeta de datos de VRCX indicada.",
                         "legacy_migration_confirm_title": "¿Reemplazar los datos de VRCX-0 con los de VRCX?",
-                        "legacy_migration_confirm_description": "Esto eliminará y reemplazará la configuración y la base de datos local actuales de VRCX-0 con los datos encontrados en {path}. VRCX-0 se reiniciará para completar la migración. Los datos originales de VRCX no se modificarán.",
+                        "legacy_migration_confirm_description": "Se eliminarán la configuración y la base de datos local actuales de VRCX-0 y se reemplazarán con los datos de esta ubicación:\n{path}\n\nVRCX-0 se reiniciará para completar la migración. Los datos originales de VRCX no se modificarán.",
                         "legacy_migration_confirm": "Migrar y reiniciar",
                         "legacy_migration_not_available": "No se encontró ninguna base de datos de VRCX compatible.",
                         "legacy_migration_restart_manually": "La migración está lista. Reinicia VRCX-0 para completarla.",

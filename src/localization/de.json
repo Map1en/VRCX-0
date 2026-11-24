@@ -1471,7 +1471,7 @@
             "unofficial": "Kein offizielles VRChat-Produkt",
             "account_explainer": {
                 "title": "Warum muss ich mich mit meinem VRChat-Konto anmelden?",
-                "account_data": "Online-Status, Feed und Favoriten deiner Freunde stammen aus deinem Konto – dieselben Infos, die du auch im Spiel siehst.",
+                "account_data": "Online-Status, Feed und Favoriten deiner Freunde stammen aus deinem Konto. Es sind dieselben Infos, die du auch im Spiel siehst.",
                 "password_destination": "Benutzername und Passwort werden nur an die offiziellen VRChat-Server gesendet.",
                 "local_storage": "Anmeldedaten werden auf diesem Computer gespeichert und können jederzeit entfernt werden.",
                 "open_source": "Der Quellcode ist auf GitHub öffentlich einsehbar."
@@ -3880,7 +3880,7 @@
                         "legacy_migration": "VRCX-Daten migrieren",
                         "legacy_migration_description": "Ersetzt die aktuelle VRCX-0-Konfiguration und -Datenbank durch Daten aus dem festen VRCX-Datenordner.",
                         "legacy_migration_confirm_title": "VRCX-0-Daten durch VRCX-Daten ersetzen?",
-                        "legacy_migration_confirm_description": "Dadurch werden die aktuellen VRCX-0-Einstellungen und die lokale Datenbank gelöscht und durch die Daten unter {path} ersetzt. VRCX-0 wird neu gestartet, um die Migration abzuschließen. Die ursprünglichen VRCX-Daten werden nicht verändert.",
+                        "legacy_migration_confirm_description": "Die aktuellen VRCX-0-Einstellungen und die lokale Datenbank werden gelöscht und durch die Daten aus diesem Pfad ersetzt:\n{path}\n\nVRCX-0 wird neu gestartet, um die Migration abzuschließen. Die ursprünglichen VRCX-Daten bleiben unverändert.",
                         "legacy_migration_confirm": "Migrieren & Neustarten",
                         "legacy_migration_not_available": "Es wurde keine unterstützte VRCX-Datenbank gefunden.",
                         "legacy_migration_restart_manually": "Migration ist bereit. Starte VRCX-0 neu, um sie abzuschließen.",

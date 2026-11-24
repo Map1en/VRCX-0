@@ -1471,7 +1471,7 @@
             "unofficial": "Não é um produto oficial do VRChat",
             "account_explainer": {
                 "title": "Por que preciso entrar com minha conta do VRChat?",
-                "account_data": "Status, feed e favoritos dos seus amigos vêm da sua conta — as mesmas informações que você vê no jogo.",
+                "account_data": "Status, feed e favoritos dos seus amigos vêm da sua conta. São as mesmas informações que você vê no jogo.",
                 "password_destination": "Seu usuário e senha são enviados apenas aos servidores oficiais do VRChat.",
                 "local_storage": "Os dados de login ficam salvos neste computador e podem ser removidos a qualquer momento.",
                 "open_source": "O código-fonte é público no GitHub."
@@ -3880,7 +3880,7 @@
                         "legacy_migration": "Migrar Dados do VRCX",
                         "legacy_migration_description": "Substituir a configuração e o banco de dados atuais do VRCX-0 pelos dados da pasta de dados definida do VRCX.",
                         "legacy_migration_confirm_title": "Substituir os dados do VRCX-0 pelos dados do VRCX?",
-                        "legacy_migration_confirm_description": "Isto excluirá e substituirá as configurações e o banco de dados local atuais do VRCX-0 pelos dados encontrados em {path}. O VRCX-0 reiniciará para concluir a migração. Os dados originais do VRCX não serão modificados.",
+                        "legacy_migration_confirm_description": "As configurações e o banco de dados local atuais do VRCX-0 serão excluídos e substituídos pelos dados deste local:\n{path}\n\nO VRCX-0 reiniciará para concluir a migração. Os dados originais do VRCX não serão modificados.",
                         "legacy_migration_confirm": "Migrar e Reiniciar",
                         "legacy_migration_not_available": "Nenhum banco de dados do VRCX compatível foi encontrado.",
                         "legacy_migration_restart_manually": "A migração está pronta. Reinicie o VRCX-0 para concluí-la.",

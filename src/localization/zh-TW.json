@@ -3873,7 +3873,7 @@
                         "legacy_migration": "遷移 VRCX 資料",
                         "legacy_migration_description": "用指定 VRCX 資料夾中的資料替換目前 VRCX-0 設定和資料庫。",
                         "legacy_migration_confirm_title": "用 VRCX 資料替換 VRCX-0 資料？",
-                        "legacy_migration_confirm_description": "這會刪除目前 VRCX-0 設定和本機資料庫，並替換為在 {path} 找到的資料。VRCX-0 將重新啟動以完成遷移。原始 VRCX 資料不會被修改。",
+                        "legacy_migration_confirm_description": "將刪除目前 VRCX-0 的設定和本機資料庫，替換為以下位置的資料：\n{path}\n\nVRCX-0 會重新啟動以完成遷移，原版 VRCX 的資料不會被變更。",
                         "legacy_migration_confirm": "遷移並重新啟動",
                         "legacy_migration_not_available": "未找到支援的 VRCX 資料庫。",
                         "legacy_migration_restart_manually": "遷移已準備好。請重新啟動 VRCX-0 以完成遷移。",
