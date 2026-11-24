@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useShallow } from 'zustand/react/shallow';
 
+import { useStableCommands } from '@/lib/useStableCommands';
 import type { AppDataDirState, TtsVoice } from '@/platform/tauri/bindings';
 import {
     setAccessibleStatusIndicatorsPreference,
@@ -369,20 +370,22 @@ export function useSettingsPageState() {
         });
     }
 
-    function saveAvatarProviderEnabled(value: boolean) {
-        const previousConfig = avatarProviderConfigRef.current;
-        const nextConfig: AvatarProviderConfig = {
-            ...previousConfig,
-            enabled: value
-        };
-        commit(
-            () => saveAvatarProviderConfig(nextConfig),
-            () => {
-                applyAvatarProviderConfig(nextConfig);
-                return () => applyAvatarProviderConfig(previousConfig);
-            }
-        );
-    }
+    const { saveAvatarProviderEnabled } = useStableCommands({
+        saveAvatarProviderEnabled: (value: boolean) => {
+            const previousConfig = avatarProviderConfigRef.current;
+            const nextConfig: AvatarProviderConfig = {
+                ...previousConfig,
+                enabled: value
+            };
+            commit(
+                () => saveAvatarProviderConfig(nextConfig),
+                () => {
+                    applyAvatarProviderConfig(nextConfig);
+                    return () => applyAvatarProviderConfig(previousConfig);
+                }
+            );
+        }
+    });
 
     return buildSettingsPageStateSections({
         activeSettingsTab,
@@ -391,7 +394,6 @@ export function useSettingsPageState() {
         appDataDirState,
         applyAvatarProviderConfig,
         avatarProviderConfig,
-        avatarProviderConfigRef,
         avatarProviderDialogOpen,
         commit,
         configTreeData,

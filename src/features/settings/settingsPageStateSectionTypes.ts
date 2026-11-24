@@ -104,9 +104,7 @@ type IntegrationSectionInput = Pick<
 > &
     Pick<
         AvatarProviderState,
-        | 'applyAvatarProviderConfig'
-        | 'avatarProviderConfigRef'
-        | 'saveAvatarProviderConfig'
+        'applyAvatarProviderConfig' | 'saveAvatarProviderConfig'
     >;
 
 export type BuildSettingsPageStateSectionsInput = DialogSectionInput &

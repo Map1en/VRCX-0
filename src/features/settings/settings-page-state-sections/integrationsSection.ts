@@ -13,7 +13,6 @@ type IntegrationsSectionInput = SettingsSectionInput<
     | 'setYoutubeApiEnabledPreference'
     | 'openYoutubeApiDialog'
     | 'saveAvatarProviderConfig'
-    | 'avatarProviderConfigRef'
     | 'applyAvatarProviderConfig'
     | 'setAvatarProviderDialogOpen'
     | 'saveIntegrationBoolPreference'
@@ -33,7 +32,6 @@ export function buildIntegrationsSection({
     setYoutubeApiEnabledPreference,
     openYoutubeApiDialog,
     saveAvatarProviderConfig,
-    avatarProviderConfigRef,
     applyAvatarProviderConfig,
     setAvatarProviderDialogOpen,
     saveIntegrationBoolPreference,
@@ -52,7 +50,6 @@ export function buildIntegrationsSection({
         setYoutubeApiEnabledPreference,
         openYoutubeApiDialog,
         saveAvatarProviderConfig,
-        avatarProviderConfigRef,
         applyAvatarProviderConfig,
         setAvatarProviderDialogOpen,
         onDiscordActiveChange: (checked: boolean) => {

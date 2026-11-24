@@ -11,6 +11,8 @@ import {
     type ReactNode
 } from 'react';
 
+import { useStableCommands } from '@/lib/useStableCommands';
+
 const HOVER_REST_MS = 60;
 
 type Point = { x: number; y: number };
@@ -158,40 +160,47 @@ export function MountOnIntent({
         }, HOVER_REST_MS);
     }
 
+    const intentHandlers = useStableCommands({
+        onPointerEnter: (event: ReactPointerEvent<Element>) => {
+            scheduleHover(event, true);
+        },
+        onPointerMove: (event: ReactPointerEvent<Element>) => {
+            scheduleHover(event, false);
+        },
+        onPointerLeave: () => {
+            pressedSinceEnterRef.current = false;
+            cancelHover();
+        },
+        onPointerDown: () => {
+            pressedSinceEnterRef.current = true;
+            cancelHover();
+        },
+        onFocus: () => {
+            if (!pressedSinceEnterRef.current) {
+                activate(null);
+            }
+        },
+        onContextMenu: (event: ReactMouseEvent<Element>) => {
+            event.preventDefault();
+            event.stopPropagation();
+            activate({
+                kind: 'contextmenu',
+                point: { x: event.clientX, y: event.clientY }
+            });
+        }
+    });
+
     const intentProps = active
         ? {}
         : trigger === 'hover'
           ? {
-                onPointerEnter: (event: ReactPointerEvent<Element>) => {
-                    scheduleHover(event, true);
-                },
-                onPointerMove: (event: ReactPointerEvent<Element>) => {
-                    scheduleHover(event, false);
-                },
-                onPointerLeave: () => {
-                    pressedSinceEnterRef.current = false;
-                    cancelHover();
-                },
-                onPointerDown: () => {
-                    pressedSinceEnterRef.current = true;
-                    cancelHover();
-                },
-                onFocus: () => {
-                    if (!pressedSinceEnterRef.current) {
-                        activate(null);
-                    }
-                }
+                onPointerEnter: intentHandlers.onPointerEnter,
+                onPointerMove: intentHandlers.onPointerMove,
+                onPointerLeave: intentHandlers.onPointerLeave,
+                onPointerDown: intentHandlers.onPointerDown,
+                onFocus: intentHandlers.onFocus
             }
-          : {
-                onContextMenu: (event: ReactMouseEvent<Element>) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    activate({
-                        kind: 'contextmenu',
-                        point: { x: event.clientX, y: event.clientY }
-                    });
-                }
-            };
+          : { onContextMenu: intentHandlers.onContextMenu };
 
     const child = useRender({
         render: children,
