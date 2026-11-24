@@ -2,11 +2,10 @@ import type {
     LlmEndpointDto,
     LlmModelReasoning
 } from '@/platform/tauri/bindings';
-
-const OPENROUTER_CANONICAL_BASE_URL = 'https://openrouter.ai/api/v1';
+import { OPENROUTER_API_BASE_URL } from '@/shared/constants/link';
 
 export function isOpenRouterBaseUrl(baseUrl: string): boolean {
-    return normalizeBaseUrl(baseUrl) === OPENROUTER_CANONICAL_BASE_URL;
+    return normalizeBaseUrl(baseUrl) === OPENROUTER_API_BASE_URL;
 }
 
 function normalizeBaseUrl(raw: string): string {

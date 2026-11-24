@@ -1,3 +1,4 @@
+import { AVTRDB_AVATAR_SEARCH_URL } from '@/shared/constants/link';
 import { DEFAULT_TABLE_PAGE_SIZE } from '@/shared/constants/settings';
 import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 
@@ -332,7 +333,7 @@ export const ConfigKeys = defineConfigKeys({
     // ── Avatar Provider ──────────────────────────────
     avatarRemoteDatabaseProviderList: {
         type: 'string',
-        default: '["https://api.avtrdb.com/v3/avatar/search/vrcx"]'
+        default: JSON.stringify([AVTRDB_AVATAR_SEARCH_URL])
     },
     avatarRemoteDatabaseProvider: { type: 'string', default: '' }
 });

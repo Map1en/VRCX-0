@@ -8,8 +8,9 @@ import {
     type ConfigDefaultValue,
     type ConfigKeyDefinition
 } from '@/repositories/configKeys';
+import { safeJsonParse } from '@/shared/utils/json';
 
-import { asString, safeJsonParse, safeJsonStringify } from './baseRepository';
+import { asString, safeJsonStringify } from './baseRepository';
 
 type ConfigEntries = Array<[string, string]>;
 type ConfigObject = Record<string, unknown> | unknown[] | null;
@@ -184,7 +185,8 @@ class ConfigRepository {
         defaultValue: T | null = null
     ): Promise<T | null> {
         const value = await this.getString(key, null);
-        return safeJsonParse(value, defaultValue);
+        const parsed = safeJsonParse(value) as T | null;
+        return parsed ?? defaultValue;
     }
 
     async getArray<T = unknown>(

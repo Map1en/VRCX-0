@@ -1,6 +1,7 @@
 import { commands } from '@/platform/tauri/bindings';
+import { safeJsonParse } from '@/shared/utils/json';
 
-import { asString, safeJsonParse, safeJsonStringify } from './baseRepository';
+import { asString, safeJsonStringify } from './baseRepository';
 
 export class StorageRepository {
     #prefix = '';
@@ -45,7 +46,8 @@ export class StorageRepository {
 
     async getJson<T = unknown>(key: string, defaultValue: T | null = null) {
         const value = await this.getString(key, null);
-        return safeJsonParse(value, defaultValue);
+        const parsed = safeJsonParse(value) as T | null;
+        return parsed ?? defaultValue;
     }
 
     async setString(key: string, value: string) {

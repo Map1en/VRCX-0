@@ -29,9 +29,7 @@ import {
     triggerToolByKey
 } from '@/services/toolActionService';
 import { getRecentToolKeys } from '@/services/toolRecentService';
-import {
-    type ToolDefinition
-} from '@/shared/constants/tools';
+import { type ToolDefinition } from '@/shared/constants/tools';
 import { useDashboardStore } from '@/state/dashboardStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';

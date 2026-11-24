@@ -1,5 +1,9 @@
 import { vrchatPasswordUrl, vrchatRegisterUrl } from './vrchatWebUrls';
 
+export const AVTRDB_AVATAR_SEARCH_URL =
+    'https://api.avtrdb.com/v3/avatar/search/vrcx';
+export const OPENROUTER_API_BASE_URL = 'https://openrouter.ai/api/v1';
+
 const links: Record<string, string> = {
     wiki: 'https://github.com/Map1en/VRCX-0/wiki',
     github: 'https://github.com/Map1en/VRCX-0',

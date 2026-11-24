@@ -5,6 +5,7 @@ import type {
     ScreenshotShareFields,
     ScreenshotShareMessage
 } from '@/platform/tauri/bindings';
+import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
 
 export const SCREENSHOT_SHARE_MAX_PEOPLE = 20;
 
@@ -93,7 +94,7 @@ function buildMessage(
                   title: worldName,
                   url:
                       worldName && first.worldId
-                          ? `https://vrchat.com/home/world/${first.worldId}`
+                          ? vrchatWorldUrl(first.worldId)
                           : null,
                   timestamp:
                       capturedAtMs > 0

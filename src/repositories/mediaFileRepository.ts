@@ -1,12 +1,15 @@
 import { commands } from '@/platform/tauri/bindings';
-import { safeJsonParse } from '@/repositories/baseRepository';
 
 function parseResponseValue(data: string): unknown {
     if (data === '') {
         return '';
     }
 
-    return safeJsonParse(data, data);
+    try {
+        return JSON.parse(data);
+    } catch {
+        return data;
+    }
 }
 
 async function getScreenshotMetadata(path: string) {

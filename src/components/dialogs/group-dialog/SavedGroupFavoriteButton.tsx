@@ -7,6 +7,7 @@ import {
     type SavedGroupFavoritesSnapshot
 } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
+import { SAVED_GROUP_FAVORITES_CHANGED_EVENT } from '@/shared/events/savedGroupFavoritesEvents';
 import { useModalStore } from '@/state/modalStore';
 import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
@@ -19,8 +20,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-
-const SAVED_GROUP_FAVORITES_CHANGED_EVENT = 'saved-group-favorites-changed';
 
 export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
     const { t } = useTranslation();

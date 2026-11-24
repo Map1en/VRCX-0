@@ -27,6 +27,7 @@ import {
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openGroupDialog } from '@/services/dialogService';
 import { toast } from '@/services/toastService';
+import { SAVED_GROUP_FAVORITES_CHANGED_EVENT } from '@/shared/events/savedGroupFavoritesEvents';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { HintTooltip } from '@/ui/hint-tooltip';
 import {
@@ -55,8 +56,6 @@ import {
 
 import { GroupRailSection } from './components/FavoritesGroupRail';
 import type { FavoriteGroupView } from './favoritesTypes';
-
-const SAVED_GROUP_FAVORITES_CHANGED_EVENT = 'saved-group-favorites-changed';
 
 function SavedGroupFavoriteCard({
     busy,

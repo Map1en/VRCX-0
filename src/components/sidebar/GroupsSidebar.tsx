@@ -28,6 +28,7 @@ import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { toast } from '@/services/toastService';
+import { SAVED_GROUP_FAVORITES_CHANGED_EVENT } from '@/shared/events/savedGroupFavoritesEvents';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
@@ -52,7 +53,6 @@ const GROUP_MESSAGE_ROW_SIZE = 64;
 const GROUP_FOOTER_ROW_SIZE = 16;
 const EMPTY_GROUP_ORDER: string[] = [];
 const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
-const SAVED_GROUP_FAVORITES_CHANGED_EVENT = 'saved-group-favorites-changed';
 
 type GroupSectionSidebarRow = {
     type: 'section';
