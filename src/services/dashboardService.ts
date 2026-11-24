@@ -25,7 +25,9 @@ async function loadDashboards(): Promise<Dashboard[]> {
             const message =
                 error instanceof Error
                     ? error.message
-                    : 'Failed to load dashboard configurations.';
+                    : i18n.t(
+                          'view.dashboard.toast.failed_to_load_dashboard_configuration'
+                      );
             store.setLoadFailed(message);
         }
         throw error;

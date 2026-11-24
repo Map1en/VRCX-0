@@ -334,4 +334,19 @@ describe('dashboardStore persistence ownership', () => {
             loadStatus: 'idle'
         });
     });
+
+    it('shows the localized load failure when the repository rejects with a non-error', async () => {
+        mocks.getDashboards.mockRejectedValue('storage unavailable');
+
+        await expect(ensureDashboardsLoaded()).rejects.toBe(
+            'storage unavailable'
+        );
+        expect(useDashboardStore.getState()).toMatchObject({
+            loaded: false,
+            loadStatus: 'error',
+            detail: i18n.t(
+                'view.dashboard.toast.failed_to_load_dashboard_configuration'
+            )
+        });
+    });
 });
