@@ -1,5 +1,5 @@
 import { BracesIcon, PaletteIcon, SparklesIcon } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type {
@@ -192,14 +192,14 @@ export function ChatboxLineEditor({
                         />
                     </DropdownMenuContent>
                 </DropdownMenu>
-                <FormatControls
-                    formats={line.formats}
-                    used={used}
-                    maxDecimals={meta.limits.maxDecimals}
-                    maxChars={meta.limits.maxChars}
-                    onChange={setFormats}
-                />
             </div>
+            <FormatControls
+                formats={line.formats}
+                used={used}
+                maxDecimals={meta.limits.maxDecimals}
+                maxChars={meta.limits.maxChars}
+                onChange={setFormats}
+            />
         </div>
     );
 }
@@ -222,10 +222,11 @@ function FormatControls({
         String(index)
     );
     const label = (key: string) => t(`view.tools.chatbox.formats.${key}`);
-    const controls = [];
+    const groups: { key: string; controls: ReactNode[] }[] = [];
+    const timeControls: ReactNode[] = [];
 
     if (used.has('time')) {
-        controls.push(
+        timeControls.push(
             <FormatSwitch
                 key="hour12"
                 label={label('hour12')}
@@ -235,7 +236,7 @@ function FormatControls({
         );
     }
     if (used.has('time') || used.has('session')) {
-        controls.push(
+        timeControls.push(
             <FormatSwitch
                 key="seconds"
                 label={label('show_seconds')}
@@ -243,34 +244,44 @@ function FormatControls({
                 onChange={(showSeconds) => onChange({ showSeconds })}
             />
         );
+        groups.push({ key: 'time', controls: timeControls });
     }
     if (MEDIA_TEXT_VARIABLES.some((variable) => used.has(variable))) {
-        controls.push(
-            <FormatCharLimit
-                key="media-max-chars"
-                label={label('media_max_chars')}
-                placeholder={label('media_max_chars_unlimited')}
-                value={formats.mediaMaxChars}
-                max={maxChars}
-                onChange={(mediaMaxChars) => onChange({ mediaMaxChars })}
-            />
-        );
+        groups.push({
+            key: 'media-max-chars',
+            controls: [
+                <FormatCharLimit
+                    key="media-max-chars"
+                    label={label('media_max_chars')}
+                    placeholder={label('media_max_chars_unlimited')}
+                    value={formats.mediaMaxChars}
+                    max={maxChars}
+                    onChange={(mediaMaxChars) => onChange({ mediaMaxChars })}
+                />
+            ]
+        });
     }
     if (used.has('cpu')) {
-        controls.push(
-            <FormatSelect
-                key="cpu"
-                label={label('cpu_decimals')}
-                value={String(formats.cpuDecimals)}
-                options={decimals}
-                optionLabel={(value) => value}
-                onChange={(value) => onChange({ cpuDecimals: Number(value) })}
-            />
-        );
+        groups.push({
+            key: 'cpu',
+            controls: [
+                <FormatSelect
+                    key="cpu"
+                    label={label('cpu_decimals')}
+                    value={String(formats.cpuDecimals)}
+                    options={decimals}
+                    optionLabel={(value) => value}
+                    onChange={(value) =>
+                        onChange({ cpuDecimals: Number(value) })
+                    }
+                />
+            ]
+        });
     }
     if (used.has('memory')) {
-        controls.push(
-            ...memoryControls({
+        groups.push({
+            key: 'memory',
+            controls: memoryControls({
                 key: 'memory',
                 label,
                 decimals,
@@ -281,23 +292,29 @@ function FormatControls({
                 onDecimals: (memoryDecimals) => onChange({ memoryDecimals }),
                 onUnit: (memoryUnit) => onChange({ memoryUnit })
             })
-        );
+        });
     }
     if (used.has('gpu')) {
-        controls.push(
-            <FormatSelect
-                key="gpu"
-                label={label('gpu_decimals')}
-                value={String(formats.gpuDecimals)}
-                options={decimals}
-                optionLabel={(value) => value}
-                onChange={(value) => onChange({ gpuDecimals: Number(value) })}
-            />
-        );
+        groups.push({
+            key: 'gpu',
+            controls: [
+                <FormatSelect
+                    key="gpu"
+                    label={label('gpu_decimals')}
+                    value={String(formats.gpuDecimals)}
+                    options={decimals}
+                    optionLabel={(value) => value}
+                    onChange={(value) =>
+                        onChange({ gpuDecimals: Number(value) })
+                    }
+                />
+            ]
+        });
     }
     if (used.has('vram')) {
-        controls.push(
-            ...memoryControls({
+        groups.push({
+            key: 'vram',
+            controls: memoryControls({
                 key: 'vram',
                 label,
                 decimals,
@@ -308,22 +325,27 @@ function FormatControls({
                 onDecimals: (vramDecimals) => onChange({ vramDecimals }),
                 onUnit: (vramUnit) => onChange({ vramUnit })
             })
-        );
+        });
     }
     if (used.has('gputemp')) {
-        controls.push(
-            <FormatSelect
-                key="temperature-unit"
-                label={label('temperature_unit')}
-                value={formats.temperatureUnit}
-                options={TEMPERATURE_UNITS}
-                optionLabel={(value) => TEMPERATURE_SYMBOLS[value]}
-                onChange={(temperatureUnit) => onChange({ temperatureUnit })}
-            />
-        );
+        groups.push({
+            key: 'temperature-unit',
+            controls: [
+                <FormatSelect
+                    key="temperature-unit"
+                    label={label('temperature_unit')}
+                    value={formats.temperatureUnit}
+                    options={TEMPERATURE_UNITS}
+                    optionLabel={(value) => TEMPERATURE_SYMBOLS[value]}
+                    onChange={(temperatureUnit) =>
+                        onChange({ temperatureUnit })
+                    }
+                />
+            ]
+        });
     }
     if (used.has('progress')) {
-        controls.push(
+        const progressControl = (
             <FormatSelect
                 key="progress"
                 label={label('progress')}
@@ -333,11 +355,26 @@ function FormatControls({
                 onChange={(progress) => onChange({ progress })}
             />
         );
+        const mediaGroup = groups.find(
+            (group) => group.key === 'media-max-chars'
+        );
+        if (mediaGroup) {
+            mediaGroup.controls.push(progressControl);
+        } else {
+            groups.push({ key: 'progress', controls: [progressControl] });
+        }
     }
 
-    return controls.length ? (
-        <div className="ml-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-            {controls}
+    return groups.length ? (
+        <div className="flex flex-col gap-1.5 px-2 pb-1">
+            {groups.map((group) => (
+                <div
+                    key={group.key}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5"
+                >
+                    {group.controls}
+                </div>
+            ))}
         </div>
     ) : null;
 }
@@ -431,7 +468,7 @@ function FormatCharLimit({
                 max={max}
                 value={draft}
                 placeholder={placeholder}
-                className="h-7 w-16 text-xs md:text-xs"
+                className="h-7 w-24 text-xs md:text-xs"
                 onChange={(event) => setDraft(event.target.value)}
                 onBlur={commit}
                 onKeyDown={(event) => {

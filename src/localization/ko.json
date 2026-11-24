@@ -2873,6 +2873,7 @@
                     "placeholder": "메시지 입력",
                     "translation": "번역",
                     "send": "보내기",
+                    "translate": "번역",
                     "cancel": "취소",
                     "translating": "번역 중…",
                     "translated": "번역 결과",
@@ -2885,6 +2886,7 @@
                     "game_not_running": "VRChat을 실행하면 보낼 수 있습니다.",
                     "isolated": "게임 분리 모드를 끄면 보낼 수 있습니다.",
                     "translation_settings": "번역 설정",
+                    "options": "메시지 옵션",
                     "set_up_translation": "번역 설정하기",
                     "shorten_needs_llm": "AI로 줄이려면 번역 설정에서 LLM을 사용하세요.",
                     "send_phrase": "보내기",
@@ -2901,6 +2903,7 @@
                     "remove_page": "이 페이지 삭제",
                     "empty_page": "줄을 추가하면 이 페이지에 표시됩니다.",
                     "enabled": "상태 표시",
+                    "summary": "{total}페이지 중 {on}페이지 사용 중",
                     "add_line": "줄 추가",
                     "blank_line": "빈 줄",
                     "remove_line": "이 줄 삭제",
@@ -2917,7 +2920,7 @@
                 "afk": {
                     "title": "AFK",
                     "go_afk": "AFK로 전환",
-                    "back": "돌아왔어요",
+                    "active": "AFK 중",
                     "auto_headset": "헤드셋을 벗으면 AFK로 전환",
                     "auto_headset_hint": "손목 오버레이나 헤드셋 알림을 켜야 합니다.",
                     "text": "AFK 문구",
@@ -2925,7 +2928,7 @@
                     "show_duration": "자리 비운 시간 표시"
                 },
                 "settings": {
-                    "title": "설정",
+                    "connection": "OSC 연결",
                     "host": "주소",
                     "port": "포트",
                     "typing_indicator": "입력하는 동안 입력 중 표시(…) 보이기",
@@ -2937,7 +2940,7 @@
                 "editor": {
                     "insert_variable": "값 넣기",
                     "insert_symbol": "기호",
-                    "presets": "스타일",
+                    "presets": "프리셋",
                     "template_placeholder": "문구를 입력하고 값을 넣으세요"
                 },
                 "variables": {
@@ -2990,7 +2993,6 @@
                 "heart_rate": {
                     "title": "심박수",
                     "connect": "연결",
-                    "disconnect": "연결 해제",
                     "off": "연결 안 됨",
                     "unavailable": "블루투스를 찾을 수 없거나 꺼져 있습니다",
                     "waiting": "{device} 기다리는 중…",
@@ -3002,7 +3004,8 @@
                     "hint": "한 번에 하나만 연결되는 기기는 휴대폰 앱 연결이 끊길 수 있습니다. 상태 줄에 {variable}를 넣으면 심박수가 표시됩니다. 아바타 파라미터는 널리 쓰이는 HR·isHRBeat(Pulsoid, Booth의 많은 프리팹)와 VRCOSC의 VRCOSC/Heartrate 계열을 함께 보냅니다.",
                     "save_failed": "심박수 연결을 변경하지 못했습니다.",
                     "devices": "표준 블루투스 심박수 기기를 지원합니다. 가슴 스트랩·암밴드, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 등. 기기에서 심박수 브로드캐스트를 켜세요."
-                }
+                },
+                "module_off": "꺼짐"
             }
         },
         "profile": {

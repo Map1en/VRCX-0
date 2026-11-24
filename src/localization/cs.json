@@ -2971,6 +2971,7 @@
                     "placeholder": "Napiš zprávu",
                     "translation": "Překlad",
                     "send": "Poslat",
+                    "translate": "Přeložit",
                     "cancel": "Zrušit",
                     "translating": "Překládá se…",
                     "translated": "Překlad",
@@ -2983,6 +2984,7 @@
                     "game_not_running": "Spusť VRChat, abys mohl posílat zprávy.",
                     "isolated": "Vypni oddělení od hry, abys mohl posílat zprávy.",
                     "translation_settings": "Nastavení překladu",
+                    "options": "Možnosti zpráv",
                     "set_up_translation": "Nastavit překlad",
                     "shorten_needs_llm": "Ke zkrácení pomocí AI nastav v nastavení překladu LLM.",
                     "send_phrase": "Poslat",
@@ -2999,6 +3001,7 @@
                     "remove_page": "Odebrat stránku",
                     "empty_page": "Přidej řádek, aby tato stránka něco zobrazovala.",
                     "enabled": "Zobrazit stav",
+                    "summary": "Zapnuto stránek: {on} z {total}",
                     "add_line": "Přidat řádek",
                     "blank_line": "Prázdný řádek",
                     "remove_line": "Odebrat řádek",
@@ -3015,7 +3018,7 @@
                 "afk": {
                     "title": "AFK",
                     "go_afk": "Přepnout na AFK",
-                    "back": "Jsem zpět",
+                    "active": "Právě jsi AFK",
                     "auto_headset": "Po sundání headsetu přepnout na AFK",
                     "auto_headset_hint": "Vyžaduje zapnutý Zápěstní overlay nebo Oznámení v headsetu.",
                     "text": "Text AFK",
@@ -3023,7 +3026,7 @@
                     "show_duration": "Zobrazit, jak dlouho jsi pryč"
                 },
                 "settings": {
-                    "title": "Nastavení",
+                    "connection": "Připojení OSC",
                     "host": "Adresa",
                     "port": "Port",
                     "typing_indicator": "Při psaní zobrazit indikátor psaní (…)",
@@ -3035,7 +3038,7 @@
                 "editor": {
                     "insert_variable": "Vložit hodnotu",
                     "insert_symbol": "Symboly",
-                    "presets": "Styly",
+                    "presets": "Předvolby",
                     "template_placeholder": "Napiš text a vlož hodnoty"
                 },
                 "variables": {
@@ -3088,7 +3091,6 @@
                 "heart_rate": {
                     "title": "Tepová frekvence",
                     "connect": "Připojit",
-                    "disconnect": "Odpojit",
                     "off": "Nepřipojeno",
                     "unavailable": "Bluetooth nebyl nalezen nebo je vypnutý",
                     "waiting": "Čekání na {device}…",
@@ -3100,7 +3102,8 @@
                     "hint": "Některá zařízení se připojí jen k jednomu přístroji, takže se aplikace v telefonu může odpojit. Vlož {variable} do řádku stavu a zobrazí se tep. Parametry avatara používají běžné názvy HR a isHRBeat (Pulsoid a mnoho prefabů z Boothu) i názvy VRCOSC/Heartrate z VRCOSC.",
                     "save_failed": "Připojení tepové frekvence se nepodařilo změnit.",
                     "devices": "Funguje se standardními Bluetooth snímači tepu: hrudní pásy a pásky na paži, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 a další. Na zařízení zapni vysílání tepové frekvence."
-                }
+                },
+                "module_off": "Vypnuto"
             }
         },
         "profile": {

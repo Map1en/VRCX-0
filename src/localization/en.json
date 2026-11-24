@@ -2947,6 +2947,7 @@
                     "placeholder": "Type a message",
                     "translation": "Translation",
                     "send": "Send",
+                    "translate": "Translate",
                     "cancel": "Cancel",
                     "translating": "Translating…",
                     "translated": "Translation",
@@ -2959,6 +2960,7 @@
                     "game_not_running": "Start VRChat to send messages.",
                     "isolated": "Turn off game isolation to send messages.",
                     "translation_settings": "Translation settings",
+                    "options": "Message options",
                     "set_up_translation": "Set up translation",
                     "shorten_needs_llm": "To shorten with AI, use an LLM in translation settings.",
                     "send_phrase": "Send",
@@ -2975,6 +2977,7 @@
                     "remove_page": "Remove page",
                     "empty_page": "Add a line to show something on this page.",
                     "enabled": "Show status",
+                    "summary": "{on} of {total} pages on",
                     "add_line": "Add line",
                     "blank_line": "Blank line",
                     "remove_line": "Remove line",
@@ -2991,7 +2994,7 @@
                 "afk": {
                     "title": "AFK",
                     "go_afk": "Go AFK",
-                    "back": "I'm back",
+                    "active": "You're AFK now",
                     "auto_headset": "Switch to AFK when you take off your headset",
                     "auto_headset_hint": "Needs Wrist Overlay or HMD Notifications turned on.",
                     "text": "AFK text",
@@ -2999,7 +3002,7 @@
                     "show_duration": "Show how long you have been away"
                 },
                 "settings": {
-                    "title": "Settings",
+                    "connection": "OSC connection",
                     "host": "Address",
                     "port": "Port",
                     "typing_indicator": "Show the typing indicator (…) while you type",
@@ -3011,7 +3014,7 @@
                 "editor": {
                     "insert_variable": "Insert value",
                     "insert_symbol": "Symbols",
-                    "presets": "Styles",
+                    "presets": "Presets",
                     "template_placeholder": "Type text and insert values"
                 },
                 "variables": {
@@ -3064,7 +3067,6 @@
                 "heart_rate": {
                     "title": "Heart rate",
                     "connect": "Connect",
-                    "disconnect": "Disconnect",
                     "off": "Not connected",
                     "unavailable": "No Bluetooth found on this computer, or it's turned off",
                     "waiting": "Waiting for {device}…",
@@ -3076,7 +3078,8 @@
                     "hint": "Some devices connect to only one thing at a time, so your phone app may disconnect. Insert {variable} into a status line to show it. Avatar parameters use the common HR and isHRBeat names (Pulsoid and many Booth prefabs) as well as VRCOSC's VRCOSC/Heartrate names.",
                     "save_failed": "Couldn't change the heart rate connection.",
                     "devices": "Works with standard Bluetooth heart rate devices: chest straps and armbands, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 and more. Turn on heart rate broadcast on the device."
-                }
+                },
+                "module_off": "Off"
             }
         },
         "profile": {

@@ -1,19 +1,12 @@
 import type { TFunction } from 'i18next';
-import { HeartPulseIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { commands, type HeartRateStatus } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
 import { useChatboxStore } from '@/state/chatboxStore';
-import { Button } from '@/ui/shadcn/button';
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardHeader,
-    CardTitle
-} from '@/ui/shadcn/card';
+import { Switch } from '@/ui/shadcn/switch';
 
 export function ChatboxHeartRateCard() {
     const { t } = useTranslation();
@@ -32,10 +25,10 @@ export function ChatboxHeartRateCard() {
     const active = status?.enabled ?? false;
     const unavailable = phase === 'unavailable' && !active;
 
-    function toggle() {
+    function toggle(next: boolean) {
         setPending(true);
         commands
-            .appHeartRateConnectedSet(!active)
+            .appHeartRateConnectedSet(next)
             .then(
                 (saved) => useChatboxStore.getState().setHeartRate(saved),
                 () =>
@@ -48,48 +41,30 @@ export function ChatboxHeartRateCard() {
     }
 
     return (
-        <Card size="sm" className={unavailable ? 'opacity-60' : undefined}>
-            <CardHeader>
-                <CardTitle>
-                    {t('view.tools.chatbox.heart_rate.title')}
-                </CardTitle>
-                <CardAction>
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant={active ? 'outline' : 'default'}
-                        disabled={unavailable || pending}
-                        onClick={toggle}
-                    >
-                        {t(
-                            active
-                                ? 'view.tools.chatbox.heart_rate.disconnect'
-                                : 'view.tools.chatbox.heart_rate.connect'
-                        )}
-                    </Button>
-                </CardAction>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-sm">
-                    <HeartPulseIcon
-                        className={
-                            phase === 'connected' && status?.bpm
-                                ? 'text-primary size-4'
-                                : 'text-muted-foreground size-4'
-                        }
-                    />
-                    <span>{heartRateStatusText(status, t)}</span>
-                </div>
-                <p className="text-muted-foreground text-xs">
-                    {t('view.tools.chatbox.heart_rate.devices')}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                    {t('view.tools.chatbox.heart_rate.hint', {
-                        variable: '{heartrate}'
-                    })}
-                </p>
-            </CardContent>
-        </Card>
+        <SettingsCard
+            cardId="chatbox.heartRate"
+            title={t('view.tools.chatbox.heart_rate.title')}
+            description={heartRateStatusText(status, t)}
+            defaultOpen={active}
+            bodyClassName="flex flex-col gap-2 py-3"
+            action={
+                <Switch
+                    aria-label={t('view.tools.chatbox.heart_rate.connect')}
+                    checked={active}
+                    disabled={unavailable || pending}
+                    onCheckedChange={toggle}
+                />
+            }
+        >
+            <p className="text-muted-foreground text-xs">
+                {t('view.tools.chatbox.heart_rate.devices')}
+            </p>
+            <p className="text-muted-foreground text-xs">
+                {t('view.tools.chatbox.heart_rate.hint', {
+                    variable: '{heartrate}'
+                })}
+            </p>
+        </SettingsCard>
     );
 }
 

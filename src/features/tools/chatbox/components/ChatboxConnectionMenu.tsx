@@ -1,14 +1,22 @@
+import { Settings2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { ChatboxConfig } from '@/platform/tauri/bindings';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import { HintTooltip } from '@/ui/hint-tooltip';
+import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
-import { Switch } from '@/ui/shadcn/switch';
+import {
+    Popover,
+    PopoverContent,
+    PopoverHeader,
+    PopoverTitle,
+    PopoverTrigger
+} from '@/ui/shadcn/popover';
 
 import type { ChatboxConfigUpdate } from '../chatboxConfig';
 import { useSyncedDraft } from '../useSyncedDraft';
 
-export function ChatboxSettingsCard({
+export function ChatboxConnectionMenu({
     config,
     onUpdate
 }: {
@@ -39,12 +47,28 @@ export function ChatboxSettingsCard({
         }
     }
 
+    const label = t('view.tools.chatbox.settings.connection');
+
     return (
-        <Card size="sm">
-            <CardHeader>
-                <CardTitle>{t('view.tools.chatbox.settings.title')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+        <Popover>
+            <HintTooltip label={label}>
+                <PopoverTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={label}
+                        >
+                            <Settings2Icon />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
+            <PopoverContent align="end" className="w-72">
+                <PopoverHeader>
+                    <PopoverTitle>{label}</PopoverTitle>
+                </PopoverHeader>
                 <div className="flex items-end gap-2">
                     <label className="flex flex-1 flex-col gap-1 text-xs">
                         <span className="text-muted-foreground">
@@ -70,44 +94,7 @@ export function ChatboxSettingsCard({
                         />
                     </label>
                 </div>
-                <MessageSwitch
-                    label={t('view.tools.chatbox.settings.typing_indicator')}
-                    checked={config.messages.typingIndicator}
-                    onChange={(typingIndicator) =>
-                        onUpdate((current) => ({
-                            ...current,
-                            messages: { ...current.messages, typingIndicator }
-                        }))
-                    }
-                />
-                <MessageSwitch
-                    label={t('view.tools.chatbox.settings.notify_sound')}
-                    checked={config.messages.notifySound}
-                    onChange={(notifySound) =>
-                        onUpdate((current) => ({
-                            ...current,
-                            messages: { ...current.messages, notifySound }
-                        }))
-                    }
-                />
-            </CardContent>
-        </Card>
-    );
-}
-
-function MessageSwitch({
-    label,
-    checked,
-    onChange
-}: {
-    label: string;
-    checked: boolean;
-    onChange(checked: boolean): void;
-}) {
-    return (
-        <label className="flex items-center gap-3 text-sm">
-            <span className="flex-1">{label}</span>
-            <Switch checked={checked} onCheckedChange={onChange} />
-        </label>
+            </PopoverContent>
+        </Popover>
     );
 }

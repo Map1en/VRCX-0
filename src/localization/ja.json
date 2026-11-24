@@ -2932,6 +2932,7 @@
                     "placeholder": "メッセージを入力",
                     "translation": "翻訳",
                     "send": "送信",
+                    "translate": "翻訳",
                     "cancel": "キャンセル",
                     "translating": "翻訳中…",
                     "translated": "翻訳結果",
@@ -2944,6 +2945,7 @@
                     "game_not_running": "VRChat を起動すると送信できます。",
                     "isolated": "ゲーム分離モードをオフにすると送信できます。",
                     "translation_settings": "翻訳の設定",
+                    "options": "メッセージの設定",
                     "set_up_translation": "翻訳を設定",
                     "shorten_needs_llm": "AI で短くするには、翻訳の設定で LLM を使うようにしてください。",
                     "send_phrase": "送信",
@@ -2960,6 +2962,7 @@
                     "remove_page": "このページを削除",
                     "empty_page": "行を追加すると、このページに表示されます。",
                     "enabled": "ステータスを表示",
+                    "summary": "{total} ページ中 {on} ページを使用中",
                     "add_line": "行を追加",
                     "blank_line": "空の行",
                     "remove_line": "この行を削除",
@@ -2976,7 +2979,7 @@
                 "afk": {
                     "title": "AFK",
                     "go_afk": "AFK にする",
-                    "back": "戻りました",
+                    "active": "AFK 中",
                     "auto_headset": "ヘッドセットを外したら AFK に切り替える",
                     "auto_headset_hint": "手首のオーバーレイかヘッドセット通知をオンにする必要があります。",
                     "text": "AFK の文言",
@@ -2984,7 +2987,7 @@
                     "show_duration": "離席時間を表示"
                 },
                 "settings": {
-                    "title": "設定",
+                    "connection": "OSC 接続",
                     "host": "アドレス",
                     "port": "ポート",
                     "typing_indicator": "入力中は入力中表示（…）を出す",
@@ -2996,7 +2999,7 @@
                 "editor": {
                     "insert_variable": "値を挿入",
                     "insert_symbol": "記号",
-                    "presets": "スタイル",
+                    "presets": "プリセット",
                     "template_placeholder": "文章を入力して値を挿入"
                 },
                 "variables": {
@@ -3049,7 +3052,6 @@
                 "heart_rate": {
                     "title": "心拍数",
                     "connect": "接続",
-                    "disconnect": "切断",
                     "off": "未接続",
                     "unavailable": "Bluetoothが見つからないか、オフになっています",
                     "waiting": "{device}を待っています…",
@@ -3061,7 +3063,8 @@
                     "hint": "同時に1台しかつながらないデバイスでは、スマホのアプリが切断されることがあります。ステータスの行に{variable}を入れると心拍数を表示できます。アバターパラメーターは、よく使われる HR・isHRBeat（Pulsoid や BOOTH の多くのプレハブ）と、VRCOSC の VRCOSC/Heartrate 系の両方を送信します。",
                     "save_failed": "心拍数の接続を変更できませんでした。",
                     "devices": "標準のBluetooth心拍計に対応しています。胸ベルト・アームバンド、Garmin、COROS、Huawei、Amazfit、Xiaomi Smart Band 10 など。デバイス側で心拍数のブロードキャストをオンにしてください。"
-                }
+                },
+                "module_off": "オフ"
             }
         },
         "profile": {

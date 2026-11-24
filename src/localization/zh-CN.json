@@ -2936,6 +2936,7 @@
                     "placeholder": "输入消息",
                     "translation": "翻译",
                     "send": "发送",
+                    "translate": "翻译",
                     "cancel": "取消",
                     "translating": "翻译中…",
                     "translated": "译文",
@@ -2948,6 +2949,7 @@
                     "game_not_running": "启动 VRChat 后才能发送。",
                     "isolated": "关闭隔离模式后才能发送。",
                     "translation_settings": "翻译设置",
+                    "options": "消息选项",
                     "set_up_translation": "设置翻译",
                     "shorten_needs_llm": "在翻译设置里改用 LLM 后才能用 AI 缩短。",
                     "send_phrase": "发送",
@@ -2964,6 +2966,7 @@
                     "remove_page": "删除此页",
                     "empty_page": "添加一行后这一页才会显示内容。",
                     "enabled": "显示状态",
+                    "summary": "已启用 {on}/{total} 页",
                     "add_line": "添加行",
                     "blank_line": "空白行",
                     "remove_line": "删除这一行",
@@ -2980,7 +2983,7 @@
                 "afk": {
                     "title": "AFK",
                     "go_afk": "我先离开",
-                    "back": "我回来了",
+                    "active": "当前为 AFK 状态",
                     "auto_headset": "摘下头显时自动切换为 AFK",
                     "auto_headset_hint": "需要开启手腕叠加界面或头显通知。",
                     "text": "AFK 文字",
@@ -2988,7 +2991,7 @@
                     "show_duration": "显示离开时长"
                 },
                 "settings": {
-                    "title": "设置",
+                    "connection": "OSC 连接",
                     "host": "地址",
                     "port": "端口",
                     "typing_indicator": "打字时显示正在输入状态（…）",
@@ -3000,7 +3003,7 @@
                 "editor": {
                     "insert_variable": "插入数值",
                     "insert_symbol": "符号",
-                    "presets": "样式",
+                    "presets": "预设",
                     "template_placeholder": "输入文字并插入数值"
                 },
                 "variables": {
@@ -3053,7 +3056,6 @@
                 "heart_rate": {
                     "title": "心率",
                     "connect": "连接",
-                    "disconnect": "断开",
                     "off": "未连接",
                     "unavailable": "未检测到蓝牙，或蓝牙已关闭",
                     "waiting": "正在等待 {device}…",
@@ -3065,7 +3067,8 @@
                     "hint": "部分设备只能连接一台，手机 App 可能会断开。在状态行中插入 {variable} 即可显示心率。模型参数同时发送常见心率预制件使用的 HR、isHRBeat（Pulsoid、Booth 上的多数预制件）和 VRCOSC 的 VRCOSC/Heartrate 系列参数。",
                     "save_failed": "无法更改心率连接。",
                     "devices": "支持标准蓝牙心率设备，如心率带、臂带、Garmin、COROS、华为、Amazfit、小米手环 10 等，需在设备上开启心率广播。"
-                }
+                },
+                "module_off": "已关闭"
             }
         },
         "profile": {

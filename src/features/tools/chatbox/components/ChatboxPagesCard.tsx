@@ -18,6 +18,7 @@ import { GripVerticalIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsCard } from '@/components/layout/SettingsCard';
 import { cn } from '@/lib/utils';
 import type {
     ChatboxConfig,
@@ -27,14 +28,6 @@ import type {
 } from '@/platform/tauri/bindings';
 import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
-} from '@/ui/shadcn/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -140,87 +133,91 @@ export function ChatboxPagesCard({
     }
 
     return (
-        <Card size="sm">
-            <CardHeader>
-                <CardTitle>{t('view.tools.chatbox.pages.title')}</CardTitle>
-                <CardDescription>
-                    {t('view.tools.chatbox.pages.hint')}
-                </CardDescription>
-                <CardAction>
-                    <label className="flex items-center gap-2 text-sm">
-                        {t('view.tools.chatbox.pages.enabled')}
-                        <Switch
-                            checked={config.statusEnabled}
-                            onCheckedChange={(statusEnabled) =>
-                                onUpdate((current) => ({
-                                    ...current,
-                                    statusEnabled
-                                }))
-                            }
-                        />
-                    </label>
-                </CardAction>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+        <SettingsCard
+            cardId="chatbox.status"
+            title={t('view.tools.chatbox.pages.title')}
+            description={
+                config.statusEnabled
+                    ? t('view.tools.chatbox.pages.summary', {
+                          on: config.pages.filter((page) => page.enabled)
+                              .length,
+                          total: config.pages.length
+                      })
+                    : t('view.tools.chatbox.module_off')
+            }
+            defaultOpen={config.statusEnabled}
+            bodyClassName="flex flex-col gap-2 py-3"
+            action={
+                <Switch
+                    aria-label={t('view.tools.chatbox.pages.enabled')}
+                    checked={config.statusEnabled}
+                    onCheckedChange={(statusEnabled) =>
+                        onUpdate((current) => ({
+                            ...current,
+                            statusEnabled
+                        }))
+                    }
+                />
+            }
+        >
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext
+                    items={config.pages.map((page) => page.id)}
+                    strategy={verticalListSortingStrategy}
                 >
-                    <SortableContext
-                        items={config.pages.map((page) => page.id)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        {config.pages.map((page, index) => (
-                            <SortableRow
-                                key={page.id}
-                                id={page.id}
-                                handleClassName="mt-1.5"
-                                className={cn(
-                                    'flex gap-2 rounded-lg border p-2',
-                                    page.id === activePageId &&
-                                        'border-foreground/30',
-                                    !page.enabled && 'bg-muted/30'
-                                )}
-                            >
-                                {(handle) => (
-                                    <>
-                                        {handle}
-                                        <ChatboxPageBody
-                                            page={page}
-                                            index={index}
-                                            meta={meta}
-                                            presetSamples={presetSamples}
-                                            onUpdate={onUpdate}
-                                        />
-                                    </>
-                                )}
-                            </SortableRow>
-                        ))}
-                    </SortableContext>
-                </DndContext>
-                {config.pages.length < meta.limits.maxPages ? (
-                    <div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                                onUpdate((current) => ({
-                                    ...current,
-                                    pages: [
-                                        ...current.pages,
-                                        createChatboxPage()
-                                    ]
-                                }))
-                            }
+                    {config.pages.map((page, index) => (
+                        <SortableRow
+                            key={page.id}
+                            id={page.id}
+                            handleClassName="mt-1.5"
+                            className={cn(
+                                'flex gap-2 rounded-lg border p-2',
+                                page.id === activePageId &&
+                                    'border-foreground/30',
+                                !page.enabled && 'bg-muted/30'
+                            )}
                         >
-                            <PlusIcon />
-                            {t('view.tools.chatbox.pages.add_page')}
-                        </Button>
-                    </div>
-                ) : null}
-            </CardContent>
-        </Card>
+                            {(handle) => (
+                                <>
+                                    {handle}
+                                    <ChatboxPageBody
+                                        page={page}
+                                        index={index}
+                                        meta={meta}
+                                        presetSamples={presetSamples}
+                                        onUpdate={onUpdate}
+                                    />
+                                </>
+                            )}
+                        </SortableRow>
+                    ))}
+                </SortableContext>
+            </DndContext>
+            {config.pages.length < meta.limits.maxPages ? (
+                <div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                            onUpdate((current) => ({
+                                ...current,
+                                pages: [...current.pages, createChatboxPage()]
+                            }))
+                        }
+                    >
+                        <PlusIcon />
+                        {t('view.tools.chatbox.pages.add_page')}
+                    </Button>
+                </div>
+            ) : null}
+            <p className="text-muted-foreground text-xs">
+                {t('view.tools.chatbox.pages.hint')}
+            </p>
+        </SettingsCard>
     );
 }
 

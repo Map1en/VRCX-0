@@ -2943,6 +2943,7 @@
                     "placeholder": "Digite uma mensagem",
                     "translation": "Tradução",
                     "send": "Enviar",
+                    "translate": "Traduzir",
                     "cancel": "Cancelar",
                     "translating": "Traduzindo…",
                     "translated": "Tradução",
@@ -2955,6 +2956,7 @@
                     "game_not_running": "Abra o VRChat para enviar mensagens.",
                     "isolated": "Desative o isolamento do jogo para enviar mensagens.",
                     "translation_settings": "Configurações de tradução",
+                    "options": "Opções de mensagem",
                     "set_up_translation": "Configurar tradução",
                     "shorten_needs_llm": "Para encurtar com IA, use um LLM nas configurações de tradução.",
                     "send_phrase": "Enviar",
@@ -2971,6 +2973,7 @@
                     "remove_page": "Remover página",
                     "empty_page": "Adicione uma linha para esta página mostrar algo.",
                     "enabled": "Mostrar status",
+                    "summary": "{on} de {total} páginas ativas",
                     "add_line": "Adicionar linha",
                     "blank_line": "Linha em branco",
                     "remove_line": "Remover linha",
@@ -2987,7 +2990,7 @@
                 "afk": {
                     "title": "AFK",
                     "go_afk": "Ficar AFK",
-                    "back": "Voltei",
+                    "active": "Você está AFK",
                     "auto_headset": "Mudar para AFK ao tirar o headset",
                     "auto_headset_hint": "Requer o Overlay de Pulso ou as Notificações do headset ativados.",
                     "text": "Texto de AFK",
@@ -2995,7 +2998,7 @@
                     "show_duration": "Mostrar há quanto tempo você está ausente"
                 },
                 "settings": {
-                    "title": "Configurações",
+                    "connection": "Conexão OSC",
                     "host": "Endereço",
                     "port": "Porta",
                     "typing_indicator": "Mostrar o indicador de digitação (…) enquanto digita",
@@ -3007,7 +3010,7 @@
                 "editor": {
                     "insert_variable": "Inserir valor",
                     "insert_symbol": "Símbolos",
-                    "presets": "Estilos",
+                    "presets": "Predefinições",
                     "template_placeholder": "Digite o texto e insira valores"
                 },
                 "variables": {
@@ -3060,7 +3063,6 @@
                 "heart_rate": {
                     "title": "Frequência cardíaca",
                     "connect": "Conectar",
-                    "disconnect": "Desconectar",
                     "off": "Não conectado",
                     "unavailable": "Bluetooth não encontrado ou desligado",
                     "waiting": "Aguardando {device}…",
@@ -3072,7 +3074,8 @@
                     "hint": "Alguns dispositivos só se conectam a um aparelho por vez, então o app do celular pode desconectar. Insira {variable} em uma linha de status para mostrá-la. Os parâmetros do avatar usam os nomes comuns HR e isHRBeat (Pulsoid e muitos prefabs do Booth) e também VRCOSC/Heartrate do VRCOSC.",
                     "save_failed": "Não foi possível alterar a conexão de frequência cardíaca.",
                     "devices": "Funciona com dispositivos Bluetooth padrão de frequência cardíaca: cintas de peito e braçadeiras, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 e outros. Ative a transmissão de frequência cardíaca no dispositivo."
-                }
+                },
+                "module_off": "Desativado"
             }
         },
         "profile": {

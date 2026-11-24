@@ -1,7 +1,8 @@
 import {
     BookmarkPlusIcon,
     LanguagesIcon,
-    Settings2Icon,
+    SendHorizontalIcon,
+    SlidersHorizontalIcon,
     XIcon
 } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
@@ -22,6 +23,13 @@ import { getTranslationConfig } from '@/services/translationService';
 import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import {
+    Popover,
+    PopoverContent,
+    PopoverHeader,
+    PopoverTitle,
+    PopoverTrigger
+} from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 import { Textarea } from '@/ui/shadcn/textarea';
@@ -52,12 +60,16 @@ export function ChatboxComposer({
     maxChars,
     maxQuickPhrases,
     quickPhrases,
+    typingIndicator,
+    notifySound,
     pauseReason,
     onUpdate
 }: {
     maxChars: number;
     maxQuickPhrases: number;
     quickPhrases: string[];
+    typingIndicator: boolean;
+    notifySound: boolean;
     pauseReason: ChatboxPauseReason | null;
     onUpdate(update: ChatboxConfigUpdate): void;
 }) {
@@ -273,6 +285,17 @@ export function ChatboxComposer({
         }
     }
 
+    function submit() {
+        if (busy) {
+            return;
+        }
+        if (translating) {
+            void translate();
+        } else if (text.trim()) {
+            void send(text);
+        }
+    }
+
     function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
         if (event.nativeEvent.isComposing) {
             return;
@@ -295,20 +318,13 @@ export function ChatboxComposer({
             return;
         }
         event.preventDefault();
-        if (busy) {
-            return;
-        }
-        if (translating) {
-            void translate();
-        } else if (text.trim()) {
-            void send(text);
-        }
+        submit();
     }
 
     return (
         <Card size="sm">
             <CardHeader className="flex flex-row items-center gap-2">
-                <CardTitle className="flex-1">
+                <CardTitle className="flex-1 whitespace-nowrap">
                     {t('view.tools.chatbox.composer.title')}
                 </CardTitle>
                 {translationEnabled ? (
@@ -324,26 +340,12 @@ export function ChatboxComposer({
                         <TranslationLanguageSelect
                             value={target}
                             label={t('view.tools.chatbox.composer.translation')}
-                            className="w-40"
+                            className="w-40 min-w-0 shrink"
                             onChange={changeTarget}
                         />
                     </>
                 ) : null}
-                {translationEnabled ? (
-                    <HintTooltip
-                        label={t(
-                            'view.tools.chatbox.composer.translation_settings'
-                        )}
-                    >
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={openTranslationSettings}
-                        >
-                            <Settings2Icon />
-                        </Button>
-                    </HintTooltip>
-                ) : (
+                {translationEnabled ? null : (
                     <Button
                         variant="outline"
                         size="sm"
@@ -353,11 +355,81 @@ export function ChatboxComposer({
                         {t('view.tools.chatbox.composer.set_up_translation')}
                     </Button>
                 )}
+                <Popover>
+                    <HintTooltip
+                        label={t('view.tools.chatbox.composer.options')}
+                    >
+                        <PopoverTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label={t(
+                                        'view.tools.chatbox.composer.options'
+                                    )}
+                                >
+                                    <SlidersHorizontalIcon />
+                                </Button>
+                            }
+                        />
+                    </HintTooltip>
+                    <PopoverContent align="end" className="w-80">
+                        <PopoverHeader>
+                            <PopoverTitle>
+                                {t('view.tools.chatbox.composer.options')}
+                            </PopoverTitle>
+                        </PopoverHeader>
+                        <OptionSwitch
+                            label={t(
+                                'view.tools.chatbox.settings.typing_indicator'
+                            )}
+                            checked={typingIndicator}
+                            onChange={(next) =>
+                                onUpdate((current) => ({
+                                    ...current,
+                                    messages: {
+                                        ...current.messages,
+                                        typingIndicator: next
+                                    }
+                                }))
+                            }
+                        />
+                        <OptionSwitch
+                            label={t(
+                                'view.tools.chatbox.settings.notify_sound'
+                            )}
+                            checked={notifySound}
+                            onChange={(next) =>
+                                onUpdate((current) => ({
+                                    ...current,
+                                    messages: {
+                                        ...current.messages,
+                                        notifySound: next
+                                    }
+                                }))
+                            }
+                        />
+                        {translationEnabled ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="self-start"
+                                onClick={openTranslationSettings}
+                            >
+                                <LanguagesIcon />
+                                {t(
+                                    'view.tools.chatbox.composer.translation_settings'
+                                )}
+                            </Button>
+                        ) : null}
+                    </PopoverContent>
+                </Popover>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-2">
                 <Textarea
                     value={text}
-                    rows={2}
+                    rows={4}
                     maxLength={translating ? undefined : maxChars}
                     placeholder={t('view.tools.chatbox.composer.placeholder')}
                     className="flex-1 resize-none"
@@ -378,6 +450,30 @@ export function ChatboxComposer({
                         <span>
                             {chatboxCharCount(text)} / {maxChars}
                         </span>
+                    )}
+                    {translation ? null : (
+                        <Button
+                            size="sm"
+                            disabled={
+                                (!translating && pauseReason !== null) ||
+                                busy !== null ||
+                                trimmedText === ''
+                            }
+                            onClick={submit}
+                        >
+                            {busy === 'send' ? (
+                                <Spinner />
+                            ) : translating ? (
+                                <LanguagesIcon />
+                            ) : (
+                                <SendHorizontalIcon />
+                            )}
+                            {t(
+                                translating
+                                    ? 'view.tools.chatbox.composer.translate'
+                                    : 'view.tools.chatbox.composer.send'
+                            )}
+                        </Button>
                     )}
                 </div>
                 {quickPhrases.length || canSavePhrase ? (
@@ -508,5 +604,22 @@ export function ChatboxComposer({
                 ) : null}
             </CardContent>
         </Card>
+    );
+}
+
+function OptionSwitch({
+    label,
+    checked,
+    onChange
+}: {
+    label: string;
+    checked: boolean;
+    onChange(checked: boolean): void;
+}) {
+    return (
+        <label className="flex items-center gap-3 text-sm">
+            <span className="flex-1">{label}</span>
+            <Switch checked={checked} onCheckedChange={onChange} />
+        </label>
     );
 }

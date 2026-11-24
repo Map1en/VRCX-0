@@ -58,20 +58,26 @@ describe('ChatboxHeartRateCard', () => {
 
         await screen.findByText('view.tools.chatbox.heart_rate.connected');
         fireEvent.click(
-            screen.getByRole('button', {
-                name: 'view.tools.chatbox.heart_rate.disconnect'
+            screen.getByRole('switch', {
+                name: 'view.tools.chatbox.heart_rate.connect'
             })
         );
 
         await waitFor(() =>
             expect(mocks.appHeartRateConnectedSet).toHaveBeenCalledWith(false)
         );
-        await screen.findByRole('button', {
-            name: 'view.tools.chatbox.heart_rate.connect'
-        });
+        await waitFor(() =>
+            expect(
+                screen
+                    .getByRole('switch', {
+                        name: 'view.tools.chatbox.heart_rate.connect'
+                    })
+                    .getAttribute('aria-checked')
+            ).toBe('false')
+        );
     });
 
-    it('greys out the connect button without Bluetooth', async () => {
+    it('disables the connect switch without Bluetooth', async () => {
         mocks.appHeartRateStatusGet.mockResolvedValue(
             status({ phase: 'unavailable' })
         );
@@ -80,10 +86,12 @@ describe('ChatboxHeartRateCard', () => {
         await screen.findByText('view.tools.chatbox.heart_rate.unavailable');
 
         expect(
-            screen.getByRole('button', {
-                name: 'view.tools.chatbox.heart_rate.connect'
-            })
-        ).toHaveProperty('disabled', true);
+            screen
+                .getByRole('switch', {
+                    name: 'view.tools.chatbox.heart_rate.connect'
+                })
+                .hasAttribute('data-disabled')
+        ).toBe(true);
     });
 
     it('can still be turned off when Bluetooth drops while connected', async () => {
@@ -94,11 +102,11 @@ describe('ChatboxHeartRateCard', () => {
 
         await screen.findByText('view.tools.chatbox.heart_rate.unavailable');
 
-        expect(
-            screen.getByRole('button', {
-                name: 'view.tools.chatbox.heart_rate.disconnect'
-            })
-        ).toHaveProperty('disabled', false);
+        const toggle = screen.getByRole('switch', {
+            name: 'view.tools.chatbox.heart_rate.connect'
+        });
+        expect(toggle.getAttribute('aria-checked')).toBe('true');
+        expect(toggle.hasAttribute('data-disabled')).toBe(false);
     });
 
     it('explains why it stopped when the device has no heart rate', async () => {
