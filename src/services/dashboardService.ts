@@ -6,23 +6,38 @@ import { DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard';
 import { useDashboardStore } from '@/state/dashboardStore';
 
 let loadPromise: Promise<Dashboard[]> | null = null;
+let dashboardGeneration = 0;
 
 async function loadDashboards(): Promise<Dashboard[]> {
+    const generation = dashboardGeneration;
     const store = useDashboardStore.getState();
     store.setLoading();
 
     try {
         const dashboards = await dashboardRepository.getDashboards();
-        store.setDashboards(dashboards);
+        if (generation === dashboardGeneration) {
+            store.setDashboards(dashboards);
+        }
         return dashboards;
     } catch (error) {
-        const message =
-            error instanceof Error
-                ? error.message
-                : 'Failed to load dashboard configurations.';
-        store.setLoadFailed(message);
+        if (generation === dashboardGeneration) {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load dashboard configurations.';
+            store.setLoadFailed(message);
+        }
         throw error;
     }
+}
+
+async function ensureLoadedForMutation(): Promise<number> {
+    const generation = dashboardGeneration;
+    await ensureDashboardsLoaded();
+    if (generation !== dashboardGeneration) {
+        throw new Error('Dashboard state was reset.');
+    }
+    return generation;
 }
 
 export async function ensureDashboardsLoaded(): Promise<Dashboard[]> {
@@ -32,9 +47,12 @@ export async function ensureDashboardsLoaded(): Promise<Dashboard[]> {
     }
 
     if (!loadPromise) {
-        loadPromise = loadDashboards().finally(() => {
-            loadPromise = null;
+        const pending = loadDashboards().finally(() => {
+            if (loadPromise === pending) {
+                loadPromise = null;
+            }
         });
+        loadPromise = pending;
     }
 
     return loadPromise;
@@ -43,7 +61,7 @@ export async function ensureDashboardsLoaded(): Promise<Dashboard[]> {
 export async function createDashboard(
     baseName = 'Dashboard'
 ): Promise<Dashboard> {
-    await ensureDashboardsLoaded();
+    const generation = await ensureLoadedForMutation();
 
     const nextDashboard = sanitizeDashboard({
         id: dashboardRepository.generateDashboardId(),
@@ -64,7 +82,9 @@ export async function createDashboard(
         ...useDashboardStore.getState().dashboards,
         nextDashboard
     ]);
-    useDashboardStore.getState().setDashboards(dashboards);
+    if (generation === dashboardGeneration) {
+        useDashboardStore.getState().setDashboards(dashboards);
+    }
 
     return nextDashboard;
 }
@@ -73,7 +93,7 @@ export async function updateDashboard(
     id: string,
     updates: Record<string, unknown> = {}
 ): Promise<Dashboard> {
-    await ensureDashboardsLoaded();
+    const generation = await ensureLoadedForMutation();
 
     const dashboards = useDashboardStore.getState().dashboards;
     const index = dashboards.findIndex((dashboard) => dashboard.id === id);
@@ -95,13 +115,15 @@ export async function updateDashboard(
     const savedDashboards =
         await dashboardRepository.saveDashboards(nextDashboards);
 
-    useDashboardStore.getState().setDashboards(savedDashboards);
+    if (generation === dashboardGeneration) {
+        useDashboardStore.getState().setDashboards(savedDashboards);
+    }
 
     return nextDashboard;
 }
 
 export async function deleteDashboard(id: string): Promise<void> {
-    await ensureDashboardsLoaded();
+    const generation = await ensureLoadedForMutation();
 
     const nextDashboards = useDashboardStore
         .getState()
@@ -109,10 +131,15 @@ export async function deleteDashboard(id: string): Promise<void> {
     const savedDashboards =
         await dashboardRepository.saveDashboards(nextDashboards);
 
-    useDashboardStore.getState().setDashboardsAfterDelete(id, savedDashboards);
+    if (generation === dashboardGeneration) {
+        useDashboardStore
+            .getState()
+            .setDashboardsAfterDelete(id, savedDashboards);
+    }
 }
 
 export function resetDashboardState(): void {
+    dashboardGeneration += 1;
     loadPromise = null;
     useDashboardStore.getState().reset();
 }

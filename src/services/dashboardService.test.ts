@@ -34,14 +34,17 @@ import {
 type Deferred<T> = {
     promise: Promise<T>;
     resolve: (value: T) => void;
+    reject: (reason?: unknown) => void;
 };
 
 function deferred<T>(): Deferred<T> {
     let resolve!: (value: T) => void;
-    const promise = new Promise<T>((promiseResolve) => {
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((promiseResolve, promiseReject) => {
         resolve = promiseResolve;
+        reject = promiseReject;
     });
-    return { promise, resolve };
+    return { promise, resolve, reject };
 }
 
 const existingDashboard = {
@@ -245,22 +248,87 @@ describe('dashboardStore persistence ownership', () => {
         });
     });
 
-    it('starts a fresh shared load after a reset while the earlier load still writes when it lands', async () => {
+    it('ignores a load that lands after a reset and keeps the fresh shared load', async () => {
         const stale = deferred<(typeof existingDashboard)[]>();
+        const fresh = deferred<(typeof existingDashboard)[]>();
         mocks.getDashboards
             .mockReturnValueOnce(stale.promise)
-            .mockResolvedValueOnce([]);
+            .mockReturnValueOnce(fresh.promise);
 
         const first = ensureDashboardsLoaded();
         resetDashboardState();
         const second = ensureDashboardsLoaded();
-
-        expect(mocks.getDashboards).toHaveBeenCalledTimes(2);
-        await expect(second).resolves.toEqual([]);
         stale.resolve([existingDashboard]);
         await expect(first).resolves.toEqual([existingDashboard]);
-        expect(useDashboardStore.getState().dashboards).toEqual([
-            existingDashboard
-        ]);
+
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [],
+            loaded: false,
+            loadStatus: 'running'
+        });
+        const third = ensureDashboardsLoaded();
+        expect(mocks.getDashboards).toHaveBeenCalledTimes(2);
+
+        fresh.resolve([]);
+        await expect(second).resolves.toEqual([]);
+        await expect(third).resolves.toEqual([]);
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [],
+            loaded: true,
+            loadStatus: 'ready'
+        });
+    });
+
+    it('ignores a load failure that lands after a reset', async () => {
+        const stale = deferred<(typeof existingDashboard)[]>();
+        mocks.getDashboards.mockReturnValueOnce(stale.promise);
+
+        const first = ensureDashboardsLoaded();
+        resetDashboardState();
+        stale.reject(new Error('storage unavailable'));
+
+        await expect(first).rejects.toThrow('storage unavailable');
+        expect(useDashboardStore.getState()).toMatchObject({
+            loaded: false,
+            loadStatus: 'idle',
+            detail: ''
+        });
+    });
+
+    it('does not save a change that was waiting on a load from before a reset', async () => {
+        const stale = deferred<(typeof existingDashboard)[]>();
+        mocks.getDashboards.mockReturnValueOnce(stale.promise);
+
+        const creating = createDashboard('Dashboard');
+        resetDashboardState();
+        stale.resolve([existingDashboard]);
+
+        await expect(creating).rejects.toThrow('Dashboard state was reset.');
+        expect(mocks.saveDashboards).not.toHaveBeenCalled();
+    });
+
+    it('does not mirror a save that lands after a reset', async () => {
+        useDashboardStore.setState({
+            dashboards: [existingDashboard],
+            loaded: true,
+            loadStatus: 'ready',
+            detail: ''
+        });
+        const save = deferred<(typeof existingDashboard)[]>();
+        mocks.saveDashboards.mockReturnValue(save.promise);
+
+        const update = updateDashboard(existingDashboard.id, {
+            name: 'Renamed'
+        });
+        await vi.waitFor(() => expect(mocks.saveDashboards).toHaveBeenCalled());
+        resetDashboardState();
+        save.resolve([{ ...existingDashboard, name: 'Renamed' }]);
+
+        await expect(update).resolves.toMatchObject({ name: 'Renamed' });
+        expect(useDashboardStore.getState()).toMatchObject({
+            dashboards: [],
+            loaded: false,
+            loadStatus: 'idle'
+        });
     });
 });
