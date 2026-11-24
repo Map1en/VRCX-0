@@ -62,7 +62,6 @@ export function useSearchResults({
     worldCategories: SearchWorldCategory[];
 }) {
     const { t } = useTranslation();
-    const searchSequence = useSearchPageStore((state) => state.searchSequence);
     const [userRequest, setUserRequest] = useSearchPageField('userRequest');
     const [userResults, setUserResults] = useSearchPageField('userResults');
     const [isUserLoading, setIsUserLoading] =
@@ -84,6 +83,7 @@ export function useSearchResults({
 
     const runUserSearch = useCallback(
         async (nextRequest: UserSearchRequest) => {
+            const searchSequence = useSearchPageStore.getState().searchSequence;
             const sequence = searchSequence.user + 1;
             searchSequence.user = sequence;
             setIsUserLoading(true);
@@ -117,11 +117,12 @@ export function useSearchResults({
                 }
             }
         },
-        [searchSequence, setIsUserLoading, setUserRequest, setUserResults, t]
+        [setIsUserLoading, setUserRequest, setUserResults, t]
     );
 
     const runWorldSearch = useCallback(
         async (nextRequest: WorldSearchRequest) => {
+            const searchSequence = useSearchPageStore.getState().searchSequence;
             const sequence = searchSequence.world + 1;
             searchSequence.world = sequence;
             setIsWorldLoading(true);
@@ -156,11 +157,12 @@ export function useSearchResults({
                 }
             }
         },
-        [searchSequence, setIsWorldLoading, setWorldRequest, setWorldResults, t]
+        [setIsWorldLoading, setWorldRequest, setWorldResults, t]
     );
 
     const runGroupSearch = useCallback(
         async (nextRequest: GroupSearchRequest) => {
+            const searchSequence = useSearchPageStore.getState().searchSequence;
             const sequence = searchSequence.group + 1;
             searchSequence.group = sequence;
             setIsGroupLoading(true);
@@ -190,11 +192,12 @@ export function useSearchResults({
                 }
             }
         },
-        [searchSequence, setIsGroupLoading, setGroupRequest, setGroupResults, t]
+        [setIsGroupLoading, setGroupRequest, setGroupResults, t]
     );
 
     const runAvatarSearch = useCallback(
         async (nextRequest: AvatarSearchRequest) => {
+            const searchSequence = useSearchPageStore.getState().searchSequence;
             const sequence = searchSequence.avatar + 1;
             searchSequence.avatar = sequence;
             setIsAvatarLoading(true);
@@ -232,13 +235,7 @@ export function useSearchResults({
                 }
             }
         },
-        [
-            searchSequence,
-            setIsAvatarLoading,
-            setAvatarRequest,
-            setAvatarResults,
-            t
-        ]
+        [setIsAvatarLoading, setAvatarRequest, setAvatarResults, t]
     );
 
     const handleSearch = useCallback(() => {
@@ -331,6 +328,7 @@ export function useSearchResults({
     }, [activeTab, handleSearch, searchText]);
 
     const handleClearSearch = useCallback(() => {
+        const searchSequence = useSearchPageStore.getState().searchSequence;
         searchSequence.user += 1;
         searchSequence.world += 1;
         searchSequence.group += 1;
@@ -349,7 +347,6 @@ export function useSearchResults({
         setGroupRequest(null);
         setAvatarRequest(null);
     }, [
-        searchSequence,
         setSearchText,
         setIsUserLoading,
         setIsWorldLoading,
