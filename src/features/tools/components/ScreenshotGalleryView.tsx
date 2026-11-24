@@ -95,25 +95,30 @@ export type ScreenshotGalleryAlbums = {
     onOpen: (kind: ScreenshotAlbumKind, facet: ScreenshotFacet) => void;
 };
 
+function createTimelineSectionOf(dateIsoFormat: boolean, locale: string) {
+    const labels = new Map<string, string>();
+    return (item: ScreenshotLibraryImage) => {
+        const time = resolveScreenshotCapturedTime(item);
+        const key = screenshotDayKey(time);
+        let label = labels.get(key);
+        if (label === undefined) {
+            label = !key
+                ? '\u2014'
+                : dateIsoFormat
+                  ? key
+                  : formatScreenshotDay(time, locale);
+            labels.set(key, label);
+        }
+        return { key, label };
+    };
+}
+
 function useTimelineSectionOf(locale: string) {
     const dateIsoFormat = useShellStore((state) => state.dateIsoFormat);
-    return useMemo(() => {
-        const labels = new Map<string, string>();
-        return (item: ScreenshotLibraryImage) => {
-            const time = resolveScreenshotCapturedTime(item);
-            const key = screenshotDayKey(time);
-            let label = labels.get(key);
-            if (label === undefined) {
-                label = !key
-                    ? '\u2014'
-                    : dateIsoFormat
-                      ? key
-                      : formatScreenshotDay(time, locale);
-                labels.set(key, label);
-            }
-            return { key, label };
-        };
-    }, [dateIsoFormat, locale]);
+    return useMemo(
+        () => createTimelineSectionOf(dateIsoFormat, locale),
+        [dateIsoFormat, locale]
+    );
 }
 
 function VirtualFolderButton({

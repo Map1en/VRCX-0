@@ -102,46 +102,49 @@ export function useGameLogRows({
     const seenLiveEventCountRef = useRef(throttledGameLogEventCount);
 
     const drainSessionHeadRefresh = useEffectEvent(() => {
-        if (
-            !headRefreshQueuedRef.current ||
-            fullLoadRunningRef.current ||
-            headRefreshRunningRef.current
-        ) {
-            return;
+        function drain() {
+            if (
+                !headRefreshQueuedRef.current ||
+                fullLoadRunningRef.current ||
+                headRefreshRunningRef.current
+            ) {
+                return;
+            }
+            headRefreshQueuedRef.current = false;
+            const liveQuery = liveSessionQueryRef.current;
+            if (!liveQuery) {
+                return;
+            }
+            const requestId = requestIdRef.current;
+            headRefreshRunningRef.current = true;
+            void gameLogRepository
+                .queryLatestSessions({
+                    ...liveQuery,
+                    limit: GAME_LOG_SESSION_HEAD_QUERY_LIMIT
+                })
+                .then((head) => {
+                    if (requestIdRef.current !== requestId) {
+                        return;
+                    }
+                    setSessions((current) =>
+                        mergeGameLogSessionHead(
+                            current,
+                            head,
+                            liveQuery.limit ?? current.length
+                        )
+                    );
+                })
+                .catch(() => {
+                    if (requestIdRef.current === requestId) {
+                        setLiveReloadToken((current) => current + 1);
+                    }
+                })
+                .finally(() => {
+                    headRefreshRunningRef.current = false;
+                    drain();
+                });
         }
-        headRefreshQueuedRef.current = false;
-        const liveQuery = liveSessionQueryRef.current;
-        if (!liveQuery) {
-            return;
-        }
-        const requestId = requestIdRef.current;
-        headRefreshRunningRef.current = true;
-        void gameLogRepository
-            .queryLatestSessions({
-                ...liveQuery,
-                limit: GAME_LOG_SESSION_HEAD_QUERY_LIMIT
-            })
-            .then((head) => {
-                if (requestIdRef.current !== requestId) {
-                    return;
-                }
-                setSessions((current) =>
-                    mergeGameLogSessionHead(
-                        current,
-                        head,
-                        liveQuery.limit ?? current.length
-                    )
-                );
-            })
-            .catch(() => {
-                if (requestIdRef.current === requestId) {
-                    setLiveReloadToken((current) => current + 1);
-                }
-            })
-            .finally(() => {
-                headRefreshRunningRef.current = false;
-                drainSessionHeadRefresh();
-            });
+        drain();
     });
 
     const handleLiveGameLogEvent = useEffectEvent(() => {
