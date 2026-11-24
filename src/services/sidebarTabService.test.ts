@@ -25,7 +25,9 @@ const FAVORITE_TAB = {
 async function loadStore(savedLayout: unknown[]) {
     vi.resetModules();
     mocks.getString.mockResolvedValue(JSON.stringify(savedLayout));
-    return import('@/state/sidebarTabStore');
+    const service = await import('./sidebarTabService');
+    const store = await import('@/state/sidebarTabStore');
+    return { ...service, ...store };
 }
 
 function savedLayout() {
@@ -180,5 +182,71 @@ describe('customizing sidebar tabs', () => {
             ['friends', true],
             ['groups', false]
         ]);
+    });
+});
+
+describe('hydrating the saved sidebar layout', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mocks.setString.mockResolvedValue(null);
+    });
+
+    it('reads the saved layout once for every caller', async () => {
+        const store = await loadStore([FAVORITE_TAB]);
+
+        await Promise.all([
+            store.hydrateSidebarTabLayout(),
+            store.hydrateSidebarTabLayout()
+        ]);
+        await store.hydrateSidebarTabLayout();
+
+        expect(mocks.getString).toHaveBeenCalledOnce();
+        expect(mocks.getString).toHaveBeenCalledWith('sidebarTabLayout', '[]');
+        expect(store.useSidebarTabStore.getState()).toMatchObject({
+            tabLayoutHydrated: true
+        });
+        expect(
+            store.useSidebarTabStore.getState().tabLayout.map((item) => item.id)
+        ).toEqual(['friends', 'favorite-a', 'groups']);
+    });
+
+    it('retries reading the layout after a failed read', async () => {
+        const store = await loadStore([]);
+        mocks.getString
+            .mockRejectedValueOnce(new Error('IPC failed'))
+            .mockResolvedValueOnce(JSON.stringify([FAVORITE_TAB]));
+
+        await expect(store.hydrateSidebarTabLayout()).rejects.toThrow(
+            'IPC failed'
+        );
+        expect(store.useSidebarTabStore.getState().tabLayoutHydrated).toBe(
+            false
+        );
+
+        await store.hydrateSidebarTabLayout();
+
+        expect(mocks.getString).toHaveBeenCalledTimes(2);
+        expect(store.useSidebarTabStore.getState().tabLayoutHydrated).toBe(
+            true
+        );
+    });
+
+    it('normalizes a saved layout before mirroring and persisting it', async () => {
+        const store = await loadStore([]);
+
+        await store.saveSidebarTabLayout([]);
+
+        const ids = store.useSidebarTabStore
+            .getState()
+            .tabLayout.map((item) => item.id);
+        expect(ids).toEqual(['friends', 'groups']);
+        expect(store.useSidebarTabStore.getState().tabLayoutHydrated).toBe(
+            true
+        );
+        expect(mocks.setString).toHaveBeenCalledWith(
+            'sidebarTabLayout',
+            expect.any(String)
+        );
+        expect(savedLayout().map((item) => item.id)).toEqual(ids);
     });
 });

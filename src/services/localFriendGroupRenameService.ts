@@ -1,15 +1,15 @@
 import configRepository from '@/repositories/configRepository';
 import { setLocalFavoriteFriendsGroupsPreference } from '@/services/preferencesService';
+import {
+    hydrateSidebarTabLayout,
+    saveSidebarTabLayout
+} from '@/services/sidebarTabService';
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { safeJsonParse } from '@/shared/utils/json';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeSidebarTabLayout } from '@/shared/utils/sidebarTabLayout';
 import { usePreferencesStore } from '@/state/preferencesStore';
-import {
-    hydrateSidebarTabLayout,
-    saveSidebarTabLayout,
-    useSidebarTabStore
-} from '@/state/sidebarTabStore';
+import { useSidebarTabStore } from '@/state/sidebarTabStore';
 
 function renameStrings(value: unknown, from: string, to: string): unknown {
     if (value === from) {

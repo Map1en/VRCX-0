@@ -12,6 +12,10 @@ import { getNavIconComponent } from '@/components/layout/navIconRegistry';
 import { cn } from '@/lib/utils';
 import configRepository from '@/repositories/configRepository';
 import { refreshFriendAndFavoriteSnapshots } from '@/services/backgroundMaintenanceService';
+import {
+    hydrateSidebarTabLayout,
+    saveSidebarTabLayout
+} from '@/services/sidebarTabService';
 import { toast } from '@/services/toastService';
 import { restoreNormalWindowModeForIntent } from '@/services/windowModeService';
 import { SECOND_MS } from '@/shared/constants/time';
@@ -23,10 +27,6 @@ import {
     type SidebarWorldRoomsTabLayoutItem
 } from '@/shared/utils/sidebarTabLayout';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import {
-    hydrateSidebarTabLayout,
-    saveSidebarTabLayout
-} from '@/state/sidebarTabStore';
 import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
