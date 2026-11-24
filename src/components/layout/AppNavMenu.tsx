@@ -14,6 +14,7 @@ import { setNavbarCollapsedPreference } from '@/services/preferencesService';
 import { removeShellMenuNotify } from '@/services/shellNotificationDotService';
 import { toast } from '@/services/toastService';
 import { triggerToolByKey } from '@/services/toolActionService';
+import { refreshVrcNotificationsForCurrentUser } from '@/services/vrcNotificationService';
 import { DASHBOARD_NAV_KEY_PREFIX } from '@/shared/constants/dashboard';
 import { useDashboardStore } from '@/state/dashboardStore';
 import {
@@ -190,9 +191,6 @@ function useAppNavNotifications({
     const vrcUnseenNotificationCount = useVrcNotificationStore(
         (state) => state.unseenCount
     );
-    const loadVrcNotifications = useVrcNotificationStore(
-        (state) => state.refreshForCurrentUser
-    );
     const hasUnseenBundles = useInventoryBundleStore(hasUnseenInventoryBundles);
     const hasUnseenVrcNotifications = vrcUnseenNotificationCount > 0;
     const notifiedKeys = useMemo(() => {
@@ -210,8 +208,8 @@ function useAppNavNotifications({
         if (sessionPhase !== 'ready' || !currentUserId) {
             return;
         }
-        loadVrcNotifications().catch(() => {});
-    }, [currentUserId, loadVrcNotifications, sessionPhase]);
+        refreshVrcNotificationsForCurrentUser().catch(() => {});
+    }, [currentUserId, sessionPhase]);
 
     useEffect(() => {
         if (sessionPhase !== 'ready' || !currentUserId) {

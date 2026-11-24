@@ -25,6 +25,12 @@ import {
     notifyShellMenu,
     removeShellMenuNotify
 } from './shellNotificationDotService';
+import {
+    expireVrcNotifications,
+    markVrcNotificationsSeen,
+    patchVrcNotification,
+    upsertVrcNotification
+} from './vrcNotificationService';
 
 type ProjectionRecord = Record<string, unknown>;
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
@@ -214,10 +220,10 @@ async function handleRealtimeNotificationProjection(
     const store = useVrcNotificationStore.getState();
 
     if (payload.expiredIds.length) {
-        store.expireNotifications(payload.expiredIds);
+        expireVrcNotifications(payload.expiredIds);
     }
     if (payload.seenIds.length) {
-        store.markNotificationsSeen(payload.seenIds);
+        markVrcNotificationsSeen(payload.seenIds);
     }
 
     for (const upsert of payload.upserts) {
@@ -239,7 +245,7 @@ async function handleRealtimeNotificationProjection(
                 ...notification
             };
         }
-        store.upsertNotification(notification);
+        upsertVrcNotification(notification);
         const mergedNotification =
             useVrcNotificationStore
                 .getState()
@@ -262,9 +268,7 @@ function handleRealtimeEntryCorrection(
         return;
     }
     if (payload.stream === 'notification') {
-        useVrcNotificationStore
-            .getState()
-            .patchNotification(id, payload.fields);
+        patchVrcNotification(id, payload.fields);
     }
 }
 
@@ -305,7 +309,7 @@ async function handleRealtimeInstanceClosedProjection(
     if (!notification.id) {
         return;
     }
-    useVrcNotificationStore.getState().upsertNotification(notification);
+    upsertVrcNotification(notification);
     if (await shouldNotifyInstanceClosed()) {
         notifyShellMenu('notification');
     }

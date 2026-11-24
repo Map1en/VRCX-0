@@ -38,6 +38,10 @@ import {
     shouldShowUpdateUi
 } from '@/services/updateInstallService';
 import {
+    openVrcNotificationCenter,
+    setVrcNotificationCenterOpen
+} from '@/services/vrcNotificationService';
+import {
     enterSidebarWindowMode,
     restoreNormalWindowMode,
     runAfterRestoringNormalWindow,
@@ -182,12 +186,6 @@ export function useTitleBarActions(
         useVrcNotificationStore(selectCanMarkAllSeen);
     const isVrcNotificationCenterOpen = useVrcNotificationStore(
         (state) => state.isCenterOpen
-    );
-    const openVrcNotificationCenter = useVrcNotificationStore(
-        (state) => state.openCenter
-    );
-    const setVrcNotificationCenterOpen = useVrcNotificationStore(
-        (state) => state.setCenterOpen
     );
     const isMarkingAllVrcNotificationsSeen = useVrcNotificationStore(
         (state) => state.markAllSeenProgress !== null

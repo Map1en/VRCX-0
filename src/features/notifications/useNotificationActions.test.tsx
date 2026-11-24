@@ -53,15 +53,8 @@ vi.mock('@/state/modalStore', () => ({
         })
 }));
 
-vi.mock('@/state/vrcNotificationStore', () => ({
-    useVrcNotificationStore: (
-        selector: (state: {
-            markNotificationRead: typeof mocks.markSeen;
-        }) => unknown
-    ) =>
-        selector({
-            markNotificationRead: mocks.markSeen
-        })
+vi.mock('@/services/vrcNotificationService', () => ({
+    markVrcNotificationRead: mocks.markSeen
 }));
 
 vi.mock('@/repositories/notificationPersistenceRepository', () => ({

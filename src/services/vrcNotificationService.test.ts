@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
+import i18n from '@/services/i18nService';
 
 type Deferred<T> = {
     promise: Promise<T>;
@@ -52,13 +53,27 @@ vi.mock('@/services/shellIntegrationService', () => ({
     setTaskbarOverlayNotification: vi.fn(() => Promise.resolve())
 }));
 
-import { useRuntimeStore } from './runtimeStore';
-import { useShellStore } from './shellStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
+import { useShellStore } from '@/state/shellStore';
 import {
     selectCanMarkAllSeen,
     selectMarkAllSeenRowState,
     useVrcNotificationStore
-} from './vrcNotificationStore';
+} from '@/state/vrcNotificationStore';
+
+import {
+    expireVrcNotifications,
+    loadVrcNotificationsForCurrentUser,
+    markAllVrcNotificationsSeen,
+    markVrcNotificationRead,
+    markVrcNotificationsSeen,
+    openVrcNotificationCenter,
+    patchVrcNotification,
+    refreshVrcNotificationsForCurrentUser,
+    resetVrcNotificationState,
+    setVrcNotificationCenterOpen,
+    upsertVrcNotification
+} from './vrcNotificationService';
 
 describe('vrcNotificationStore', () => {
     beforeEach(() => {
@@ -104,7 +119,7 @@ describe('vrcNotificationStore', () => {
             currentUserId: 'usr_me',
             currentUserEndpoint: 'https://api.example.test/api/1'
         });
-        useVrcNotificationStore.getState().resetVrcNotificationState();
+        resetVrcNotificationState();
     });
 
     async function loadRowsAtCap() {
@@ -117,15 +132,14 @@ describe('vrcNotificationStore', () => {
                 created_at: new Date(1700000000000 + index).toISOString()
             }))
         );
-        await useVrcNotificationStore.getState().loadForCurrentUser();
+        await loadVrcNotificationsForCurrentUser();
         expect(useVrcNotificationStore.getState().rows).toHaveLength(2000);
     }
 
     it('caps live upserts so a long session cannot grow rows without bound', async () => {
         await loadRowsAtCap();
-        const store = useVrcNotificationStore.getState();
         for (let index = 2000; index < 2050; index += 1) {
-            store.upsertNotification({
+            upsertVrcNotification({
                 id: `notif_${index}`,
                 type: 'inviteResponse',
                 version: 2,
@@ -142,9 +156,8 @@ describe('vrcNotificationStore', () => {
 
     it('keeps an upserted notification even when it sorts past the cap', async () => {
         await loadRowsAtCap();
-        const store = useVrcNotificationStore.getState();
 
-        store.upsertNotification({
+        upsertVrcNotification({
             id: 'notif_backfill',
             type: 'inviteResponse',
             version: 2,
@@ -167,10 +180,10 @@ describe('vrcNotificationStore', () => {
         }));
         notificationRepositoryMock.queryNotifications.mockResolvedValue(loaded);
 
-        await useVrcNotificationStore.getState().loadForCurrentUser();
+        await loadVrcNotificationsForCurrentUser();
         expect(useVrcNotificationStore.getState().rows).toHaveLength(2400);
 
-        useVrcNotificationStore.getState().upsertNotification({
+        upsertVrcNotification({
             id: 'notif_live',
             type: 'inviteResponse',
             version: 2,
@@ -197,15 +210,13 @@ describe('vrcNotificationStore', () => {
                 }
             ]);
 
-        const previousLoadPromise = useVrcNotificationStore
-            .getState()
-            .loadForCurrentUser();
-        useVrcNotificationStore.getState().resetVrcNotificationState();
+        const previousLoadPromise = loadVrcNotificationsForCurrentUser();
+        resetVrcNotificationState();
         useRuntimeStore.getState().setAuthBootstrap({
             currentUserId: 'usr_other',
             currentUserEndpoint: 'https://api.example.test/api/1'
         });
-        await useVrcNotificationStore.getState().loadForCurrentUser();
+        await loadVrcNotificationsForCurrentUser();
 
         previousLoad.resolve([
             {
@@ -236,8 +247,8 @@ describe('vrcNotificationStore', () => {
         notificationRepositoryMock.queryNotifications.mockReturnValueOnce(
             persistedRows.promise
         );
-        const load = useVrcNotificationStore.getState().loadForCurrentUser();
-        useVrcNotificationStore.getState().upsertNotification({
+        const load = loadVrcNotificationsForCurrentUser();
+        upsertVrcNotification({
             id: 'notif_live',
             type: 'invite',
             version: 2,
@@ -285,8 +296,8 @@ describe('vrcNotificationStore', () => {
         notificationRepositoryMock.queryNotifications.mockReturnValueOnce(
             persistedRows.promise
         );
-        const load = useVrcNotificationStore.getState().loadForCurrentUser();
-        useVrcNotificationStore.getState().upsertNotification({
+        const load = loadVrcNotificationsForCurrentUser();
+        upsertVrcNotification({
             id: 'notif_live',
             type: 'invite',
             version: 2,
@@ -314,15 +325,13 @@ describe('vrcNotificationStore', () => {
         }>();
         commandMocks.sync.mockReturnValueOnce(previousSync.promise);
 
-        const previousRefreshPromise = useVrcNotificationStore
-            .getState()
-            .refreshForCurrentUser();
-        useVrcNotificationStore.getState().resetVrcNotificationState();
+        const previousRefreshPromise = refreshVrcNotificationsForCurrentUser();
+        resetVrcNotificationState();
         useRuntimeStore.getState().setAuthBootstrap({
             currentUserId: 'usr_other',
             currentUserEndpoint: 'https://api.example.test/api/1'
         });
-        useVrcNotificationStore.getState().upsertNotification({
+        upsertVrcNotification({
             id: 'notif_current_account',
             type: 'inviteResponse',
             version: 2,
@@ -352,9 +361,9 @@ describe('vrcNotificationStore', () => {
             seen: false,
             created_at: '2020-01-01T00:00:00.000Z'
         };
-        useVrcNotificationStore.getState().upsertNotification(friendRequest);
+        upsertVrcNotification(friendRequest);
 
-        await useVrcNotificationStore.getState().markAllSeen();
+        await markAllVrcNotificationsSeen();
 
         expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
@@ -384,13 +393,12 @@ describe('vrcNotificationStore', () => {
             seen: false,
             created_at: '2020-01-01T00:00:00.000Z'
         };
-        useVrcNotificationStore.getState().upsertNotification(friendRequest);
+        upsertVrcNotification(friendRequest);
 
-        await expect(
-            useVrcNotificationStore
-                .getState()
-                .markNotificationRead(friendRequest)
-        ).resolves.toEqual({ remoteFailed: false, message: '' });
+        await expect(markVrcNotificationRead(friendRequest)).resolves.toEqual({
+            remoteFailed: false,
+            message: ''
+        });
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
             items: [
@@ -434,11 +442,11 @@ describe('vrcNotificationStore', () => {
             ],
             lastError: 'Too many requests'
         });
-        useVrcNotificationStore.getState().upsertNotification(friendRequest);
+        upsertVrcNotification(friendRequest);
 
-        await expect(
-            useVrcNotificationStore.getState().markAllSeen()
-        ).resolves.toEqual({ failedCount: 1 });
+        await expect(markAllVrcNotificationsSeen()).resolves.toEqual({
+            failedCount: 1
+        });
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
             items: [
@@ -486,11 +494,12 @@ describe('vrcNotificationStore', () => {
             ],
             lastError: 'HTTP 500'
         });
-        useVrcNotificationStore.getState().upsertNotification(boop);
+        upsertVrcNotification(boop);
 
-        await expect(
-            useVrcNotificationStore.getState().markNotificationRead(boop)
-        ).resolves.toEqual({ remoteFailed: true, message: 'HTTP 500' });
+        await expect(markVrcNotificationRead(boop)).resolves.toEqual({
+            remoteFailed: true,
+            message: 'HTTP 500'
+        });
 
         const state = useVrcNotificationStore.getState();
         expect(state.rows[0]).toMatchObject({ id: boop.id, seen: true });
@@ -509,10 +518,10 @@ describe('vrcNotificationStore', () => {
             seen: true,
             created_at: new Date().toISOString()
         };
-        useVrcNotificationStore.getState().upsertNotification(invite);
+        upsertVrcNotification(invite);
         expect(useVrcNotificationStore.getState().pendingInviteCount).toBe(1);
 
-        await useVrcNotificationStore.getState().markNotificationRead(invite);
+        await markVrcNotificationRead(invite);
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
             items: [{ id: 'notif_invite', version: 1, type: 'invite' }]
@@ -563,14 +572,12 @@ describe('vrcNotificationStore', () => {
             ],
             lastError: 'Too many requests'
         });
-        useVrcNotificationStore.getState().upsertNotification(friendRequest);
-        useVrcNotificationStore
-            .getState()
-            .upsertNotification(failedNotification);
+        upsertVrcNotification(friendRequest);
+        upsertVrcNotification(failedNotification);
 
-        await expect(
-            useVrcNotificationStore.getState().markAllSeen()
-        ).resolves.toEqual({ failedCount: 1 });
+        await expect(markAllVrcNotificationsSeen()).resolves.toEqual({
+            failedCount: 1
+        });
 
         expect(
             useVrcNotificationStore
@@ -586,7 +593,7 @@ describe('vrcNotificationStore', () => {
     });
 
     it('excludes expired friend requests from the notification center', () => {
-        useVrcNotificationStore.getState().upsertNotification({
+        upsertVrcNotification({
             id: 'notif_expired_friend_request',
             type: 'friendRequest',
             version: 1,
@@ -614,7 +621,7 @@ describe('vrcNotificationStore', () => {
             }
         ]);
 
-        await useVrcNotificationStore.getState().refreshForCurrentUser();
+        await refreshVrcNotificationsForCurrentUser();
 
         expect(commandMocks.sync).toHaveBeenCalledTimes(1);
         expect(commandMocks.sync.mock.invocationCallOrder[0]).toBeLessThan(
@@ -638,9 +645,9 @@ describe('vrcNotificationStore', () => {
             }
         ]);
 
-        await expect(
-            useVrcNotificationStore.getState().refreshForCurrentUser()
-        ).rejects.toThrow('Network unavailable');
+        await expect(refreshVrcNotificationsForCurrentUser()).rejects.toThrow(
+            'Network unavailable'
+        );
 
         expect(useVrcNotificationStore.getState().rows[0]?.id).toBe(
             'notif_local'
@@ -659,11 +666,9 @@ describe('vrcNotificationStore', () => {
             seen: false,
             created_at: new Date().toISOString()
         };
-        useVrcNotificationStore
-            .getState()
-            .upsertNotification(systemNotification);
+        upsertVrcNotification(systemNotification);
 
-        await useVrcNotificationStore.getState().markAllSeen();
+        await markAllVrcNotificationsSeen();
 
         expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
@@ -703,11 +708,11 @@ describe('vrcNotificationStore', () => {
             seen: false,
             created_at: new Date().toISOString()
         };
-        useVrcNotificationStore.getState().upsertNotification(announcement);
-        useVrcNotificationStore.getState().upsertNotification(plain);
+        upsertVrcNotification(announcement);
+        upsertVrcNotification(plain);
         notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
 
-        await useVrcNotificationStore.getState().markAllSeen();
+        await markAllVrcNotificationsSeen();
 
         expect(
             notificationActionMocks.sendNotificationButtonResponse
@@ -752,15 +757,15 @@ describe('vrcNotificationStore', () => {
             expired: true,
             created_at: new Date().toISOString()
         };
-        useVrcNotificationStore.getState().upsertNotification(invite);
-        useVrcNotificationStore.getState().upsertNotification(requestInvite);
-        useVrcNotificationStore.getState().upsertNotification(expiredInvite);
+        upsertVrcNotification(invite);
+        upsertVrcNotification(requestInvite);
+        upsertVrcNotification(expiredInvite);
         expect(useVrcNotificationStore.getState()).toMatchObject({
             unseenCount: 0,
             pendingInviteCount: 2
         });
 
-        await useVrcNotificationStore.getState().markAllSeen();
+        await markAllVrcNotificationsSeen();
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledTimes(1);
         expect(
@@ -784,11 +789,9 @@ describe('vrcNotificationStore', () => {
             seen: false,
             created_at: new Date().toISOString()
         };
-        useVrcNotificationStore
-            .getState()
-            .upsertNotification(activityNotification);
+        upsertVrcNotification(activityNotification);
 
-        await useVrcNotificationStore.getState().markAllSeen();
+        await markAllVrcNotificationsSeen();
 
         expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
@@ -822,14 +825,10 @@ describe('vrcNotificationStore', () => {
             seen: false,
             created_at: '2020-01-01T00:00:00.000Z'
         };
-        useVrcNotificationStore
-            .getState()
-            .upsertNotification(systemNotification);
-        useVrcNotificationStore
-            .getState()
-            .upsertNotification(activityNotification);
+        upsertVrcNotification(systemNotification);
+        upsertVrcNotification(activityNotification);
 
-        await useVrcNotificationStore.getState().markAllSeen();
+        await markAllVrcNotificationsSeen();
 
         expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
         expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
@@ -873,13 +872,11 @@ describe('vrcNotificationStore', () => {
             lastError: 'Too many requests'
         });
 
-        useVrcNotificationStore
-            .getState()
-            .upsertNotification(activityNotification);
+        upsertVrcNotification(activityNotification);
 
-        await expect(
-            useVrcNotificationStore.getState().markAllSeen()
-        ).resolves.toEqual({ failedCount: 1 });
+        await expect(markAllVrcNotificationsSeen()).resolves.toEqual({
+            failedCount: 1
+        });
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledTimes(1);
         expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
@@ -908,11 +905,11 @@ describe('vrcNotificationStore', () => {
         notificationRepositoryMock.queryNotifications.mockResolvedValue([
             notification
         ]);
-        useVrcNotificationStore.getState().upsertNotification(notification);
+        upsertVrcNotification(notification);
 
-        await expect(
-            useVrcNotificationStore.getState().markAllSeen()
-        ).rejects.toThrow('IPC failed');
+        await expect(markAllVrcNotificationsSeen()).rejects.toThrow(
+            'IPC failed'
+        );
 
         expect(
             notificationRepositoryMock.queryNotifications
@@ -953,9 +950,9 @@ describe('vrcNotificationStore', () => {
             seen: false,
             created_at: new Date().toISOString()
         };
-        useVrcNotificationStore.getState().upsertNotification(first);
-        useVrcNotificationStore.getState().upsertNotification(second);
-        useVrcNotificationStore.getState().upsertNotification(plain);
+        upsertVrcNotification(first);
+        upsertVrcNotification(second);
+        upsertVrcNotification(plain);
         notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
         const dismissCalls: Deferred<void>[] = [];
         notificationActionMocks.sendNotificationButtonResponse.mockImplementation(
@@ -966,7 +963,7 @@ describe('vrcNotificationStore', () => {
             }
         );
 
-        const marking = useVrcNotificationStore.getState().markAllSeen();
+        const marking = markAllVrcNotificationsSeen();
         await vi.waitFor(() => expect(dismissCalls).toHaveLength(1));
 
         const activeId =
@@ -1030,19 +1027,18 @@ describe('vrcNotificationStore', () => {
             seen: true,
             created_at: new Date().toISOString()
         };
-        const store = useVrcNotificationStore.getState();
-        store.upsertNotification(recentSeen);
-        store.upsertNotification(oldSeen);
-        store.upsertNotification(recentWithoutDismiss);
+        upsertVrcNotification(recentSeen);
+        upsertVrcNotification(oldSeen);
+        upsertVrcNotification(recentWithoutDismiss);
         notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
         expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
         expect(selectCanMarkAllSeen(useVrcNotificationStore.getState())).toBe(
             true
         );
 
-        await expect(
-            useVrcNotificationStore.getState().markAllSeen()
-        ).resolves.toEqual({ failedCount: 0 });
+        await expect(markAllVrcNotificationsSeen()).resolves.toEqual({
+            failedCount: 0
+        });
 
         expect(
             notificationActionMocks.sendNotificationButtonResponse
@@ -1067,7 +1063,7 @@ describe('vrcNotificationStore', () => {
             responses: [{ type: 'delete', icon: 'check', text: 'Dismiss' }],
             created_at: new Date().toISOString()
         };
-        useVrcNotificationStore.getState().upsertNotification(recentSeen);
+        upsertVrcNotification(recentSeen);
         notificationRepositoryMock.queryNotifications.mockResolvedValue([
             recentSeen
         ]);
@@ -1075,9 +1071,9 @@ describe('vrcNotificationStore', () => {
             new Error('Too many requests')
         );
 
-        await expect(
-            useVrcNotificationStore.getState().markAllSeen()
-        ).resolves.toEqual({ failedCount: 1 });
+        await expect(markAllVrcNotificationsSeen()).resolves.toEqual({
+            failedCount: 1
+        });
 
         expect(commandMocks.markSeenBatch).not.toHaveBeenCalled();
         expect(
@@ -1097,7 +1093,7 @@ describe('vrcNotificationStore', () => {
             responses: [{ type: 'delete', icon: 'check', text: 'Dismiss' }],
             created_at: new Date().toISOString()
         };
-        useVrcNotificationStore.getState().upsertNotification(announcement);
+        upsertVrcNotification(announcement);
         notificationRepositoryMock.queryNotifications.mockResolvedValue([
             { ...announcement, seen: true }
         ]);
@@ -1106,10 +1102,10 @@ describe('vrcNotificationStore', () => {
             dismissal.promise
         );
 
-        const marking = useVrcNotificationStore.getState().markAllSeen();
-        await expect(
-            useVrcNotificationStore.getState().markAllSeen()
-        ).resolves.toEqual({ failedCount: 0 });
+        const marking = markAllVrcNotificationsSeen();
+        await expect(markAllVrcNotificationsSeen()).resolves.toEqual({
+            failedCount: 0
+        });
         dismissal.reject(new Error('Too many requests'));
 
         await expect(marking).resolves.toEqual({ failedCount: 0 });
@@ -1131,5 +1127,350 @@ describe('vrcNotificationStore', () => {
             state.rows.find((row) => row.id === announcement.id)
         ).toMatchObject({ seen: true });
         expect(selectMarkAllSeenRowState(state, announcement.id)).toBe(null);
+    });
+
+    it('drops a same-account load that finishes after a direct reset', async () => {
+        const staleLoad = createDeferred<NotificationRow[]>();
+        notificationRepositoryMock.queryNotifications.mockReturnValueOnce(
+            staleLoad.promise
+        );
+
+        const load = loadVrcNotificationsForCurrentUser();
+        resetVrcNotificationState();
+        staleLoad.resolve([
+            {
+                id: 'notif_stale',
+                type: 'inviteResponse',
+                version: 2,
+                seen: false,
+                created_at: '2026-08-16T02:00:00.000Z'
+            }
+        ]);
+        await expect(load).resolves.toEqual([
+            expect.objectContaining({ id: 'notif_stale' })
+        ]);
+
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            rows: [],
+            unseenCount: 0,
+            loadStatus: 'idle'
+        });
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
+    });
+
+    it('drops a same-account load failure that lands after a direct reset', async () => {
+        const staleLoad = createDeferred<NotificationRow[]>();
+        notificationRepositoryMock.queryNotifications.mockReturnValueOnce(
+            staleLoad.promise
+        );
+
+        const load = loadVrcNotificationsForCurrentUser();
+        resetVrcNotificationState();
+        staleLoad.reject(new Error('stale failure'));
+
+        await expect(load).resolves.toEqual([]);
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            loadStatus: 'idle',
+            detail: ''
+        });
+    });
+
+    it('clears rows and reports the missing session when no user is signed in', async () => {
+        upsertVrcNotification({
+            id: 'notif_unseen',
+            type: 'invite',
+            version: 2,
+            seen: false
+        });
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(1);
+        useRuntimeStore.getState().setAuthBootstrap({ currentUserId: '' });
+
+        await expect(loadVrcNotificationsForCurrentUser()).resolves.toEqual([]);
+
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            rows: [],
+            unseenCount: 0,
+            loadStatus: 'idle',
+            detail: i18n.t('view.notifications.toast.no_current_user_session')
+        });
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
+        expect(
+            notificationRepositoryMock.queryNotifications
+        ).not.toHaveBeenCalled();
+    });
+
+    it('falls back to a plain load when refreshing without a session', async () => {
+        useRuntimeStore.getState().setAuthBootstrap({ currentUserId: '' });
+
+        await expect(refreshVrcNotificationsForCurrentUser()).resolves.toEqual(
+            []
+        );
+
+        expect(commandMocks.sync).not.toHaveBeenCalled();
+    });
+
+    it('refreshes from VRChat when the center opens but not when it closes', async () => {
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
+
+        setVrcNotificationCenterOpen(false);
+        expect(useVrcNotificationStore.getState().isCenterOpen).toBe(false);
+        expect(commandMocks.sync).not.toHaveBeenCalled();
+
+        openVrcNotificationCenter();
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            isCenterOpen: true,
+            loadStatus: 'running'
+        });
+        await vi.waitFor(() =>
+            expect(useVrcNotificationStore.getState().loadStatus).toBe('ready')
+        );
+        expect(commandMocks.sync).toHaveBeenCalledOnce();
+        expect(
+            notificationRepositoryMock.queryNotifications
+        ).toHaveBeenCalledWith({ userId: 'usr_me' });
+    });
+
+    it('swallows a refresh failure triggered by opening the center', async () => {
+        commandMocks.sync.mockRejectedValue(new Error('sync failed'));
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
+
+        setVrcNotificationCenterOpen(true);
+
+        await vi.waitFor(() =>
+            expect(useVrcNotificationStore.getState()).toMatchObject({
+                loadStatus: 'error',
+                detail: 'sync failed'
+            })
+        );
+    });
+
+    it('mirrors the unseen count into the shell as rows change', () => {
+        upsertVrcNotification({
+            id: 'notif_a',
+            type: 'invite',
+            version: 2,
+            seen: false
+        });
+        upsertVrcNotification({
+            id: 'notif_b',
+            type: 'invite',
+            version: 2,
+            seen: false
+        });
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(2);
+
+        markVrcNotificationsSeen(' notif_a ');
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(1);
+
+        expireVrcNotifications(['notif_b']);
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
+        expect(
+            useVrcNotificationStore
+                .getState()
+                .rows.find((row) => row.id === 'notif_b')
+        ).toMatchObject({ expired: true, seen: true });
+
+        upsertVrcNotification({
+            id: 'notif_c',
+            type: 'invite',
+            version: 2,
+            seen: false
+        });
+        resetVrcNotificationState();
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
+    });
+
+    it('ignores upserts without an id and blank id lists', () => {
+        upsertVrcNotification({ id: '', type: 'invite', seen: false });
+        markVrcNotificationsSeen(['', '  ']);
+        expireVrcNotifications([]);
+        patchVrcNotification('  ', { worldName: 'World' });
+
+        expect(useVrcNotificationStore.getState().rows).toEqual([]);
+    });
+
+    it('patches non-empty display fields and mirrors world fields into details', () => {
+        upsertVrcNotification({
+            id: 'notif_patch',
+            type: 'invite',
+            version: 2,
+            seen: true,
+            senderDisplayName: 'Old Name',
+            details: { worldId: 'wrld_1' }
+        });
+
+        patchVrcNotification(' notif_patch ', {
+            senderDisplayName: 'New Name',
+            senderUsername: '  ',
+            worldName: 'World One',
+            displayLocation: 'World One #123'
+        });
+
+        expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
+            senderDisplayName: 'New Name',
+            worldName: 'World One',
+            displayLocation: 'World One #123',
+            details: {
+                worldId: 'wrld_1',
+                worldName: 'World One',
+                displayLocation: 'World One #123'
+            }
+        });
+        expect(
+            useVrcNotificationStore.getState().rows[0].senderUsername
+        ).toBeUndefined();
+    });
+
+    it('keeps the same rows when a patch carries only blank fields', () => {
+        upsertVrcNotification({
+            id: 'notif_patch',
+            type: 'invite',
+            version: 2,
+            seen: true
+        });
+        const rows = useVrcNotificationStore.getState().rows;
+
+        patchVrcNotification('notif_patch', { worldName: '   ' });
+
+        expect(useVrcNotificationStore.getState().rows).toBe(rows);
+    });
+
+    it('clears a failed flag once the row is later seen or expired', async () => {
+        const first = {
+            id: 'notif_first',
+            type: 'invite',
+            version: 2,
+            seen: false
+        };
+        const second = { ...first, id: 'notif_second' };
+        upsertVrcNotification(first);
+        upsertVrcNotification(second);
+        useVrcNotificationStore.setState({
+            markAllSeenFailedIds: [first.id, second.id]
+        });
+
+        markVrcNotificationsSeen(first.id);
+        expireVrcNotifications(second.id);
+
+        expect(useVrcNotificationStore.getState().markAllSeenFailedIds).toEqual(
+            []
+        );
+    });
+
+    it('treats a read of a missing, already read or unscoped notification as a no-op', async () => {
+        const seenRow = {
+            id: 'notif_seen',
+            type: 'inviteResponse',
+            version: 2,
+            seen: true
+        };
+
+        await expect(markVrcNotificationRead(null)).resolves.toEqual({
+            remoteFailed: false,
+            message: ''
+        });
+        await expect(markVrcNotificationRead(seenRow)).resolves.toEqual({
+            remoteFailed: false,
+            message: ''
+        });
+        useRuntimeStore.getState().setAuthBootstrap({ currentUserId: '' });
+        await expect(
+            markVrcNotificationRead({
+                ...seenRow,
+                seen: false
+            })
+        ).resolves.toEqual({ remoteFailed: false, message: '' });
+
+        expect(commandMocks.markSeenBatch).not.toHaveBeenCalled();
+    });
+
+    it('keeps a pending optimistic read applied to rows loaded mid-batch', async () => {
+        const unseen = {
+            id: 'notif_pending',
+            type: 'inviteResponse',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        };
+        upsertVrcNotification(unseen);
+        const batch = createDeferred<unknown>();
+        commandMocks.markSeenBatch.mockReturnValueOnce(batch.promise);
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([
+            unseen
+        ]);
+
+        const reading = markVrcNotificationRead(unseen);
+        await loadVrcNotificationsForCurrentUser();
+
+        expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
+            id: unseen.id,
+            seen: true
+        });
+        batch.resolve({
+            total: 1,
+            succeeded: 1,
+            failed: 0,
+            items: [
+                {
+                    id: unseen.id,
+                    state: 'succeeded',
+                    effect: 'seen',
+                    attempts: 1,
+                    message: ''
+                }
+            ],
+            lastError: null
+        });
+        await expect(reading).resolves.toEqual({
+            remoteFailed: false,
+            message: ''
+        });
+    });
+
+    it('stops dismissing and leaves progress alone after a reset mid mark-all-seen', async () => {
+        const responses = [{ type: 'delete', icon: 'check', text: 'Dismiss' }];
+        const now = new Date().toISOString();
+        upsertVrcNotification({
+            id: 'notif_one',
+            type: 'group.announcement',
+            version: 2,
+            seen: false,
+            responses,
+            created_at: now
+        });
+        upsertVrcNotification({
+            id: 'notif_two',
+            type: 'group.announcement',
+            version: 2,
+            seen: false,
+            responses,
+            created_at: now
+        });
+        const dismissal = createDeferred<void>();
+        notificationActionMocks.sendNotificationButtonResponse.mockReturnValueOnce(
+            dismissal.promise
+        );
+
+        const marking = markAllVrcNotificationsSeen();
+        await vi.waitFor(() =>
+            expect(
+                notificationActionMocks.sendNotificationButtonResponse
+            ).toHaveBeenCalledOnce()
+        );
+        resetVrcNotificationState();
+        dismissal.resolve();
+
+        await expect(marking).resolves.toEqual({ failedCount: 0 });
+        expect(
+            notificationActionMocks.sendNotificationButtonResponse
+        ).toHaveBeenCalledOnce();
+        expect(
+            notificationRepositoryMock.queryNotifications
+        ).not.toHaveBeenCalled();
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            rows: [],
+            markAllSeenProgress: null,
+            markAllSeenFailedIds: []
+        });
     });
 });

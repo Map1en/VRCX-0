@@ -22,6 +22,17 @@ vi.mock('./sessionBootstrapService', () => ({
     bootstrapAuthenticatedSession: mocks.bootstrapAuthenticatedSession
 }));
 
+vi.mock('./vrcNotificationService', async (importOriginal) => {
+    const actual =
+        await importOriginal<typeof import('./vrcNotificationService')>();
+    return {
+        ...actual,
+        loadVrcNotificationsForCurrentUser: vi.fn(
+            actual.loadVrcNotificationsForCurrentUser
+        )
+    };
+});
+
 vi.mock('./vrchatConfigService', () => ({
     loadVrchatConfigSnapshot: mocks.loadVrchatConfigSnapshot,
     resetVrchatConfigSnapshot: mocks.resetVrchatConfigSnapshot
@@ -29,10 +40,10 @@ vi.mock('./vrchatConfigService', () => ({
 
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
-import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { AuthAttemptSupersededError } from './authAttempt';
 import { applyAuthenticatedSessionProjection } from './backendRuntimeSessionResumeService';
+import { loadVrcNotificationsForCurrentUser } from './vrcNotificationService';
 
 const USER_ID = 'usr_owner';
 const ENDPOINT = 'https://api.vrchat.cloud/api/1';
@@ -214,7 +225,7 @@ describe('backendRuntimeSessionResumeService', () => {
 
     it('bootstraps a matching backend session when the frontend is not ready', async () => {
         const loadNotifications = vi
-            .spyOn(useVrcNotificationStore.getState(), 'loadForCurrentUser')
+            .mocked(loadVrcNotificationsForCurrentUser)
             .mockResolvedValue([]);
         useSessionStore.getState().setSessionPhase('authenticated');
 

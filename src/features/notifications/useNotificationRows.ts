@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { toast } from '@/services/toastService';
+import { loadVrcNotificationsForCurrentUser } from '@/services/vrcNotificationService';
 import { getNotificationLifecycleBucket } from '@/shared/utils/notificationLifecycle';
 import {
     isNotificationExpired,
@@ -62,9 +63,6 @@ export function useNotificationRows({
         (state) => state.loadStatus
     );
     const notificationDetail = useVrcNotificationStore((state) => state.detail);
-    const loadNotificationsForCurrentUser = useVrcNotificationStore(
-        (state) => state.loadForCurrentUser
-    );
     const [rows, setRows] = useState<NotificationRow[]>([]);
     const [loadStatus, setLoadStatus] =
         useState<NotificationLoadStatus>('idle');
@@ -98,7 +96,7 @@ export function useNotificationRows({
                 active = false;
             };
         }
-        loadNotificationsForCurrentUser().catch((error: unknown) => {
+        loadVrcNotificationsForCurrentUser().catch((error: unknown) => {
             if (!active) {
                 return;
             }
@@ -115,13 +113,7 @@ export function useNotificationRows({
         return () => {
             active = false;
         };
-    }, [
-        currentUserId,
-        filtersReady,
-        loadNotificationsForCurrentUser,
-        reloadToken,
-        t
-    ]);
+    }, [currentUserId, filtersReady, reloadToken, t]);
 
     useEffect(() => {
         if (!filtersReady || !currentUserId) {

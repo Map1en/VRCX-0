@@ -9,14 +9,18 @@ const mocks = vi.hoisted(() => ({
     state: {
         rows: [] as NotificationRow[],
         loadStatus: 'ready',
-        detail: '',
-        loadForCurrentUser: vi.fn(async () => undefined)
-    }
+        detail: ''
+    },
+    loadForCurrentUser: vi.fn(async () => undefined)
 }));
 
 vi.mock('@/state/vrcNotificationStore', () => ({
     useVrcNotificationStore: <T,>(selector: (state: typeof mocks.state) => T) =>
         selector(mocks.state)
+}));
+
+vi.mock('@/services/vrcNotificationService', () => ({
+    loadVrcNotificationsForCurrentUser: mocks.loadForCurrentUser
 }));
 
 vi.mock('@/services/toastService', () => ({

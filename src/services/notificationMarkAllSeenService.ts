@@ -1,15 +1,13 @@
 import { toast } from '@/services/toastService';
-import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import i18n from './i18nService';
+import { markAllVrcNotificationsSeen } from './vrcNotificationService';
 
 export async function markAllNotificationsSeenWithFeedback(
     errorTitle: string
 ): Promise<void> {
     try {
-        const { failedCount } = await useVrcNotificationStore
-            .getState()
-            .markAllSeen();
+        const { failedCount } = await markAllVrcNotificationsSeen();
         if (failedCount > 0) {
             toast.add({
                 type: 'warning',

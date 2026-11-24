@@ -17,6 +17,10 @@ import { preserveAppTitleBarOnOpenChange } from '@/lib/overlayTitlebar';
 import { cn } from '@/lib/utils';
 import { openWorldDialog } from '@/services/dialogService';
 import { toast } from '@/services/toastService';
+import {
+    refreshVrcNotificationsForCurrentUser,
+    setVrcNotificationCenterOpen
+} from '@/services/vrcNotificationService';
 import { useShellStore } from '@/state/shellStore';
 import {
     selectCanMarkAllSeen,
@@ -78,12 +82,6 @@ export function VrcNotificationCenterHost() {
         : t('side_panel.notification_center.mark_all_read');
     const loadStatus = useVrcNotificationStore((state) => state.loadStatus);
     const detail = useVrcNotificationStore((state) => state.detail);
-    const setCenterOpen = useVrcNotificationStore(
-        (state) => state.setCenterOpen
-    );
-    const refreshForCurrentUser = useVrcNotificationStore(
-        (state) => state.refreshForCurrentUser
-    );
     const [inviteResponseRequest, setInviteResponseRequest] =
         useState<NotificationDialogRequest>(null);
     const [boopReplyRequest, setBoopReplyRequest] =
@@ -105,7 +103,7 @@ export function VrcNotificationCenterHost() {
         currentInviteLocation,
         currentUserId: currentUserId ?? undefined,
         notificationTypeLabel,
-        reload: refreshForCurrentUser,
+        reload: refreshVrcNotificationsForCurrentUser,
         setBoopReplyRequest,
         setInviteResponseRequest
     });
@@ -119,7 +117,7 @@ export function VrcNotificationCenterHost() {
             setInviteResponseRequest(null);
             setBoopReplyRequest(null);
         }
-        setCenterOpen(open);
+        setVrcNotificationCenterOpen(open);
     }
 
     function joinQueueReady(notification: NotificationRow) {
@@ -220,7 +218,7 @@ export function VrcNotificationCenterHost() {
                                                     loadStatus === 'running'
                                                 }
                                                 onClick={() => {
-                                                    refreshForCurrentUser().catch(
+                                                    refreshVrcNotificationsForCurrentUser().catch(
                                                         (error: unknown) => {
                                                             toast.add({
                                                                 type: 'error',

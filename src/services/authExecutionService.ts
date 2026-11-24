@@ -12,6 +12,7 @@ import authRepository, {
 } from '@/repositories/authRepository';
 import { toast } from '@/services/toastService';
 import { clearUserDialogCaches } from '@/services/userDialogSessionCacheService';
+import { resetVrcNotificationState } from '@/services/vrcNotificationService';
 import { isRecord } from '@/shared/utils/record';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useDeviceLoginStore } from '@/state/deviceLoginStore';
@@ -27,7 +28,6 @@ import {
     useRuntimeStore
 } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
-import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import {
     beginAuthAttempt,
@@ -218,7 +218,7 @@ export function resetCurrentUserRuntimeAuth() {
 function resetAccountState() {
     useDialogStore.getState().clearDialogState();
     useModalStore.getState().resetModalState();
-    useVrcNotificationStore.getState().resetVrcNotificationState();
+    resetVrcNotificationState();
     const runtimeStore = useRuntimeStore.getState();
     runtimeStore.resetTransportState();
     runtimeStore.clearInstanceQueueState();

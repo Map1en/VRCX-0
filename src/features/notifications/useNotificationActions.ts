@@ -27,10 +27,10 @@ import {
 } from '@/services/notificationActionService';
 import { markAllNotificationsSeenWithFeedback } from '@/services/notificationMarkAllSeenService';
 import { toast } from '@/services/toastService';
+import { markVrcNotificationRead } from '@/services/vrcNotificationService';
 import { withUploadTimeout } from '@/shared/utils/imageUpload';
 import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
-import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { getNotificationActionKey } from './notificationActionPending';
 import type {
@@ -68,9 +68,6 @@ export function useNotificationActions({
     setInviteResponseRequest: (request: NotificationDialogRequest) => void;
 }) {
     const { t } = useTranslation();
-    const markNotificationRead = useVrcNotificationStore(
-        (state) => state.markNotificationRead
-    );
     const confirm = useModalStore((state) => state.confirm);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const pendingKeysRef = useRef(new Set<string>());
@@ -195,7 +192,7 @@ export function useNotificationActions({
     const markSeen = useCallback(
         async (notification: NotificationRow) => {
             try {
-                const result = await markNotificationRead(notification);
+                const result = await markVrcNotificationRead(notification);
                 if (result.remoteFailed) {
                     toast.add({
                         type: 'warning',
@@ -217,7 +214,7 @@ export function useNotificationActions({
                 });
             }
         },
-        [markNotificationRead, t]
+        [t]
     );
 
     const markAllSeen = useCallback(

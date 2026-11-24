@@ -11,10 +11,8 @@ vi.mock('@/services/toastService', () => ({
     toast: { add: mocks.toastAdd }
 }));
 
-vi.mock('@/state/vrcNotificationStore', () => ({
-    useVrcNotificationStore: {
-        getState: () => ({ markAllSeen: mocks.markAllSeen })
-    }
+vi.mock('./vrcNotificationService', () => ({
+    markAllVrcNotificationsSeen: mocks.markAllSeen
 }));
 
 vi.mock('./i18nService', () => ({

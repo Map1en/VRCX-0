@@ -35,8 +35,8 @@ describe('realtimePresenceService projection boundary', () => {
         const { useRuntimeStore } = await import('@/state/runtimeStore');
         const { useFeedLiveStore } = await import('@/state/feedLiveStore');
         const { useShellStore } = await import('@/state/shellStore');
-        const { useVrcNotificationStore } =
-            await import('@/state/vrcNotificationStore');
+        const { resetVrcNotificationState } =
+            await import('./vrcNotificationService');
 
         useFriendRosterStore.getState().resetRoster();
         useFriendLocationTimeStore.getState().reset();
@@ -55,7 +55,7 @@ describe('realtimePresenceService projection boundary', () => {
         });
         useFeedLiveStore.getState().resetFeedLive();
         useShellStore.getState().clearAllNotifications();
-        useVrcNotificationStore.getState().resetVrcNotificationState();
+        resetVrcNotificationState();
 
         const { resetRealtimeRosterUpdates } =
             await import('./realtimeRosterUpdateQueue');
@@ -371,10 +371,12 @@ describe('realtimePresenceService projection boundary', () => {
         const { useShellStore } = await import('@/state/shellStore');
         const { useVrcNotificationStore } =
             await import('@/state/vrcNotificationStore');
+        const { upsertVrcNotification } =
+            await import('./vrcNotificationService');
         const { handleRealtimeNotificationProjection } =
             await import('./realtimePresenceService');
 
-        useVrcNotificationStore.getState().upsertNotification({
+        upsertVrcNotification({
             id: 'not_1',
             version: 2,
             type: 'invite',
