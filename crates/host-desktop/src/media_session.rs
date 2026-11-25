@@ -7,40 +7,30 @@ pub struct MediaSessionInfo {
     pub duration_seconds: Option<u64>,
 }
 
-#[cfg(windows)]
-pub fn current_media_session() -> Option<MediaSessionInfo> {
-    let _apartment = MtaApartment::enter();
-    windows_impl::read().ok().flatten()
+#[derive(Default)]
+pub struct MediaSessionReader {
+    #[cfg(windows)]
+    session: Option<windows_impl::Session>,
 }
 
-#[cfg(not(windows))]
-pub fn current_media_session() -> Option<MediaSessionInfo> {
-    None
-}
-
-#[cfg(windows)]
-struct MtaApartment {
-    uninitialize: bool,
-}
-
-#[cfg(windows)]
-impl MtaApartment {
-    fn enter() -> Self {
-        use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
-
-        let status = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
-        Self {
-            uninitialize: status.is_ok(),
+impl MediaSessionReader {
+    #[cfg(windows)]
+    pub fn read(&mut self) -> Option<MediaSessionInfo> {
+        if self.session.is_none() {
+            self.session = windows_impl::Session::open().ok();
+        }
+        match self.session.as_ref()?.read() {
+            Ok(info) => info,
+            Err(_) => {
+                self.session = None;
+                None
+            }
         }
     }
-}
 
-#[cfg(windows)]
-impl Drop for MtaApartment {
-    fn drop(&mut self) {
-        if self.uninitialize {
-            unsafe { windows::Win32::System::Com::CoUninitialize() };
-        }
+    #[cfg(not(windows))]
+    pub fn read(&mut self) -> Option<MediaSessionInfo> {
+        None
     }
 }
 
@@ -52,14 +42,49 @@ mod windows_impl {
         GlobalSystemMediaTransportControlsSessionManager as SessionManager,
         GlobalSystemMediaTransportControlsSessionPlaybackStatus as PlaybackStatus,
     };
+    use windows::Win32::System::Com::{
+        CoDecrementMTAUsage, CoIncrementMTAUsage, CO_MTA_USAGE_COOKIE,
+    };
 
     use super::MediaSessionInfo;
 
     const TICKS_PER_SECOND: i64 = 10_000_000;
     const UNIX_EPOCH_AS_FILETIME_SECONDS: i64 = 11_644_473_600;
 
-    pub(super) fn read() -> windows::core::Result<Option<MediaSessionInfo>> {
-        let manager = SessionManager::RequestAsync()?.join()?;
+    struct MtaUsage(CO_MTA_USAGE_COOKIE);
+
+    // SAFETY: the cookie is an opaque token for the process-wide MTA and may be released from any
+    // thread.
+    unsafe impl Send for MtaUsage {}
+
+    impl Drop for MtaUsage {
+        fn drop(&mut self) {
+            if let Err(error) = unsafe { CoDecrementMTAUsage(self.0) } {
+                tracing::debug!(error = %error, "media session MTA release failed");
+            }
+        }
+    }
+
+    pub(super) struct Session {
+        manager: SessionManager,
+        _mta: MtaUsage,
+    }
+
+    impl Session {
+        pub(super) fn open() -> windows::core::Result<Self> {
+            let mta = MtaUsage(unsafe { CoIncrementMTAUsage() }?);
+            Ok(Self {
+                manager: SessionManager::RequestAsync()?.join()?,
+                _mta: mta,
+            })
+        }
+
+        pub(super) fn read(&self) -> windows::core::Result<Option<MediaSessionInfo>> {
+            read(&self.manager)
+        }
+    }
+
+    fn read(manager: &SessionManager) -> windows::core::Result<Option<MediaSessionInfo>> {
         let Ok(session) = manager.GetCurrentSession() else {
             return Ok(None);
         };

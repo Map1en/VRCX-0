@@ -13,7 +13,7 @@ use vrcx_0_application_game::chatbox::{
 };
 use vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY;
 use vrcx_0_host_desktop::gpu_usage::GpuUsageSampler;
-use vrcx_0_host_desktop::media_session::current_media_session;
+use vrcx_0_host_desktop::media_session::MediaSessionReader;
 use vrcx_0_host_desktop::osc_udp::OscUdpSender;
 use vrcx_0_host_desktop::system_usage::SystemUsageSampler;
 use vrcx_0_i18n::{text, ChatboxKey};
@@ -38,6 +38,7 @@ pub struct ChatboxRuntime {
 struct ChatboxRuntimeState {
     scheduler: ChatboxScheduler,
     sender: OscUdpSender,
+    media_session: MediaSessionReader,
     system_usage: SystemUsageSampler,
     gpu_usage: GpuUsageSampler,
     settings: Option<ChatboxSettings>,
@@ -194,7 +195,7 @@ impl ChatboxRuntime {
     ) -> ChatboxFacts {
         let media_session = needs
             .media
-            .then(current_media_session)
+            .then(|| state.media_session.read())
             .flatten()
             .map(|media| ChatboxMedia {
                 title: media.title,
