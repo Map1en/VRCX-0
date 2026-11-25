@@ -332,6 +332,41 @@ fn preparation_failure_preserves_existing_targets_and_clears_partial_staging() {
 }
 
 #[test]
+fn preparation_rejects_a_corrupted_legacy_database_without_staging_it() {
+    let dir = TestDir::new("legacy-prepare-corrupted");
+    let paths = dir.app_paths();
+    let legacy_db = dir.path.join("VRCX").join("VRCX.sqlite3");
+    std::fs::create_dir_all(legacy_db.parent().unwrap()).unwrap();
+    let source_connection = Connection::open(&legacy_db).unwrap();
+    source_connection
+        .execute_batch(
+            "PRAGMA page_size=4096;
+             CREATE TABLE corrupted (value TEXT NOT NULL);
+             CREATE INDEX corrupted_value ON corrupted (value);
+             WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000)
+             INSERT INTO corrupted (value) SELECT printf('value-%05d', i) FROM n;",
+        )
+        .unwrap();
+    drop(source_connection);
+    let mut bytes = std::fs::read(&legacy_db).unwrap();
+    bytes[4096..4096 * 4].fill(0xA5);
+    std::fs::write(&legacy_db, bytes).unwrap();
+    let target_connection = open_test_database(&paths.db_file);
+    insert_value(&target_connection, "existing");
+    drop(target_connection);
+
+    let result = prepare_legacy_migration(&paths, &source(legacy_db, None), |_| {});
+
+    assert!(
+        matches!(&result, Err(Error::InvalidData(message)) if message.contains("corrupted")),
+        "{result:?}"
+    );
+    assert_eq!(read_values(&paths.db_file), ["existing"]);
+    assert!(!paths.app_data.join(PENDING_MIGRATION_FILE).exists());
+    assert!(!paths.app_data.join(STAGING_DIRECTORY).exists());
+}
+
+#[test]
 fn staged_install_failure_keeps_flag_and_snapshot_for_retry() {
     let dir = TestDir::new("legacy-staged-install-failure");
     let paths = dir.app_paths();
