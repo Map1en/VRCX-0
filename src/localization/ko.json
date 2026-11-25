@@ -1133,6 +1133,7 @@
             "quick_search": "친구, 아바타, 월드, 그룹을 검색하거나 페이지·도구로 바로 이동합니다. VRChat 링크나 ID(usr_, wrld_ 등)를 붙여 넣으면 바로 열립니다. 예전의 '바로 열기'도 여기로 합쳐졌습니다.",
             "open_quick_search": "빠른 검색 열기",
             "notification": "친구 요청, 초대, 그룹 공지 등 VRChat 알림입니다. 알림 센터에는 최근 24시간만 표시되고, 그 이전 알림은 알림 기록에 있습니다.",
+            "notification_page": "친구 요청, 초대, 그룹 공지 등 VRChat 알림입니다.",
             "unseen": "읽지 않음 {count}개",
             "open_notification_center": "알림 센터 열기",
             "open_notification_history": "알림 기록 보기",

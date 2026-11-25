@@ -1133,6 +1133,7 @@
             "quick_search": "搜索好友、模型、世界和群组，也能跳转到页面或打开工具。粘贴 VRChat 链接或 ID（usr_、wrld_ 等）可以直接打开对应页面，原来的“直接打开”已合并到这里。",
             "open_quick_search": "打开快速搜索",
             "notification": "好友请求、邀请、群组公告等 VRChat 通知。通知中心只显示最近 24 小时，更早的在通知历史里。",
+            "notification_page": "好友请求、邀请、群组公告等 VRChat 通知。",
             "unseen": "{count} 条未读",
             "open_notification_center": "打开通知中心",
             "open_notification_history": "查看通知历史",

@@ -1129,6 +1129,7 @@
             "quick_search": "フレンド・アバター・ワールド・グループを検索したり、ページやツールへ移動したりできます。VRChat のリンクや ID（usr_、wrld_ など）を貼り付けるとそのまま開けます。以前の「直接開く」もここにまとめました。",
             "open_quick_search": "クイック検索を開く",
             "notification": "フレンドリクエスト、招待、グループのお知らせなど VRChat の通知です。通知センターには直近24時間分だけ表示され、それより前のものは通知履歴にあります。",
+            "notification_page": "フレンドリクエスト、招待、グループのお知らせなど VRChat の通知です。",
             "unseen": "未読 {count} 件",
             "open_notification_center": "通知センターを開く",
             "open_notification_history": "通知履歴を見る",

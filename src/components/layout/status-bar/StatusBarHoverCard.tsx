@@ -55,6 +55,14 @@ export function StatusBarHoverCard({
                 side={side}
                 align="end"
                 className="flex w-72 flex-col gap-2 text-xs"
+                onClick={(event) => {
+                    if (
+                        event.target instanceof Element &&
+                        event.target.closest('button')
+                    ) {
+                        setOpen(false);
+                    }
+                }}
             >
                 <div className="flex items-center gap-2">
                     <span className="text-muted-foreground inline-flex shrink-0 [&_svg]:size-4">

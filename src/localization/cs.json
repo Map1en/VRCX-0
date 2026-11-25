@@ -1144,6 +1144,7 @@
             "quick_search": "Hledejte přátele, avatary, světy a skupiny nebo přejděte na stránku či nástroj. Vložte odkaz nebo ID z VRChatu (usr_, wrld_ apod.) a rovnou ho otevřete – dřívější přímý přístup je teď tady.",
             "open_quick_search": "Otevřít rychlé hledání",
             "notification": "Žádosti o přátelství, pozvánky, oznámení skupin a další oznámení z VRChatu. Centrum oznámení ukazuje posledních 24 hodin, starší najdete v historii.",
+            "notification_page": "Žádosti o přátelství, pozvánky, oznámení skupin a další oznámení z VRChatu.",
             "unseen": "Nepřečteno: {count}",
             "open_notification_center": "Otevřít centrum oznámení",
             "open_notification_history": "Zobrazit historii oznámení",

@@ -1134,6 +1134,7 @@
             "quick_search": "Pesquise amigos, avatares, mundos e grupos, ou vá direto para uma página ou ferramenta. Cole um link ou ID do VRChat (usr_, wrld_ etc.) para abrir direto — o antigo acesso direto agora fica aqui.",
             "open_quick_search": "Abrir pesquisa rápida",
             "notification": "Pedidos de amizade, convites, avisos de grupos e outras notificações do VRChat. A central mostra as últimas 24 horas; as mais antigas ficam no histórico.",
+            "notification_page": "Pedidos de amizade, convites, avisos de grupos e outras notificações do VRChat.",
             "unseen": "{count} não lidas",
             "open_notification_center": "Abrir central de notificações",
             "open_notification_history": "Ver histórico de notificações",

@@ -470,7 +470,11 @@ export function useTitleBarActions(
                           'side_panel.notification_center.no_unseen_notifications'
                       )
             }
-            description={t('app_menu.title_bar_card.notification')}
+            description={t(
+                notificationCenterEnabled
+                    ? 'app_menu.title_bar_card.notification'
+                    : 'app_menu.title_bar_card.notification_page'
+            )}
             actions={{
                 click: notificationCenterEnabled
                     ? t('app_menu.title_bar_card.open_notification_center')
