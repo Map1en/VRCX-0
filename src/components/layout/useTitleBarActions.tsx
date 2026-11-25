@@ -1,20 +1,22 @@
 import {
-    ArrowLeftFromLineIcon,
-    ArrowRightToLineIcon,
     BellIcon,
     CompassIcon,
+    FoldHorizontalIcon,
+    HistoryIcon,
     KeyboardIcon,
     PanelRightIcon,
     PanelRightOpenIcon,
     PinIcon,
     SearchIcon,
     ShuffleIcon,
-    SparklesIcon
+    SparklesIcon,
+    UnfoldHorizontalIcon
 } from 'lucide-react';
 import {
     type ComponentProps,
     useCallback,
     useRef,
+    useState,
     type ReactNode
 } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -73,12 +75,26 @@ import {
     ContextMenuItem,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { Separator } from '@/ui/shadcn/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { StatusBarHoverCard } from './status-bar/StatusBarHoverCard';
 import { STATUS_BAR_TOGGLE_ACTIVE } from './status-bar/statusBarToggle';
 import { TitleBarUpdateButton } from './TitleBarUpdateButton';
 import { useQuickSearchActions } from './useQuickSearchActions';
 import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
+
+const TITLE_BAR_ICON_BUTTON_CLASS =
+    'text-muted-foreground hover:text-foreground size-7 min-w-7 rounded-md px-0 hover:bg-(--state-hover-surface)';
+
+function TitleBarGroupSeparator() {
+    return (
+        <Separator
+            orientation="vertical"
+            className="mx-0.5 h-4 data-vertical:self-center"
+        />
+    );
+}
 
 export function TitleBarButton({
     label,
@@ -171,6 +187,7 @@ export function useTitleBarActions(
     const { t } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
+    const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
     const isSessionReady = useSessionStore(
         (state) => state.sessionPhase === 'ready'
     );
@@ -295,33 +312,79 @@ export function useTitleBarActions(
     }, [alwaysOnTop]);
 
     const alwaysOnTopButton = alwaysOnTopSupported ? (
-        <TitleBarButton
-            label={t('app_menu.always_on_top')}
-            aria-pressed={alwaysOnTop}
-            className={cn(
-                'size-7 min-w-7 rounded-md px-0',
-                alwaysOnTop && STATUS_BAR_TOGGLE_ACTIVE
-            )}
-            onClick={toggleAlwaysOnTop}
-        >
-            <PinIcon data-icon="icon" />
-        </TitleBarButton>
+        <StatusBarHoverCard
+            icon={<PinIcon />}
+            title={t('app_menu.always_on_top')}
+            state={
+                alwaysOnTop ? t('status_bar.card.on') : t('status_bar.card.off')
+            }
+            description={t('app_menu.title_bar_card.always_on_top')}
+            actions={{
+                click: alwaysOnTop
+                    ? t('status_bar.card.turn_off')
+                    : t('status_bar.card.turn_on')
+            }}
+            suppressed={shortcutHintsVisible}
+            side="bottom"
+            trigger={
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t('app_menu.always_on_top')}
+                    aria-pressed={alwaysOnTop}
+                    className={cn(
+                        TITLE_BAR_ICON_BUTTON_CLASS,
+                        alwaysOnTop && STATUS_BAR_TOGGLE_ACTIVE
+                    )}
+                    onClick={toggleAlwaysOnTop}
+                >
+                    <PinIcon data-icon="icon" />
+                </Button>
+            }
+        />
     ) : null;
 
+    const SidebarWindowModeIcon = sidebarWindowMode
+        ? UnfoldHorizontalIcon
+        : FoldHorizontalIcon;
     const sidebarWindowModeButton = (
-        <TitleBarButton
-            label={sidebarWindowModeLabel}
-            aria-pressed={sidebarWindowMode}
-            aria-disabled={sidebarWindowModeBlocked}
-            className="ml-1 size-7 min-w-7 rounded-md px-0 aria-disabled:opacity-50"
-            onClick={toggleSidebarWindowMode}
+        <StatusBarHoverCard
+            icon={<SidebarWindowModeIcon />}
+            title={t('app_menu.enter_sidebar_mode')}
+            state={
+                sidebarWindowMode
+                    ? t('status_bar.card.on')
+                    : t('status_bar.card.off')
+            }
+            description={t('app_menu.title_bar_card.sidebar_mode')}
+            actions={{ click: sidebarWindowModeLabel }}
+            suppressed={shortcutHintsVisible}
+            side="bottom"
+            trigger={
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={sidebarWindowModeLabel}
+                    aria-pressed={sidebarWindowMode}
+                    aria-disabled={sidebarWindowModeBlocked}
+                    className={cn(
+                        TITLE_BAR_ICON_BUTTON_CLASS,
+                        'aria-disabled:opacity-50'
+                    )}
+                    onClick={toggleSidebarWindowMode}
+                >
+                    <SidebarWindowModeIcon data-icon="icon" />
+                </Button>
+            }
         >
-            {sidebarWindowMode ? (
-                <ArrowLeftFromLineIcon data-icon="icon" />
-            ) : (
-                <ArrowRightToLineIcon data-icon="icon" />
-            )}
-        </TitleBarButton>
+            {sidebarWindowModeBlocked ? (
+                <p className="text-muted-foreground">
+                    {t('app_menu.title_bar_card.sidebar_mode_blocked')}
+                </p>
+            ) : null}
+        </StatusBarHoverCard>
     );
 
     useShortcutHandler('quick-search', openQuickSearch, isSessionReady);
@@ -351,15 +414,18 @@ export function useTitleBarActions(
     }
 
     const notificationButton = (
-        <TitleBarButton
-            label={
+        <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={
                 vrcUnseenNotificationCount > 0
                     ? t('side_panel.notification_center.title_with_count', {
                           count: vrcUnseenNotificationCount
                       })
                     : t('side_panel.notification_center.title')
             }
-            className="relative size-7 min-w-7 rounded-md px-0"
+            className={cn(TITLE_BAR_ICON_BUTTON_CLASS, 'relative')}
             onClick={openNotifications}
             onContextMenu={
                 vrcUnseenNotificationCount > 0
@@ -386,13 +452,66 @@ export function useTitleBarActions(
                         : vrcUnseenNotificationCount}
                 </Badge>
             ) : null}
-        </TitleBarButton>
+        </Button>
+    );
+
+    const notificationMenuAvailable =
+        canMarkAllVrcNotificationsSeen || isMarkingAllVrcNotificationsSeen;
+    const notificationCard = (
+        <StatusBarHoverCard
+            icon={<BellIcon />}
+            title={t('side_panel.notification_center.title')}
+            state={
+                vrcUnseenNotificationCount > 0
+                    ? t('app_menu.title_bar_card.unseen', {
+                          count: vrcUnseenNotificationCount
+                      })
+                    : t(
+                          'side_panel.notification_center.no_unseen_notifications'
+                      )
+            }
+            description={t('app_menu.title_bar_card.notification')}
+            actions={{
+                click: notificationCenterEnabled
+                    ? t('app_menu.title_bar_card.open_notification_center')
+                    : t('app_menu.title_bar_card.open_notification_history'),
+                rightClick: notificationMenuAvailable
+                    ? t('nav_menu.mark_all_read')
+                    : undefined
+            }}
+            suppressed={shortcutHintsVisible || notificationMenuOpen}
+            side="bottom"
+            trigger={
+                notificationMenuAvailable ? (
+                    <ContextMenuTrigger render={notificationButton} />
+                ) : (
+                    notificationButton
+                )
+            }
+        >
+            {notificationCenterEnabled ? (
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    className="self-start"
+                    onClick={() =>
+                        runAfterRestoringNormalWindow(() => {
+                            void navigate('/notification');
+                        })
+                    }
+                >
+                    <HistoryIcon data-icon="inline-start" />
+                    {t('app_menu.title_bar_card.open_notification_history')}
+                </Button>
+            ) : null}
+        </StatusBarHoverCard>
     );
 
     const notificationAction = notificationActionVisible ? (
-        canMarkAllVrcNotificationsSeen || isMarkingAllVrcNotificationsSeen ? (
-            <ContextMenu>
-                <ContextMenuTrigger render={notificationButton} />
+        notificationMenuAvailable ? (
+            <ContextMenu onOpenChange={setNotificationMenuOpen}>
+                {notificationCard}
                 <ContextMenuContent className="w-48">
                     <ContextMenuGroup>
                         <ContextMenuItem
@@ -407,7 +526,7 @@ export function useTitleBarActions(
                 </ContextMenuContent>
             </ContextMenu>
         ) : (
-            notificationButton
+            notificationCard
         )
     ) : null;
 
@@ -492,51 +611,68 @@ export function useTitleBarActions(
                 />
             ) : null}
             <div className="flex min-w-0 shrink items-center gap-1">
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="xs"
-                                aria-label={formatTitleBarShortcutLabel(
-                                    quickSearchLabel,
-                                    quickSearchShortcutLabel
-                                )}
-                                data-vrcx-0-control="toolbar"
-                                className="vrcx-0-toolbar-control text-muted-foreground hover:text-foreground h-6 min-w-7 justify-start rounded-md border-0 px-2 shadow-none min-[640px]:w-44 min-[960px]:w-56"
-                                onClick={openQuickSearch}
-                            >
-                                <SearchIcon data-icon="inline-start" />
-                                <span className="hidden min-w-0 truncate min-[640px]:block">
-                                    {quickSearchLabel}
-                                </span>
-                                <KeyboardShortcut
-                                    keys={[isMacHost ? 'Meta' : 'Mod', 'K']}
-                                    kbdClassName={SHORTCUT_KBD_CLASS}
-                                    className="ml-auto hidden gap-0.5 min-[760px]:inline-flex"
-                                />
-                            </Button>
-                        }
-                    />
-                    <TooltipContent hidden={shortcutHintsVisible}>
-                        {formatTitleBarShortcutLabel(
-                            quickSearchLabel,
-                            quickSearchShortcutLabel
-                        )}
-                    </TooltipContent>
-                </Tooltip>
+                <StatusBarHoverCard
+                    icon={<SearchIcon />}
+                    title={quickSearchLabel}
+                    description={t('app_menu.title_bar_card.quick_search')}
+                    actions={{
+                        click: t('app_menu.title_bar_card.open_quick_search')
+                    }}
+                    suppressed={shortcutHintsVisible}
+                    side="bottom"
+                    trigger={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            aria-label={formatTitleBarShortcutLabel(
+                                quickSearchLabel,
+                                quickSearchShortcutLabel
+                            )}
+                            data-vrcx-0-control="toolbar"
+                            className="vrcx-0-toolbar-control text-muted-foreground hover:text-foreground h-6 min-w-7 justify-start rounded-md border-0 px-2 shadow-none min-[640px]:w-44 min-[960px]:w-56"
+                            onClick={openQuickSearch}
+                        >
+                            <SearchIcon data-icon="inline-start" />
+                            <span className="hidden min-w-0 truncate min-[640px]:block">
+                                {quickSearchLabel}
+                            </span>
+                            <KeyboardShortcut
+                                keys={[isMacHost ? 'Meta' : 'Mod', 'K']}
+                                kbdClassName={SHORTCUT_KBD_CLASS}
+                                className="ml-auto hidden gap-0.5 min-[760px]:inline-flex"
+                            />
+                        </Button>
+                    }
+                />
             </div>
             {notificationAction}
-            <TitleBarButton
-                label={t('assistant.title')}
-                className="size-7 min-w-7 rounded-md px-0"
-                onClick={() => useAssistantChatStore.getState().setOpen(true)}
-            >
-                <SparklesIcon data-icon="icon" />
-            </TitleBarButton>
+            <StatusBarHoverCard
+                icon={<SparklesIcon />}
+                title={t('assistant.title')}
+                description={t('assistant.empty_description')}
+                actions={{ click: t('app_menu.title_bar_card.open_assistant') }}
+                suppressed={shortcutHintsVisible}
+                side="bottom"
+                trigger={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t('assistant.title')}
+                        className={TITLE_BAR_ICON_BUTTON_CLASS}
+                        onClick={() =>
+                            useAssistantChatStore.getState().setOpen(true)
+                        }
+                    >
+                        <SparklesIcon data-icon="icon" />
+                    </Button>
+                }
+            />
             {appearanceAction}
             {alwaysOnTopButton}
+            {sidebarWindowModeButton}
+            <TitleBarGroupSeparator />
             <TitleBarButton
                 label={rightSidebarLabel}
                 className="size-7 min-w-7 rounded-md px-0"
@@ -548,7 +684,6 @@ export function useTitleBarActions(
                     <PanelRightOpenIcon data-icon="icon" />
                 )}
             </TitleBarButton>
-            {sidebarWindowModeButton}
             {shortcutHintsVisible ? (
                 <ShortcutHintPanel
                     ref={placeShortcutHintPanel}

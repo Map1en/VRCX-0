@@ -1130,6 +1130,18 @@
         "hide_friends_sidebar": "Hide Friends Sidebar",
         "enter_sidebar_mode": "Sidebar Mode",
         "restore_full_window": "Return to Full Window",
+        "title_bar_card": {
+            "quick_search": "Search friends, avatars, worlds and groups, or jump to a page or tool. Paste a VRChat link or ID (usr_, wrld_ and so on) to open it directly — the old Direct Access now lives here.",
+            "open_quick_search": "Open Quick Search",
+            "notification": "Friend requests, invites, group notices and other VRChat notifications. The notification center shows the last 24 hours; older ones are in the notification history.",
+            "unseen": "{count} unread",
+            "open_notification_center": "Open notification center",
+            "open_notification_history": "View notification history",
+            "open_assistant": "Open AI Assistant",
+            "always_on_top": "Keeps the VRCX-0 window above other windows.",
+            "sidebar_mode": "Shrinks the window to a narrow strip with just the friends list, handy to keep at the edge of the screen while idling.",
+            "sidebar_mode_blocked": "A task is still running. You can switch once it finishes."
+        },
         "always_on_top": "Always on Top",
         "zoom_in": "Zoom In",
         "zoom_out": "Zoom Out",

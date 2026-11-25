@@ -1129,6 +1129,18 @@
         "hide_friends_sidebar": "隐藏好友侧栏",
         "enter_sidebar_mode": "侧边栏模式",
         "restore_full_window": "返回完整窗口",
+        "title_bar_card": {
+            "quick_search": "搜索好友、模型、世界和群组，也能跳转到页面或打开工具。粘贴 VRChat 链接或 ID（usr_、wrld_ 等）可以直接打开对应页面，原来的“直接打开”已合并到这里。",
+            "open_quick_search": "打开快速搜索",
+            "notification": "好友请求、邀请、群组公告等 VRChat 通知。通知中心只显示最近 24 小时，更早的在通知历史里。",
+            "unseen": "{count} 条未读",
+            "open_notification_center": "打开通知中心",
+            "open_notification_history": "查看通知历史",
+            "open_assistant": "打开 AI 助手",
+            "always_on_top": "让 VRCX-0 窗口始终显示在其他窗口上方。",
+            "sidebar_mode": "把窗口缩成只有好友栏的窄条，适合挂机时放在屏幕一侧。",
+            "sidebar_mode_blocked": "有任务正在进行，完成后才能切换。"
+        },
         "always_on_top": "窗口置顶",
         "zoom_in": "放大",
         "zoom_out": "缩小",

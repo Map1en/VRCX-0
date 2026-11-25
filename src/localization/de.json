@@ -1130,6 +1130,18 @@
         "hide_friends_sidebar": "Freundesleiste ausblenden",
         "enter_sidebar_mode": "Seitenleistenmodus",
         "restore_full_window": "Zum vollständigen Fenster zurückkehren",
+        "title_bar_card": {
+            "quick_search": "Suche nach Freunden, Avataren, Welten und Gruppen oder springe zu einer Seite oder einem Tool. Füge einen VRChat-Link oder eine ID (usr_, wrld_ usw.) ein, um sie direkt zu öffnen – der frühere Direktzugriff ist jetzt hier.",
+            "open_quick_search": "Schnellsuche öffnen",
+            "notification": "Freundschaftsanfragen, Einladungen, Gruppenmitteilungen und andere VRChat-Benachrichtigungen. Die Benachrichtigungszentrale zeigt die letzten 24 Stunden, ältere stehen im Verlauf.",
+            "unseen": "{count} ungelesen",
+            "open_notification_center": "Benachrichtigungszentrale öffnen",
+            "open_notification_history": "Benachrichtigungsverlauf anzeigen",
+            "open_assistant": "KI-Assistent öffnen",
+            "always_on_top": "Hält das VRCX-0-Fenster über anderen Fenstern.",
+            "sidebar_mode": "Verkleinert das Fenster auf eine schmale Leiste mit der Freundesliste – praktisch, um es beim AFK-Sein am Bildschirmrand zu lassen.",
+            "sidebar_mode_blocked": "Eine Aufgabe läuft noch. Du kannst wechseln, sobald sie fertig ist."
+        },
         "always_on_top": "Immer im Vordergrund",
         "zoom_in": "Vergrößern",
         "zoom_out": "Verkleinern",

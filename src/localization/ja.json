@@ -1125,6 +1125,18 @@
         "hide_friends_sidebar": "フレンドサイドバーを非表示",
         "enter_sidebar_mode": "サイドバーモード",
         "restore_full_window": "通常のウィンドウに戻す",
+        "title_bar_card": {
+            "quick_search": "フレンド・アバター・ワールド・グループを検索したり、ページやツールへ移動したりできます。VRChat のリンクや ID（usr_、wrld_ など）を貼り付けるとそのまま開けます。以前の「直接開く」もここにまとめました。",
+            "open_quick_search": "クイック検索を開く",
+            "notification": "フレンドリクエスト、招待、グループのお知らせなど VRChat の通知です。通知センターには直近24時間分だけ表示され、それより前のものは通知履歴にあります。",
+            "unseen": "未読 {count} 件",
+            "open_notification_center": "通知センターを開く",
+            "open_notification_history": "通知履歴を見る",
+            "open_assistant": "AI アシスタントを開く",
+            "always_on_top": "VRCX-0 のウィンドウを常にほかのウィンドウより手前に表示します。",
+            "sidebar_mode": "ウィンドウをフレンド一覧だけの細い帯に縮めます。放置中に画面の端に置いておくのに便利です。",
+            "sidebar_mode_blocked": "処理中のタスクがあります。完了すると切り替えられます。"
+        },
         "always_on_top": "常に手前に表示",
         "zoom_in": "拡大",
         "zoom_out": "縮小",

@@ -1140,6 +1140,18 @@
         "hide_friends_sidebar": "Skrýt postranní panel přátel",
         "enter_sidebar_mode": "Režim postranního panelu",
         "restore_full_window": "Zpět do celého okna",
+        "title_bar_card": {
+            "quick_search": "Hledejte přátele, avatary, světy a skupiny nebo přejděte na stránku či nástroj. Vložte odkaz nebo ID z VRChatu (usr_, wrld_ apod.) a rovnou ho otevřete – dřívější přímý přístup je teď tady.",
+            "open_quick_search": "Otevřít rychlé hledání",
+            "notification": "Žádosti o přátelství, pozvánky, oznámení skupin a další oznámení z VRChatu. Centrum oznámení ukazuje posledních 24 hodin, starší najdete v historii.",
+            "unseen": "Nepřečteno: {count}",
+            "open_notification_center": "Otevřít centrum oznámení",
+            "open_notification_history": "Zobrazit historii oznámení",
+            "open_assistant": "Otevřít AI asistenta",
+            "always_on_top": "Udržuje okno VRCX-0 nad ostatními okny.",
+            "sidebar_mode": "Zmenší okno na úzký pruh jen se seznamem přátel – hodí se nechat ho na okraji obrazovky, když jste AFK.",
+            "sidebar_mode_blocked": "Probíhá úloha. Přepnout můžete, až skončí."
+        },
         "always_on_top": "Vždy navrchu",
         "zoom_in": "Přiblížit",
         "zoom_out": "Oddálit",

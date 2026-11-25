@@ -138,7 +138,7 @@ export function AppTitleBar() {
                 ) : (
                     actions
                 )}
-                <div className="flex h-full shrink-0 items-center">
+                <div className="flex h-full shrink-0 items-center pl-2">
                     <TitleBarWindowButton
                         label={t('app_menu.label.minimize_window')}
                         onAction={() => {

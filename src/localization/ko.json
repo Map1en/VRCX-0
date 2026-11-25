@@ -1129,6 +1129,18 @@
         "hide_friends_sidebar": "친구 사이드바 숨기기",
         "enter_sidebar_mode": "사이드바 모드",
         "restore_full_window": "전체 창으로 돌아가기",
+        "title_bar_card": {
+            "quick_search": "친구, 아바타, 월드, 그룹을 검색하거나 페이지·도구로 바로 이동합니다. VRChat 링크나 ID(usr_, wrld_ 등)를 붙여 넣으면 바로 열립니다. 예전의 '바로 열기'도 여기로 합쳐졌습니다.",
+            "open_quick_search": "빠른 검색 열기",
+            "notification": "친구 요청, 초대, 그룹 공지 등 VRChat 알림입니다. 알림 센터에는 최근 24시간만 표시되고, 그 이전 알림은 알림 기록에 있습니다.",
+            "unseen": "읽지 않음 {count}개",
+            "open_notification_center": "알림 센터 열기",
+            "open_notification_history": "알림 기록 보기",
+            "open_assistant": "AI 어시스턴트 열기",
+            "always_on_top": "VRCX-0 창을 항상 다른 창 위에 표시합니다.",
+            "sidebar_mode": "창을 친구 목록만 있는 좁은 막대로 줄입니다. 잠수 중 화면 한쪽에 두기 좋습니다.",
+            "sidebar_mode_blocked": "진행 중인 작업이 있습니다. 끝나면 전환할 수 있습니다."
+        },
         "zoom_in": "확대",
         "zoom_out": "축소",
         "reset_zoom": "줌 재설정",

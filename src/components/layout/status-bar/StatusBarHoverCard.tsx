@@ -1,4 +1,9 @@
-import { type ReactElement, type ReactNode, useState } from 'react';
+import {
+    type ComponentProps,
+    type ReactElement,
+    type ReactNode,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -21,6 +26,7 @@ export function StatusBarHoverCard({
     description,
     actions,
     suppressed = false,
+    side = 'top',
     children
 }: {
     trigger: ReactElement;
@@ -30,6 +36,7 @@ export function StatusBarHoverCard({
     description?: ReactNode;
     actions: StatusBarHoverCardActions;
     suppressed?: boolean;
+    side?: ComponentProps<typeof HoverCardContent>['side'];
     children?: ReactNode;
 }) {
     const { t } = useTranslation();
@@ -45,7 +52,7 @@ export function StatusBarHoverCard({
                 onContextMenu={() => setOpen(false)}
             />
             <HoverCardContent
-                side="top"
+                side={side}
                 align="end"
                 className="flex w-72 flex-col gap-2 text-xs"
             >

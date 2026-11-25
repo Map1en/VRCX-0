@@ -1130,6 +1130,18 @@
         "hide_friends_sidebar": "Ocultar barra lateral de amigos",
         "enter_sidebar_mode": "Modo de barra lateral",
         "restore_full_window": "Volver a la ventana completa",
+        "title_bar_card": {
+            "quick_search": "Busca amigos, avatares, mundos y grupos, o salta a una página o herramienta. Pega un enlace o ID de VRChat (usr_, wrld_, etc.) para abrirlo directamente: el antiguo acceso directo ahora está aquí.",
+            "open_quick_search": "Abrir búsqueda rápida",
+            "notification": "Solicitudes de amistad, invitaciones, avisos de grupos y otras notificaciones de VRChat. El centro de notificaciones muestra las últimas 24 horas; las anteriores están en el historial.",
+            "unseen": "{count} sin leer",
+            "open_notification_center": "Abrir centro de notificaciones",
+            "open_notification_history": "Ver historial de notificaciones",
+            "open_assistant": "Abrir el asistente de IA",
+            "always_on_top": "Mantiene la ventana de VRCX-0 por encima de las demás.",
+            "sidebar_mode": "Reduce la ventana a una franja estrecha con solo la lista de amigos, ideal para dejarla en un lado de la pantalla mientras estás AFK.",
+            "sidebar_mode_blocked": "Hay una tarea en curso. Podrás cambiar cuando termine."
+        },
         "always_on_top": "Siempre visible",
         "zoom_in": "Acercar",
         "zoom_out": "Alejar",
