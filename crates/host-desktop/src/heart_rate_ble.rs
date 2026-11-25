@@ -13,7 +13,7 @@ use tokio::time::Instant;
 
 const HEART_RATE_SERVICE: u16 = 0x180D;
 const HEART_RATE_MEASUREMENT: u16 = 0x2A37;
-const DISCOVERY_POLL: Duration = Duration::from_millis(500);
+const DISCOVERY_POLL: Duration = Duration::from_secs(1);
 const SYSTEM_DEVICES_POLL: Duration = Duration::from_secs(2);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 

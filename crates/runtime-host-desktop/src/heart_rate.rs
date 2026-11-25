@@ -26,7 +26,7 @@ use vrcx_0_osc::{avatar_parameter_message, AvatarParameterValue};
 
 use crate::game_isolation::GameIsolationRuntime;
 
-const STOP_POLL: Duration = Duration::from_millis(250);
+const STOP_POLL: Duration = Duration::from_secs(1);
 const IDLE_WAIT: Duration = Duration::from_secs(3600);
 
 pub struct HeartRateRuntime {
@@ -325,10 +325,12 @@ impl HeartRateRuntime {
             self.publish_status();
             let ready =
                 self.session.snapshot().is_game_running && !self.game_isolation.is_enabled();
-            if ready && (enabled || owes_reset) && now >= next_frame {
-                let frame = heart_rate_parameters(reading, &self.output_settings().parameters);
-                self.send_frame(&mut sender, &frame);
-                owes_reset = reading.is_some();
+            if now >= next_frame {
+                if ready && (enabled || owes_reset) {
+                    let frame = heart_rate_parameters(reading, &self.output_settings().parameters);
+                    self.send_frame(&mut sender, &frame);
+                    owes_reset = reading.is_some();
+                }
                 next_frame = now + HEART_RATE_FRAME_INTERVAL;
             }
             match reading.filter(|_| ready) {
@@ -352,9 +354,7 @@ impl HeartRateRuntime {
                 .into_iter()
                 .flatten()
                 .min()
-                .unwrap_or(next_frame)
-                .max(now)
-                .min(now + STOP_POLL);
+                .unwrap_or(next_frame);
             tokio::time::sleep_until(wake_at).await;
         }
         let ready = self.session.snapshot().is_game_running && !self.game_isolation.is_enabled();
