@@ -3087,9 +3087,24 @@
                     "incompatible": "Ese dispositivo no ofrece frecuencia cardíaca. Vuelve a conectar para elegir otro.",
                     "permission_denied": "El acceso a Bluetooth está bloqueado. Permítelo en la configuración del sistema y vuelve a conectar.",
                     "device": "dispositivo de frecuencia cardíaca",
-                    "hint": "Algunos dispositivos solo se conectan a un aparato a la vez, así que la app del móvil puede desconectarse. Inserta {variable} en una línea de estado para mostrarla. Los parámetros del avatar usan los nombres habituales HR e isHRBeat (Pulsoid y muchos prefabs de Booth) y también VRCOSC/Heartrate de VRCOSC.",
+                    "hint": "Algunos dispositivos solo se conectan a un aparato a la vez, así que la app del móvil puede desconectarse. Inserta {variable} en una línea de estado para mostrarla. Por defecto se envían los nombres habituales HR e isHRBeat (Pulsoid y muchos prefabs de Booth) y VRCOSC/Heartrate de VRCOSC.",
                     "save_failed": "No se pudo cambiar la conexión de frecuencia cardíaca.",
-                    "devices": "Compatible con dispositivos Bluetooth estándar de frecuencia cardíaca: bandas de pecho y brazaletes, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 y más. Activa la transmisión de frecuencia cardíaca en el dispositivo."
+                    "devices": "Compatible con dispositivos Bluetooth estándar de frecuencia cardíaca: bandas de pecho y brazaletes, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 y más. Activa la transmisión de frecuencia cardíaca en el dispositivo.",
+                    "parameters": {
+                        "title": "Parámetros del avatar",
+                        "description": "Elige a qué parámetros del avatar se envía la frecuencia cardíaca. Separa varios nombres con comas; los campos vacíos no se envían.",
+                        "value": "Frecuencia cardíaca (Int)",
+                        "value_hint": "Latidos por minuto, p. ej. HR, HeartRateInt",
+                        "beat": "Latido (Bool)",
+                        "beat_hint": "Se activa un instante con cada latido, p. ej. isHRBeat",
+                        "connected": "Conectado (Bool)",
+                        "connected_hint": "Activo mientras llegan lecturas, p. ej. isHRConnected",
+                        "percent": "Proporción de frecuencia (Float)",
+                        "percent_hint": "0–1, frecuencia ÷ 240, p. ej. HRPercent",
+                        "vrcosc": "Los parámetros VRCOSC/Heartrate de VRCOSC se envían siempre y no dependen de esta configuración.",
+                        "save_failed": "No se pudieron guardar los parámetros del avatar.",
+                        "open": "Personalizar nombres de parámetros"
+                    }
                 },
                 "module_off": "Desactivado"
             }

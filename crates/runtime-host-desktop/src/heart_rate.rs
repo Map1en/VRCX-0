@@ -9,12 +9,13 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_application_game::chatbox::{ChatboxConfig, CHATBOX_CONFIG_KEY};
 use vrcx_0_application_game::heart_rate::{
-    choose_heart_rate_device, heart_rate_beat_interval, heart_rate_parameters, heart_rate_status,
-    HeartRateBackoff, HeartRateCandidate, HeartRateConfig, HeartRateLink, HeartRateMeasurement,
-    HeartRateProblem, HeartRateReading, HeartRateStatus, HeartRateStatusInput, HeartRateTracker,
-    HEART_RATE_ADAPTER_RECHECK, HEART_RATE_BEAT_PARAMETERS, HEART_RATE_BEAT_PULSE,
+    choose_heart_rate_device, heart_rate_beat_interval, heart_rate_beat_parameters,
+    heart_rate_parameters, heart_rate_status, HeartRateBackoff, HeartRateCandidate,
+    HeartRateConfig, HeartRateLink, HeartRateMeasurement, HeartRateParameters,
+    HeartRateParametersEditor, HeartRateProblem, HeartRateReading, HeartRateStatus,
+    HeartRateStatusInput, HeartRateTracker, HEART_RATE_ADAPTER_RECHECK, HEART_RATE_BEAT_PULSE,
     HEART_RATE_CONFIG_KEY, HEART_RATE_FIRST_PICK_WINDOW, HEART_RATE_FRAME_INTERVAL,
-    HEART_RATE_RECONNECT_AFTER_SILENCE, HEART_RATE_SEARCH_WINDOW,
+    HEART_RATE_PARAMETERS_CONFIG_KEY, HEART_RATE_RECONNECT_AFTER_SILENCE, HEART_RATE_SEARCH_WINDOW,
 };
 use vrcx_0_host_desktop::heart_rate_ble::{
     heart_rate_bluetooth_available, HeartRateBleError, HeartRateBleEvent, HeartRateBleLink,
@@ -47,7 +48,15 @@ struct HeartRateState {
     problem: Option<HeartRateProblem>,
     tracker: HeartRateTracker,
     status: Option<HeartRateStatus>,
-    osc_target: Option<(u64, String, u16)>,
+    output: Option<OutputSettings>,
+}
+
+#[derive(Clone)]
+struct OutputSettings {
+    generation: u64,
+    host: String,
+    port: u16,
+    parameters: HeartRateParameters,
 }
 
 impl HeartRateRuntime {
@@ -78,7 +87,7 @@ impl HeartRateRuntime {
                 problem: None,
                 tracker: HeartRateTracker::default(),
                 status: None,
-                osc_target: None,
+                output: None,
             }),
         }
     }
@@ -128,6 +137,25 @@ impl HeartRateRuntime {
         self.wake.notify_one();
         self.publish_status();
         Ok(self.status())
+    }
+
+    pub fn parameters_editor(&self) -> HeartRateParametersEditor {
+        HeartRateParametersEditor {
+            parameters: self.output_settings().parameters,
+            defaults: HeartRateParameters::default(),
+        }
+    }
+
+    pub fn set_parameters(
+        &self,
+        parameters: HeartRateParameters,
+    ) -> vrcx_0_application_core::Result<HeartRateParameters> {
+        let parameters = parameters.normalized();
+        let serialized = serde_json::to_string(&parameters)
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?;
+        self.config
+            .set_string(HEART_RATE_PARAMETERS_CONFIG_KEY, &serialized)?;
+        Ok(parameters)
     }
 
     pub(crate) fn current_bpm(&self) -> Option<u16> {
@@ -298,7 +326,7 @@ impl HeartRateRuntime {
             let ready =
                 self.session.snapshot().is_game_running && !self.game_isolation.is_enabled();
             if ready && (enabled || owes_reset) && now >= next_frame {
-                let frame = heart_rate_parameters(reading);
+                let frame = heart_rate_parameters(reading, &self.output_settings().parameters);
                 self.send_frame(&mut sender, &frame);
                 owes_reset = reading.is_some();
                 next_frame = now + HEART_RATE_FRAME_INTERVAL;
@@ -331,18 +359,19 @@ impl HeartRateRuntime {
         }
         let ready = self.session.snapshot().is_game_running && !self.game_isolation.is_enabled();
         if ready && owes_reset {
-            self.send_frame(&mut sender, &heart_rate_parameters(None));
+            let parameters = self.output_settings().parameters;
+            self.send_frame(&mut sender, &heart_rate_parameters(None, &parameters));
             self.send_beat(&mut sender, false);
         }
     }
 
     fn send_beat(&self, sender: &mut OscUdpSender, on: bool) {
-        let frame = HEART_RATE_BEAT_PARAMETERS.map(|name| (name, AvatarParameterValue::Bool(on)));
+        let frame = heart_rate_beat_parameters(on, &self.output_settings().parameters);
         self.send_frame(sender, &frame);
     }
 
-    fn send_frame(&self, sender: &mut OscUdpSender, frame: &[(&str, AvatarParameterValue)]) {
-        let (host, port) = self.osc_target();
+    fn send_frame(&self, sender: &mut OscUdpSender, frame: &[(String, AvatarParameterValue)]) {
+        let OutputSettings { host, port, .. } = self.output_settings();
         for (name, value) in frame {
             if let Err(error) = sender.send(&host, port, &avatar_parameter_message(name, *value)) {
                 tracing::debug!(error = %error, "heart rate OSC send failed");
@@ -351,22 +380,26 @@ impl HeartRateRuntime {
         }
     }
 
-    fn osc_target(&self) -> (String, u16) {
+    fn output_settings(&self) -> OutputSettings {
         let generation = self.config.write_generation();
-        if let Some((cached, host, port)) = &self.lock_state().osc_target {
-            if *cached == generation {
-                return (host.clone(), *port);
-            }
+        if let Some(cached) = self
+            .lock_state()
+            .output
+            .as_ref()
+            .filter(|cached| cached.generation == generation)
+        {
+            return cached.clone();
         }
-        let chatbox = ChatboxConfig::from_stored(
-            &self
-                .config
-                .get_string(CHATBOX_CONFIG_KEY, "")
-                .unwrap_or_default(),
-        );
-        self.lock_state().osc_target =
-            Some((generation, chatbox.osc_host.clone(), chatbox.osc_port));
-        (chatbox.osc_host, chatbox.osc_port)
+        let read = |key| self.config.get_string(key, "").unwrap_or_default();
+        let chatbox = ChatboxConfig::from_stored(&read(CHATBOX_CONFIG_KEY));
+        let settings = OutputSettings {
+            generation,
+            host: chatbox.osc_host,
+            port: chatbox.osc_port,
+            parameters: HeartRateParameters::from_stored(&read(HEART_RATE_PARAMETERS_CONFIG_KEY)),
+        };
+        self.lock_state().output = Some(settings.clone());
+        settings
     }
 
     async fn pause(&self, duration: Duration, stop: &TaskStopToken) -> bool {

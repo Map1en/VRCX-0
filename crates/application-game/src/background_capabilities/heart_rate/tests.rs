@@ -20,13 +20,10 @@ fn candidate(id: &str, rssi: Option<i16>, system_connected: bool) -> HeartRateCa
     }
 }
 
-fn parameter(
-    frame: &[(&'static str, AvatarParameterValue)],
-    name: &str,
-) -> Option<AvatarParameterValue> {
+fn parameter(frame: &[(String, AvatarParameterValue)], name: &str) -> Option<AvatarParameterValue> {
     frame
         .iter()
-        .find(|(candidate, _)| *candidate == name)
+        .find(|(candidate, _)| candidate == name)
         .map(|(_, value)| *value)
 }
 
@@ -37,6 +34,38 @@ fn unreadable_stored_config_falls_back_to_off() {
         HeartRateConfig::default()
     );
     assert_eq!(HeartRateConfig::from_stored(""), HeartRateConfig::default());
+}
+
+#[test]
+fn parameters_default_to_the_common_prefab_names() {
+    assert_eq!(
+        HeartRateParameters::from_stored(""),
+        HeartRateParameters::default()
+    );
+    assert_eq!(HeartRateParameters::default().value, ["HR"]);
+    assert_eq!(HeartRateParameters::default().beat, ["isHRBeat"]);
+}
+
+#[test]
+fn parameter_names_are_trimmed_deduplicated_and_invalid_ones_dropped() {
+    let parameters = HeartRateParameters {
+        value: vec![
+            " HR ".into(),
+            "HR".into(),
+            "/HeartRateInt".into(),
+            "bad name".into(),
+            "a,b".into(),
+            String::new(),
+        ],
+        beat: Vec::new(),
+        connected: vec!["isHRConnected".into()],
+        percent: Vec::new(),
+    }
+    .normalized();
+
+    assert_eq!(parameters.value, ["HR", "HeartRateInt"]);
+    assert!(parameters.beat.is_empty());
+    assert_eq!(parameters.connected, ["isHRConnected"]);
 }
 
 #[test]
@@ -110,10 +139,13 @@ fn tracker_averages_the_last_ten_seconds() {
 
 #[test]
 fn parameters_cover_common_prefabs_and_the_vrcosc_names() {
-    let frame = heart_rate_parameters(Some(HeartRateReading {
-        bpm: 172,
-        average: 150,
-    }));
+    let frame = heart_rate_parameters(
+        Some(HeartRateReading {
+            bpm: 172,
+            average: 150,
+        }),
+        &HeartRateParameters::default(),
+    );
 
     assert_eq!(
         parameter(&frame, "VRCOSC/Heartrate/Connected"),
@@ -153,7 +185,7 @@ fn parameters_cover_common_prefabs_and_the_vrcosc_names() {
 
 #[test]
 fn parameters_report_disconnected_with_zeroed_values_without_a_reading() {
-    let frame = heart_rate_parameters(None);
+    let frame = heart_rate_parameters(None, &HeartRateParameters::default());
 
     assert_eq!(
         parameter(&frame, "VRCOSC/Heartrate/Connected"),
@@ -291,4 +323,88 @@ fn status_reports_why_it_stopped_once_turned_off() {
 
     assert_eq!(status.phase, HeartRatePhase::Off);
     assert_eq!(status.problem, Some(HeartRateProblem::Incompatible));
+}
+
+#[test]
+fn custom_slots_receive_the_value_connection_and_percent() {
+    let custom = HeartRateParameters {
+        value: vec!["HeartRateInt".into(), "HR".into()],
+        beat: Vec::new(),
+        connected: vec!["isHRConnected".into()],
+        percent: vec!["HRPercent".into()],
+    };
+
+    let frame = heart_rate_parameters(
+        Some(HeartRateReading {
+            bpm: 120,
+            average: 110,
+        }),
+        &custom,
+    );
+
+    assert_eq!(
+        parameter(&frame, "HeartRateInt"),
+        Some(AvatarParameterValue::Int(120))
+    );
+    assert_eq!(
+        parameter(&frame, "HR"),
+        Some(AvatarParameterValue::Int(120))
+    );
+    assert_eq!(
+        parameter(&frame, "isHRConnected"),
+        Some(AvatarParameterValue::Bool(true))
+    );
+    assert_eq!(
+        parameter(&frame, "HRPercent"),
+        Some(AvatarParameterValue::Float(0.5))
+    );
+}
+
+#[test]
+fn clearing_a_slot_stops_sending_it_but_keeps_the_vrcosc_names() {
+    let custom = HeartRateParameters {
+        value: Vec::new(),
+        beat: Vec::new(),
+        connected: Vec::new(),
+        percent: Vec::new(),
+    };
+
+    let frame = heart_rate_parameters(None, &custom);
+    let beat = heart_rate_beat_parameters(true, &custom);
+
+    assert_eq!(parameter(&frame, "HR"), None);
+    assert!(parameter(&frame, "VRCOSC/Heartrate/Value").is_some());
+    assert_eq!(
+        beat,
+        [(
+            "VRCOSC/Heartrate/Beat".to_string(),
+            AvatarParameterValue::Bool(true)
+        )]
+    );
+}
+
+#[test]
+fn beat_pulses_go_to_vrcosc_and_every_custom_beat_name() {
+    let beat = heart_rate_beat_parameters(false, &HeartRateParameters::default());
+
+    assert_eq!(
+        parameter(&beat, "isHRBeat"),
+        Some(AvatarParameterValue::Bool(false))
+    );
+    assert_eq!(
+        parameter(&beat, "VRCOSC/Heartrate/Beat"),
+        Some(AvatarParameterValue::Bool(false))
+    );
+}
+
+#[test]
+fn stored_parameters_fill_missing_slots_with_defaults() {
+    let stored = HeartRateParameters::from_stored(r#"{"value":["HeartRateInt"]}"#);
+
+    assert_eq!(stored.value, ["HeartRateInt"]);
+    assert_eq!(stored.beat, ["isHRBeat"]);
+    assert_eq!(
+        HeartRateParameters::from_stored("not json"),
+        HeartRateParameters::default()
+    );
 }

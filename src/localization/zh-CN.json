@@ -3076,9 +3076,24 @@
                     "incompatible": "该设备不提供心率，重新连接即可换一台设备",
                     "permission_denied": "蓝牙权限被拒绝，请在系统设置中允许后重新连接",
                     "device": "心率设备",
-                    "hint": "部分设备只能连接一台，手机 App 可能会断开。在状态行中插入 {variable} 即可显示心率。模型参数同时发送常见心率预制件使用的 HR、isHRBeat（Pulsoid、Booth 上的多数预制件）和 VRCOSC 的 VRCOSC/Heartrate 系列参数。",
+                    "hint": "部分设备只能连接一台，手机 App 可能会断开。在状态行中插入 {variable} 即可显示心率。模型参数默认发送常见预制件使用的 HR、isHRBeat（Pulsoid、Booth 上的多数预制件）和 VRCOSC 的 VRCOSC/Heartrate 系列。",
                     "save_failed": "无法更改心率连接。",
-                    "devices": "支持标准蓝牙心率设备，如心率带、臂带、Garmin、COROS、华为、Amazfit、小米手环 10 等，需在设备上开启心率广播。"
+                    "devices": "支持标准蓝牙心率设备，如心率带、臂带、Garmin、COROS、华为、Amazfit、小米手环 10 等，需在设备上开启心率广播。",
+                    "parameters": {
+                        "title": "模型参数",
+                        "description": "设置心率发送到哪些模型参数。多个名称用逗号分隔，留空则不发送。",
+                        "value": "心率值（Int）",
+                        "value_hint": "每分钟心跳数，如 HR、HeartRateInt",
+                        "beat": "心跳（Bool）",
+                        "beat_hint": "每次心跳短暂变为开，如 isHRBeat",
+                        "connected": "已连接（Bool）",
+                        "connected_hint": "有读数时为开，如 isHRConnected",
+                        "percent": "心率比例（Float）",
+                        "percent_hint": "0～1，心率 ÷ 240，如 HRPercent",
+                        "vrcosc": "VRCOSC 的 VRCOSC/Heartrate 系列参数始终发送，不受这里的设置影响。",
+                        "save_failed": "无法保存模型参数。",
+                        "open": "自定义参数名"
+                    }
                 },
                 "module_off": "已关闭"
             }

@@ -3083,9 +3083,24 @@
                     "incompatible": "Dieses Gerät liefert keine Herzfrequenz. Verbinde erneut, um ein anderes zu wählen.",
                     "permission_denied": "Der Bluetooth-Zugriff ist blockiert. Erlaube ihn in den Systemeinstellungen und verbinde dann erneut.",
                     "device": "Herzfrequenzgerät",
-                    "hint": "Manche Geräte verbinden sich nur mit einem Gerät gleichzeitig, deine Handy-App kann sich dann trennen. Füge {variable} in eine Statuszeile ein, um die Herzfrequenz anzuzeigen. Die Avatar-Parameter nutzen die gängigen Namen HR und isHRBeat (Pulsoid und viele Booth-Prefabs) sowie VRCOSC/Heartrate von VRCOSC.",
+                    "hint": "Manche Geräte verbinden sich nur mit einem Gerät gleichzeitig, deine Handy-App kann sich dann trennen. Füge {variable} in eine Statuszeile ein, um die Herzfrequenz anzuzeigen. Standardmäßig werden die gängigen Namen HR und isHRBeat (Pulsoid und viele Booth-Prefabs) sowie VRCOSC/Heartrate von VRCOSC gesendet.",
                     "save_failed": "Die Herzfrequenzverbindung konnte nicht geändert werden.",
-                    "devices": "Funktioniert mit Standard-Bluetooth-Herzfrequenzgeräten: Brustgurte und Armbänder, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 und mehr. Schalte am Gerät die Herzfrequenzübertragung ein."
+                    "devices": "Funktioniert mit Standard-Bluetooth-Herzfrequenzgeräten: Brustgurte und Armbänder, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 und mehr. Schalte am Gerät die Herzfrequenzübertragung ein.",
+                    "parameters": {
+                        "title": "Avatar-Parameter",
+                        "description": "Lege fest, an welche Avatar-Parameter die Herzfrequenz gesendet wird. Trenne mehrere Namen mit Kommas; leere Felder werden nicht gesendet.",
+                        "value": "Herzfrequenz (Int)",
+                        "value_hint": "Schläge pro Minute, z. B. HR, HeartRateInt",
+                        "beat": "Herzschlag (Bool)",
+                        "beat_hint": "Bei jedem Schlag kurz an, z. B. isHRBeat",
+                        "connected": "Verbunden (Bool)",
+                        "connected_hint": "An, solange Messwerte ankommen, z. B. isHRConnected",
+                        "percent": "Herzfrequenzanteil (Float)",
+                        "percent_hint": "0–1, Herzfrequenz ÷ 240, z. B. HRPercent",
+                        "vrcosc": "Die VRCOSC/Heartrate-Parameter von VRCOSC werden immer gesendet und hiervon nicht beeinflusst.",
+                        "save_failed": "Die Avatar-Parameter konnten nicht gespeichert werden.",
+                        "open": "Parameternamen anpassen"
+                    }
                 },
                 "module_off": "Aus"
             }

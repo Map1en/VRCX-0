@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 pub const HEART_RATE_CONFIG_KEY: &str = "heartRateConfig";
+pub const HEART_RATE_PARAMETERS_CONFIG_KEY: &str = "heartRateParameters";
+
+const MAX_NAMES_PER_SLOT: usize = 8;
+const MAX_NAME_CHARS: usize = 64;
+const FORBIDDEN_NAME_CHARS: &[char] = &['#', '*', ',', '?', '[', ']', '{', '}'];
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -45,4 +51,75 @@ impl HeartRateConfig {
             ..self
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct HeartRateParameters {
+    pub value: Vec<String>,
+    pub beat: Vec<String>,
+    pub connected: Vec<String>,
+    pub percent: Vec<String>,
+}
+
+impl Default for HeartRateParameters {
+    fn default() -> Self {
+        Self {
+            value: vec!["HR".into()],
+            beat: vec!["isHRBeat".into()],
+            connected: Vec::new(),
+            percent: Vec::new(),
+        }
+    }
+}
+
+impl HeartRateParameters {
+    pub fn from_stored(raw: &str) -> Self {
+        let Ok(Value::Object(mut stored)) = serde_json::from_str::<Value>(raw) else {
+            return Self::default();
+        };
+        if let Ok(Value::Object(defaults)) = serde_json::to_value(Self::default()) {
+            for (key, value) in defaults {
+                stored.entry(key).or_insert(value);
+            }
+        }
+        serde_json::from_value::<Self>(Value::Object(stored))
+            .map(Self::normalized)
+            .unwrap_or_default()
+    }
+
+    pub fn normalized(self) -> Self {
+        Self {
+            value: normalized_names(self.value),
+            beat: normalized_names(self.beat),
+            connected: normalized_names(self.connected),
+            percent: normalized_names(self.percent),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct HeartRateParametersEditor {
+    pub parameters: HeartRateParameters,
+    pub defaults: HeartRateParameters,
+}
+
+fn normalized_names(names: Vec<String>) -> Vec<String> {
+    let mut kept: Vec<String> = Vec::new();
+    for name in names {
+        let name = name.trim().trim_start_matches('/').to_string();
+        let valid = !name.is_empty()
+            && name.chars().count() <= MAX_NAME_CHARS
+            && !name
+                .chars()
+                .any(|c| c.is_whitespace() || FORBIDDEN_NAME_CHARS.contains(&c));
+        if valid && !kept.contains(&name) {
+            kept.push(name);
+        }
+        if kept.len() == MAX_NAMES_PER_SLOT {
+            break;
+        }
+    }
+    kept
 }

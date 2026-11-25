@@ -145,6 +145,14 @@ export const commands = {
         __TAURI_INVOKE<HeartRateStatus>('app__heart_rate_connected_set', {
             connected
         }),
+    appHeartRateParametersGet: () =>
+        __TAURI_INVOKE<HeartRateParametersEditor>(
+            'app__heart_rate_parameters_get'
+        ),
+    appHeartRateParametersSet: (parameters: HeartRateParameters) =>
+        __TAURI_INVOKE<HeartRateParameters>('app__heart_rate_parameters_set', {
+            parameters
+        }),
     appStartBackgroundMode: () =>
         __TAURI_INVOKE<BackendRuntimeSnapshot>('app__start_background_mode'),
     appBackendRuntimeCombinedSnapshotGet: () =>
@@ -5677,6 +5685,18 @@ export type GroupSearchParams = {
     query?: string | null;
     offset?: number | null;
     n?: number | null;
+};
+
+export type HeartRateParameters = {
+    value: string[];
+    beat: string[];
+    connected: string[];
+    percent: string[];
+};
+
+export type HeartRateParametersEditor = {
+    parameters: HeartRateParameters;
+    defaults: HeartRateParameters;
 };
 
 export type HeartRatePhase = 'unavailable' | 'off' | 'waiting' | 'connected';

@@ -3076,9 +3076,24 @@
                     "incompatible": "此裝置不提供心率，重新連接即可換一台裝置",
                     "permission_denied": "藍牙權限遭拒，請在系統設定中允許後重新連接",
                     "device": "心率裝置",
-                    "hint": "部分裝置只能連接一台，手機 App 可能會中斷連線。在狀態行中插入 {variable} 即可顯示心率。模型參數同時傳送常見心率預製件使用的 HR、isHRBeat（Pulsoid 與 Booth 上的多數預製件）以及 VRCOSC 的 VRCOSC/Heartrate 系列參數。",
+                    "hint": "部分裝置只能連接一台，手機 App 可能會中斷連線。在狀態行中插入 {variable} 即可顯示心率。模型參數預設傳送常見預製件使用的 HR、isHRBeat（Pulsoid 與 Booth 上的多數預製件）以及 VRCOSC 的 VRCOSC/Heartrate 系列。",
                     "save_failed": "無法變更心率連線。",
-                    "devices": "支援標準藍牙心率裝置，如心率帶、臂帶、Garmin、COROS、華為、Amazfit、小米手環 10 等，需在裝置上開啟心率廣播。"
+                    "devices": "支援標準藍牙心率裝置，如心率帶、臂帶、Garmin、COROS、華為、Amazfit、小米手環 10 等，需在裝置上開啟心率廣播。",
+                    "parameters": {
+                        "title": "模型參數",
+                        "description": "設定心率要傳送到哪些模型參數。多個名稱以逗號分隔，留空則不傳送。",
+                        "value": "心率值（Int）",
+                        "value_hint": "每分鐘心跳數，如 HR、HeartRateInt",
+                        "beat": "心跳（Bool）",
+                        "beat_hint": "每次心跳短暫變為開，如 isHRBeat",
+                        "connected": "已連接（Bool）",
+                        "connected_hint": "有讀數時為開，如 isHRConnected",
+                        "percent": "心率比例（Float）",
+                        "percent_hint": "0～1，心率 ÷ 240，如 HRPercent",
+                        "vrcosc": "VRCOSC 的 VRCOSC/Heartrate 系列參數一律傳送，不受此處設定影響。",
+                        "save_failed": "無法儲存模型參數。",
+                        "open": "自訂參數名稱"
+                    }
                 },
                 "module_off": "已關閉"
             }

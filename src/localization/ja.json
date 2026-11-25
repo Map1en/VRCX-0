@@ -3072,9 +3072,24 @@
                     "incompatible": "このデバイスは心拍数に対応していません。もう一度接続すると別のデバイスを選びます",
                     "permission_denied": "Bluetoothへのアクセスが許可されていません。システム設定で許可してから、もう一度接続してください",
                     "device": "心拍計",
-                    "hint": "同時に1台しかつながらないデバイスでは、スマホのアプリが切断されることがあります。ステータスの行に{variable}を入れると心拍数を表示できます。アバターパラメーターは、よく使われる HR・isHRBeat（Pulsoid や BOOTH の多くのプレハブ）と、VRCOSC の VRCOSC/Heartrate 系の両方を送信します。",
+                    "hint": "同時に1台しかつながらないデバイスでは、スマホのアプリが切断されることがあります。ステータスの行に{variable}を入れると心拍数を表示できます。アバターパラメーターは、よく使われる HR・isHRBeat（Pulsoid や BOOTH の多くのプレハブ）と VRCOSC の VRCOSC/Heartrate 系を既定で送信します。",
                     "save_failed": "心拍数の接続を変更できませんでした。",
-                    "devices": "標準のBluetooth心拍計に対応しています。胸ベルト・アームバンド、Garmin、COROS、Huawei、Amazfit、Xiaomi Smart Band 10 など。デバイス側で心拍数のブロードキャストをオンにしてください。"
+                    "devices": "標準のBluetooth心拍計に対応しています。胸ベルト・アームバンド、Garmin、COROS、Huawei、Amazfit、Xiaomi Smart Band 10 など。デバイス側で心拍数のブロードキャストをオンにしてください。",
+                    "parameters": {
+                        "title": "アバターパラメーター",
+                        "description": "心拍数を送るアバターパラメーターを設定します。複数の名前はカンマで区切り、空欄にすると送信しません。",
+                        "value": "心拍数（Int）",
+                        "value_hint": "1分間の拍数。例：HR、HeartRateInt",
+                        "beat": "鼓動（Bool）",
+                        "beat_hint": "拍ごとに一瞬オンになります。例：isHRBeat",
+                        "connected": "接続中（Bool）",
+                        "connected_hint": "測定値を受信している間はオン。例：isHRConnected",
+                        "percent": "心拍数の割合（Float）",
+                        "percent_hint": "0〜1（心拍数 ÷ 240）。例：HRPercent",
+                        "vrcosc": "VRCOSC の VRCOSC/Heartrate 系パラメーターは常に送信され、ここでの設定の影響を受けません。",
+                        "save_failed": "アバターパラメーターを保存できませんでした。",
+                        "open": "パラメーター名を変更"
+                    }
                 },
                 "module_off": "オフ"
             }

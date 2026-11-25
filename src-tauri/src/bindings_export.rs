@@ -181,6 +181,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::chatbox::app__chatbox_samples_render,
             commands::application::heart_rate::app__heart_rate_status_get,
             commands::application::heart_rate::app__heart_rate_connected_set,
+            commands::application::heart_rate::app__heart_rate_parameters_get,
+            commands::application::heart_rate::app__heart_rate_parameters_set,
             commands::application::background_mode::app__start_background_mode,
             commands::application::background_mode::app__backend_runtime_combined_snapshot_get,
             commands::application::background_mode::app__ensure_main_window,

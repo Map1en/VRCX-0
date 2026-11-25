@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { Settings2Icon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -6,12 +7,16 @@ import { SettingsCard } from '@/components/layout/SettingsCard';
 import { commands, type HeartRateStatus } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
 import { useChatboxStore } from '@/state/chatboxStore';
+import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
+
+import { ChatboxHeartRateParametersDialog } from './ChatboxHeartRateParametersDialog';
 
 export function ChatboxHeartRateCard() {
     const { t } = useTranslation();
     const status = useChatboxStore((state) => state.heartRate);
     const [pending, setPending] = useState(false);
+    const [parametersOpen, setParametersOpen] = useState(false);
 
     useEffect(() => {
         commands.appHeartRateStatusGet().then(
@@ -64,6 +69,21 @@ export function ChatboxHeartRateCard() {
                     variable: '{heartrate}'
                 })}
             </p>
+            <div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setParametersOpen(true)}
+                >
+                    <Settings2Icon />
+                    {t('view.tools.chatbox.heart_rate.parameters.open')}
+                </Button>
+            </div>
+            <ChatboxHeartRateParametersDialog
+                open={parametersOpen}
+                onOpenChange={setParametersOpen}
+            />
         </SettingsCard>
     );
 }

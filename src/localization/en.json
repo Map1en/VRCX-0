@@ -3087,9 +3087,24 @@
                     "incompatible": "That device doesn't share heart rate. Connect again to pick another one.",
                     "permission_denied": "Bluetooth access is blocked. Allow it in your system settings, then connect again.",
                     "device": "heart rate device",
-                    "hint": "Some devices connect to only one thing at a time, so your phone app may disconnect. Insert {variable} into a status line to show it. Avatar parameters use the common HR and isHRBeat names (Pulsoid and many Booth prefabs) as well as VRCOSC's VRCOSC/Heartrate names.",
+                    "hint": "Some devices connect to only one thing at a time, so your phone app may disconnect. Insert {variable} into a status line to show it. Avatar parameters default to the common HR and isHRBeat (Pulsoid and many Booth prefabs) plus VRCOSC's VRCOSC/Heartrate names.",
                     "save_failed": "Couldn't change the heart rate connection.",
-                    "devices": "Works with standard Bluetooth heart rate devices: chest straps and armbands, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 and more. Turn on heart rate broadcast on the device."
+                    "devices": "Works with standard Bluetooth heart rate devices: chest straps and armbands, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 and more. Turn on heart rate broadcast on the device.",
+                    "parameters": {
+                        "title": "Avatar parameters",
+                        "description": "Choose which avatar parameters receive your heart rate. Separate several names with commas; leave a field empty to stop sending it.",
+                        "value": "Heart rate (Int)",
+                        "value_hint": "Beats per minute, e.g. HR, HeartRateInt",
+                        "beat": "Heartbeat (Bool)",
+                        "beat_hint": "Turns on briefly with every beat, e.g. isHRBeat",
+                        "connected": "Connected (Bool)",
+                        "connected_hint": "On while readings are coming in, e.g. isHRConnected",
+                        "percent": "Heart rate ratio (Float)",
+                        "percent_hint": "0–1, heart rate ÷ 240, e.g. HRPercent",
+                        "vrcosc": "VRCOSC's VRCOSC/Heartrate parameters are always sent and aren't affected by these settings.",
+                        "save_failed": "Couldn't save the avatar parameters.",
+                        "open": "Customize parameter names"
+                    }
                 },
                 "module_off": "Off"
             }

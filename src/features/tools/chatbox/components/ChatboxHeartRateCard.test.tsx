@@ -13,13 +13,17 @@ import type { HeartRateStatus } from '@/platform/tauri/bindings';
 
 const mocks = vi.hoisted(() => ({
     appHeartRateStatusGet: vi.fn(),
-    appHeartRateConnectedSet: vi.fn()
+    appHeartRateConnectedSet: vi.fn(),
+    appHeartRateParametersGet: vi.fn(),
+    appHeartRateParametersSet: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appHeartRateStatusGet: mocks.appHeartRateStatusGet,
-        appHeartRateConnectedSet: mocks.appHeartRateConnectedSet
+        appHeartRateConnectedSet: mocks.appHeartRateConnectedSet,
+        appHeartRateParametersGet: mocks.appHeartRateParametersGet,
+        appHeartRateParametersSet: mocks.appHeartRateParametersSet
     }
 }));
 
@@ -116,5 +120,48 @@ describe('ChatboxHeartRateCard', () => {
         render(<ChatboxHeartRateCard />);
 
         await screen.findByText('view.tools.chatbox.heart_rate.incompatible');
+    });
+
+    it('saves custom avatar parameter names from the gear dialog', async () => {
+        mocks.appHeartRateStatusGet.mockResolvedValue(status({}));
+        mocks.appHeartRateParametersGet.mockResolvedValue({
+            parameters: {
+                value: ['HR'],
+                beat: ['isHRBeat'],
+                connected: [],
+                percent: []
+            },
+            defaults: {
+                value: ['HR'],
+                beat: ['isHRBeat'],
+                connected: [],
+                percent: []
+            }
+        });
+        mocks.appHeartRateParametersSet.mockImplementation((parameters) =>
+            Promise.resolve(parameters)
+        );
+        render(<ChatboxHeartRateCard />);
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.chatbox.heart_rate.parameters.open',
+                hidden: true
+            })
+        );
+        const value = await screen.findByDisplayValue('HR');
+        fireEvent.change(value, { target: { value: 'HR, HeartRateInt' } });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.save' })
+        );
+
+        await waitFor(() =>
+            expect(mocks.appHeartRateParametersSet).toHaveBeenCalledWith({
+                value: ['HR', 'HeartRateInt'],
+                beat: ['isHRBeat'],
+                connected: [],
+                percent: []
+            })
+        );
     });
 });

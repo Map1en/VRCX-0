@@ -3013,9 +3013,24 @@
                     "incompatible": "이 기기는 심박수를 제공하지 않습니다. 다시 연결하면 다른 기기를 고릅니다",
                     "permission_denied": "블루투스 권한이 거부되었습니다. 시스템 설정에서 허용한 뒤 다시 연결하세요",
                     "device": "심박수 기기",
-                    "hint": "한 번에 하나만 연결되는 기기는 휴대폰 앱 연결이 끊길 수 있습니다. 상태 줄에 {variable}를 넣으면 심박수가 표시됩니다. 아바타 파라미터는 널리 쓰이는 HR·isHRBeat(Pulsoid, Booth의 많은 프리팹)와 VRCOSC의 VRCOSC/Heartrate 계열을 함께 보냅니다.",
+                    "hint": "한 번에 하나만 연결되는 기기는 휴대폰 앱 연결이 끊길 수 있습니다. 상태 줄에 {variable}를 넣으면 심박수가 표시됩니다. 아바타 파라미터는 기본적으로 널리 쓰이는 HR·isHRBeat(Pulsoid, Booth의 많은 프리팹)와 VRCOSC의 VRCOSC/Heartrate 계열을 보냅니다.",
                     "save_failed": "심박수 연결을 변경하지 못했습니다.",
-                    "devices": "표준 블루투스 심박수 기기를 지원합니다. 가슴 스트랩·암밴드, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 등. 기기에서 심박수 브로드캐스트를 켜세요."
+                    "devices": "표준 블루투스 심박수 기기를 지원합니다. 가슴 스트랩·암밴드, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 등. 기기에서 심박수 브로드캐스트를 켜세요.",
+                    "parameters": {
+                        "title": "아바타 파라미터",
+                        "description": "심박수를 보낼 아바타 파라미터를 설정합니다. 여러 이름은 쉼표로 구분하고, 비워 두면 보내지 않습니다.",
+                        "value": "심박수(Int)",
+                        "value_hint": "분당 박동 수. 예: HR, HeartRateInt",
+                        "beat": "박동(Bool)",
+                        "beat_hint": "박동마다 잠깐 켜집니다. 예: isHRBeat",
+                        "connected": "연결됨(Bool)",
+                        "connected_hint": "측정값을 받는 동안 켜집니다. 예: isHRConnected",
+                        "percent": "심박수 비율(Float)",
+                        "percent_hint": "0~1, 심박수 ÷ 240. 예: HRPercent",
+                        "vrcosc": "VRCOSC의 VRCOSC/Heartrate 계열 파라미터는 항상 보내며 이 설정의 영향을 받지 않습니다.",
+                        "save_failed": "아바타 파라미터를 저장하지 못했습니다.",
+                        "open": "파라미터 이름 변경"
+                    }
                 },
                 "module_off": "꺼짐"
             }
