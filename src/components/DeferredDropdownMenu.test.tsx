@@ -54,6 +54,21 @@ describe('DeferredDropdownMenu', () => {
         expect(onSelect).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps the same trigger node when hovering after the menu opens', async () => {
+        renderMenu();
+        fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+        await screen.findByRole('menu');
+        const openedTrigger = screen.getByRole('button', { name: 'Actions' });
+
+        fireEvent.pointerMove(openedTrigger, { pointerType: 'mouse' });
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        expect(openedTrigger.isConnected).toBe(true);
+        expect(screen.getByRole('button', { name: 'Actions' })).toBe(
+            openedTrigger
+        );
+    });
+
     it('closes the menu when the mounted trigger is clicked again', async () => {
         renderMenu();
         fireEvent.click(screen.getByRole('button', { name: 'Actions' }));

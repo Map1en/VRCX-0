@@ -3,6 +3,7 @@ import { useState, type ReactElement, type ReactNode } from 'react';
 
 import { HintTooltip } from '@/ui/hint-tooltip';
 import { DropdownMenu, DropdownMenuTrigger } from '@/ui/shadcn/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 export function DeferredDropdownMenu({
     trigger,
@@ -29,9 +30,13 @@ export function DeferredDropdownMenu({
 
     return (
         <DropdownMenu defaultOpen>
-            <HintTooltip label={label}>
-                <DropdownMenuTrigger render={trigger} />
-            </HintTooltip>
+            <Tooltip>
+                <TooltipTrigger
+                    aria-label={label}
+                    render={<DropdownMenuTrigger render={trigger} />}
+                />
+                <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
             {children}
         </DropdownMenu>
     );
