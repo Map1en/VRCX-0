@@ -14,9 +14,7 @@ const SYNTHETIC_PROVIDER_LONG_TOKEN: &str = "fakeToken0123456789ABCDEFGHIJKLMNOP
 #[test]
 fn config_snapshot_matches_worker_contract_fields() {
     let snapshot = TelemetryConfigSnapshot {
-        auto_state_change_enabled: false,
         auto_accept_invite_requests: "off".into(),
-        avatar_auto_cleanup: "off".into(),
         theme_mode: "dark".into(),
         db_size_bucket: "1g_2g".into(),
         feed_rows_bucket: "1m_5m".into(),
@@ -35,8 +33,6 @@ fn config_snapshot_matches_worker_contract_fields() {
 
     let expected = [
         "autoAcceptInviteRequests",
-        "autoStateChangeEnabled",
-        "avatarAutoCleanup",
         "dbSizeBucket",
         "feedRowsBucket",
         "friendCountBucket",

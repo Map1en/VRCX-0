@@ -763,14 +763,8 @@ impl TelemetryRuntime {
 
     fn config_snapshot(&self, scale: TelemetryDatabaseScale) -> TelemetryConfigSnapshot {
         TelemetryConfigSnapshot {
-            auto_state_change_enabled: has_enabled_rules(
-                &self.config_string("presenceAutomationContextRules", "[]"),
-            ),
             auto_accept_invite_requests: normalize_enum_value(
                 &self.config_string("autoAcceptInviteRequests", "Off"),
-            ),
-            avatar_auto_cleanup: normalize_enum_value(
-                &self.config_string("avatarAutoCleanup", "Off"),
             ),
             theme_mode: self.theme_category(),
             db_size_bucket: db_size_bucket(scale.db_bytes),
@@ -1000,18 +994,6 @@ fn is_heartbeat_due(last: Option<Instant>, now: Instant, interval: Duration) -> 
 
 fn attempt_due(last_attempt: Option<Instant>, now: Instant) -> bool {
     last_attempt.is_none_or(|last| now.duration_since(last) >= SEND_RETRY_BACKOFF)
-}
-
-fn has_enabled_rules(raw_rules: &str) -> bool {
-    serde_json::from_str::<serde_json::Value>(raw_rules)
-        .ok()
-        .as_ref()
-        .and_then(serde_json::Value::as_array)
-        .is_some_and(|rules| {
-            rules
-                .iter()
-                .any(|rule| rule.get("enabled").and_then(serde_json::Value::as_bool) != Some(false))
-        })
 }
 
 fn normalize_enum_value(value: &str) -> String {

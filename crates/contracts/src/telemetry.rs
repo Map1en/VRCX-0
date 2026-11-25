@@ -46,9 +46,7 @@ impl TelemetryOfflineRecord {
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryConfigSnapshot {
-    pub auto_state_change_enabled: bool,
     pub auto_accept_invite_requests: String,
-    pub avatar_auto_cleanup: String,
     pub theme_mode: String,
     pub db_size_bucket: String,
     pub feed_rows_bucket: String,
