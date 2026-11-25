@@ -2,7 +2,10 @@ use std::path::Path;
 
 use rusqlite::Connection;
 
-const PRESERVED_CONFIG_KEYS: [&str; 1] = ["config:vrcx_telemetryinstallid"];
+const PRESERVED_CONFIG_KEYS: [&str; 2] = [
+    "config:vrcx_telemetryinstallid",
+    "config:vrcx_telemetryclienterrorcursor",
+];
 
 pub(crate) fn read_preserved_config(db_file: &Path) -> Vec<(String, String)> {
     if !db_file.is_file() {

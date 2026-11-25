@@ -212,6 +212,36 @@ fn read_config(path: &Path, key: &str) -> Option<String> {
 }
 
 #[test]
+fn staged_install_keeps_the_telemetry_error_cursor_of_the_replaced_database() {
+    let dir = TestDir::new("legacy-keeps-error-cursor");
+    let paths = dir.app_paths();
+    let legacy_db = dir.path.join("VRCX").join("VRCX.sqlite3");
+    let source_connection = open_test_database(&legacy_db);
+    create_configs(&source_connection);
+    drop(source_connection);
+    let target_connection = open_test_database(&paths.db_file);
+    create_configs(&target_connection);
+    target_connection
+        .execute(
+            "INSERT INTO configs (key, value) VALUES ('config:vrcx_telemetryclienterrorcursor', '2026-11-25T05:26:50.000Z')",
+            [],
+        )
+        .unwrap();
+    drop(target_connection);
+    prepare_legacy_migration(&paths, &source(legacy_db, None), |_| {}).unwrap();
+
+    consume_pending_legacy_migration_with_discovery(&paths, || {
+        LegacyVrcxDiscovery::without_source(LegacyVrcxMigrationStatus::unavailable())
+    })
+    .unwrap();
+
+    assert_eq!(
+        read_config(&paths.db_file, "config:vrcx_telemetryclienterrorcursor").as_deref(),
+        Some("2026-11-25T05:26:50.000Z")
+    );
+}
+
+#[test]
 fn staged_install_keeps_the_telemetry_install_id_of_the_replaced_database() {
     let dir = TestDir::new("legacy-keeps-install-id");
     let paths = dir.app_paths();
