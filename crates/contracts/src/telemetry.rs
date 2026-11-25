@@ -9,7 +9,6 @@ pub struct TelemetryContext {
     pub platform: String,
     pub arch: String,
     pub locale: String,
-    pub timezone: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_ended: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,8 +52,6 @@ pub struct TelemetryConfigSnapshot {
     pub theme_mode: String,
     pub db_size_bucket: String,
     pub feed_rows_bucket: String,
-    pub gamelog_rows_bucket: String,
-    pub friend_log_rows_bucket: String,
     pub friend_count_bucket: String,
     pub vrcx_origin: TelemetryVrcxOrigin,
     pub offline_record: TelemetryOfflineRecord,

@@ -45,10 +45,6 @@ impl TelemetryEnvironment for FakeEnvironment {
         Some("en-US".into())
     }
 
-    fn timezone(&self) -> Option<String> {
-        Some("UTC".into())
-    }
-
     fn database_scale(&self) -> TelemetryDatabaseScale {
         *self.scale.lock().unwrap()
     }

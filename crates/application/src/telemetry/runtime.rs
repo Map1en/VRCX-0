@@ -85,7 +85,6 @@ pub trait TelemetryEnvironment: Send + Sync {
     fn platform(&self) -> String;
     fn arch(&self) -> String;
     fn system_locale(&self) -> Option<String>;
-    fn timezone(&self) -> Option<String>;
     fn system_theme_category(&self) -> String;
     fn database_scale(&self) -> TelemetryDatabaseScale;
     fn legacy_vrcx_detected(&self) -> bool;
@@ -730,11 +729,6 @@ impl TelemetryRuntime {
             platform: self.inner.environment.platform(),
             arch: self.inner.environment.arch(),
             locale: self.locale(),
-            timezone: self
-                .inner
-                .environment
-                .timezone()
-                .unwrap_or_else(|| "unknown".into()),
             session_ended,
             vrchat_seen: None,
             signed_in: None,
@@ -781,8 +775,6 @@ impl TelemetryRuntime {
             theme_mode: self.theme_category(),
             db_size_bucket: db_size_bucket(scale.db_bytes),
             feed_rows_bucket: row_bucket(scale.feed_rows),
-            gamelog_rows_bucket: row_bucket(scale.gamelog_rows),
-            friend_log_rows_bucket: row_bucket(scale.friend_log_rows),
             friend_count_bucket: friend_count_bucket(scale.friend_count),
             vrcx_origin: self.vrcx_origin(),
             offline_record: self.offline_record(),

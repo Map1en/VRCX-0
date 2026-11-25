@@ -8,7 +8,6 @@ description = "Concrete outbound adapters for application-owned ports"
 [dependencies]
 async-trait = { workspace = true }
 chrono = { workspace = true }
-iana-time-zone.workspace = true
 futures-util = "0.3"
 moka = { version = "0.12", features = ["sync"] }
 serde = { workspace = true }

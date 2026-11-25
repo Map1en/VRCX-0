@@ -95,7 +95,6 @@ image = { version = "0.25", default-features = false, features = [
     "tiff",
     "webp"
 ] }
-iana-time-zone = "0.1"
 machine-uid = "0.6"
 percent-encoding = "2"
 proptest = "1"

@@ -76,8 +76,6 @@ fn scale_estimate_reports_no_rows_until_the_database_is_analyzed() -> Result<(),
 
     assert!(estimate.db_bytes > 0);
     assert_eq!(estimate.feed_rows, None);
-    assert_eq!(estimate.gamelog_rows, None);
-    assert_eq!(estimate.friend_log_rows, None);
     assert_eq!(estimate.friend_count, Some(2));
     Ok(())
 }

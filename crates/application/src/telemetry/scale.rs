@@ -5,8 +5,6 @@ const GIB: u64 = 1024 * MIB;
 pub struct TelemetryDatabaseScale {
     pub db_bytes: u64,
     pub feed_rows: Option<i64>,
-    pub gamelog_rows: Option<i64>,
-    pub friend_log_rows: Option<i64>,
     pub friend_count: Option<i64>,
 }
 

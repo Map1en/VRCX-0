@@ -14,17 +14,13 @@ const FEED_TABLE_SUFFIXES: [&str; 4] = [
     "feed_online_offline",
     "feed_status",
 ];
-const FRIEND_LOG_TABLE_SUFFIX: &str = "friend_log_history";
 const FRIEND_CURRENT_TABLE_SUFFIX: &str = "friend_log_current";
-const GAMELOG_TABLE: &str = "gamelog_join_leave";
 const PREFIX_PROBE_SUFFIX: &str = "feed_gps";
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct DatabaseScaleEstimate {
     pub db_bytes: u64,
     pub feed_rows: Option<i64>,
-    pub gamelog_rows: Option<i64>,
-    pub friend_log_rows: Option<i64>,
     pub friend_count: Option<i64>,
 }
 
@@ -43,7 +39,6 @@ pub fn database_scale_estimate(db: &DatabaseService) -> Result<DatabaseScaleEsti
     }
 
     let mut feed_rows = None;
-    let mut friend_log_rows = None;
     for prefix in user_table_prefixes(db)? {
         let mut prefix_feed_rows = None;
         for suffix in FEED_TABLE_SUFFIXES {
@@ -52,19 +47,11 @@ pub fn database_scale_estimate(db: &DatabaseService) -> Result<DatabaseScaleEsti
             }
         }
         feed_rows = larger(feed_rows, prefix_feed_rows);
-        friend_log_rows = larger(
-            friend_log_rows,
-            analyzed_rows
-                .get(&format!("{prefix}_{FRIEND_LOG_TABLE_SUFFIX}"))
-                .copied(),
-        );
     }
 
     Ok(DatabaseScaleEstimate {
         db_bytes,
         feed_rows,
-        gamelog_rows: analyzed_rows.get(GAMELOG_TABLE).copied(),
-        friend_log_rows,
         friend_count,
     })
 }

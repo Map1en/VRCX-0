@@ -68,10 +68,6 @@ impl TelemetryEnvironment for LocalTelemetryEnvironment {
         sys_locale::get_locale()
     }
 
-    fn timezone(&self) -> Option<String> {
-        iana_time_zone::get_timezone().ok()
-    }
-
     fn system_theme_category(&self) -> String {
         (self.system_theme_category)()
     }
@@ -81,8 +77,6 @@ impl TelemetryEnvironment for LocalTelemetryEnvironment {
             Ok(estimate) => TelemetryDatabaseScale {
                 db_bytes: estimate.db_bytes,
                 feed_rows: estimate.feed_rows,
-                gamelog_rows: estimate.gamelog_rows,
-                friend_log_rows: estimate.friend_log_rows,
                 friend_count: estimate.friend_count,
             },
             Err(error) => {
