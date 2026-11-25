@@ -9,7 +9,6 @@ import configRepository from '@/repositories/configRepository';
 import i18n from '@/services/i18nService';
 import { confirmLegacyVrcxProcessState } from '@/services/legacyVrcxMigrationService';
 import { openExternalLink } from '@/services/shellIntegrationService';
-import { toast } from '@/services/toastService';
 import { links } from '@/shared/constants/link';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -465,7 +464,11 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
     }
 
     if (legacyMigrationStatus.detected && legacyMigrationStatus.reason) {
-        toast.add({ type: 'warning', title: legacyMigrationStatus.reason });
+        void useModalStore.getState().alert({
+            title: i18n.t('message.database.migration_found_title'),
+            description: legacyMigrationStatus.reason,
+            confirmText: i18n.t('common.actions.close')
+        });
     }
 
     return runBackendDatabaseUpgrade(preflight);

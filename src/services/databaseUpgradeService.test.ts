@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AppToastOptions } from '@/services/toastService';
-
 const mocks = vi.hoisted(() => ({
-    toastWarning: vi.fn(),
+    alert: vi.fn(),
     appDatabaseUpgradePreflight: vi.fn(),
     appDatabaseUpgradeProgress: vi.fn(),
     appDatabaseUpgradeRun: vi.fn(),
@@ -17,19 +15,6 @@ const mocks = vi.hoisted(() => ({
     confirm: vi.fn(),
     t: vi.fn(),
     showSQLiteErrorDialog: vi.fn()
-}));
-
-vi.mock('@/services/toastService', () => ({
-    toast: {
-        add: (options: AppToastOptions) => {
-            switch (options.type) {
-                case 'warning':
-                    return mocks.toastWarning(options);
-                default:
-                    throw new Error('Unhandled toast type: ' + options.type);
-            }
-        }
-    }
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -57,7 +42,7 @@ vi.mock('@/services/legacyVrcxMigrationService', () => ({
 vi.mock('@/state/modalStore', () => ({
     useModalStore: {
         getState: () => ({
-            alert: vi.fn(),
+            alert: mocks.alert,
             confirm: mocks.confirm
         })
     }
@@ -206,6 +191,23 @@ describe('databaseUpgradeService', () => {
         });
         expect(useSessionStore.getState().databaseReady).toBe(false);
         expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
+    });
+
+    it('explains in a dialog why a detected VRCX database cannot be migrated', async () => {
+        mocks.appGetLegacyVrcxMigrationStatus.mockResolvedValueOnce({
+            detected: true,
+            available: false,
+            reason: 'Legacy DB is too new.'
+        });
+
+        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
+
+        expect(mocks.alert).toHaveBeenCalledWith({
+            title: 'message.database.migration_found_title',
+            description: 'Legacy DB is too new.',
+            confirmText: 'common.actions.close'
+        });
+        expect(mocks.appDatabaseUpgradeRun).toHaveBeenCalledTimes(1);
     });
 
     it('marks an already current database ready from the backend result', async () => {

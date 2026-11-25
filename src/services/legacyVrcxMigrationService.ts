@@ -58,6 +58,17 @@ export async function confirmLegacyVrcxProcessState({
     return false;
 }
 
+async function showLegacyMigrationFailure(
+    { alert, t }: Pick<LegacyMigrationPromptOptions, 'alert' | 't'>,
+    description: string
+): Promise<void> {
+    await alert({
+        title: t(`${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration`),
+        description,
+        confirmText: t('common.actions.close')
+    });
+}
+
 export async function promptLegacyVrcxForceMigration({
     alert,
     confirm,
@@ -68,27 +79,23 @@ export async function promptLegacyVrcxForceMigration({
     try {
         status = await commands.appGetLegacyVrcxForceMigrationStatus();
     } catch (error) {
-        toast.add({
-            type: 'error',
-            title: t(
-                `${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_failed`,
-                {
-                    error: errorMessage(error)
-                }
-            )
-        });
+        await showLegacyMigrationFailure(
+            { alert, t },
+            t(`${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_failed`, {
+                error: errorMessage(error)
+            })
+        );
         return;
     }
 
     if (!status?.available) {
-        toast.add({
-            type: 'error',
-            title:
-                status?.reason ||
+        await showLegacyMigrationFailure(
+            { alert, t },
+            status?.reason ||
                 t(
                     `${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_not_available`
                 )
-        });
+        );
         return;
     }
 
@@ -129,14 +136,11 @@ export async function promptLegacyVrcxForceMigration({
             });
         }
     } catch (error) {
-        toast.add({
-            type: 'error',
-            title: t(
-                `${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_failed`,
-                {
-                    error: errorMessage(error)
-                }
-            )
-        });
+        await showLegacyMigrationFailure(
+            { alert, t },
+            t(`${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_failed`, {
+                error: errorMessage(error)
+            })
+        );
     }
 }

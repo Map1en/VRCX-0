@@ -46,12 +46,13 @@ describe('legacyVrcxMigrationService', () => {
 
         await promptLegacyVrcxForceMigration(options);
 
-        expect(options.toast.add).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'error',
-                title: 'view.settings.advanced.advanced.database_cleanup.legacy_migration_failed:status failed'
-            })
-        );
+        expect(options.alert).toHaveBeenCalledWith({
+            title: 'view.settings.advanced.advanced.database_cleanup.legacy_migration',
+            description:
+                'view.settings.advanced.advanced.database_cleanup.legacy_migration_failed:status failed',
+            confirmText: 'common.actions.close'
+        });
+        expect(options.toast.add).not.toHaveBeenCalled();
         expect(options.confirm).not.toHaveBeenCalled();
     });
 
@@ -66,10 +67,9 @@ describe('legacyVrcxMigrationService', () => {
 
         await promptLegacyVrcxForceMigration(options);
 
-        expect(options.toast.add).toHaveBeenCalledWith(
+        expect(options.alert).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: 'error',
-                title: 'Legacy DB is too new.'
+                description: 'Legacy DB is too new.'
             })
         );
         expect(options.confirm).not.toHaveBeenCalled();
@@ -128,10 +128,10 @@ describe('legacyVrcxMigrationService', () => {
 
         await promptLegacyVrcxForceMigration(options);
 
-        expect(options.toast.add).toHaveBeenCalledWith(
+        expect(options.alert).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: 'error',
-                title: 'view.settings.advanced.advanced.database_cleanup.legacy_migration_failed:request failed'
+                description:
+                    'view.settings.advanced.advanced.database_cleanup.legacy_migration_failed:request failed'
             })
         );
     });
