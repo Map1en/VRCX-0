@@ -60,8 +60,10 @@ impl DesktopLegacyMigrationRuntime {
     ) -> Result<bool> {
         ensure_legacy_vrcx_process_state(allow_running_legacy_vrcx, self.is_legacy_vrcx_running())?;
         let (source, unavailable_status) = match mode {
-            LegacyMigrationRequestMode::Configured => (self.source.clone(), self.status.clone()),
-            LegacyMigrationRequestMode::Force => {
+            LegacyMigrationRequestMode::Configured if self.source.is_none() => {
+                (None, self.status.clone())
+            }
+            LegacyMigrationRequestMode::Configured | LegacyMigrationRequestMode::Force => {
                 let discovery = discover_supported_legacy_source().await?;
                 (discovery.importable_source, discovery.status)
             }
