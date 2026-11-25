@@ -192,12 +192,11 @@ impl TelemetryRuntime {
         }
     }
 
-    pub fn record_avatar_search_failure(&self, provider_url: &str, status: i32, body: &str) {
+    pub fn record_avatar_search_failure(&self, provider_url: &str, status: i32) {
         if !self.usage_enabled() {
             return;
         }
-        let detail =
-            avatar_search_failure_detail(provider_url, status, body, &self.inner.app_version);
+        let detail = avatar_search_failure_detail(provider_url, status, &self.inner.app_version);
         match self.inner.state.lock() {
             Ok(mut state) => state.acc.record_client_error(detail),
             Err(error) => tracing::debug!("failed to lock telemetry accumulator: {error}"),

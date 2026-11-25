@@ -55,12 +55,9 @@ impl ExternalApiRuntime {
             )
             .await?;
         let server_blocked = response.status != 200 && cloudflare_block(&response.data).is_some();
-        if response.status != 200 {
-            self.telemetry.record_avatar_search_failure(
-                &provider_url,
-                response.status,
-                &response.data,
-            );
+        if response.status != 200 && !server_blocked {
+            self.telemetry
+                .record_avatar_search_failure(&provider_url, response.status);
         }
         Ok(ExternalApiAvatarSearchResponse {
             status: response.status,

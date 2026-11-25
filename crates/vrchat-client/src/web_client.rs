@@ -13,6 +13,7 @@ use vrcx_0_core::{image_sniff::sniff_image_mime, proxy::with_remote_dns};
 
 pub type Result<T> = std::result::Result<T, WebClientError>;
 pub(crate) const BASE_USER_AGENT: &str = "VRCX-0";
+const EXTERNAL_USER_AGENT: &str = "VRCX-0/2.0.0";
 
 #[derive(Debug, thiserror::Error)]
 pub enum WebClientError {
@@ -486,7 +487,7 @@ impl WebClient {
         let mut http_request = self.build_standard_request_with(client, &mut request)?;
         http_request
             .headers_mut()
-            .insert(USER_AGENT, HeaderValue::from_static(BASE_USER_AGENT));
+            .insert(USER_AGENT, HeaderValue::from_static(EXTERNAL_USER_AGENT));
         execute_request(client, http_request, response_body_limit).await
     }
 

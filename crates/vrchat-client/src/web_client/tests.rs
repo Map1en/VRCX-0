@@ -215,7 +215,7 @@ async fn transport_sends_owned_user_agent_and_ignores_request_override() -> Resu
 }
 
 #[tokio::test]
-async fn external_transport_sends_app_name_without_version() -> Result<()> {
+async fn external_transport_sends_fixed_version_instead_of_app_version() -> Result<()> {
     for follow_redirects in [true, false] {
         let (address, server) = capture_request_head().await;
         let web = WebClient::new(None, None, "2.9.2")?;
@@ -230,7 +230,7 @@ async fn external_transport_sends_app_name_without_version() -> Result<()> {
         assert_eq!(response, (200, "ok".into()));
         assert!(captured
             .lines()
-            .any(|line| line.eq_ignore_ascii_case("user-agent: VRCX-0")));
+            .any(|line| line.eq_ignore_ascii_case("user-agent: VRCX-0/2.0.0")));
         assert!(!captured.contains("2.9.2"));
         assert!(!captured.contains("caller-override"));
     }
