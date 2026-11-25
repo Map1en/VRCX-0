@@ -25,6 +25,33 @@ pub async fn app__chatbox_config_set(
     run_blocking("chatbox config", move || chatbox.set_config(config)).await
 }
 
+#[tauri::command]
+#[specta::specta]
+pub async fn app__chatbox_status_enabled_set(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<ChatboxConfig, AppError> {
+    let chatbox = state.runtime_host().chatbox();
+    run_blocking("chatbox status enabled", move || {
+        chatbox.set_status_enabled(enabled)
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__chatbox_page_enabled_set(
+    state: State<'_, AppState>,
+    page_id: String,
+    enabled: bool,
+) -> Result<ChatboxConfig, AppError> {
+    let chatbox = state.runtime_host().chatbox();
+    run_blocking("chatbox page enabled", move || {
+        chatbox.set_page_enabled(&page_id, enabled)
+    })
+    .await
+}
+
 #[tauri::command(async)]
 #[specta::specta]
 pub fn app__chatbox_status_get(state: State<'_, AppState>) -> Option<ChatboxStatus> {

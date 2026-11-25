@@ -38,6 +38,9 @@ vi.mock('@/ui/shadcn/tooltip', () => ({
     TooltipTrigger: ({ render }: { render?: ReactNode }) => <>{render}</>
 }));
 
+vi.mock('./status-bar/ChatboxToggle', () => ({
+    ChatboxToggle: () => null
+}));
 vi.mock('./status-bar/DoNotDisturbMenu', () => ({
     DoNotDisturbMenu: () => null
 }));

@@ -8,11 +8,11 @@ import type {
     ChatboxStatus,
     ChatboxVariable
 } from '@/platform/tauri/bindings';
+import { chatboxStatusLabelKey } from '@/services/chatboxStatusLabel';
 
 import {
     applyChatboxPreset,
     chatboxCharCount,
-    chatboxStatusLabelKey,
     insertAtCursor,
     moveChatboxLine,
     moveChatboxPage,

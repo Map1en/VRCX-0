@@ -118,6 +118,15 @@ export const commands = {
         __TAURI_INVOKE<ChatboxEditorState>('app__chatbox_editor_state_get'),
     appChatboxConfigSet: (config: ChatboxConfig) =>
         __TAURI_INVOKE<ChatboxConfig>('app__chatbox_config_set', { config }),
+    appChatboxStatusEnabledSet: (enabled: boolean) =>
+        __TAURI_INVOKE<ChatboxConfig>('app__chatbox_status_enabled_set', {
+            enabled
+        }),
+    appChatboxPageEnabledSet: (pageId: string, enabled: boolean) =>
+        __TAURI_INVOKE<ChatboxConfig>('app__chatbox_page_enabled_set', {
+            pageId,
+            enabled
+        }),
     appChatboxStatusGet: () =>
         __TAURI_INVOKE<ChatboxStatus | null>('app__chatbox_status_get'),
     appChatboxPreviewingSet: (previewing: boolean) =>

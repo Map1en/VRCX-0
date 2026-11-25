@@ -85,11 +85,41 @@ impl ChatboxRuntime {
         &self,
         next: ChatboxConfig,
     ) -> vrcx_0_application_core::Result<ChatboxConfig> {
-        let next = next.normalized();
-        let serialized = serde_json::to_string(&next)
-            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?;
+        self.update_config(|_| next)
+    }
+
+    pub fn set_status_enabled(
+        &self,
+        status_enabled: bool,
+    ) -> vrcx_0_application_core::Result<ChatboxConfig> {
+        self.update_config(|current| ChatboxConfig {
+            status_enabled,
+            ..current
+        })
+    }
+
+    pub fn set_page_enabled(
+        &self,
+        page_id: &str,
+        enabled: bool,
+    ) -> vrcx_0_application_core::Result<ChatboxConfig> {
+        self.update_config(|mut current| {
+            if let Some(page) = current.pages.iter_mut().find(|page| page.id == page_id) {
+                page.enabled = enabled;
+            }
+            current
+        })
+    }
+
+    fn update_config(
+        &self,
+        update: impl FnOnce(ChatboxConfig) -> ChatboxConfig,
+    ) -> vrcx_0_application_core::Result<ChatboxConfig> {
         let mut state = self.lock_state();
         let previous = self.settings(&mut state).config;
+        let next = update(previous.clone()).normalized();
+        let serialized = serde_json::to_string(&next)
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?;
         self.config.set_string(CHATBOX_CONFIG_KEY, &serialized)?;
         if next.rotation_order_changed(&previous)
             || (next.status_enabled && !previous.status_enabled)

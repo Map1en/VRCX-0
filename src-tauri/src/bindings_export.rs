@@ -171,6 +171,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::lifecycle::app__game_isolation_set,
             commands::application::chatbox::app__chatbox_editor_state_get,
             commands::application::chatbox::app__chatbox_config_set,
+            commands::application::chatbox::app__chatbox_status_enabled_set,
+            commands::application::chatbox::app__chatbox_page_enabled_set,
             commands::application::chatbox::app__chatbox_status_get,
             commands::application::chatbox::app__chatbox_previewing_set,
             commands::application::chatbox::app__chatbox_send,
