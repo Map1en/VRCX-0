@@ -345,7 +345,7 @@ fn profile_backup_restore_keeps_the_install_id_carried_by_the_backup() {
         )
         .unwrap();
 
-    crate::config::fill_missing_preserved_config(
+    crate::config::merge_preserved_config_into_restore(
         &db_path,
         &[(
             "config:vrcx_telemetryinstallid".to_string(),
@@ -354,4 +354,36 @@ fn profile_backup_restore_keeps_the_install_id_carried_by_the_backup() {
     );
 
     assert_eq!(read_install_id(&db_path).as_deref(), Some("install-backup"));
+}
+
+#[test]
+fn profile_backup_restore_replaces_the_error_cursor_carried_by_the_backup() {
+    let dir = TestDir::new("error-cursor-carried");
+    let db_path = dir.0.join(DATABASE_FILE_NAME);
+    write_profile_database(&db_path, 1, "new");
+    rusqlite::Connection::open(&db_path)
+        .unwrap()
+        .execute(
+            "INSERT INTO configs (key, value) VALUES ('config:vrcx_telemetryclienterrorcursor', '2026-10-01T00:00:00.000Z')",
+            [],
+        )
+        .unwrap();
+
+    crate::config::merge_preserved_config_into_restore(
+        &db_path,
+        &[(
+            "config:vrcx_telemetryclienterrorcursor".to_string(),
+            "2026-11-25T05:26:50.000Z".to_string(),
+        )],
+    );
+
+    let cursor: String = rusqlite::Connection::open(&db_path)
+        .unwrap()
+        .query_row(
+            "SELECT value FROM configs WHERE key = 'config:vrcx_telemetryclienterrorcursor'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(cursor, "2026-11-25T05:26:50.000Z");
 }

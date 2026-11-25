@@ -2,10 +2,9 @@ use std::path::Path;
 
 use rusqlite::Connection;
 
-const PRESERVED_CONFIG_KEYS: [&str; 2] = [
-    "config:vrcx_telemetryinstallid",
-    "config:vrcx_telemetryclienterrorcursor",
-];
+const CLIENT_ERROR_CURSOR_KEY: &str = "config:vrcx_telemetryclienterrorcursor";
+const PRESERVED_CONFIG_KEYS: [&str; 2] =
+    ["config:vrcx_telemetryinstallid", CLIENT_ERROR_CURSOR_KEY];
 
 pub(crate) fn read_preserved_config(db_file: &Path) -> Vec<(String, String)> {
     if !db_file.is_file() {
@@ -35,8 +34,13 @@ pub(crate) fn write_preserved_config(db_file: &Path, entries: &[(String, String)
     write_entries(db_file, entries, "INSERT OR REPLACE");
 }
 
-pub(crate) fn fill_missing_preserved_config(db_file: &Path, entries: &[(String, String)]) {
-    write_entries(db_file, entries, "INSERT OR IGNORE");
+pub(crate) fn merge_preserved_config_into_restore(db_file: &Path, entries: &[(String, String)]) {
+    let (cursor, carried_by_backup): (Vec<_>, Vec<_>) = entries
+        .iter()
+        .cloned()
+        .partition(|(key, _)| key == CLIENT_ERROR_CURSOR_KEY);
+    write_entries(db_file, &carried_by_backup, "INSERT OR IGNORE");
+    write_entries(db_file, &cursor, "INSERT OR REPLACE");
 }
 
 fn write_entries(db_file: &Path, entries: &[(String, String)], insert: &str) {

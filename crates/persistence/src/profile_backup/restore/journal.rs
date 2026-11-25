@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use crate::config::{fill_missing_preserved_config, read_preserved_config};
+use crate::config::{merge_preserved_config_into_restore, read_preserved_config};
 use crate::Error;
 
 use super::super::{
@@ -224,7 +224,7 @@ pub fn consume_pending_profile_restore(
 
         if journal.phase == RestoreJournalPhase::Installed {
             install_staged_database(&staged_db, db_path)?;
-            fill_missing_preserved_config(db_path, &journal.preserved_config);
+            merge_preserved_config_into_restore(db_path, &journal.preserved_config);
         }
         Ok(())
     })();
