@@ -7592,9 +7592,28 @@
         "do_not_disturb_turn_off": "关闭勿扰模式",
         "game_isolation": "隔离模式",
         "game_isolation_active": "隔离模式已开启 · 点击关闭",
-        "chatbox_hint": "点击开关状态显示 · 右键选择轮播页或 AFK",
         "chatbox_pages": "轮播页",
         "chatbox_open": "打开 Chatbox 设置",
+        "card": {
+            "click": "单击",
+            "right_click": "右键",
+            "on": "已开启",
+            "off": "已关闭",
+            "on_click_through": "已开启 · 鼠标穿透",
+            "turn_on": "开启",
+            "turn_off": "关闭",
+            "chatbox_click": "开关状态显示",
+            "chatbox_right_click": "选择轮播页、AFK 或打开设置",
+            "do_not_disturb_click": "选择时长或关闭",
+            "desktop_widget_right_click": "置顶、鼠标穿透等选项",
+            "background_mode": "后台模式",
+            "background_mode_description": "关闭界面，只在后台运行，内存占用降至约十分之一；恢复后部分页面状态可能重置。",
+            "game_isolation_description": "本机游戏登录的不是这个账号时使用，暂停与本机游戏相关的日志、状态和自动化联动。",
+            "game_isolation_click": "查看说明并开启",
+            "game_isolation_right_click": "查看说明",
+            "proxy_click": "修改代理设置",
+            "offline_record_click": "打开记录端设置"
+        },
         "do_not_disturb_failed": "无法更新勿扰模式",
         "world_collection_importing": "正在导入世界收藏（{progress}/{total}）",
         "game": "游戏状态",
@@ -7636,7 +7655,6 @@
         "mutual_graph_fetching": "正在获取共同好友",
         "mutual_graph_progress": "正在加载共同好友",
         "start_background_mode": "切换到后台模式",
-        "start_background_mode_tooltip": "切换到后台模式",
         "modify_proxy_address": "修改代理地址",
         "proxy_disabled": "代理已关闭",
         "proxy_enabled_direct": "代理已启用，当前直连",
@@ -7645,8 +7663,7 @@
         "desktop_widget_off": "桌面叠加界面已关闭",
         "desktop_widget_on": "桌面叠加界面已开启",
         "desktop_widget_click_through": "桌面叠加界面已开启（鼠标穿透）",
-        "desktop_widget_failed": "无法更新桌面叠加界面",
-        "desktop_widget_menu_hint": "右键打开更多选项"
+        "desktop_widget_failed": "无法更新桌面叠加界面"
     },
     "component": {
         "favorite_action_menu": {

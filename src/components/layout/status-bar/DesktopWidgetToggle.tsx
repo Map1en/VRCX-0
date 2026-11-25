@@ -18,8 +18,8 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { StatusBarHoverCard } from './StatusBarHoverCard';
 import {
     STATUS_BAR_TOGGLE_ACTIVE,
     STATUS_BAR_TOGGLE_IDLE
@@ -28,6 +28,7 @@ import {
 export function DesktopWidgetToggle(): ReactElement | null {
     const { t } = useTranslation();
     const [updating, setUpdating] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
     const supported = useRuntimeStore((state) => state.desktopWidget.supported);
     const enabled = useRuntimeStore((state) => state.desktopWidget.enabled);
     const pinned = useRuntimeStore((state) => state.desktopWidget.pinned);
@@ -38,10 +39,14 @@ export function DesktopWidgetToggle(): ReactElement | null {
         return null;
     }
     let tooltip = t('status_bar.desktop_widget_off');
+    let stateLabel = t('status_bar.card.off');
     if (enabled) {
         tooltip = clickThrough
             ? t('status_bar.desktop_widget_click_through')
             : t('status_bar.desktop_widget_on');
+        stateLabel = clickThrough
+            ? t('status_bar.card.on_click_through')
+            : t('status_bar.card.on');
     }
 
     async function update(request: () => Promise<DesktopWidgetSnapshot>) {
@@ -66,42 +71,45 @@ export function DesktopWidgetToggle(): ReactElement | null {
     }
 
     return (
-        <ContextMenu>
-            <Tooltip>
-                <TooltipTrigger
-                    render={
-                        <ContextMenuTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={tooltip}
-                                    aria-pressed={enabled}
-                                    disabled={updating}
-                                    className={cn(
-                                        'size-6 shrink-0 rounded-none',
-                                        enabled
-                                            ? STATUS_BAR_TOGGLE_ACTIVE
-                                            : STATUS_BAR_TOGGLE_IDLE
-                                    )}
-                                    onClick={() => setEnabled(!enabled)}
-                                >
-                                    <PictureInPicture2Icon data-icon="icon" />
-                                </Button>
-                            }
-                        />
-                    }
-                />
-                <TooltipContent>
-                    <div>{tooltip}</div>
-                    {enabled ? (
-                        <div className="opacity-70">
-                            {t('status_bar.desktop_widget_menu_hint')}
-                        </div>
-                    ) : null}
-                </TooltipContent>
-            </Tooltip>
+        <ContextMenu onOpenChange={setMenuOpen}>
+            <StatusBarHoverCard
+                icon={<PictureInPicture2Icon />}
+                title={t('desktop_widget.title')}
+                state={stateLabel}
+                description={t(
+                    'view.settings.notifications.notifications.desktop_widget.description'
+                )}
+                actions={{
+                    click: enabled
+                        ? t('status_bar.card.turn_off')
+                        : t('status_bar.card.turn_on'),
+                    rightClick: t('status_bar.card.desktop_widget_right_click')
+                }}
+                suppressed={menuOpen}
+                trigger={
+                    <ContextMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label={tooltip}
+                                aria-pressed={enabled}
+                                disabled={updating}
+                                className={cn(
+                                    'size-6 shrink-0 rounded-none',
+                                    enabled
+                                        ? STATUS_BAR_TOGGLE_ACTIVE
+                                        : STATUS_BAR_TOGGLE_IDLE
+                                )}
+                                onClick={() => setEnabled(!enabled)}
+                            >
+                                <PictureInPicture2Icon data-icon="icon" />
+                            </Button>
+                        }
+                    />
+                }
+            />
             <ContextMenuContent className="w-48">
                 {enabled ? (
                     <>

@@ -21,8 +21,8 @@ import {
     PopoverHeader,
     PopoverTitle
 } from '@/ui/shadcn/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { StatusBarHoverCard } from './StatusBarHoverCard';
 import { resolveProxyIndicatorState } from './statusBarProxy';
 
 export function ProxySegment({
@@ -118,28 +118,31 @@ export function ProxySegment({
     return (
         <Popover open={open} onOpenChange={onOpenChange}>
             <span ref={anchorRef} className="inline-flex h-6 shrink-0">
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                aria-label={t('status_bar.proxy')}
-                                className={cn(
-                                    'size-6 rounded-none',
-                                    indicator.className
-                                )}
-                                onClick={() => onOpenChange(true)}
-                            >
-                                <NetworkIcon data-icon="icon" />
-                            </Button>
-                        }
-                    />
-                    <TooltipContent className="max-w-xs">
-                        {t(indicator.tooltipKey, indicator.tooltipValues)}
-                    </TooltipContent>
-                </Tooltip>
+                <StatusBarHoverCard
+                    icon={<NetworkIcon />}
+                    title={t('status_bar.proxy')}
+                    description={t(
+                        indicator.tooltipKey,
+                        indicator.tooltipValues
+                    )}
+                    actions={{ click: t('status_bar.card.proxy_click') }}
+                    suppressed={open}
+                    trigger={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={t('status_bar.proxy')}
+                            className={cn(
+                                'size-6 rounded-none',
+                                indicator.className
+                            )}
+                            onClick={() => onOpenChange(true)}
+                        >
+                            <NetworkIcon data-icon="icon" />
+                        </Button>
+                    }
+                />
             </span>
             <PopoverContent
                 side="top"

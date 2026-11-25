@@ -25,12 +25,12 @@ vi.mock('@/services/toastService', () => ({
     toast: { add: vi.fn(), close: vi.fn() }
 }));
 
-vi.mock('@/ui/shadcn/tooltip', () => ({
-    Tooltip: ({ children }: PropsWithChildren) => <>{children}</>,
-    TooltipContent: ({ children }: PropsWithChildren) => (
+vi.mock('@/ui/shadcn/hover-card', () => ({
+    HoverCard: ({ children }: PropsWithChildren) => <>{children}</>,
+    HoverCardContent: ({ children }: PropsWithChildren) => (
         <div role="tooltip">{children}</div>
     ),
-    TooltipTrigger: ({ render }: { render?: ReactNode }) => <>{render}</>
+    HoverCardTrigger: ({ render }: { render?: ReactNode }) => <>{render}</>
 }));
 
 import { DesktopWidgetToggle } from './DesktopWidgetToggle';
@@ -110,9 +110,9 @@ describe('status bar desktop overlay toggle', () => {
 
         render(<DesktopWidgetToggle />);
 
-        expect(screen.getByRole('tooltip').textContent).toBe(
-            'status_bar.desktop_widget_click_throughstatus_bar.desktop_widget_menu_hint'
-        );
+        const card = screen.getByRole('tooltip').textContent;
+        expect(card).toContain('status_bar.card.on_click_through');
+        expect(card).toContain('status_bar.card.desktop_widget_right_click');
     });
 
     it('turns click-through off from the right-click menu', async () => {

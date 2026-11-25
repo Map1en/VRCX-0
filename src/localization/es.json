@@ -7577,9 +7577,28 @@
         "do_not_disturb_turn_off": "Desactivar No molestar",
         "game_isolation": "Aislamiento del juego",
         "game_isolation_active": "Aislamiento del juego activado · Haz clic para desactivarlo",
-        "chatbox_hint": "Haz clic para activar o desactivar el estado · Clic derecho para páginas y AFK",
         "chatbox_pages": "Páginas",
         "chatbox_open": "Abrir ajustes de Chatbox",
+        "card": {
+            "click": "Clic",
+            "right_click": "Clic derecho",
+            "on": "Activado",
+            "off": "Desactivado",
+            "on_click_through": "Activado · clic a través",
+            "turn_on": "Activar",
+            "turn_off": "Desactivar",
+            "chatbox_click": "Activar o desactivar el estado",
+            "chatbox_right_click": "Elegir páginas, ponerte AFK o abrir ajustes",
+            "do_not_disturb_click": "Elegir la duración o desactivarlo",
+            "desktop_widget_right_click": "Fijar, clic a través y más",
+            "background_mode": "Modo en segundo plano",
+            "background_mode_description": "Cierra la ventana y sigue en segundo plano con cerca de una décima parte de la memoria. Algunas páginas pueden reiniciarse al volver.",
+            "game_isolation_description": "Para cuando el juego de este PC usa otra cuenta. Pausa el registro, el estado y las automatizaciones del juego local.",
+            "game_isolation_click": "Ver detalles y activar",
+            "game_isolation_right_click": "Ver detalles",
+            "proxy_click": "Editar el proxy",
+            "offline_record_click": "Abrir ajustes del grabador"
+        },
         "do_not_disturb_failed": "No se pudo cambiar No molestar",
         "world_collection_importing": "Importando colección de mundos ({progress}/{total})",
         "game": "Juego",
@@ -7621,7 +7640,6 @@
         "mutual_graph_fetching": "Obteniendo amigos en común",
         "mutual_graph_progress": "Cargando amigos en común",
         "start_background_mode": "Cambiar al modo en segundo plano",
-        "start_background_mode_tooltip": "Cambiar al modo en segundo plano",
         "modify_proxy_address": "Modificar la dirección del proxy",
         "proxy_disabled": "Proxy desactivado",
         "proxy_enabled_direct": "Proxy activado, conectando directamente",
@@ -7630,8 +7648,7 @@
         "desktop_widget_off": "El overlay de escritorio está desactivado",
         "desktop_widget_on": "El overlay de escritorio está activado",
         "desktop_widget_click_through": "El overlay de escritorio está activado (deja pasar los clics)",
-        "desktop_widget_failed": "No se pudo actualizar el overlay de escritorio",
-        "desktop_widget_menu_hint": "Clic derecho para más opciones"
+        "desktop_widget_failed": "No se pudo actualizar el overlay de escritorio"
     },
     "component": {
         "favorite_action_menu": {

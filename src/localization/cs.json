@@ -7556,9 +7556,28 @@
         "do_not_disturb_turn_off": "Vypnout režim Nerušit",
         "game_isolation": "Oddělení od hry",
         "game_isolation_active": "Oddělení od hry je zapnuté · Kliknutím vypnete",
-        "chatbox_hint": "Kliknutím zapnete nebo vypnete stav · Pravým kliknutím vyberete stránky a AFK",
         "chatbox_pages": "Stránky",
         "chatbox_open": "Otevřít nastavení Chatboxu",
+        "card": {
+            "click": "Kliknutí",
+            "right_click": "Pravé kliknutí",
+            "on": "Zapnuto",
+            "off": "Vypnuto",
+            "on_click_through": "Zapnuto · proklikávání",
+            "turn_on": "Zapnout",
+            "turn_off": "Vypnout",
+            "chatbox_click": "Zapnout nebo vypnout zobrazení stavu",
+            "chatbox_right_click": "Vybrat stránky, přepnout na AFK nebo otevřít nastavení",
+            "do_not_disturb_click": "Vybrat dobu nebo vypnout",
+            "desktop_widget_right_click": "Připnutí, proklikávání a další",
+            "background_mode": "Režim na pozadí",
+            "background_mode_description": "Zavře okno a běží dál na pozadí s přibližně desetinou paměti. Po návratu se některé stránky mohou obnovit do výchozího stavu.",
+            "game_isolation_description": "Pro případ, že je hra na tomto PC přihlášená k jinému účtu. Pozastaví záznam, stav a automatizace spojené s místní hrou.",
+            "game_isolation_click": "Zobrazit podrobnosti a zapnout",
+            "game_isolation_right_click": "Zobrazit podrobnosti",
+            "proxy_click": "Upravit nastavení proxy",
+            "offline_record_click": "Otevřít nastavení záznamníku"
+        },
         "do_not_disturb_failed": "Režim Nerušit se nepodařilo změnit",
         "world_collection_importing": "Importuji kolekci světů ({progress}/{total})",
         "game": "Hra",
@@ -7600,7 +7619,6 @@
         "mutual_graph_fetching": "Načítání společných přátel",
         "mutual_graph_progress": "Průběh načítání grafu společných přátel",
         "start_background_mode": "Přepnout do režimu na pozadí",
-        "start_background_mode_tooltip": "Přepnout do režimu na pozadí",
         "modify_proxy_address": "Změnit adresu proxy",
         "proxy_disabled": "Proxy zakázána",
         "proxy_enabled_direct": "Proxy povolena, připojuje se přímo",
@@ -7609,8 +7627,7 @@
         "desktop_widget_off": "Desktopový overlay je vypnutý",
         "desktop_widget_on": "Desktopový overlay je zapnutý",
         "desktop_widget_click_through": "Desktopový overlay je zapnutý (propouští kliknutí myši)",
-        "desktop_widget_failed": "Desktopový overlay se nepodařilo změnit",
-        "desktop_widget_menu_hint": "Pravým kliknutím zobrazíte další možnosti"
+        "desktop_widget_failed": "Desktopový overlay se nepodařilo změnit"
     },
     "component": {
         "favorite_action_menu": {

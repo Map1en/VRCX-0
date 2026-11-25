@@ -15,8 +15,8 @@ import {
 import { useOfflineRecordStore } from '@/state/offlineRecordStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { StatusBarHoverCard } from './StatusBarHoverCard';
 import { useOfflineRecordSyncAnimation } from './useOfflineRecordSyncAnimation';
 
 const LEVEL_CLASS: Record<OfflineRecordHealthLevel, string> = {
@@ -67,49 +67,43 @@ export function OfflineRecordIndicator() {
         : null;
 
     return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size={progressLabel ? 'sm' : 'icon'}
-                        aria-label={t('offline_record.header')}
+        <StatusBarHoverCard
+            icon={<Icon />}
+            title={t('offline_record.header')}
+            description={t('offline_record.tools_description')}
+            actions={{ click: t('status_bar.card.offline_record_click') }}
+            trigger={
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size={progressLabel ? 'sm' : 'icon'}
+                    aria-label={t('offline_record.header')}
+                    className={cn(
+                        'shrink-0 rounded-none',
+                        progressLabel
+                            ? 'h-6 gap-1.5 px-2 text-xs font-normal'
+                            : 'size-6',
+                        phase === 'idle'
+                            ? LEVEL_CLASS[level]
+                            : 'text-foreground hover:text-foreground'
+                    )}
+                    onClick={() => setSystemHostOpen('offlineRecordOpen', true)}
+                >
+                    <span
+                        ref={iconRef}
+                        data-icon={progressLabel ? 'inline-start' : 'icon'}
                         className={cn(
-                            'shrink-0 rounded-none',
-                            progressLabel
-                                ? 'h-6 gap-1.5 px-2 text-xs font-normal'
-                                : 'size-6',
-                            phase === 'idle'
-                                ? LEVEL_CLASS[level]
-                                : 'text-foreground hover:text-foreground'
+                            'inline-flex',
+                            phase !== 'idle' && 'opacity-40'
                         )}
-                        onClick={() =>
-                            setSystemHostOpen('offlineRecordOpen', true)
-                        }
                     >
-                        <span
-                            ref={iconRef}
-                            data-icon={progressLabel ? 'inline-start' : 'icon'}
-                            className={cn(
-                                'inline-flex',
-                                phase !== 'idle' && 'opacity-40'
-                            )}
-                        >
-                            <Icon />
-                        </span>
-                        {progressLabel}
-                    </Button>
-                }
-            />
-            <TooltipContent className="flex max-w-xs flex-col gap-1 text-xs">
-                <span>{t('offline_record.header')}</span>
-                {health ? (
-                    <span className="text-muted-foreground">
-                        {t(health.messageKey)}
+                        <Icon />
                     </span>
-                ) : null}
-            </TooltipContent>
-        </Tooltip>
+                    {progressLabel}
+                </Button>
+            }
+        >
+            {health ? <p>{t(health.messageKey)}</p> : null}
+        </StatusBarHoverCard>
     );
 }

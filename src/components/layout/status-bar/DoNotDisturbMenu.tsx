@@ -1,4 +1,4 @@
-import { BellOffIcon } from 'lucide-react';
+import { BellMinusIcon, BellOffIcon } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -18,8 +18,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { StatusBarHoverCard } from './StatusBarHoverCard';
 import {
     STATUS_BAR_TOGGLE_ACTIVE,
     STATUS_BAR_TOGGLE_IDLE
@@ -28,6 +28,7 @@ import {
 export function DoNotDisturbMenu(): ReactElement {
     const { t } = useTranslation();
     const [updating, setUpdating] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
     const mode = useRuntimeStore(
         (state) => state.notificationDoNotDisturb.mode
     );
@@ -35,9 +36,12 @@ export function DoNotDisturbMenu(): ReactElement {
         (state) => state.notificationDoNotDisturb.endsAt
     );
     const active = mode !== 'off';
+    const Icon = active ? BellOffIcon : BellMinusIcon;
     let tooltip = t('status_bar.do_not_disturb');
+    let stateLabel = t('status_bar.card.off');
     if (active) {
         tooltip = t('status_bar.do_not_disturb_active');
+        stateLabel = t('status_bar.card.on');
     }
     if (endsAt && mode !== 'untilStopped') {
         tooltip = t('status_bar.do_not_disturb_until', {
@@ -46,6 +50,7 @@ export function DoNotDisturbMenu(): ReactElement {
                 minute: '2-digit'
             })
         });
+        stateLabel = tooltip;
     }
 
     async function setMode(nextMode: NotificationDoNotDisturbMode) {
@@ -68,34 +73,39 @@ export function DoNotDisturbMenu(): ReactElement {
     }
 
     return (
-        <DropdownMenu>
-            <Tooltip>
-                <TooltipTrigger
-                    render={
-                        <DropdownMenuTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={tooltip}
-                                    aria-pressed={active}
-                                    disabled={updating}
-                                    className={cn(
-                                        'size-6 shrink-0 rounded-none',
-                                        active
-                                            ? STATUS_BAR_TOGGLE_ACTIVE
-                                            : STATUS_BAR_TOGGLE_IDLE
-                                    )}
-                                >
-                                    <BellOffIcon data-icon="icon" />
-                                </Button>
-                            }
-                        />
-                    }
-                />
-                <TooltipContent>{tooltip}</TooltipContent>
-            </Tooltip>
+        <DropdownMenu onOpenChange={setMenuOpen}>
+            <StatusBarHoverCard
+                icon={<Icon />}
+                title={t('status_bar.do_not_disturb')}
+                state={stateLabel}
+                description={t(
+                    'view.settings.notifications.notifications.do_not_disturb.description'
+                )}
+                actions={{ click: t('status_bar.card.do_not_disturb_click') }}
+                suppressed={menuOpen}
+                trigger={
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label={tooltip}
+                                aria-pressed={active}
+                                disabled={updating}
+                                className={cn(
+                                    'size-6 shrink-0 rounded-none',
+                                    active
+                                        ? STATUS_BAR_TOGGLE_ACTIVE
+                                        : STATUS_BAR_TOGGLE_IDLE
+                                )}
+                            >
+                                <Icon data-icon="icon" />
+                            </Button>
+                        }
+                    />
+                }
+            />
             <DropdownMenuContent side="top" align="end" className="w-44">
                 <DropdownMenuCheckboxItem
                     checked={mode === 'oneHour'}

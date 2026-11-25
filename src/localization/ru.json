@@ -7551,9 +7551,28 @@
         "do_not_disturb_turn_off": "Отключить режим «Не беспокоить»",
         "game_isolation": "Изоляция от игры",
         "game_isolation_active": "Изоляция от игры включена · Нажмите, чтобы выключить",
-        "chatbox_hint": "Клик — включить или выключить статус · Правый клик — страницы и AFK",
         "chatbox_pages": "Страницы",
         "chatbox_open": "Открыть настройки Chatbox",
+        "card": {
+            "click": "Клик",
+            "right_click": "Правый клик",
+            "on": "Вкл.",
+            "off": "Выкл.",
+            "on_click_through": "Вкл. · сквозные клики",
+            "turn_on": "Включить",
+            "turn_off": "Выключить",
+            "chatbox_click": "Включить или выключить статус",
+            "chatbox_right_click": "Выбрать страницы, отойти (AFK) или открыть настройки",
+            "do_not_disturb_click": "Выбрать срок или выключить",
+            "desktop_widget_right_click": "Закрепление, сквозные клики и другое",
+            "background_mode": "Фоновый режим",
+            "background_mode_description": "Закрывает окно и продолжает работать в фоне, используя примерно в десять раз меньше памяти. После возврата некоторые страницы могут сброситься.",
+            "game_isolation_description": "Для случая, когда в игре на этом ПК вошли в другой аккаунт. Приостанавливает журнал, статус и автоматизацию, связанные с локальной игрой.",
+            "game_isolation_click": "Подробнее и включить",
+            "game_isolation_right_click": "Подробнее",
+            "proxy_click": "Изменить настройки прокси",
+            "offline_record_click": "Открыть настройки регистратора"
+        },
         "do_not_disturb_failed": "Не удалось изменить режим «Не беспокоить»",
         "world_collection_importing": "Импорт коллекции миров ({progress}/{total})",
         "game": "Игра",
@@ -7595,7 +7614,6 @@
         "mutual_graph_fetching": "Поимка общих друзей",
         "mutual_graph_progress": "Прогресс построения графа общих друзей",
         "start_background_mode": "Переключиться в фоновый режим",
-        "start_background_mode_tooltip": "Переключиться в фоновый режим",
         "modify_proxy_address": "Изменить адрес прокси",
         "proxy_disabled": "Отключено",
         "proxy_enabled_direct": "Прокси включён, подключение напрямую",
@@ -7604,8 +7622,7 @@
         "desktop_widget_off": "Оверлей рабочего стола выключен",
         "desktop_widget_on": "Оверлей рабочего стола включён",
         "desktop_widget_click_through": "Оверлей рабочего стола включён (пропускает клики мыши)",
-        "desktop_widget_failed": "Не удалось изменить оверлей рабочего стола",
-        "desktop_widget_menu_hint": "Правый клик — дополнительные действия"
+        "desktop_widget_failed": "Не удалось изменить оверлей рабочего стола"
     },
     "component": {
         "favorite_action_menu": {

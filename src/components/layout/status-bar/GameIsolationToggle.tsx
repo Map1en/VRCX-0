@@ -1,4 +1,4 @@
-import { TriangleAlertIcon, UnplugIcon } from 'lucide-react';
+import { TriangleAlertIcon, UnlinkIcon } from 'lucide-react';
 import { type ReactElement, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,9 +9,9 @@ import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTitle } from '@/ui/shadcn/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { useGameIsolationCardStore } from './gameIsolationCardStore';
+import { StatusBarHoverCard } from './StatusBarHoverCard';
 import {
     STATUS_BAR_TOGGLE_ACTIVE,
     STATUS_BAR_TOGGLE_IDLE
@@ -113,40 +113,56 @@ export function GameIsolationToggle(): ReactElement | null {
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <span ref={anchorRef} className="inline-flex h-6 shrink-0">
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                aria-label={tooltip}
-                                aria-pressed={enabled}
-                                disabled={updating}
-                                className={cn(
-                                    'size-6 shrink-0 rounded-none',
-                                    enabled
-                                        ? STATUS_BAR_TOGGLE_ACTIVE
-                                        : STATUS_BAR_TOGGLE_IDLE
-                                )}
-                                onClick={() => {
-                                    if (enabled) {
-                                        void setEnabled(false);
-                                        return;
-                                    }
-                                    setOpen(!open);
-                                }}
-                                onContextMenu={(event) => {
-                                    event.preventDefault();
-                                    setOpen(true);
-                                }}
-                            >
-                                <UnplugIcon data-icon="icon" />
-                            </Button>
-                        }
-                    />
-                    <TooltipContent>{tooltip}</TooltipContent>
-                </Tooltip>
+                <StatusBarHoverCard
+                    icon={<UnlinkIcon />}
+                    title={t('status_bar.game_isolation')}
+                    state={
+                        enabled
+                            ? t('status_bar.card.on')
+                            : t('status_bar.card.off')
+                    }
+                    description={t(
+                        'status_bar.card.game_isolation_description'
+                    )}
+                    actions={{
+                        click: enabled
+                            ? t('status_bar.card.turn_off')
+                            : t('status_bar.card.game_isolation_click'),
+                        rightClick: t(
+                            'status_bar.card.game_isolation_right_click'
+                        )
+                    }}
+                    suppressed={open}
+                    trigger={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={tooltip}
+                            aria-pressed={enabled}
+                            disabled={updating}
+                            className={cn(
+                                'size-6 shrink-0 rounded-none',
+                                enabled
+                                    ? STATUS_BAR_TOGGLE_ACTIVE
+                                    : STATUS_BAR_TOGGLE_IDLE
+                            )}
+                            onClick={() => {
+                                if (enabled) {
+                                    void setEnabled(false);
+                                    return;
+                                }
+                                setOpen(!open);
+                            }}
+                            onContextMenu={(event) => {
+                                event.preventDefault();
+                                setOpen(true);
+                            }}
+                        >
+                            <UnlinkIcon data-icon="icon" />
+                        </Button>
+                    }
+                />
             </span>
             <PopoverContent
                 anchor={anchorRef}

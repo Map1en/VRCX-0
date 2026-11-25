@@ -7608,9 +7608,28 @@
         "do_not_disturb_turn_off": "Turn off Do Not Disturb",
         "game_isolation": "Game Isolation",
         "game_isolation_active": "Game Isolation is on · Click to turn off",
-        "chatbox_hint": "Click to turn status on or off · Right-click for pages and AFK",
         "chatbox_pages": "Pages",
         "chatbox_open": "Open Chatbox settings",
+        "card": {
+            "click": "Click",
+            "right_click": "Right-click",
+            "on": "On",
+            "off": "Off",
+            "on_click_through": "On · click-through",
+            "turn_on": "Turn on",
+            "turn_off": "Turn off",
+            "chatbox_click": "Turn status display on or off",
+            "chatbox_right_click": "Pick pages, go AFK or open settings",
+            "do_not_disturb_click": "Pick how long, or turn off",
+            "desktop_widget_right_click": "Pin, click-through and more",
+            "background_mode": "Background Mode",
+            "background_mode_description": "Closes the window and keeps running in the background with about a tenth of the memory. Some pages may reset when you return.",
+            "game_isolation_description": "For when this PC's game is signed in to a different account. Pauses game log, presence and automations tied to the local game.",
+            "game_isolation_click": "Review and turn on",
+            "game_isolation_right_click": "Show details",
+            "proxy_click": "Edit proxy settings",
+            "offline_record_click": "Open recorder settings"
+        },
         "do_not_disturb_failed": "Failed to update Do Not Disturb",
         "world_collection_importing": "Importing world collection ({progress}/{total})",
         "game": "Game",
@@ -7652,7 +7671,6 @@
         "mutual_graph_fetching": "Fetching mutual friends",
         "mutual_graph_progress": "Loading mutual friends",
         "start_background_mode": "Switch to Background Mode",
-        "start_background_mode_tooltip": "Switch to Background Mode",
         "modify_proxy_address": "Modify proxy address",
         "proxy_disabled": "Proxy disabled",
         "proxy_enabled_direct": "Proxy enabled, connecting directly",
@@ -7661,8 +7679,7 @@
         "desktop_widget_off": "Desktop Overlay is off",
         "desktop_widget_on": "Desktop Overlay is on",
         "desktop_widget_click_through": "Desktop Overlay is on (Click-Through)",
-        "desktop_widget_failed": "Failed to update Desktop Overlay",
-        "desktop_widget_menu_hint": "Right-click for more options"
+        "desktop_widget_failed": "Failed to update Desktop Overlay"
     },
     "component": {
         "favorite_action_menu": {

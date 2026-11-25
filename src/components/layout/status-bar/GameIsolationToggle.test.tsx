@@ -37,12 +37,12 @@ vi.mock('@/services/toastService', () => ({
     toast: { add: vi.fn(), close: vi.fn() }
 }));
 
-vi.mock('@/ui/shadcn/tooltip', () => ({
-    Tooltip: ({ children }: PropsWithChildren) => <>{children}</>,
-    TooltipContent: ({ children }: PropsWithChildren) => (
+vi.mock('@/ui/shadcn/hover-card', () => ({
+    HoverCard: ({ children }: PropsWithChildren) => <>{children}</>,
+    HoverCardContent: ({ children }: PropsWithChildren) => (
         <div role="tooltip">{children}</div>
     ),
-    TooltipTrigger: ({ render }: { render?: ReactNode }) => <>{render}</>
+    HoverCardTrigger: ({ render }: { render?: ReactNode }) => <>{render}</>
 }));
 
 import { useGameIsolationCardStore } from './gameIsolationCardStore';

@@ -7565,9 +7565,28 @@
         "do_not_disturb_turn_off": "一時停止を解除",
         "game_isolation": "ゲーム分離モード",
         "game_isolation_active": "ゲーム分離モード中 · クリックで解除",
-        "chatbox_hint": "クリックでステータス表示を切り替え・右クリックでページや AFK を選択",
         "chatbox_pages": "ページ",
         "chatbox_open": "Chatbox の設定を開く",
+        "card": {
+            "click": "クリック",
+            "right_click": "右クリック",
+            "on": "オン",
+            "off": "オフ",
+            "on_click_through": "オン · クリック透過",
+            "turn_on": "オンにする",
+            "turn_off": "オフにする",
+            "chatbox_click": "ステータス表示のオン/オフ",
+            "chatbox_right_click": "ページの選択、AFK、設定を開く",
+            "do_not_disturb_click": "期間を選ぶ・解除する",
+            "desktop_widget_right_click": "最前面表示やクリック透過など",
+            "background_mode": "バックグラウンドモード",
+            "background_mode_description": "ウィンドウを閉じてバックグラウンドで動作し、メモリ使用量を約10分の1に抑えます。戻したときに一部の画面がリセットされることがあります。",
+            "game_isolation_description": "このPCのゲームに別のアカウントでログインしているときに使います。ローカルのゲームに関するログ・ステータス・自動化との連携を止めます。",
+            "game_isolation_click": "説明を見てオンにする",
+            "game_isolation_right_click": "説明を表示",
+            "proxy_click": "プロキシ設定を変更",
+            "offline_record_click": "レコーダーの設定を開く"
+        },
         "do_not_disturb_failed": "通知の一時停止を変更できませんでした",
         "world_collection_importing": "ワールドコレクションをインポート中（{progress}/{total}）",
         "game": "VRChat",
@@ -7609,7 +7628,6 @@
         "mutual_graph_fetching": "共通のフレンドを取得中",
         "mutual_graph_progress": "共通のフレンドを読み込み中",
         "start_background_mode": "バックグラウンドモードへ切り替える",
-        "start_background_mode_tooltip": "バックグラウンドモードへ切り替えます",
         "modify_proxy_address": "プロキシアドレスを変更",
         "proxy_disabled": "プロキシ無効",
         "proxy_enabled_direct": "プロキシが有効ですが、直接接続しています",
@@ -7618,8 +7636,7 @@
         "desktop_widget_off": "デスクトップのオーバーレイはオフです",
         "desktop_widget_on": "デスクトップのオーバーレイはオンです",
         "desktop_widget_click_through": "デスクトップのオーバーレイはオンです（クリックを透過中）",
-        "desktop_widget_failed": "デスクトップのオーバーレイを変更できませんでした",
-        "desktop_widget_menu_hint": "右クリックでメニューを表示"
+        "desktop_widget_failed": "デスクトップのオーバーレイを変更できませんでした"
     },
     "component": {
         "favorite_action_menu": {

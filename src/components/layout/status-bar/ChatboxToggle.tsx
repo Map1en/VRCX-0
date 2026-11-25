@@ -24,8 +24,8 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { StatusBarHoverCard } from './StatusBarHoverCard';
 import {
     STATUS_BAR_TOGGLE_ACTIVE,
     STATUS_BAR_TOGGLE_IDLE
@@ -35,6 +35,7 @@ export function ChatboxToggle(): ReactElement | null {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [updating, setUpdating] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
     const available = useRuntimeStore(
         (state) => state.hostCapabilities.gameProcessMonitor.available
     );
@@ -109,46 +110,53 @@ export function ChatboxToggle(): ReactElement | null {
     const title = t('view.tools.chatbox.title');
 
     return (
-        <ContextMenu>
-            <Tooltip>
-                <TooltipTrigger
-                    render={
-                        <ContextMenuTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={`${title} · ${stateLabel}`}
-                                    aria-pressed={enabled}
-                                    disabled={updating}
-                                    className={cn(
-                                        'size-6 shrink-0 rounded-none',
-                                        enabled
-                                            ? STATUS_BAR_TOGGLE_ACTIVE
-                                            : STATUS_BAR_TOGGLE_IDLE
-                                    )}
-                                    onClick={() =>
-                                        void update(() =>
-                                            commands.appChatboxStatusEnabledSet(
-                                                !enabled
-                                            )
+        <ContextMenu onOpenChange={setMenuOpen}>
+            <StatusBarHoverCard
+                icon={<Icon />}
+                title={title}
+                state={stateLabel}
+                description={t('view.tools.chatbox.description')}
+                actions={{
+                    click: t('status_bar.card.chatbox_click'),
+                    rightClick: t('status_bar.card.chatbox_right_click')
+                }}
+                suppressed={menuOpen}
+                trigger={
+                    <ContextMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`${title} · ${stateLabel}`}
+                                aria-pressed={enabled}
+                                disabled={updating}
+                                className={cn(
+                                    'size-6 shrink-0 rounded-none',
+                                    enabled
+                                        ? STATUS_BAR_TOGGLE_ACTIVE
+                                        : STATUS_BAR_TOGGLE_IDLE
+                                )}
+                                onClick={() =>
+                                    void update(() =>
+                                        commands.appChatboxStatusEnabledSet(
+                                            !enabled
                                         )
-                                    }
-                                >
-                                    <Icon data-icon="icon" />
-                                </Button>
-                            }
-                        />
-                    }
-                />
-                <TooltipContent>
-                    <div>{`${title} · ${stateLabel}`}</div>
-                    <div className="opacity-70">
-                        {t('status_bar.chatbox_hint')}
+                                    )
+                                }
+                            >
+                                <Icon data-icon="icon" />
+                            </Button>
+                        }
+                    />
+                }
+            >
+                {status?.preview ? (
+                    <div className="bg-muted/50 rounded-md px-2 py-1.5 whitespace-pre-line">
+                        {status.preview}
                     </div>
-                </TooltipContent>
-            </Tooltip>
+                ) : null}
+            </StatusBarHoverCard>
             <ContextMenuContent className="w-64">
                 <ContextMenuCheckboxItem
                     checked={enabled}

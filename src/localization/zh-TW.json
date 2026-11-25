@@ -7583,9 +7583,28 @@
         "do_not_disturb_turn_off": "關閉勿擾模式",
         "game_isolation": "隔離模式",
         "game_isolation_active": "隔離模式已開啟 · 點擊關閉",
-        "chatbox_hint": "點擊切換狀態顯示 · 按右鍵選擇輪播頁或 AFK",
         "chatbox_pages": "輪播頁",
         "chatbox_open": "開啟 Chatbox 設定",
+        "card": {
+            "click": "點擊",
+            "right_click": "右鍵",
+            "on": "已開啟",
+            "off": "已關閉",
+            "on_click_through": "已開啟 · 滑鼠穿透",
+            "turn_on": "開啟",
+            "turn_off": "關閉",
+            "chatbox_click": "開關狀態顯示",
+            "chatbox_right_click": "選擇輪播頁、AFK 或開啟設定",
+            "do_not_disturb_click": "選擇時長或關閉",
+            "desktop_widget_right_click": "置頂、滑鼠穿透等選項",
+            "background_mode": "背景模式",
+            "background_mode_description": "關閉介面，只在背景執行，記憶體用量降至約十分之一；恢復後部分頁面狀態可能重設。",
+            "game_isolation_description": "本機遊戲登入的不是這個帳號時使用，暫停與本機遊戲相關的日誌、狀態和自動化聯動。",
+            "game_isolation_click": "查看說明並開啟",
+            "game_isolation_right_click": "查看說明",
+            "proxy_click": "修改代理設定",
+            "offline_record_click": "開啟記錄端設定"
+        },
         "do_not_disturb_failed": "無法更新勿擾模式",
         "world_collection_importing": "正在匯入世界集合（{progress}/{total}）",
         "game": "遊戲",
@@ -7627,7 +7646,6 @@
         "mutual_graph_fetching": "正在取得共同好友",
         "mutual_graph_progress": "共同好友關係圖譜取得進度",
         "start_background_mode": "切換到背景模式",
-        "start_background_mode_tooltip": "切換到背景模式",
         "modify_proxy_address": "修改代理位址",
         "proxy_disabled": "代理已停用",
         "proxy_enabled_direct": "已啟用代理，正在直接連線",
@@ -7636,8 +7654,7 @@
         "desktop_widget_off": "桌面疊加介面已關閉",
         "desktop_widget_on": "桌面疊加介面已開啟",
         "desktop_widget_click_through": "桌面疊加介面已開啟（滑鼠穿透）",
-        "desktop_widget_failed": "無法更新桌面疊加介面",
-        "desktop_widget_menu_hint": "按右鍵開啟更多選項"
+        "desktop_widget_failed": "無法更新桌面疊加介面"
     },
     "component": {
         "favorite_action_menu": {

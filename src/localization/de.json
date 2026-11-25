@@ -7516,9 +7516,28 @@
         "do_not_disturb_turn_off": "„Nicht stören“ ausschalten",
         "game_isolation": "Spielentkopplung",
         "game_isolation_active": "Spielentkopplung ist an · Zum Ausschalten klicken",
-        "chatbox_hint": "Klicken, um den Status ein- oder auszuschalten · Rechtsklick für Seiten und AFK",
         "chatbox_pages": "Seiten",
         "chatbox_open": "Chatbox-Einstellungen öffnen",
+        "card": {
+            "click": "Klick",
+            "right_click": "Rechtsklick",
+            "on": "An",
+            "off": "Aus",
+            "on_click_through": "An · Durchklicken",
+            "turn_on": "Einschalten",
+            "turn_off": "Ausschalten",
+            "chatbox_click": "Statusanzeige ein- oder ausschalten",
+            "chatbox_right_click": "Seiten wählen, AFK oder Einstellungen öffnen",
+            "do_not_disturb_click": "Dauer wählen oder ausschalten",
+            "desktop_widget_right_click": "Anheften, Durchklicken und mehr",
+            "background_mode": "Hintergrundmodus",
+            "background_mode_description": "Schließt das Fenster und läuft mit etwa einem Zehntel des Speichers im Hintergrund weiter. Manche Seiten werden beim Zurückkehren eventuell zurückgesetzt.",
+            "game_isolation_description": "Für den Fall, dass im Spiel auf diesem PC ein anderes Konto angemeldet ist. Pausiert Spielprotokoll, Status und Automationen des lokalen Spiels.",
+            "game_isolation_click": "Details ansehen und einschalten",
+            "game_isolation_right_click": "Details anzeigen",
+            "proxy_click": "Proxy-Einstellungen ändern",
+            "offline_record_click": "Rekorder-Einstellungen öffnen"
+        },
         "do_not_disturb_failed": "„Nicht stören“ konnte nicht geändert werden",
         "world_collection_importing": "Welten-Sammlung wird importiert ({progress}/{total})",
         "game": "Spiel",
@@ -7560,7 +7579,6 @@
         "mutual_graph_fetching": "Gemeinsame Freunde werden abgerufen",
         "mutual_graph_progress": "Fortschritt des Beziehungsgraph-Abrufs",
         "start_background_mode": "In den Hintergrundmodus wechseln",
-        "start_background_mode_tooltip": "In den Hintergrundmodus wechseln",
         "modify_proxy_address": "Proxy-Adresse ändern",
         "proxy_disabled": "Proxy deaktiviert",
         "proxy_enabled_direct": "Proxy aktiviert, direkte Verbindung",
@@ -7569,8 +7587,7 @@
         "desktop_widget_off": "Desktop-Overlay ist aus",
         "desktop_widget_on": "Desktop-Overlay ist an",
         "desktop_widget_click_through": "Desktop-Overlay ist an (Mausklicks werden durchgelassen)",
-        "desktop_widget_failed": "Desktop-Overlay konnte nicht geändert werden",
-        "desktop_widget_menu_hint": "Rechtsklick für weitere Optionen"
+        "desktop_widget_failed": "Desktop-Overlay konnte nicht geändert werden"
     },
     "component": {
         "favorite_action_menu": {

@@ -7507,9 +7507,28 @@
         "do_not_disturb_turn_off": "방해 금지 끄기",
         "game_isolation": "게임 분리 모드",
         "game_isolation_active": "게임 분리 모드 켜짐 · 클릭하면 끕니다",
-        "chatbox_hint": "클릭으로 상태 표시 켜기/끄기 · 오른쪽 클릭으로 페이지와 AFK 선택",
         "chatbox_pages": "페이지",
         "chatbox_open": "Chatbox 설정 열기",
+        "card": {
+            "click": "클릭",
+            "right_click": "오른쪽 클릭",
+            "on": "켜짐",
+            "off": "꺼짐",
+            "on_click_through": "켜짐 · 클릭 통과",
+            "turn_on": "켜기",
+            "turn_off": "끄기",
+            "chatbox_click": "상태 표시 켜기/끄기",
+            "chatbox_right_click": "페이지 선택, AFK, 설정 열기",
+            "do_not_disturb_click": "기간 선택 또는 끄기",
+            "desktop_widget_right_click": "항상 위, 클릭 통과 등",
+            "background_mode": "백그라운드 모드",
+            "background_mode_description": "창을 닫고 백그라운드에서만 실행해 메모리 사용량을 약 10분의 1로 줄입니다. 돌아오면 일부 페이지 상태가 초기화될 수 있습니다.",
+            "game_isolation_description": "이 PC의 게임에 다른 계정으로 로그인했을 때 사용합니다. 로컬 게임과 연동되는 로그, 상태, 자동화를 멈춥니다.",
+            "game_isolation_click": "설명 보고 켜기",
+            "game_isolation_right_click": "설명 보기",
+            "proxy_click": "프록시 설정 변경",
+            "offline_record_click": "기록기 설정 열기"
+        },
         "do_not_disturb_failed": "방해 금지를 변경하지 못했습니다",
         "world_collection_importing": "월드 컬렉션 가져오는 중 ({progress}/{total})",
         "game": "게임",
@@ -7551,7 +7570,6 @@
         "mutual_graph_fetching": "공통 친구를 불러오는 중",
         "mutual_graph_progress": "공통 친구 불러오는 중",
         "start_background_mode": "백그라운드 모드로 전환",
-        "start_background_mode_tooltip": "백그라운드 모드로 전환",
         "modify_proxy_address": "프록시 주소 수정",
         "proxy_disabled": "프록시 비활성화됨",
         "proxy_enabled_direct": "프록시 활성화됨, 직접 연결 중",
@@ -7560,8 +7578,7 @@
         "desktop_widget_off": "데스크톱 오버레이가 꺼져 있습니다",
         "desktop_widget_on": "데스크톱 오버레이가 켜져 있습니다",
         "desktop_widget_click_through": "데스크톱 오버레이가 켜져 있습니다(마우스 클릭 통과)",
-        "desktop_widget_failed": "데스크톱 오버레이를 변경하지 못했습니다",
-        "desktop_widget_menu_hint": "오른쪽 클릭으로 메뉴 열기"
+        "desktop_widget_failed": "데스크톱 오버레이를 변경하지 못했습니다"
     },
     "component": {
         "favorite_action_menu": {
