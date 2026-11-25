@@ -48,8 +48,6 @@ pub struct TelemetryAccumulator {
 struct RouteUsage {
     visits: u32,
     landings: u32,
-    load_fail: u32,
-    render_crash: u32,
     details: DetailAccumulator,
     revision: u64,
 }
@@ -78,8 +76,6 @@ struct SlowDurationUsage {
 
 #[derive(Default)]
 struct AssistantHealthAccumulator {
-    tool_errors: u32,
-    turn_errors: u32,
     details: DetailAccumulator,
     revision: u64,
 }
@@ -87,13 +83,6 @@ struct AssistantHealthAccumulator {
 #[derive(Default)]
 struct DetailAccumulator {
     details: HashMap<String, TelemetryErrorDetail>,
-}
-
-#[derive(Default)]
-pub struct AssistantHealthEntry {
-    pub tool_errors: u32,
-    pub turn_errors: u32,
-    pub details: Option<Vec<TelemetryErrorDetail>>,
 }
 
 pub(super) struct RouteSnapshot {
@@ -118,7 +107,7 @@ pub(super) struct PerformanceSnapshot {
 }
 
 pub(super) struct AssistantHealthSnapshot {
-    pub entry: AssistantHealthEntry,
+    pub details: Vec<TelemetryErrorDetail>,
     pub revision: u64,
 }
 
@@ -157,7 +146,6 @@ impl TelemetryAccumulator {
                 if !should_record_assistant_tool_detail(summary.as_deref()) {
                     return;
                 }
-                self.assistant.tool_errors = increment(self.assistant.tool_errors);
                 self.assistant.details.record(build_error_detail(
                     "tool_error",
                     source.as_deref(),
@@ -173,20 +161,20 @@ impl TelemetryAccumulator {
                 if code == "cancelled" {
                     return;
                 }
-                self.assistant.turn_errors = increment(self.assistant.turn_errors);
-                if should_record_assistant_turn_detail(&code, summary.as_deref()) {
-                    let summary = summary.as_deref().map(|summary| {
-                        llm_transport_error_category(&code, summary).unwrap_or(summary)
-                    });
-                    self.assistant.details.record(build_error_detail(
-                        "turn_error",
-                        None,
-                        Some(code.as_str()),
-                        None,
-                        summary,
-                        None,
-                    ));
+                if !should_record_assistant_turn_detail(&code, summary.as_deref()) {
+                    return;
                 }
+                let summary = summary
+                    .as_deref()
+                    .map(|summary| llm_transport_error_category(&code, summary).unwrap_or(summary));
+                self.assistant.details.record(build_error_detail(
+                    "turn_error",
+                    None,
+                    Some(code.as_str()),
+                    None,
+                    summary,
+                    None,
+                ));
                 let revision = self.advance_revision();
                 self.assistant.revision = revision;
             }
@@ -256,15 +244,8 @@ impl TelemetryAccumulator {
         entries
     }
 
-    pub fn assistant_health_entry(&self) -> Option<AssistantHealthEntry> {
-        if self.assistant.tool_errors == 0 && self.assistant.turn_errors == 0 {
-            return None;
-        }
-        Some(AssistantHealthEntry {
-            tool_errors: self.assistant.tool_errors,
-            turn_errors: self.assistant.turn_errors,
-            details: self.assistant.details.serialize(),
-        })
+    pub fn assistant_error_details(&self) -> Option<Vec<TelemetryErrorDetail>> {
+        self.assistant.details.serialize()
     }
 
     pub fn client_error_entries(&self) -> Vec<TelemetryErrorDetail> {
@@ -378,9 +359,9 @@ impl TelemetryAccumulator {
         if self.assistant.revision <= self.assistant_sent_revision {
             return None;
         }
-        self.assistant_health_entry()
-            .map(|entry| AssistantHealthSnapshot {
-                entry,
+        self.assistant_error_details()
+            .map(|details| AssistantHealthSnapshot {
+                details,
                 revision: self.assistant.revision,
             })
     }
@@ -504,10 +485,8 @@ impl TelemetryAccumulator {
             let Some(usage) = self.routes.get_mut(&route) else {
                 return;
             };
-            match error_class.as_str() {
-                "load_fail" => usage.load_fail = increment(usage.load_fail),
-                "render_crash" => usage.render_crash = increment(usage.render_crash),
-                _ => return,
+            if !matches!(error_class.as_str(), "load_fail" | "render_crash") {
+                return;
             }
             usage.details.record(build_error_detail(
                 &error_class,
@@ -622,8 +601,6 @@ fn route_usage_entry(route: &str, usage: &RouteUsage) -> RouteUsageEntry {
         route: route.to_string(),
         visits: usage.visits,
         landings: (usage.landings > 0).then_some(usage.landings),
-        load_fail: (usage.load_fail > 0).then_some(usage.load_fail),
-        render_crash: (usage.render_crash > 0).then_some(usage.render_crash),
         details: usage.details.serialize(),
     }
 }
@@ -1048,9 +1025,7 @@ mod tests {
             .assistant_health_snapshot()
             .expect("assistant health should be dirty");
         let summaries = snapshot
-            .entry
             .details
-            .unwrap_or_default()
             .into_iter()
             .filter_map(|detail| detail.summary)
             .collect::<Vec<_>>();
@@ -1074,7 +1049,8 @@ mod tests {
         let retry = acc
             .assistant_health_snapshot()
             .expect("failed send must remain dirty");
-        assert_eq!(retry.entry.turn_errors, first.entry.turn_errors);
+        assert_eq!(retry.revision, first.revision);
+        assert_eq!(retry.details.len(), first.details.len());
 
         acc.mark_assistant_health_sent(first.revision);
         assert!(acc.assistant_health_snapshot().is_none());

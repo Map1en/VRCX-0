@@ -1,6 +1,5 @@
 use super::*;
 
-use chrono::Weekday;
 use std::sync::atomic::AtomicUsize;
 use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 
@@ -123,7 +122,6 @@ fn runtime_with_auth_scope(
         environment,
         transport,
         tasks: TaskSupervisor::new(),
-        backend_runtime: BackendRuntime::new(vrcx_0_application_core::RuntimeHostProfile::Desktop),
         auth_scope,
         session: HostSessionRuntime::new(),
         app_version: app_version.into(),
@@ -428,13 +426,6 @@ async fn vrcx_origin_prefers_migrated_markers_over_detected_legacy_data() {
 
 fn instant_past_epoch_safe(headroom: Duration) -> Instant {
     Instant::now() + headroom
-}
-
-#[test]
-fn local_weekday_uses_sunday_zero() {
-    assert_eq!(local_weekday_number(Weekday::Sun), 0);
-    assert_eq!(local_weekday_number(Weekday::Mon), 1);
-    assert_eq!(local_weekday_number(Weekday::Sat), 6);
 }
 
 #[test]

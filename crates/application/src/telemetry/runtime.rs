@@ -6,16 +6,14 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
-use chrono::{Datelike, Local, Timelike};
 use uuid::Uuid;
 use vrcx_0_application_core::{
-    BackendRuntime, BackendRuntimeMode, ConfigStore, HostSessionRuntime, RuntimeAuthScope,
-    TaskStopToken, TaskSupervisor,
+    ConfigStore, HostSessionRuntime, RuntimeAuthScope, TaskStopToken, TaskSupervisor,
 };
 use vrcx_0_contracts::telemetry::{
     AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, DialogTabUsagePayload,
     PageHealthPayload, PerformancePayload, TelemetryConfigSnapshot, TelemetryContext,
-    TelemetryOfflineRecord, TelemetryRuntimeMode, TelemetryVrcxOrigin, ToolUsagePayload,
+    TelemetryOfflineRecord, TelemetryVrcxOrigin, ToolUsagePayload,
 };
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};
@@ -103,7 +101,6 @@ pub struct TelemetryRuntimeDeps {
     pub environment: Arc<dyn TelemetryEnvironment>,
     pub transport: Arc<dyn TelemetryTransport>,
     pub tasks: TaskSupervisor,
-    pub backend_runtime: BackendRuntime,
     pub auth_scope: RuntimeAuthScope,
     pub session: HostSessionRuntime,
     pub app_version: String,
@@ -114,7 +111,6 @@ struct TelemetryRuntimeInner {
     environment: Arc<dyn TelemetryEnvironment>,
     transport: Arc<dyn TelemetryTransport>,
     tasks: TaskSupervisor,
-    backend_runtime: BackendRuntime,
     auth_scope: RuntimeAuthScope,
     session: HostSessionRuntime,
     app_version: String,
@@ -159,7 +155,6 @@ impl TelemetryRuntime {
                 environment: deps.environment,
                 transport: deps.transport,
                 tasks: deps.tasks,
-                backend_runtime: deps.backend_runtime,
                 auth_scope: deps.auth_scope,
                 session: deps.session,
                 app_version: normalize_app_version(&deps.app_version),
@@ -658,9 +653,7 @@ impl TelemetryRuntime {
         if let Some(assistant_health) = assistant_health {
             let payload = AssistantHealthPayload {
                 context: context.clone(),
-                tool_errors: assistant_health.entry.tool_errors,
-                turn_errors: assistant_health.entry.turn_errors,
-                details: assistant_health.entry.details,
+                details: assistant_health.details,
             };
             if self
                 .post_debug(
@@ -730,7 +723,6 @@ impl TelemetryRuntime {
     }
 
     fn context(&self, session: &TelemetrySession, session_ended: Option<bool>) -> TelemetryContext {
-        let now = Local::now();
         TelemetryContext {
             install_id: session.install_id.clone(),
             session_id: session.session_id.clone(),
@@ -743,9 +735,6 @@ impl TelemetryRuntime {
                 .environment
                 .timezone()
                 .unwrap_or_else(|| "unknown".into()),
-            mode: runtime_mode(self.inner.backend_runtime.snapshot().mode),
-            local_weekday: local_weekday_number(now.weekday()),
-            local_hour: now.hour(),
             session_ended,
             vrchat_seen: None,
             signed_in: None,
@@ -773,7 +762,6 @@ impl TelemetryRuntime {
 
     fn basic_context(&self, session: &TelemetrySession) -> TelemetryContext {
         TelemetryContext {
-            mode: TelemetryRuntimeMode::Foreground,
             basic: Some(true),
             ..self.context(session, None)
         }
@@ -1007,14 +995,6 @@ fn account_snapshot_ready(friend_count: Option<i64>, signed_in_for: Duration) ->
     friend_count.is_some_and(|count| count > 0) || signed_in_for >= ACCOUNT_SNAPSHOT_FRIEND_GRACE
 }
 
-fn runtime_mode(mode: BackendRuntimeMode) -> TelemetryRuntimeMode {
-    match mode {
-        BackendRuntimeMode::Foreground => TelemetryRuntimeMode::Foreground,
-        BackendRuntimeMode::Background => TelemetryRuntimeMode::Background,
-        BackendRuntimeMode::Headless => TelemetryRuntimeMode::Headless,
-    }
-}
-
 fn heartbeat_interval(heartbeats_scheduled: usize) -> Duration {
     EARLY_HEARTBEAT_INTERVALS
         .get(heartbeats_scheduled)
@@ -1028,10 +1008,6 @@ fn is_heartbeat_due(last: Option<Instant>, now: Instant, interval: Duration) -> 
 
 fn attempt_due(last_attempt: Option<Instant>, now: Instant) -> bool {
     last_attempt.is_none_or(|last| now.duration_since(last) >= SEND_RETRY_BACKOFF)
-}
-
-fn local_weekday_number(weekday: chrono::Weekday) -> u32 {
-    weekday.num_days_from_sunday()
 }
 
 fn has_enabled_rules(raw_rules: &str) -> bool {

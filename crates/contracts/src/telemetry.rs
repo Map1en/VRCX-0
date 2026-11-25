@@ -1,12 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub enum TelemetryRuntimeMode {
-    Foreground,
-    Background,
-    Headless,
-}
+use serde::Serialize;
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,9 +10,6 @@ pub struct TelemetryContext {
     pub arch: String,
     pub locale: String,
     pub timezone: String,
-    pub mode: TelemetryRuntimeMode,
-    pub local_weekday: u32,
-    pub local_hour: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_ended: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -104,10 +93,6 @@ pub struct RouteUsageEntry {
     pub visits: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub landings: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub load_fail: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub render_crash: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<Vec<TelemetryErrorDetail>>,
 }
@@ -196,10 +181,7 @@ pub struct DialogTabUsagePayload {
 pub struct AssistantHealthPayload {
     #[serde(flatten)]
     pub context: TelemetryContext,
-    pub tool_errors: u32,
-    pub turn_errors: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub details: Option<Vec<TelemetryErrorDetail>>,
+    pub details: Vec<TelemetryErrorDetail>,
 }
 
 #[derive(Clone, Debug, Serialize)]

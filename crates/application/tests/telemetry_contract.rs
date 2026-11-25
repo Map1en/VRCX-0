@@ -2,8 +2,7 @@ use serde_json::{json, Value};
 
 use vrcx_0_application::telemetry::{build_error_detail, sanitize_error_summary};
 use vrcx_0_contracts::telemetry::{
-    TelemetryConfigSnapshot, TelemetryContext, TelemetryOfflineRecord, TelemetryRuntimeMode,
-    TelemetryVrcxOrigin,
+    TelemetryConfigSnapshot, TelemetryContext, TelemetryOfflineRecord, TelemetryVrcxOrigin,
 };
 
 const SYNTHETIC_PROVIDER_ORG_ID: &str = "org_TESTPROVIDER123456789";
@@ -66,9 +65,6 @@ fn context_omits_session_ended_unless_true() {
         arch: "x86_64".into(),
         locale: "en-US".into(),
         timezone: "Asia/Tokyo".into(),
-        mode: TelemetryRuntimeMode::Foreground,
-        local_weekday: 4,
-        local_hour: 17,
         session_ended: None,
         vrchat_seen: None,
         signed_in: None,
@@ -78,7 +74,6 @@ fn context_omits_session_ended_unless_true() {
     let value = serde_json::to_value(&context).unwrap();
 
     assert_eq!(value.get("installId"), Some(&json!("install")));
-    assert_eq!(value.get("mode"), Some(&json!("foreground")));
     assert!(value.get("sessionEnded").is_none());
     assert!(value.get("signedIn").is_none());
     assert!(value.get("basic").is_none());

@@ -122,7 +122,6 @@ pub(crate) fn build_desktop_runtime(
         )),
         transport: Arc::new(vrcx_0_outbound_adapters::HttpTelemetryTransport::production()),
         tasks: context.tasks().clone(),
-        backend_runtime: builder.backend_runtime().clone(),
         auth_scope: context.auth_scope().clone(),
         session: context.session().clone(),
         app_version: build.app_version.clone(),

@@ -22,15 +22,13 @@ fn telemetry_accumulator_keeps_session_totals_without_resetting() {
     assert_eq!(routes.len(), 1);
     assert_eq!(routes[0].route, "game_log");
     assert_eq!(routes[0].visits, 2);
-    assert_eq!(routes[0].render_crash, Some(1));
-    assert_eq!(
-        routes[0].details.as_ref().unwrap()[0].summary.as_deref(),
-        Some("failed at <id> <path>")
-    );
+    let details = routes[0].details.as_ref().unwrap();
+    assert_eq!(details[0].count, 1);
+    assert_eq!(details[0].summary.as_deref(), Some("failed at <id> <path>"));
 
     let routes_again = acc.route_entries();
     assert_eq!(routes_again[0].visits, 2);
-    assert_eq!(routes_again[0].render_crash, Some(1));
+    assert_eq!(routes_again[0].details.as_ref().unwrap()[0].count, 1);
 }
 
 #[test]
@@ -62,7 +60,7 @@ fn tool_opens_use_separate_session_counts_without_changing_error_attribution() {
     assert_eq!(routes.len(), 1);
     assert_eq!(routes[0].route, "tools");
     assert_eq!(routes[0].visits, 1);
-    assert_eq!(routes[0].render_crash, Some(1));
+    assert_eq!(routes[0].details.as_ref().unwrap()[0].kind, "render_crash");
 }
 
 #[test]
@@ -78,13 +76,9 @@ fn telemetry_accumulator_filters_cancelled_turn_errors() {
         summary: Some("request failed".into()),
     });
 
-    let health = acc.assistant_health_entry().unwrap();
-    assert_eq!(health.turn_errors, 1);
-    assert_eq!(health.tool_errors, 0);
-    assert_eq!(
-        health.details.unwrap()[0].code.as_deref(),
-        Some("provider_error")
-    );
+    let details = acc.assistant_error_details().unwrap();
+    assert_eq!(details.len(), 1);
+    assert_eq!(details[0].code.as_deref(), Some("provider_error"));
 }
 
 #[test]
@@ -102,9 +96,7 @@ fn telemetry_accumulator_keeps_external_llm_failures_out_of_details() {
         summary: Some("LLM response parse failed".into()),
     });
 
-    let health = acc.assistant_health_entry().unwrap();
-    assert_eq!(health.turn_errors, 4);
-    let details = health.details.unwrap();
+    let details = acc.assistant_error_details().unwrap();
     assert_eq!(details.len(), 1);
     assert_eq!(
         details[0].summary.as_deref(),
@@ -131,9 +123,7 @@ fn telemetry_accumulator_filters_expected_tool_outcomes() {
         summary: Some("result=invalid_args".into()),
     });
 
-    let health = acc.assistant_health_entry().unwrap();
-    assert_eq!(health.tool_errors, 1);
-    let details = health.details.unwrap();
+    let details = acc.assistant_error_details().unwrap();
     assert_eq!(details.len(), 1);
     assert_eq!(details[0].summary.as_deref(), Some("result=invalid_args"));
 }
