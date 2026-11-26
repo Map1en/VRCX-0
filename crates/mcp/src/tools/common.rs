@@ -78,6 +78,29 @@ impl TimeWindowParams {
         window.source = Some(source);
         Ok(window)
     }
+
+    pub(super) fn requests_all_history(&self) -> bool {
+        matches!(&self.source, Some(Value::String(text)) if is_all_history_phrase(&text.trim().to_ascii_lowercase()))
+    }
+}
+
+fn is_all_history_phrase(normalized: &str) -> bool {
+    matches!(
+        normalized,
+        "all"
+            | "all time"
+            | "alltime"
+            | "all history"
+            | "all-history"
+            | "entire history"
+            | "any"
+            | "anytime"
+            | "ever"
+            | "always"
+            | "so far"
+            | "forever"
+            | "lifetime"
+    )
 }
 
 impl schemars::JsonSchema for TimeWindowParams {
@@ -240,11 +263,10 @@ fn parse_relative_window(
         source: None,
     };
 
+    if normalized.is_empty() || is_all_history_phrase(&normalized) {
+        return Ok(TimeWindowParams::default());
+    }
     match normalized.as_str() {
-        "" | "all" | "all time" | "alltime" | "all history" | "all-history" | "entire history"
-        | "any" | "anytime" | "ever" | "always" | "so far" | "forever" | "lifetime" => {
-            return Ok(TimeWindowParams::default());
-        }
         "today" => return Ok(window(rfc(today), None)),
         "yesterday" => {
             return Ok(window(rfc(today - Duration::days(1)), rfc(today)));

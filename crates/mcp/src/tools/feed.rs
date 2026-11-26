@@ -36,7 +36,7 @@ static FRIEND_FEED_SEARCH_PERMIT: Semaphore = Semaphore::const_new(1);
 #[tool_router(router = feed_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L1·query] Search observed persisted friend Feed events (GPS, online/offline, status, bio, avatar), newest first. Use for exact event evidence, not current state or aggregate counts. Pass target when known and narrow with eventTypes/timeWindow. A search with neither target nor a lower time bound requires allHistory=true. Returns at most 50 rows plus nextCursor; request another page only when needed. History is incomplete and private locations may be redacted.",
+        description = "[L1·query] Search observed persisted friend Feed events (GPS, online/offline, status, bio, avatar), newest first. Use for exact event evidence, not current state or aggregate counts. Pass target when known and narrow with eventTypes/timeWindow. A search with neither target nor a lower time bound requires allHistory=true or timeWindow=\"all\". Returns at most 50 rows plus nextCursor; request another page only when needed. History is incomplete and private locations may be redacted.",
         annotations(read_only_hint = true)
     )]
     async fn search_friend_feed(
@@ -66,8 +66,9 @@ impl VrcxMcpServer {
             ));
         }
 
-        let time_window: social_aggregates::TimeWindow =
-            input.time_window.unwrap_or_default().into();
+        let time_window = input.time_window.unwrap_or_default();
+        let all_history = input.all_history == Some(true) || time_window.requests_all_history();
+        let time_window: social_aggregates::TimeWindow = time_window.into();
         let date_from = canonical_time_bound(time_window.from)?;
         let date_to = canonical_time_bound(time_window.to)?;
         if !date_from.is_empty() && !date_to.is_empty() && date_from > date_to {
@@ -75,9 +76,9 @@ impl VrcxMcpServer {
                 "search_friend_feed timeWindow.from must not be after timeWindow.to".into(),
             );
         }
-        if target_user_id.is_none() && date_from.is_empty() && input.all_history != Some(true) {
+        if target_user_id.is_none() && date_from.is_empty() && !all_history {
             return Err(
-                "search_friend_feed global searches require timeWindow with a lower bound; for an explicit all-history request set allHistory=true. Broad all-history searches may be slow on large local databases."
+                "search_friend_feed global searches require timeWindow with a lower bound; for an explicit all-history request set allHistory=true or timeWindow=\"all\". Broad all-history searches may be slow on large local databases."
                     .into(),
             );
         }

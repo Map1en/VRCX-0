@@ -336,6 +336,38 @@ async fn friend_feed_search_resolves_target_pages_results_and_guards_global_hist
         .unwrap();
     assert!(unbounded.is_error);
     assert!(unbounded.text.contains("allHistory=true"));
+
+    let explicit_all_window = tools
+        .call_tool(
+            "search_friend_feed",
+            Some(Map::from_iter([
+                ("eventTypes".into(), json!(["bio"])),
+                ("timeWindow".into(), json!("all")),
+            ])),
+        )
+        .await
+        .unwrap();
+    assert!(
+        !explicit_all_window.is_error,
+        "{}",
+        explicit_all_window.text
+    );
+    assert_eq!(
+        explicit_all_window.structured.unwrap()["rows"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+
+    let empty_window = tools
+        .call_tool(
+            "search_friend_feed",
+            Some(Map::from_iter([("timeWindow".into(), json!(""))])),
+        )
+        .await
+        .unwrap();
+    assert!(empty_window.is_error);
 }
 
 #[tokio::test]
