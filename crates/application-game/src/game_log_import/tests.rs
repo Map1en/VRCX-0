@@ -10,6 +10,7 @@ use crate::ports::TestGameStateStore;
 
 const AUTH_SELF: &str = "2026.06.21 22:00:00 Debug      -  User Authenticated: Me (usr_self)";
 const AUTH_OTHER: &str = "2026.06.21 22:30:00 Debug      -  User Authenticated: Alt (usr_other)";
+const POST_LOGIN_SELF: &str = "2026.06.21 22:00:00 Debug      -  [Authentication - ÎÍÎÏ] Preforming post login checks for Me (usr_self)";
 const SESSION: [&str; 8] = [
     "2026.06.21 22:10:00 Log        -  [Behaviour] Entering Room: Midnight Rooftop",
     "2026.06.21 22:10:05 Log        -  [Behaviour] Joining wrld_abc:123",
@@ -78,8 +79,13 @@ fn inspect_classifies_the_account_that_produced_the_log() {
     let other = dir.write("other.txt", &session_with(&[AUTH_OTHER]));
     let switched = dir.write("switched.txt", &session_with(&[AUTH_SELF, AUTH_OTHER]));
     let unknown = dir.write("unknown.txt", &SESSION);
+    let own_post_login = dir.write("own-post-login.txt", &session_with(&[POST_LOGIN_SELF]));
 
     assert_eq!(status_of(&own, false), GameLogImportFileStatus::Ready);
+    assert_eq!(
+        status_of(&own_post_login, false),
+        GameLogImportFileStatus::Ready
+    );
     assert_eq!(
         status_of(&other, false),
         GameLogImportFileStatus::AccountMismatch

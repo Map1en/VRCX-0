@@ -45,10 +45,13 @@ pub fn parse_log_line_header(line: &str) -> Option<(chrono::NaiveDateTime, &str)
 }
 
 pub fn parse_authenticated_user(content: &str) -> Option<(&str, &str)> {
-    let (display_name, user_id) = content
-        .strip_prefix("User Authenticated: ")?
-        .strip_suffix(')')?
-        .rsplit_once(" (")?;
+    let subject = content.strip_prefix("User Authenticated: ").or_else(|| {
+        content
+            .strip_prefix("[Authentication")?
+            .split_once("] Preforming post login checks for ")
+            .map(|(_, subject)| subject)
+    })?;
+    let (display_name, user_id) = subject.strip_suffix(')')?.rsplit_once(" (")?;
     user_id
         .starts_with("usr_")
         .then_some((display_name, user_id))
@@ -389,10 +392,23 @@ mod tests {
             ))
         );
 
+        let line = "2026.11.27 01:12:16 Debug      -  [Authentication - ÎÍÎÏÏÌÍÌÏÏÍÏÎÌÌÏÌÏÌÍÏÌÍ] Preforming post login checks for Name (with) parens (usr_63f57413-1470-4703-b655-50b7c0845414)";
+        let (_, content) = parse_log_line_header(line).unwrap();
+        assert_eq!(
+            parse_authenticated_user(content),
+            Some((
+                "Name (with) parens",
+                "usr_63f57413-1470-4703-b655-50b7c0845414"
+            ))
+        );
+
         for content in [
             "User Authenticated: Name",
             "User Authenticated: Name (grp_1)",
             "[Behaviour] User Authenticated: Name (usr_1)",
+            "[Authentication - x] Preforming post login checks for Name",
+            "[Authentication - x] Preforming post login checks for Name (grp_1)",
+            "[Behaviour] Preforming post login checks for Name (usr_1)",
         ] {
             assert_eq!(parse_authenticated_user(content), None);
         }
