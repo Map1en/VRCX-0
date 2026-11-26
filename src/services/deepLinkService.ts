@@ -249,8 +249,9 @@ async function importSharedCollectionFlow(collectionId: string): Promise<void> {
         }
         let existingGroups: string[];
         try {
-            existingGroups = (await commands.appFavoriteLocalSnapshot('world'))
-                .groupNames;
+            existingGroups = (
+                await commands.appFavoriteLocalSnapshot('world')
+            ).groups.map((group) => group.name);
         } catch (error) {
             toast.add({
                 type: 'error',

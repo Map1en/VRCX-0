@@ -1,9 +1,11 @@
-use std::collections::BTreeSet;
+use std::collections::HashMap;
 
-use crate::common::{normalize_text, row_i64, ParamsBuilder};
+use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
 use crate::config::{self, ensure_config_table, resolve_config_key};
 use crate::database::schema::{ensure_assistant_tables, ensure_global_store_tables};
-use crate::database::DatabaseService;
+use crate::database::{DatabaseService, DatabaseWriteTransaction};
+use crate::favorites::group_refs::rewrite_config_references;
+use crate::favorites::{GROUP_TABLE, ITEM_TABLE};
 use crate::ownership::{owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 
@@ -11,7 +13,6 @@ use super::schema::*;
 use super::tables::ensure_game_log_tables;
 
 const OWNERSHIP_DECIDED_KEY: &str = "VRCX_0_legacyOwnershipDecided";
-const LEGACY_FRIEND_GROUPS_KEY: &str = "localFavoriteFriendGroups";
 
 pub(crate) fn claim_legacy_ownership(
     db: &DatabaseService,
@@ -33,16 +34,6 @@ pub(crate) fn claim_legacy_ownership(
     } else {
         OwnerRowId::UNASSIGNED
     };
-    let legacy_groups = should_claim
-        .then(|| config::get_raw(db, LEGACY_FRIEND_GROUPS_KEY))
-        .transpose()?
-        .flatten();
-    let account_groups_key = format!("{LEGACY_FRIEND_GROUPS_KEY}:{owner_user_id}");
-    let account_groups = should_claim
-        .then(|| config::get_raw(db, &account_groups_key))
-        .transpose()?
-        .flatten();
-
     db.write_transaction(|tx| {
         if should_claim {
             let params = ParamsBuilder::new().set("owner_id", owner_id).build();
@@ -54,7 +45,6 @@ pub(crate) fn claim_legacy_ownership(
                 TABLE_RESOURCE_LOAD,
                 TABLE_EVENT,
                 TABLE_EXTERNAL,
-                "favorite_friend",
                 "assistant_session",
             ] {
                 tx.execute_non_query(
@@ -64,24 +54,7 @@ pub(crate) fn claim_legacy_ownership(
                     &params,
                 )?;
             }
-
-            if let Some(groups) =
-                merge_group_configs(account_groups.as_deref(), legacy_groups.as_deref())
-            {
-                tx.execute_non_query(
-                    "INSERT OR REPLACE INTO configs (key, value) VALUES (@key, @value)",
-                    &ParamsBuilder::new()
-                        .set("key", resolve_config_key(&account_groups_key))
-                        .set("value", groups)
-                        .build(),
-                )?;
-            }
-            tx.execute_non_query(
-                "DELETE FROM configs WHERE key = @key",
-                &ParamsBuilder::new()
-                    .set("key", resolve_config_key(LEGACY_FRIEND_GROUPS_KEY))
-                    .build(),
-            )?;
+            claim_shared_friend_groups(tx, owner_id)?;
         }
 
         tx.execute_non_query(
@@ -105,31 +78,94 @@ fn count_user_table_prefixes(db: &DatabaseService) -> Result<i64, Error> {
         .unwrap_or(0))
 }
 
-fn merge_group_configs(account: Option<&str>, legacy: Option<&str>) -> Option<String> {
-    match (account, legacy) {
-        (None, None) => None,
-        (Some(value), None) | (None, Some(value)) => Some(value.to_string()),
-        (Some(account), Some(legacy)) => {
-            let mut groups = parse_group_config(account);
-            groups.extend(parse_group_config(legacy));
-            serde_json::to_string(&groups).ok()
-        }
+fn claim_shared_friend_groups(
+    tx: &DatabaseWriteTransaction<'_>,
+    owner_id: OwnerRowId,
+) -> Result<(), Error> {
+    let params = ParamsBuilder::new().set("owner_id", owner_id).build();
+    let next_sort_order = tx
+        .execute(
+            &format!(
+                "SELECT COALESCE(MAX(sort_order) + 1, 0) FROM {GROUP_TABLE} WHERE kind = 'friend' AND owner_id = @owner_id"
+            ),
+            &params,
+        )?
+        .first()
+        .map(|row| row_i64(row, 0))
+        .unwrap_or_default();
+    let shared = tx.execute(
+        &format!(
+            "SELECT id, name FROM {GROUP_TABLE} WHERE kind = 'friend' AND owner_id = 0 ORDER BY sort_order, id"
+        ),
+        &Default::default(),
+    )?;
+    let mut merged: HashMap<String, i64> = HashMap::new();
+    for (position, row) in shared.iter().enumerate() {
+        let shared_id = row_i64(row, 0);
+        let existing = tx.execute(
+            &format!(
+                "SELECT id FROM {GROUP_TABLE} WHERE kind = 'friend' AND owner_id = @owner_id AND name = @name"
+            ),
+            &ParamsBuilder::new()
+                .set("owner_id", owner_id)
+                .set("name", row_string(row, 1))
+                .build(),
+        )?;
+        let Some(account_id) = existing.first().map(|row| row_i64(row, 0)) else {
+            tx.execute_non_query(
+                &format!(
+                    "UPDATE {GROUP_TABLE} SET owner_id = @owner_id, sort_order = @sort_order WHERE id = @group_id"
+                ),
+                &ParamsBuilder::new()
+                    .set("owner_id", owner_id)
+                    .set("sort_order", next_sort_order + position as i64)
+                    .set("group_id", shared_id)
+                    .build(),
+            )?;
+            continue;
+        };
+        let group_params = ParamsBuilder::new()
+            .set("shared_id", shared_id)
+            .set("account_id", account_id)
+            .build();
+        tx.execute_non_query(
+            &format!(
+                "INSERT OR IGNORE INTO {ITEM_TABLE} (group_id, entity_id, created_at) SELECT @account_id, entity_id, created_at FROM {ITEM_TABLE} WHERE group_id = @shared_id ORDER BY id"
+            ),
+            &group_params,
+        )?;
+        tx.execute_non_query(
+            &format!("DELETE FROM {ITEM_TABLE} WHERE group_id = @shared_id"),
+            &group_params,
+        )?;
+        tx.execute_non_query(
+            &format!("DELETE FROM {GROUP_TABLE} WHERE id = @shared_id"),
+            &group_params,
+        )?;
+        merged.insert(shared_id.to_string(), account_id);
     }
-}
-
-fn parse_group_config(value: &str) -> BTreeSet<String> {
-    serde_json::from_str::<Vec<String>>(value)
-        .unwrap_or_default()
-        .into_iter()
-        .map(normalize_text)
-        .filter(|value| !value.is_empty())
-        .collect()
+    if merged.is_empty() {
+        return Ok(());
+    }
+    rewrite_config_references(tx, &|_, token| merged.get(token).map(|id| vec![*id]))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::favorites::{
+        favorite_add, favorite_group_create, favorite_group_list, favorite_list,
+    };
     use crate::ownership::owner_id_get;
+    use vrcx_0_core::FavoriteEntityKind;
+
+    fn friend_groups(db: &DatabaseService, owner: &str) -> Vec<(String, bool)> {
+        favorite_group_list(db, Some(&OwnerId::new(owner)), FavoriteEntityKind::Friend)
+            .unwrap()
+            .into_iter()
+            .map(|group| (group.name, group.shared))
+            .collect()
+    }
 
     fn test_db(name: &str) -> DatabaseService {
         let nonce = std::time::SystemTime::now()
@@ -163,11 +199,17 @@ mod tests {
             )
             .unwrap();
         }
-        db.execute_non_query(
-            "INSERT INTO favorite_friend (created_at, user_id, group_name) VALUES ('t0', 'usr_friend', 'legacy')",
-            &Default::default(),
-        )
-        .unwrap();
+        for (name, user_id) in [("legacy", "usr_friend"), ("same", "usr_shared")] {
+            let group = favorite_group_create(db, None, FavoriteEntityKind::Friend, name).unwrap();
+            favorite_add(
+                db,
+                None,
+                FavoriteEntityKind::Friend,
+                user_id.into(),
+                group.id,
+            )
+            .unwrap();
+        }
         db.execute_non_query(
             "INSERT INTO assistant_session (id) VALUES ('ses_legacy')",
             &Default::default(),
@@ -188,20 +230,33 @@ mod tests {
         let db = test_db("single");
         seed_legacy_rows(&db);
         create_prefix_marker(&db, "usr_a");
-        config::set_json(
+        let owner_a = OwnerId::new("usr_a");
+        let account_same =
+            favorite_group_create(&db, Some(&owner_a), FavoriteEntityKind::Friend, "same").unwrap();
+        favorite_add(
             &db,
-            LEGACY_FRIEND_GROUPS_KEY,
-            &serde_json::json!(["legacy", "same"]),
+            Some(&owner_a),
+            FavoriteEntityKind::Friend,
+            "usr_account".into(),
+            account_same.id,
         )
         .unwrap();
+        let shared_same = favorite_group_list(&db, None, FavoriteEntityKind::Friend)
+            .unwrap()
+            .into_iter()
+            .find(|group| group.name == "same")
+            .unwrap();
         config::set_json(
             &db,
-            "localFavoriteFriendGroups:usr_a",
-            &serde_json::json!(["account", "same"]),
+            "sidebarFavoriteGroups",
+            &serde_json::json!([
+                format!("local:{}", shared_same.id),
+                format!("local:{}", account_same.id)
+            ]),
         )
         .unwrap();
 
-        claim_legacy_ownership(&db, &OwnerId::new("usr_a")).unwrap();
+        claim_legacy_ownership(&db, &owner_a).unwrap();
         claim_legacy_ownership(&db, &OwnerId::new("usr_b")).unwrap();
 
         let owner_id = owner_id_get(&db, &OwnerId::new("usr_a")).unwrap().unwrap();
@@ -213,7 +268,6 @@ mod tests {
             TABLE_RESOURCE_LOAD,
             TABLE_EVENT,
             TABLE_EXTERNAL,
-            "favorite_friend",
             "assistant_session",
         ] {
             let sql = format!("SELECT owner_id FROM {table} LIMIT 1");
@@ -223,17 +277,27 @@ mod tests {
             );
         }
         assert_eq!(
-            config::get_json(
-                &db,
-                "localFavoriteFriendGroups:usr_a",
-                serde_json::Value::Null
-            )
-            .unwrap(),
-            serde_json::json!(["account", "legacy", "same"])
+            friend_groups(&db, "usr_a"),
+            vec![("same".to_string(), false), ("legacy".to_string(), false)]
+        );
+        assert!(friend_groups(&db, "usr_b").is_empty());
+        let mut members = favorite_list(&db, Some(&owner_a), FavoriteEntityKind::Friend)
+            .unwrap()
+            .into_iter()
+            .map(|row| (row.group_name.clone(), row.entity_id().to_string()))
+            .collect::<Vec<_>>();
+        members.sort();
+        assert_eq!(
+            members,
+            vec![
+                ("legacy".to_string(), "usr_friend".to_string()),
+                ("same".to_string(), "usr_account".to_string()),
+                ("same".to_string(), "usr_shared".to_string()),
+            ]
         );
         assert_eq!(
-            config::get_raw(&db, LEGACY_FRIEND_GROUPS_KEY).unwrap(),
-            None
+            config::get_json(&db, "sidebarFavoriteGroups", serde_json::Value::Null).unwrap(),
+            serde_json::json!([format!("local:{}", account_same.id)])
         );
         assert_eq!(
             config::get_string(&db, OWNERSHIP_DECIDED_KEY, "0").unwrap(),
@@ -259,7 +323,6 @@ mod tests {
             TABLE_RESOURCE_LOAD,
             TABLE_EVENT,
             TABLE_EXTERNAL,
-            "favorite_friend",
             "assistant_session",
         ] {
             let sql = format!("SELECT owner_id FROM {table} LIMIT 1");
@@ -268,6 +331,10 @@ mod tests {
                 0
             );
         }
+        assert_eq!(
+            friend_groups(&db, "usr_a"),
+            vec![("legacy".to_string(), true), ("same".to_string(), true)]
+        );
         assert_eq!(
             config::get_string(&db, OWNERSHIP_DECIDED_KEY, "0").unwrap(),
             "1"

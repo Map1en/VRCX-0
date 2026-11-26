@@ -75,9 +75,15 @@ describe('favoriteAvatarCacheService', () => {
         await expect(cacheFavoriteAvatarDetails(avatar)).resolves.toBe(false);
         expect(commands.appFavoriteCacheSnapshot).not.toHaveBeenCalled();
 
+        useFavoriteStore.getState().createLocalFavoriteGroup({
+            id: 1,
+            kind: 'avatar',
+            name: 'Keep',
+            shared: false
+        });
         useFavoriteStore.getState().addLocalFavorite({
             kind: 'avatar',
-            groupName: 'Keep',
+            groupId: 1,
             entityId: 'avtr_cached',
             entity: avatar
         });

@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/components/favorites/useLocalWorldFavorites', () => ({
     useLocalWorldFavorites: () => ({
         favoritesByGroup: {},
-        groupNames: [],
+        groups: [],
         reload: vi.fn(),
         status: 'ready'
     })
@@ -64,6 +64,7 @@ vi.mock('@/state/favoriteStore', () => ({
             localAvatarFavorites: {},
             localFriendFavoriteGroups: [],
             localFriendFavorites: {},
+            loadStatus: 'ready',
             remoteFavoritesByObjectId: {},
             ...mocks.favoriteState
         })
@@ -168,6 +169,7 @@ type FavoriteStoreState = {
     localAvatarFavorites: {};
     localFriendFavoriteGroups: [];
     localFriendFavorites: {};
+    loadStatus: 'ready';
     remoteFavoritesByObjectId: {};
 };
 
@@ -178,7 +180,11 @@ type ModalStoreState = {
 describe('FavoriteActionMenu local group creation', () => {
     beforeEach(() => {
         mocks.addLocalFavorite.mockReset().mockResolvedValue(1);
-        mocks.createLocalFavoriteGroup.mockReset().mockResolvedValue(undefined);
+        mocks.createLocalFavoriteGroup
+            .mockReset()
+            .mockImplementation(({ kind, name }) =>
+                Promise.resolve({ id: 42, kind, name, shared: false })
+            );
         mocks.prompt.mockReset().mockResolvedValue({
             ok: true,
             value: 'Frequently used'
@@ -214,14 +220,49 @@ describe('FavoriteActionMenu local group creation', () => {
             await waitFor(() =>
                 expect(mocks.createLocalFavoriteGroup).toHaveBeenCalledWith({
                     kind,
-                    groupName: 'Frequently used'
+                    name: 'Frequently used'
                 })
             );
             expect(mocks.addLocalFavorite).toHaveBeenCalledWith({
                 kind,
                 entityId,
-                groupName: 'Frequently used'
+                groupId: 42
             });
+        }
+    );
+
+    it.each<[FavoriteKind, string]>([
+        ['friend', 'usr_friend'],
+        ['world', 'wrld_world'],
+        ['avatar', 'avtr_avatar']
+    ])(
+        'creates a Favorites group on the first local %s favorite',
+        async (kind, entityId) => {
+            render(
+                <FavoriteActionMenu
+                    kind={kind}
+                    entityId={entityId}
+                    entity={{ id: entityId, name: entityId }}
+                    iconOnly
+                />
+            );
+
+            fireEvent.click(
+                screen.getByRole('menuitemcheckbox', { name: 'Favorites (0)' })
+            );
+
+            await waitFor(() =>
+                expect(mocks.addLocalFavorite).toHaveBeenCalledWith({
+                    kind,
+                    entityId,
+                    groupId: 42
+                })
+            );
+            expect(mocks.createLocalFavoriteGroup).toHaveBeenCalledWith({
+                kind,
+                name: 'Favorites'
+            });
+            expect(mocks.prompt).not.toHaveBeenCalled();
         }
     );
 });

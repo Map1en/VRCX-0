@@ -1,16 +1,19 @@
-use serde_json::json;
-pub use vrcx_0_contracts::FavoriteRow;
+pub use vrcx_0_contracts::{FavoriteRow, LocalFavoriteGroup};
 use vrcx_0_core::FavoriteEntityKind;
 
-use crate::common::{normalize_text, now_iso, row_string, ParamsBuilder};
-use crate::config::{ensure_config_table, resolve_config_key};
+use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 
-const LOCAL_GROUP_CONFIG_UPSERT_SQL: &str =
-    "INSERT OR REPLACE INTO configs (key, value) VALUES (@key, @value)";
+pub(crate) mod group_refs;
+pub(crate) mod migration_v1;
+
+pub(crate) const GROUP_TABLE: &str = "vrcx0_favorite_group";
+pub(crate) const ITEM_TABLE: &str = "vrcx0_favorite_item";
+
+const VISIBLE_GROUP: &str = "g.kind = @kind AND g.owner_id IN (0, @owner_id)";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FavoriteMoveResult {
@@ -18,12 +21,140 @@ pub struct FavoriteMoveResult {
     pub added: i64,
 }
 
+pub fn favorite_group_list(
+    db: &DatabaseService,
+    owner_user_id: Option<&OwnerId>,
+    kind: FavoriteEntityKind,
+) -> Result<Vec<LocalFavoriteGroup>, Error> {
+    ensure_global_store_tables(db)?;
+    let owner_id = read_owner(db, kind, owner_user_id)?;
+    Ok(db
+        .execute(&group_list_sql(), &scope_params(kind, owner_id).build())?
+        .into_iter()
+        .map(|row| group_from_row(kind, &row))
+        .collect())
+}
+
+fn group_list_sql() -> String {
+    format!(
+        "SELECT g.id, g.name, g.owner_id FROM {GROUP_TABLE} g WHERE {VISIBLE_GROUP} ORDER BY (g.owner_id = 0), g.sort_order, g.id"
+    )
+}
+
+pub fn favorite_group_create(
+    db: &DatabaseService,
+    owner_user_id: Option<&OwnerId>,
+    kind: FavoriteEntityKind,
+    name: &str,
+) -> Result<LocalFavoriteGroup, Error> {
+    ensure_global_store_tables(db)?;
+    let name = require_group_name(name)?;
+    let owner_id = write_owner(db, kind, owner_user_id)?;
+    db.write_transaction(|tx| ensure_group_in_realm(tx, kind, owner_id, &name))
+}
+
+pub fn favorite_group_rename(
+    db: &DatabaseService,
+    owner_user_id: Option<&OwnerId>,
+    kind: FavoriteEntityKind,
+    group_id: i64,
+    name: &str,
+) -> Result<i64, Error> {
+    ensure_global_store_tables(db)?;
+    let name = require_group_name(name)?;
+    let owner_id = read_owner(db, kind, owner_user_id)?;
+    db.write_transaction(|tx| {
+        let (group_owner, current_name) = visible_group(tx, kind, owner_id, group_id)?;
+        if current_name == name {
+            return Ok(0);
+        }
+        let clash = tx.execute(
+            &format!(
+                "SELECT 1 FROM {GROUP_TABLE} WHERE kind = @kind AND owner_id = @owner_id AND name = @name AND id <> @group_id"
+            ),
+            &scope_params(kind, group_owner)
+                .set("name", name.clone())
+                .set("group_id", group_id)
+                .build(),
+        )?;
+        if !clash.is_empty() {
+            return Err(Error::Custom(
+                "A local favorite group with this name already exists.".into(),
+            ));
+        }
+        tx.execute_non_query(
+            &format!("UPDATE {GROUP_TABLE} SET name = @name WHERE id = @group_id"),
+            &ParamsBuilder::new()
+                .set("name", name.clone())
+                .set("group_id", group_id)
+                .build(),
+        )
+    })
+}
+
+pub fn favorite_group_delete(
+    db: &DatabaseService,
+    owner_user_id: Option<&OwnerId>,
+    kind: FavoriteEntityKind,
+    group_id: i64,
+) -> Result<i64, Error> {
+    ensure_global_store_tables(db)?;
+    let owner_id = read_owner(db, kind, owner_user_id)?;
+    db.write_transaction(|tx| {
+        visible_group(tx, kind, owner_id, group_id)?;
+        let params = ParamsBuilder::new().set("group_id", group_id).build();
+        let removed = tx.execute_non_query(
+            &format!("DELETE FROM {ITEM_TABLE} WHERE group_id = @group_id"),
+            &params,
+        )?;
+        tx.execute_non_query(
+            &format!("DELETE FROM {GROUP_TABLE} WHERE id = @group_id"),
+            &params,
+        )?;
+        Ok(removed)
+    })
+}
+
+pub fn favorite_group_reorder(
+    db: &DatabaseService,
+    owner_user_id: Option<&OwnerId>,
+    kind: FavoriteEntityKind,
+    group_ids: &[i64],
+) -> Result<Vec<LocalFavoriteGroup>, Error> {
+    ensure_global_store_tables(db)?;
+    let owner_id = read_owner(db, kind, owner_user_id)?;
+    db.write_transaction(|tx| {
+        let current = tx
+            .execute(&group_list_sql(), &scope_params(kind, owner_id).build())?
+            .into_iter()
+            .map(|row| row_i64(&row, 0))
+            .collect::<Vec<_>>();
+        let mut order: Vec<i64> = Vec::with_capacity(current.len());
+        for group_id in group_ids.iter().chain(current.iter()) {
+            if current.contains(group_id) && !order.contains(group_id) {
+                order.push(*group_id);
+            }
+        }
+        for (position, group_id) in order.iter().enumerate() {
+            tx.execute_non_query(
+                &format!("UPDATE {GROUP_TABLE} SET sort_order = @sort_order WHERE id = @group_id"),
+                &ParamsBuilder::new()
+                    .set("sort_order", position as i64)
+                    .set("group_id", *group_id)
+                    .build(),
+            )?;
+        }
+        Ok(())
+    })?;
+    favorite_group_list(db, owner_user_id, kind)
+}
+
 pub fn favorite_list(
     db: &DatabaseService,
     owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
 ) -> Result<Vec<FavoriteRow>, Error> {
-    favorite_list_ordered(db, owner_user_id, kind, "id")
+    favorite_list_ordered(db, owner_user_id, kind, "i.id")
 }
 
 pub fn favorite_list_custom_order(
@@ -31,7 +162,12 @@ pub fn favorite_list_custom_order(
     owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
 ) -> Result<Vec<FavoriteRow>, Error> {
-    favorite_list_ordered(db, owner_user_id, kind, "COALESCE(sort_order, -id), id")
+    favorite_list_ordered(
+        db,
+        owner_user_id,
+        kind,
+        "COALESCE(i.sort_order, -i.id), i.id",
+    )
 }
 
 fn favorite_list_ordered(
@@ -41,15 +177,13 @@ fn favorite_list_ordered(
     order_by: &str,
 ) -> Result<Vec<FavoriteRow>, Error> {
     ensure_global_store_tables(db)?;
-    let (table, column, _) = normalize_kind(kind);
-    let owner_id = owner_id_for_kind_read(db, kind, owner_user_id)?;
+    let owner_id = read_owner(db, kind, owner_user_id)?;
     Ok(db
         .execute(
             &format!(
-                "SELECT created_at, {column}, group_name FROM {table} {} ORDER BY {order_by}",
-                visible_owner_where(kind)
+                "SELECT i.created_at, i.entity_id, g.id, g.name FROM {ITEM_TABLE} i JOIN {GROUP_TABLE} g ON g.id = i.group_id WHERE {VISIBLE_GROUP} ORDER BY {order_by}"
             ),
-            &ParamsBuilder::new().set("owner_id", owner_id).build(),
+            &scope_params(kind, owner_id).build(),
         )?
         .into_iter()
         .map(|row| {
@@ -57,7 +191,8 @@ fn favorite_list_ordered(
                 kind,
                 row_string(&row, 0),
                 row_string(&row, 1),
-                row_string(&row, 2),
+                row_i64(&row, 2),
+                row_string(&row, 3),
             )
         })
         .collect())
@@ -68,27 +203,15 @@ pub fn favorite_add(
     owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
-    group_name: String,
+    group_id: i64,
 ) -> Result<i64, Error> {
     ensure_global_store_tables(db)?;
-    let (table, column, entity_param) = normalize_kind(kind);
-    let owner_id = owner_id_for_kind_write(db, kind, owner_user_id)?;
-    let OwnerInsertParts {
-        column_sql: owner_column,
-        value_sql: owner_value,
-    } = owner_insert_parts(kind);
-    db.execute_non_query(
-        &format!(
-            "INSERT OR IGNORE INTO {table} ({column}, group_name, created_at{owner_column}) SELECT {entity_param}, @group_name, @created_at{owner_value} WHERE NOT EXISTS (SELECT 1 FROM {table} WHERE {column} = {entity_param} AND group_name = @group_name {})",
-            visible_owner_and(kind)
-        ),
-        &ParamsBuilder::new()
-            .set(entity_param, normalize_text(entity_id))
-            .set("group_name", normalize_text(group_name))
-            .set("created_at", now_iso())
-            .set("owner_id", owner_id)
-            .build(),
-    )
+    let entity_id = require_entity_id(entity_id)?;
+    let owner_id = read_owner(db, kind, owner_user_id)?;
+    db.write_transaction(|tx| {
+        visible_group(tx, kind, owner_id, group_id)?;
+        insert_item(tx, group_id, &entity_id)
+    })
 }
 
 pub fn favorite_remove(
@@ -96,20 +219,17 @@ pub fn favorite_remove(
     owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
-    group_name: String,
+    group_id: i64,
 ) -> Result<i64, Error> {
     ensure_global_store_tables(db)?;
-    let (table, column, _) = normalize_kind(kind);
-    let owner_id = owner_id_for_kind_read(db, kind, owner_user_id)?;
+    let owner_id = read_owner(db, kind, owner_user_id)?;
     db.execute_non_query(
         &format!(
-            "DELETE FROM {table} WHERE {column} = @entity_id AND group_name = @group_name {}",
-            visible_owner_and(kind)
+            "DELETE FROM {ITEM_TABLE} WHERE group_id = @group_id AND entity_id = @entity_id AND group_id IN (SELECT g.id FROM {GROUP_TABLE} g WHERE {VISIBLE_GROUP})"
         ),
-        &ParamsBuilder::new()
+        &scope_params(kind, owner_id)
+            .set("group_id", group_id)
             .set("entity_id", normalize_text(entity_id))
-            .set("group_name", normalize_text(group_name))
-            .set("owner_id", owner_id)
             .build(),
     )
 }
@@ -119,54 +239,31 @@ pub fn favorite_move(
     owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
-    source_group_name: String,
-    target_group_name: String,
+    source_group_id: i64,
+    target_group_id: i64,
 ) -> Result<FavoriteMoveResult, Error> {
     ensure_global_store_tables(db)?;
-    let (table, column, entity_param) = normalize_kind(kind);
-    let normalized_entity_id = normalize_text(entity_id);
-    let normalized_source_group_name = normalize_text(source_group_name);
-    let normalized_target_group_name = normalize_text(target_group_name);
-    let owner_id = owner_id_for_kind_write(db, kind, owner_user_id)?;
-    let OwnerInsertParts {
-        column_sql: owner_column,
-        value_sql: owner_value,
-    } = owner_insert_parts(kind);
-    if normalized_entity_id.is_empty() {
-        return Err(Error::Custom("favorite_move requires entity id".into()));
-    }
-    if normalized_source_group_name.is_empty() {
-        return Err(Error::Custom(
-            "favorite_move requires source group name".into(),
-        ));
-    }
-
+    let entity_id = require_entity_id(entity_id)?;
+    let owner_id = read_owner(db, kind, owner_user_id)?;
     db.write_transaction(|tx| {
-        let removed = tx.execute_non_query(
-            &format!("DELETE FROM {table} WHERE {column} = @entity_id AND group_name = @group_name {}", visible_owner_and(kind)),
-            &ParamsBuilder::new()
-                .set("entity_id", normalized_entity_id.clone())
-                .set("group_name", normalized_source_group_name)
-                .set("owner_id", owner_id)
-                .build(),
-        )?;
-        if normalized_target_group_name.is_empty() {
-            return Err(Error::Custom(
-                "favorite_move requires target group name".into(),
-            ));
+        visible_group(tx, kind, owner_id, source_group_id)?;
+        visible_group(tx, kind, owner_id, target_group_id)?;
+        if source_group_id == target_group_id {
+            return Ok(FavoriteMoveResult {
+                removed: 0,
+                added: 0,
+            });
         }
-        let added = tx.execute_non_query(
+        let removed = tx.execute_non_query(
             &format!(
-                "INSERT OR IGNORE INTO {table} ({column}, group_name, created_at{owner_column}) SELECT {entity_param}, @group_name, @created_at{owner_value} WHERE NOT EXISTS (SELECT 1 FROM {table} WHERE {column} = {entity_param} AND group_name = @group_name {})",
-                visible_owner_and(kind)
+                "DELETE FROM {ITEM_TABLE} WHERE group_id = @group_id AND entity_id = @entity_id"
             ),
             &ParamsBuilder::new()
-                .set(entity_param, normalized_entity_id)
-                .set("group_name", normalized_target_group_name)
-                .set("created_at", now_iso())
-                .set("owner_id", owner_id)
+                .set("group_id", source_group_id)
+                .set("entity_id", entity_id.clone())
                 .build(),
         )?;
+        let added = insert_item(tx, target_group_id, &entity_id)?;
         Ok(FavoriteMoveResult { removed, added })
     })
 }
@@ -175,30 +272,23 @@ pub fn favorite_reorder(
     db: &DatabaseService,
     owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
-    group_name: String,
+    group_id: i64,
     entity_ids: Vec<String>,
 ) -> Result<i64, Error> {
     ensure_global_store_tables(db)?;
-    let (table, column, _) = normalize_kind(kind);
-    let normalized_group_name = normalize_text(group_name);
-    if normalized_group_name.is_empty() {
-        return Err(Error::Custom("favorite_reorder requires group name".into()));
-    }
-    let owner_id = owner_id_for_kind_read(db, kind, owner_user_id)?;
-    let sql = format!(
-        "UPDATE {table} SET sort_order = @sort_order WHERE {column} = @entity_id AND group_name = @group_name {}",
-        visible_owner_and(kind)
-    );
+    let owner_id = read_owner(db, kind, owner_user_id)?;
     db.write_transaction(|tx| {
+        visible_group(tx, kind, owner_id, group_id)?;
         let mut affected = 0;
         for (position, entity_id) in entity_ids.into_iter().enumerate() {
             affected += tx.execute_non_query(
-                &sql,
+                &format!(
+                    "UPDATE {ITEM_TABLE} SET sort_order = @sort_order WHERE group_id = @group_id AND entity_id = @entity_id"
+                ),
                 &ParamsBuilder::new()
                     .set("sort_order", position as i64)
+                    .set("group_id", group_id)
                     .set("entity_id", normalize_text(entity_id))
-                    .set("group_name", normalized_group_name.clone())
-                    .set("owner_id", owner_id)
                     .build(),
             )?;
         }
@@ -206,116 +296,105 @@ pub fn favorite_reorder(
     })
 }
 
-fn delete_rows_already_in_group(
-    tx: &mut DatabaseWriteTransaction<'_>,
-    table: &str,
-    column: &str,
-    group_name: &str,
-    new_group_name: &str,
-    owner_scope: &str,
+fn ensure_group_in_realm(
+    tx: &DatabaseWriteTransaction<'_>,
+    kind: FavoriteEntityKind,
     owner_id: OwnerRowId,
-) -> Result<i64, Error> {
-    if group_name == new_group_name {
-        return Ok(0);
-    }
+    name: &str,
+) -> Result<LocalFavoriteGroup, Error> {
+    let params = scope_params(kind, owner_id)
+        .set("name", name.to_string())
+        .set("created_at", now_iso())
+        .build();
     tx.execute_non_query(
         &format!(
-            "DELETE FROM {table} WHERE group_name = @group_name {owner_scope} AND {column} IN (SELECT {column} FROM {table} WHERE group_name = @new_group_name {owner_scope})"
+            "INSERT OR IGNORE INTO {GROUP_TABLE} (kind, owner_id, name, sort_order, created_at) SELECT @kind, @owner_id, @name, COALESCE(MAX(sort_order) + 1, 0), @created_at FROM {GROUP_TABLE} WHERE kind = @kind AND owner_id = @owner_id"
+        ),
+        &params,
+    )?;
+    let rows = tx.execute(
+        &format!(
+            "SELECT g.id, g.name, g.owner_id FROM {GROUP_TABLE} g WHERE g.kind = @kind AND g.owner_id = @owner_id AND g.name = @name"
+        ),
+        &params,
+    )?;
+    rows.first()
+        .map(|row| group_from_row(kind, row))
+        .ok_or_else(|| {
+            Error::Database("Local favorite group was not available after insertion.".into())
+        })
+}
+
+fn insert_item(
+    tx: &DatabaseWriteTransaction<'_>,
+    group_id: i64,
+    entity_id: &str,
+) -> Result<i64, Error> {
+    tx.execute_non_query(
+        &format!(
+            "INSERT OR IGNORE INTO {ITEM_TABLE} (group_id, entity_id, created_at) VALUES (@group_id, @entity_id, @created_at)"
         ),
         &ParamsBuilder::new()
-            .set("group_name", group_name.to_string())
-            .set("new_group_name", new_group_name.to_string())
-            .set("owner_id", owner_id)
+            .set("group_id", group_id)
+            .set("entity_id", entity_id.to_string())
+            .set("created_at", now_iso())
             .build(),
     )
 }
 
-pub fn favorite_group_rename_with_config(
-    db: &DatabaseService,
-    owner_user_id: Option<&OwnerId>,
+fn visible_group(
+    tx: &DatabaseWriteTransaction<'_>,
     kind: FavoriteEntityKind,
-    config_key: &str,
-    group_name: &str,
-    new_group_name: &str,
-    config_groups: &[String],
-) -> Result<i64, Error> {
-    ensure_global_store_tables(db)?;
-    ensure_config_table(db)?;
-    let (table, column, _) = normalize_kind(kind);
-    let stored_key = resolve_config_key(config_key);
-    let config_value = json!(config_groups).to_string();
-    let normalized_group_name = normalize_text(group_name);
-    let normalized_new_group_name = normalize_text(new_group_name);
-    let (owner_scope, owner_id) = config_realm_owner_scope(db, kind, config_key, owner_user_id)?;
-    db.write_transaction(|tx| {
-        let affected = if normalized_group_name == normalized_new_group_name {
-            0
-        } else {
-            delete_rows_already_in_group(
-                tx,
-                table,
-                column,
-                &normalized_group_name,
-                &normalized_new_group_name,
-                owner_scope,
-                owner_id,
-            )?;
-            tx.execute_non_query(
-                &format!(
-                    "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name {owner_scope}"
-                ),
-                &ParamsBuilder::new()
-                    .set("new_group_name", normalized_new_group_name.clone())
-                    .set("group_name", normalized_group_name.clone())
-                    .set("owner_id", owner_id)
-                    .build(),
-            )?
-        };
-        tx.execute_non_query(
-            LOCAL_GROUP_CONFIG_UPSERT_SQL,
-            &ParamsBuilder::new()
-                .set("key", stored_key)
-                .set("value", config_value)
-                .build(),
-        )?;
-        Ok(affected)
-    })
+    owner_id: OwnerRowId,
+    group_id: i64,
+) -> Result<(OwnerRowId, String), Error> {
+    let rows = tx.execute(
+        &format!(
+            "SELECT g.owner_id, g.name FROM {GROUP_TABLE} g WHERE g.id = @group_id AND {VISIBLE_GROUP}"
+        ),
+        &scope_params(kind, owner_id)
+            .set("group_id", group_id)
+            .build(),
+    )?;
+    rows.first()
+        .map(|row| (OwnerRowId::from_value(row_i64(row, 0)), row_string(row, 1)))
+        .ok_or_else(|| Error::Custom("Local favorite group was not found.".into()))
 }
 
-pub fn favorite_group_delete_with_config(
-    db: &DatabaseService,
-    owner_user_id: Option<&OwnerId>,
-    kind: FavoriteEntityKind,
-    config_key: &str,
-    group_name: &str,
-    config_groups: &[String],
-) -> Result<i64, Error> {
-    ensure_global_store_tables(db)?;
-    ensure_config_table(db)?;
-    let (table, _, _) = normalize_kind(kind);
-    let stored_key = resolve_config_key(config_key);
-    let config_value = json!(config_groups).to_string();
-    let (owner_scope, owner_id) = config_realm_owner_scope(db, kind, config_key, owner_user_id)?;
-    db.write_transaction(|tx| {
-        let affected = tx.execute_non_query(
-            &format!("DELETE FROM {table} WHERE group_name = @group_name {owner_scope}"),
-            &ParamsBuilder::new()
-                .set("group_name", normalize_text(group_name))
-                .set("owner_id", owner_id)
-                .build(),
-        )?;
-        tx.execute_non_query(
-            LOCAL_GROUP_CONFIG_UPSERT_SQL,
-            &ParamsBuilder::new()
-                .set("key", stored_key)
-                .set("value", config_value)
-                .build(),
-        )?;
-        Ok(affected)
-    })
+fn group_from_row(kind: FavoriteEntityKind, row: &[serde_json::Value]) -> LocalFavoriteGroup {
+    LocalFavoriteGroup {
+        id: row_i64(row, 0),
+        kind,
+        name: row_string(row, 1),
+        shared: kind == FavoriteEntityKind::Friend && row_i64(row, 2) == 0,
+    }
 }
 
-fn owner_id_for_kind_read(
+fn scope_params(kind: FavoriteEntityKind, owner_id: OwnerRowId) -> ParamsBuilder {
+    ParamsBuilder::new()
+        .set("kind", kind.as_str())
+        .set("owner_id", owner_id)
+}
+
+fn require_group_name(name: &str) -> Result<String, Error> {
+    let name = normalize_text(name);
+    if name.is_empty() {
+        return Err(Error::Custom(
+            "Local favorite group name is required.".into(),
+        ));
+    }
+    Ok(name)
+}
+
+fn require_entity_id(entity_id: String) -> Result<String, Error> {
+    let entity_id = normalize_text(entity_id);
+    if entity_id.is_empty() {
+        return Err(Error::Custom("Favorite entity id is required.".into()));
+    }
+    Ok(entity_id)
+}
+
+fn read_owner(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
     owner_user_id: Option<&OwnerId>,
@@ -328,7 +407,7 @@ fn owner_id_for_kind_read(
     }
 }
 
-fn owner_id_for_kind_write(
+fn write_owner(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
     owner_user_id: Option<&OwnerId>,
@@ -338,70 +417,6 @@ fn owner_id_for_kind_write(
             owner_id_get_or_insert(db, owner_user_id)
         }
         _ => Ok(OwnerRowId::UNASSIGNED),
-    }
-}
-
-fn visible_owner_where(kind: FavoriteEntityKind) -> &'static str {
-    if kind == FavoriteEntityKind::Friend {
-        "WHERE owner_id IN (0, @owner_id)"
-    } else {
-        ""
-    }
-}
-
-fn visible_owner_and(kind: FavoriteEntityKind) -> &'static str {
-    if kind == FavoriteEntityKind::Friend {
-        "AND owner_id IN (0, @owner_id)"
-    } else {
-        ""
-    }
-}
-
-struct OwnerInsertParts {
-    column_sql: &'static str,
-    value_sql: &'static str,
-}
-
-fn owner_insert_parts(kind: FavoriteEntityKind) -> OwnerInsertParts {
-    if kind == FavoriteEntityKind::Friend {
-        OwnerInsertParts {
-            column_sql: ", owner_id",
-            value_sql: ", @owner_id",
-        }
-    } else {
-        OwnerInsertParts {
-            column_sql: "",
-            value_sql: "",
-        }
-    }
-}
-
-fn config_realm_owner_scope(
-    db: &DatabaseService,
-    kind: FavoriteEntityKind,
-    config_key: &str,
-    owner_user_id: Option<&OwnerId>,
-) -> Result<(&'static str, OwnerRowId), Error> {
-    if kind != FavoriteEntityKind::Friend {
-        return Ok(("", OwnerRowId::UNASSIGNED));
-    }
-    if config_key == "localFavoriteFriendGroups" {
-        Ok(("AND owner_id = 0", OwnerRowId::UNASSIGNED))
-    } else {
-        Ok((
-            "AND owner_id = @owner_id",
-            owner_id_for_kind_write(db, kind, owner_user_id)?,
-        ))
-    }
-}
-
-pub(crate) const fn normalize_kind(
-    kind: FavoriteEntityKind,
-) -> (&'static str, &'static str, &'static str) {
-    match kind {
-        FavoriteEntityKind::Friend => ("favorite_friend", "user_id", "@user_id"),
-        FavoriteEntityKind::Avatar => ("favorite_avatar", "avatar_id", "@avatar_id"),
-        FavoriteEntityKind::World => ("favorite_world", "world_id", "@world_id"),
     }
 }
 

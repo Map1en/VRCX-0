@@ -133,12 +133,12 @@ pub fn favorite_add(
     state: State<'_, AppState>,
     kind: FavoriteEntityKind,
     entity_id: String,
-    group_name: String,
+    group_id: i64,
 ) -> Result<i64, AppError> {
     state
         .runtime_host()
         .local_data()
-        .favorite_add_local(kind, entity_id, group_name)
+        .favorite_add_local(kind, entity_id, group_id)
         .map_err(AppError::from)
 }
 
@@ -146,11 +146,11 @@ pub fn favorite_remove(
     state: State<'_, AppState>,
     kind: FavoriteEntityKind,
     entity_id: String,
-    group_name: String,
+    group_id: i64,
 ) -> Result<i64, AppError> {
     state
         .runtime_host()
         .local_data()
-        .favorite_remove_local(kind, entity_id, group_name)
+        .favorite_remove_local(kind, entity_id, group_id)
         .map_err(AppError::from)
 }

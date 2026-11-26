@@ -27,8 +27,8 @@ use evaluation::{
 };
 use rules::load_stored_rules;
 pub use rules::{
-    presence_automation_local_group_renamed, presence_automation_rule_enabled_set,
-    presence_automation_rules_get, presence_automation_rules_set, PresenceAutomationRuleKind,
+    presence_automation_rule_enabled_set, presence_automation_rules_get,
+    presence_automation_rules_set, PresenceAutomationRuleKind,
 };
 use write_back::{
     build_patch_with_time_restore, changed_patch, complete_time_restores,

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { LocalFavoriteSnapshot } from '@/platform/tauri/bindings';
+import type {
+    LocalFavoriteGroup,
+    LocalFavoriteSnapshot
+} from '@/platform/tauri/bindings';
 
 const mocks = vi.hoisted(() => ({
     appFavoriteLocalSnapshot: vi.fn()
@@ -14,8 +17,16 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 const EMPTY_SNAPSHOT: LocalFavoriteSnapshot = {
     favorites: [],
-    groupNames: []
+    groups: []
 };
+
+function group(
+    id: number,
+    name: string,
+    kind: LocalFavoriteGroup['kind'] = 'avatar'
+): LocalFavoriteGroup {
+    return { id, kind, name, shared: false };
+}
 
 describe('favoriteLocalRefreshService', () => {
     beforeEach(async () => {
@@ -49,10 +60,20 @@ describe('favoriteLocalRefreshService', () => {
     it('keeps the backend group order and lists the newest favorites first', async () => {
         mocks.appFavoriteLocalSnapshot.mockResolvedValueOnce({
             favorites: [
-                { createdAt: '2026-01-01', avatarId: 'avtr_1', groupName: 'B' },
-                { createdAt: '2026-01-02', avatarId: 'avtr_2', groupName: 'B' }
+                {
+                    createdAt: '2026-01-01',
+                    avatarId: 'avtr_1',
+                    groupId: 2,
+                    groupName: 'B'
+                },
+                {
+                    createdAt: '2026-01-02',
+                    avatarId: 'avtr_2',
+                    groupId: 2,
+                    groupName: 'B'
+                }
             ],
-            groupNames: ['B', 'A']
+            groups: [group(2, 'B'), group(1, 'A')]
         } satisfies LocalFavoriteSnapshot);
         const { useFavoriteStore } = await import('@/state/favoriteStore');
         const { refreshLocalFavoritesForKinds } =
@@ -61,9 +82,13 @@ describe('favoriteLocalRefreshService', () => {
         await refreshLocalFavoritesForKinds(['avatar']);
 
         const state = useFavoriteStore.getState();
-        expect(state.localAvatarFavoriteGroups).toEqual(['B', 'A']);
+        expect(state.localAvatarFavoriteGroups).toEqual([
+            group(2, 'B'),
+            group(1, 'A')
+        ]);
         expect(state.localAvatarFavorites).toEqual({
-            B: ['avtr_2', 'avtr_1']
+            1: [],
+            2: ['avtr_2', 'avtr_1']
         });
     });
 
@@ -82,10 +107,11 @@ describe('favoriteLocalRefreshService', () => {
                     {
                         createdAt: '2026-01-02',
                         avatarId: 'avtr_new',
+                        groupId: 2,
                         groupName: 'New'
                     }
                 ],
-                groupNames: ['New']
+                groups: [group(2, 'New')]
             } satisfies LocalFavoriteSnapshot);
         const { useFavoriteStore } = await import('@/state/favoriteStore');
         const { refreshLocalFavoritesForKinds } =
@@ -98,15 +124,16 @@ describe('favoriteLocalRefreshService', () => {
                 {
                     createdAt: '2026-01-01',
                     avatarId: 'avtr_old',
+                    groupId: 1,
                     groupName: 'Old'
                 }
             ],
-            groupNames: ['Old']
+            groups: [group(1, 'Old')]
         });
         await first;
 
         expect(useFavoriteStore.getState().localAvatarFavorites).toEqual({
-            New: ['avtr_new']
+            2: ['avtr_new']
         });
     });
 
@@ -131,10 +158,11 @@ describe('favoriteLocalRefreshService', () => {
                 {
                     createdAt: '2026-01-01',
                     userId: 'usr_friend',
+                    groupId: 1,
                     groupName: 'Friends'
                 }
             ],
-            groupNames: ['Friends']
+            groups: [group(1, 'Friends', 'friend')]
         });
         await refresh;
 

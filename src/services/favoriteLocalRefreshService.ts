@@ -15,21 +15,16 @@ function buildGroupMap(
     kind: Exclude<FavoriteKind, 'world'>
 ): FavoriteGroupMap {
     const map: FavoriteGroupMap = {};
+    for (const group of snapshot.groups) {
+        map[String(group.id)] = [];
+    }
     for (const row of snapshot.favorites) {
-        const groupName = row.groupName.trim();
         const entityId = (
             (kind === 'avatar' ? row.avatarId : row.userId) ?? ''
         ).trim();
-        if (!groupName || !entityId) {
-            continue;
-        }
-        const bucket = map[groupName];
-        if (bucket) {
-            if (!bucket.includes(entityId)) {
-                bucket.unshift(entityId);
-            }
-        } else {
-            map[groupName] = [entityId];
+        const bucket = map[String(row.groupId)];
+        if (bucket && entityId && !bucket.includes(entityId)) {
+            bucket.unshift(entityId);
         }
     }
     return map;
@@ -48,7 +43,7 @@ async function refreshLocalFavoritesForKind(
     ) {
         store.setLocalFavoritesForKind(kind, {
             localFavorites: buildGroupMap(snapshot, kind),
-            localFavoriteGroups: snapshot.groupNames
+            localFavoriteGroups: snapshot.groups
         });
     }
 }

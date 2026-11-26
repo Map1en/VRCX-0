@@ -9,10 +9,10 @@ use crate::state::AppState;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
-    LocalFavoriteGroupInput, LocalFavoriteGroupRenameInput, LocalFavoriteGroupReorderInput,
-    LocalFavoriteInput, LocalFavoriteReorderInput, VrchatFavoriteAddInput,
-    VrchatFavoriteDeleteInput, VrchatFavoriteGroupClearInput, VrchatFavoriteGroupSaveInput,
-    VrchatFavoriteGroupsInput, VrchatFavoriteWorldsInput,
+    LocalFavoriteGroupCreateInput, LocalFavoriteGroupInput, LocalFavoriteGroupRenameInput,
+    LocalFavoriteGroupReorderInput, LocalFavoriteInput, LocalFavoriteReorderInput,
+    VrchatFavoriteAddInput, VrchatFavoriteDeleteInput, VrchatFavoriteGroupClearInput,
+    VrchatFavoriteGroupSaveInput, VrchatFavoriteGroupsInput, VrchatFavoriteWorldsInput,
 };
 
 #[tauri::command]
@@ -123,8 +123,7 @@ pub fn app__local_favorite_add(
 ) -> Result<i64, AppError> {
     let kind = input.kind;
     let entity_id = require_text(input.entity_id, "LocalFavoriteAdd requires entityId.")?;
-    let group_name = require_text(input.group_name, "LocalFavoriteAdd requires groupName.")?;
-    crate::commands::local::favorites::favorite_add(state, kind, entity_id, group_name)
+    crate::commands::local::favorites::favorite_add(state, kind, entity_id, input.group_id)
 }
 
 #[tauri::command(async)]
@@ -135,24 +134,19 @@ pub fn app__local_favorite_remove(
 ) -> Result<i64, AppError> {
     let kind = input.kind;
     let entity_id = require_text(input.entity_id, "LocalFavoriteRemove requires entityId.")?;
-    let group_name = require_text(input.group_name, "LocalFavoriteRemove requires groupName.")?;
-    crate::commands::local::favorites::favorite_remove(state, kind, entity_id, group_name)
+    crate::commands::local::favorites::favorite_remove(state, kind, entity_id, input.group_id)
 }
 
 #[tauri::command(async)]
 #[specta::specta]
 pub fn app__local_favorite_group_create(
     state: State<'_, AppState>,
-    input: LocalFavoriteGroupInput,
-) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite, AppError> {
-    let kind = input.kind;
-    let group_name = require_text(
-        input.group_name,
-        "LocalFavoriteGroupCreate requires groupName.",
-    )?;
+    input: LocalFavoriteGroupCreateInput,
+) -> Result<vrcx_0_application::favorites::LocalFavoriteGroup, AppError> {
+    let name = require_text(input.name, "LocalFavoriteGroupCreate requires name.")?;
     state
         .runtime_host()
-        .favorite_local_group_create(kind, group_name)
+        .favorite_local_group_create(input.kind, name)
         .map_err(AppError::from)
 }
 
@@ -161,19 +155,11 @@ pub fn app__local_favorite_group_create(
 pub fn app__local_favorite_group_rename(
     state: State<'_, AppState>,
     input: LocalFavoriteGroupRenameInput,
-) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite, AppError> {
-    let kind = input.kind;
-    let group_name = require_text(
-        input.group_name,
-        "LocalFavoriteGroupRename requires groupName.",
-    )?;
-    let new_group_name = require_text(
-        input.new_group_name,
-        "LocalFavoriteGroupRename requires newGroupName.",
-    )?;
+) -> Result<i64, AppError> {
+    let name = require_text(input.name, "LocalFavoriteGroupRename requires name.")?;
     state
         .runtime_host()
-        .favorite_local_group_rename(kind, group_name, new_group_name)
+        .favorite_local_group_rename(input.kind, input.group_id, name)
         .map_err(AppError::from)
 }
 
@@ -182,15 +168,10 @@ pub fn app__local_favorite_group_rename(
 pub fn app__local_favorite_group_delete(
     state: State<'_, AppState>,
     input: LocalFavoriteGroupInput,
-) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite, AppError> {
-    let kind = input.kind;
-    let group_name = require_text(
-        input.group_name,
-        "LocalFavoriteGroupDelete requires groupName.",
-    )?;
+) -> Result<i64, AppError> {
     state
         .runtime_host()
-        .favorite_local_group_delete(kind, group_name)
+        .favorite_local_group_delete(input.kind, input.group_id)
         .map_err(AppError::from)
 }
 
@@ -199,12 +180,12 @@ pub fn app__local_favorite_group_delete(
 pub async fn app__local_favorite_group_reorder(
     app: AppHandle,
     input: LocalFavoriteGroupReorderInput,
-) -> Result<Vec<String>, AppError> {
+) -> Result<Vec<vrcx_0_application::favorites::LocalFavoriteGroup>, AppError> {
     run_blocking("local favorite group reorder", move || {
         let state = app.state::<AppState>();
         state
             .runtime_host()
-            .favorite_local_group_reorder(input.kind, input.group_names)
+            .favorite_local_group_reorder(input.kind, input.group_ids)
     })
     .await
 }
@@ -215,12 +196,11 @@ pub async fn app__local_favorite_reorder(
     app: AppHandle,
     input: LocalFavoriteReorderInput,
 ) -> Result<i64, AppError> {
-    let group_name = require_text(input.group_name, "LocalFavoriteReorder requires groupName.")?;
     run_blocking("local favorite reorder", move || {
         let state = app.state::<AppState>();
         state
             .runtime_host()
-            .favorite_local_reorder(input.kind, group_name, input.entity_ids)
+            .favorite_local_reorder(input.kind, input.group_id, input.entity_ids)
     })
     .await
 }

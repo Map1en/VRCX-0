@@ -15,6 +15,10 @@ import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 
 import { useLocalWorldFavorites } from './useLocalWorldFavorites';
 
+function worldGroup(id: number, name: string) {
+    return { id, kind: 'world' as const, name, shared: false };
+}
+
 describe('useLocalWorldFavorites', () => {
     afterEach(() => {
         cleanup();
@@ -24,8 +28,8 @@ describe('useLocalWorldFavorites', () => {
         vi.clearAllMocks();
         useFavoriteRevisionStore.getState().reset();
         mocks.loadLocalWorldFavoritesSnapshot.mockResolvedValue({
-            favoritesByGroup: { First: ['wrld_1'] },
-            groupNames: ['First']
+            favoritesByGroup: { 1: ['wrld_1'] },
+            groups: [worldGroup(1, 'First')]
         });
     });
 
@@ -35,11 +39,11 @@ describe('useLocalWorldFavorites', () => {
         await waitFor(() => {
             expect(result.current.status).toBe('ready');
         });
-        expect(result.current.groupNames).toEqual(['First']);
+        expect(result.current.groups).toEqual([worldGroup(1, 'First')]);
 
         mocks.loadLocalWorldFavoritesSnapshot.mockResolvedValue({
-            favoritesByGroup: { Second: ['wrld_2'] },
-            groupNames: ['Second']
+            favoritesByGroup: { 2: ['wrld_2'] },
+            groups: [worldGroup(2, 'Second')]
         });
         act(() => {
             useFavoriteRevisionStore.getState().bumpRevision({
@@ -51,7 +55,7 @@ describe('useLocalWorldFavorites', () => {
         });
 
         await waitFor(() => {
-            expect(result.current.groupNames).toEqual(['Second']);
+            expect(result.current.groups).toEqual([worldGroup(2, 'Second')]);
         });
         expect(mocks.loadLocalWorldFavoritesSnapshot).toHaveBeenCalledTimes(2);
     });

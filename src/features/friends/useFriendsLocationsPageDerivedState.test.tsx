@@ -207,8 +207,10 @@ describe('useFriendsLocationsPageDerivedState', () => {
             { ...friendAt('wrld_away:2'), id: 'usr_plain', displayName: 'B' }
         ]);
         input.activeSegment = 'online';
-        input.localFriendFavoriteGroups = ['Besties'];
-        input.localFriendFavorites = { Besties: ['usr_fav'] };
+        input.localFriendFavoriteGroups = [
+            { id: 4, kind: 'friend', name: 'Besties', shared: false }
+        ];
+        input.localFriendFavorites = { 4: ['usr_fav'] };
         input.sidebarFavoritePrefs = {
             isDivideByGroup: true,
             selectedGroups: [],
@@ -225,7 +227,7 @@ describe('useFriendsLocationsPageDerivedState', () => {
                     : []
             )
         ).toEqual([
-            ['online:favorite:local:Besties', 'usr_fav'],
+            ['online:favorite:local:4', 'usr_fav'],
             ['online:remaining', 'usr_plain']
         ]);
     });

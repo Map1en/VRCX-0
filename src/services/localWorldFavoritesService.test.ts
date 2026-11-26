@@ -12,68 +12,64 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 import { loadLocalWorldFavoritesSnapshot } from './localWorldFavoritesService';
 
+function worldGroup(id: number, name: string) {
+    return { id, kind: 'world' as const, name, shared: false };
+}
+
+function worldRow(worldId: string, groupId: number, createdAt: string) {
+    return {
+        createdAt,
+        worldId,
+        avatarId: null,
+        userId: null,
+        groupId,
+        groupName: ''
+    };
+}
+
 describe('localWorldFavoritesService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.appFavoriteLocalSnapshot.mockResolvedValue({
             favorites: [],
-            groupNames: []
+            groups: []
         });
     });
 
-    it('builds a fresh grouped snapshot from Rust-backed persistence reads', async () => {
+    it('builds a fresh grouped snapshot keyed by group id', async () => {
+        const groups = [worldGroup(1, 'Empty'), worldGroup(2, 'Worlds')];
         mocks.appFavoriteLocalSnapshot.mockResolvedValue({
-            groupNames: ['Empty', 'Worlds'],
+            groups,
             favorites: [
-                {
-                    createdAt: '2026-08-11T00:00:00Z',
-                    worldId: 'wrld_1',
-                    avatarId: null,
-                    userId: null,
-                    groupName: 'Worlds'
-                },
-                {
-                    createdAt: '2026-08-11T00:00:01Z',
-                    worldId: 'wrld_2',
-                    avatarId: null,
-                    userId: null,
-                    groupName: 'Worlds'
-                },
-                {
-                    createdAt: '2026-08-11T00:00:02Z',
-                    worldId: 'wrld_1',
-                    avatarId: null,
-                    userId: null,
-                    groupName: 'Worlds'
-                }
+                worldRow('wrld_1', 2, '2026-08-11T00:00:00Z'),
+                worldRow('wrld_2', 2, '2026-08-11T00:00:01Z'),
+                worldRow('wrld_1', 2, '2026-08-11T00:00:02Z')
             ]
         });
 
         await expect(loadLocalWorldFavoritesSnapshot()).resolves.toEqual({
             favoritesByGroup: {
-                Empty: [],
-                Worlds: ['wrld_2', 'wrld_1']
+                1: [],
+                2: ['wrld_2', 'wrld_1']
             },
-            groupNames: ['Empty', 'Worlds']
+            groups
         });
         expect(mocks.appFavoriteLocalSnapshot).toHaveBeenCalledWith('world');
     });
 
     it('keeps the backend group order instead of sorting by name', async () => {
+        const groups = [
+            worldGroup(3, 'Zeta'),
+            worldGroup(1, '2024'),
+            worldGroup(2, 'Alpha')
+        ];
         mocks.appFavoriteLocalSnapshot.mockResolvedValue({
-            groupNames: ['Zeta', '2024', 'Alpha'],
+            groups,
             favorites: []
         });
 
         await expect(loadLocalWorldFavoritesSnapshot()).resolves.toMatchObject({
-            groupNames: ['Zeta', '2024', 'Alpha']
-        });
-    });
-
-    it('defaults to an empty Favorites group when no groups or favorites exist', async () => {
-        await expect(loadLocalWorldFavoritesSnapshot()).resolves.toEqual({
-            favoritesByGroup: { Favorites: [] },
-            groupNames: ['Favorites']
+            groups
         });
     });
 });

@@ -120,10 +120,10 @@ describe('presenceAutomationDialogUtils rule contracts', () => {
         ],
         [
             'withSelectedGroups',
-            { selectedGroups: ['group:grp_a', 'local:Friends'] },
+            { selectedGroups: ['group:grp_a', 'local:1'] },
             {
                 type: 'hasFriendInGroups',
-                values: ['group:grp_a', 'local:Friends']
+                values: ['group:grp_a', 'local:1']
             }
         ],
         [

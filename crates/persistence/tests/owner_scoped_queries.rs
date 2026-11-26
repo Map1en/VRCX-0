@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 
 const OWNER_TABLES: &[&str] = &[
     "assistant_session",
-    "favorite_friend",
     "favorite_group_collection",
     "gamelog_event",
     "gamelog_external",
@@ -13,6 +12,7 @@ const OWNER_TABLES: &[&str] = &[
     "gamelog_portal_spawn",
     "gamelog_resource_load",
     "gamelog_video_play",
+    "vrcx0_favorite_group",
 ];
 
 const OWNER_FILTER_EXCEPTIONS: &[(&str, &str)] = &[
@@ -38,10 +38,19 @@ const OWNER_FILTER_EXCEPTIONS: &[(&str, &str)] = &[
     // Scans every owner's leave rows and reuses each row's own owner_id for the location lookup.
     ("src/database/maintenance/leave_location_repair.rs", "select id, created_at, time, owner_id, user_id, display_name from gamelog_join_leave"),
     ("src/database/maintenance/leave_location_repair.rs", "update gamelog_join_leave set location = @location where id = @id"),
-    // Duplicate probe before building a unique index that already includes owner_id.
-    ("src/database/schema.rs", "select 1 from {table} where {non_null_columns}"),
+
+    // Local favorite group writes are keyed by group id after visible_group checked the owner in the same transaction.
+    ("src/favorites.rs", "delete from vrcx0_favorite_group where id = @group_id"),
+    ("src/favorites.rs", "update vrcx0_favorite_group set name = @name where id = @group_id"),
+    ("src/favorites.rs", "update vrcx0_favorite_group set sort_order = @sort_order where id = @group_id"),
+    // Migration 1 seeds and verifies every owner's local favorite groups at once.
+    ("src/favorites/migration_v1.rs", "select g.kind, g.owner_id, g.name, i.entity_id from vrcx0_favorite_item i join vrcx0_favorite_group g on g.id = i.group_id"),
+    ("src/favorites/migration_v1.rs", "select kind, owner_id, name from vrcx0_favorite_group"),
     // Claims shared pre-upgrade rows (owner_id = 0) for the only local account.
     ("src/game_log/legacy_ownership.rs", "update {table} set owner_id = @owner_id where owner_id = 0"),
+    ("src/game_log/legacy_ownership.rs", "select id, name from vrcx0_favorite_group where kind = 'friend' and owner_id = 0"),
+    ("src/game_log/legacy_ownership.rs", "update vrcx0_favorite_group set owner_id = @owner_id, sort_order = @sort_order where id = @group_id"),
+    ("src/game_log/legacy_ownership.rs", "delete from vrcx0_favorite_group where id = @shared_id"),
     // Machine replay cursor: the latest location row from any owner.
     ("src/game_log/query.rs", "fn last_location_sql: sea-query from(gamelog_location)"),
     // (created_at, video_url) is the machine-global unique key of a video play row.

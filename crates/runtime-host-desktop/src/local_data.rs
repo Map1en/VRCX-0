@@ -185,20 +185,19 @@ impl LocalDataRuntime {
         &self,
         kind: FavoriteEntityKind,
         entity_id: String,
-        group_name: String,
+        group_id: i64,
     ) -> Result<i64> {
-        self.favorite_mutations
-            .add_local(kind, entity_id, group_name)
+        self.favorite_mutations.add_local(kind, entity_id, group_id)
     }
 
     pub fn favorite_remove_local(
         &self,
         kind: FavoriteEntityKind,
         entity_id: String,
-        group_name: String,
+        group_id: i64,
     ) -> Result<i64> {
         self.favorite_mutations
-            .remove_local(kind, entity_id, group_name)
+            .remove_local(kind, entity_id, group_id)
     }
 
     pub fn saved_group_favorites_snapshot(&self) -> Result<SavedGroupFavoritesSnapshot> {

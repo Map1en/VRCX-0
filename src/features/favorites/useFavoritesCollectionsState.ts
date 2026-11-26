@@ -262,7 +262,7 @@ export function useFavoritesCollectionsState({
             localAvatarFavorites: favoriteState.localAvatarFavorites,
             localFriendFavoriteGroups: favoriteState.localFriendFavoriteGroups,
             localFriendFavorites: favoriteState.localFriendFavorites,
-            localWorldFavoriteGroups: localWorldFavorites.groupNames,
+            localWorldFavoriteGroups: localWorldFavorites.groups,
             localWorldFavorites: localWorldFavorites.favoritesByGroup,
             remoteEntityDetails,
             remoteFavoritesById: favoriteState.remoteFavoritesById,

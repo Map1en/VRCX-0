@@ -6,7 +6,11 @@ import {
     resolveSelectedFavoriteGroupKeys
 } from '@/domain/favorites/favoriteGroupSelection';
 import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
-import type { FavoriteGroup, FavoriteGroupMap } from '@/domain/favorites/types';
+import type {
+    FavoriteGroup,
+    FavoriteGroupMap,
+    LocalFavoriteGroup
+} from '@/domain/favorites/types';
 import {
     localGameLocation,
     presenceOf,
@@ -152,7 +156,7 @@ type FriendsLocationsPageDerivedStateInput = {
     friendsById: FriendRosterById;
     gameState?: FriendsLocationsGameState | null;
     groupedFavoriteFriendIdsByGroupKey: Record<string, string[]>;
-    localFriendFavoriteGroups: string[];
+    localFriendFavoriteGroups: LocalFavoriteGroup[];
     localFriendFavorites: FavoriteGroupMap;
     offlineIds: string[];
     onlineIds: string[];
@@ -267,14 +271,9 @@ export function useFriendsLocationsPageDerivedState({
             ...favoriteFriendGroups
                 .map((group) => normalizeString(group?.key))
                 .filter(Boolean),
-            ...(localFriendFavoriteGroups.length
-                ? localFriendFavoriteGroups
-                : Object.keys(localFriendFavorites || {})
-            )
-                .map((groupName) => `local:${groupName}`)
-                .filter(Boolean)
+            ...localFriendFavoriteGroups.map((group) => `local:${group.id}`)
         ],
-        [favoriteFriendGroups, localFriendFavoriteGroups, localFriendFavorites]
+        [favoriteFriendGroups, localFriendFavoriteGroups]
     );
     const selectedFavoriteGroupKeys = useMemo<Set<string>>(
         () =>
@@ -578,13 +577,10 @@ export function useFriendsLocationsPageDerivedState({
                         sidebarFavoritePrefs.groupOrder
                     )
                 );
-            const localGroupNames = localFriendFavoriteGroups.length
-                ? localFriendFavoriteGroups
-                : Object.keys(localFriendFavorites || {});
-            const orderedLocalGroups = localGroupNames
-                .map((groupName): FriendsLocationsFavoriteGroupDescriptor => ({
-                    key: `local:${groupName}`,
-                    label: groupName
+            const orderedLocalGroups = localFriendFavoriteGroups
+                .map((group): FriendsLocationsFavoriteGroupDescriptor => ({
+                    key: `local:${group.id}`,
+                    label: group.name
                 }))
                 .filter((group) => selectedFavoriteGroupKeys.has(group.key))
                 .sort((left, right) =>
@@ -623,8 +619,8 @@ export function useFriendsLocationsPageDerivedState({
                 });
             }
             for (const group of orderedLocalGroups) {
-                const groupName = group.key.slice(6);
-                const friendsInGroup = (localFriendFavorites?.[groupName] || [])
+                const groupId = group.key.slice(6);
+                const friendsInGroup = (localFriendFavorites?.[groupId] || [])
                     .map((id) => friendById.get(normalizeString(id)))
                     .filter(isPresent);
                 if (!friendsInGroup.length) {

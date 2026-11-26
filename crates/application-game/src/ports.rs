@@ -136,11 +136,11 @@ pub trait LocationGroupNameFiller: Send + Sync {
 }
 
 pub trait FavoriteFriendGroupLookup: Send + Sync {
-    fn favorite_friend_group_names_for_users(
+    fn favorite_friend_group_ids_for_users(
         &self,
         owner: &OwnerId,
         user_ids: &[String],
-    ) -> Result<Vec<String>>;
+    ) -> Result<Vec<i64>>;
 }
 
 pub trait PlayerModerationLookup: Send + Sync {
@@ -672,11 +672,11 @@ impl LocationGroupNameFiller for TestGameStateStore {
 
 #[cfg(test)]
 impl FavoriteFriendGroupLookup for TestGameStateStore {
-    fn favorite_friend_group_names_for_users(
+    fn favorite_friend_group_ids_for_users(
         &self,
         _owner: &OwnerId,
         _user_ids: &[String],
-    ) -> Result<Vec<String>> {
+    ) -> Result<Vec<i64>> {
         Ok(Vec::new())
     }
 }

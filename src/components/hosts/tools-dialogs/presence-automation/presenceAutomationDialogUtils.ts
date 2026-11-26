@@ -1,6 +1,9 @@
 import type { TFunction } from 'i18next';
 
-import type { FavoriteGroup } from '@/domain/favorites/types';
+import type {
+    FavoriteGroup,
+    LocalFavoriteGroup
+} from '@/domain/favorites/types';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 
@@ -220,15 +223,15 @@ export function createGroupOptions({
     localGroups
 }: {
     remoteGroups?: FavoriteGroup[];
-    localGroups?: string[];
+    localGroups?: readonly LocalFavoriteGroup[];
 }): PresenceOption[] {
     const remoteGroupOptions = (remoteGroups || []).map((group) => ({
         value: group.key || '',
         label: group.displayName || group.name || group.key || ''
     }));
     const localGroupOptions = (localGroups || []).map((group) => ({
-        value: `local:${group}`,
-        label: group
+        value: `local:${group.id}`,
+        label: group.name
     }));
     return [...remoteGroupOptions, ...localGroupOptions].filter(
         (group) => group.value

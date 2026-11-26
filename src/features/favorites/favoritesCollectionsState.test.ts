@@ -188,10 +188,24 @@ describe('favorites collections state helpers', () => {
             groupedFavoriteFriendIdsByGroupKey: {
                 'friend:group_0': ['usr_a']
             },
-            localAvatarFavorites: { Avatars: ['avtr_1'] },
-            localFriendFavorites: { Friends: ['usr_a'] },
-            localAvatarFavoriteGroups: ['Avatars'],
-            localFriendFavoriteGroups: ['Friends'],
+            localAvatarFavorites: { 1: ['avtr_1'] },
+            localFriendFavorites: { 2: ['usr_a'] },
+            localAvatarFavoriteGroups: [
+                {
+                    id: 1,
+                    kind: 'avatar' as const,
+                    name: 'Avatars',
+                    shared: false
+                }
+            ],
+            localFriendFavoriteGroups: [
+                {
+                    id: 2,
+                    kind: 'friend' as const,
+                    name: 'Friends',
+                    shared: false
+                }
+            ],
             favoriteWorldIds: ['wrld_1'],
             favoriteAvatarIds: ['avtr_1']
         };
@@ -201,7 +215,7 @@ describe('favorites collections state helpers', () => {
             favoriteWorldGroups: [],
             favoriteAvatarGroups: [],
             remoteFavoritesById: {},
-            localFriendFavorites: { Friends: ['usr_a'] },
+            localFriendFavorites: { 2: ['usr_a'] },
             localAvatarFavorites: {}
         });
         expect(selectFavoritesCollectionsState('world')(state)).toMatchObject({

@@ -1,6 +1,12 @@
 import type { LoadStatus } from '../shared/types';
 
 export type FavoriteKind = 'friend' | 'avatar' | 'world';
+export type LocalFavoriteGroup = {
+    id: number;
+    kind: FavoriteKind;
+    name: string;
+    shared: boolean;
+};
 export type StoredLocalFavoriteKind = Exclude<FavoriteKind, 'world'>;
 export type RemoteFavoriteKind = FavoriteKind | 'vrcPlusWorld' | (string & {});
 type FavoriteVisibility = 'public' | 'private' | 'friends' | (string & {});
@@ -54,18 +60,18 @@ type FavoriteSnapshot = Partial<Record<keyof FavoriteStoreState, unknown>> &
     };
 type LocalFavoriteGroupAction = {
     kind: StoredLocalFavoriteKind;
-    groupName: string;
+    groupId: number;
 };
 type LocalFavoriteAction = LocalFavoriteGroupAction & {
     entityId: string;
     entity?: FavoriteEntityDetail | Record<string, unknown> | null;
 };
 type RenameLocalFavoriteGroupAction = LocalFavoriteGroupAction & {
-    newGroupName: string;
+    name: string;
 };
 type LocalFavoritesForKindSnapshot = {
-    localFavorites: unknown;
-    localFavoriteGroups: unknown;
+    localFavorites: FavoriteGroupMap;
+    localFavoriteGroups: LocalFavoriteGroup[];
 };
 export type RemoteFavoriteCollections = {
     remoteFavoritesByObjectId: Record<string, FavoriteRecord>;
@@ -94,8 +100,8 @@ export type FavoriteStoreState = {
     favoriteAvatarGroups: FavoriteGroup[];
     localAvatarFavorites: FavoriteGroupMap;
     localFriendFavorites: FavoriteGroupMap;
-    localAvatarFavoriteGroups: string[];
-    localFriendFavoriteGroups: string[];
+    localAvatarFavoriteGroups: LocalFavoriteGroup[];
+    localFriendFavoriteGroups: LocalFavoriteGroup[];
     localAvatarFavoritesList: string[];
     localFriendFavoritesList: string[];
 };
@@ -106,7 +112,7 @@ export type FavoriteStore = FavoriteStoreState & {
     resetFavorites(): void;
     addLocalFavorite(action: LocalFavoriteAction): void;
     removeLocalFavorite(action: LocalFavoriteAction): void;
-    createLocalFavoriteGroup(action: LocalFavoriteGroupAction): void;
+    createLocalFavoriteGroup(group: LocalFavoriteGroup): void;
     renameLocalFavoriteGroup(action: RenameLocalFavoriteGroupAction): void;
     deleteLocalFavoriteGroup(action: LocalFavoriteGroupAction): void;
     setLocalFavoritesForKind(

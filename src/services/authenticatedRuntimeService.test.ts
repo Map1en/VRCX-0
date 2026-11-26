@@ -88,10 +88,12 @@ function phaseSnapshot(
                 favoriteAvatarGroups: [],
                 localAvatarFavorites: {},
                 localFriendFavorites: {
-                    Favorites: ['usr_friend']
+                    1: ['usr_friend']
                 },
                 localAvatarFavoriteGroups: [],
-                localFriendFavoriteGroups: ['Favorites'],
+                localFriendFavoriteGroups: [
+                    { id: 1, kind: 'friend', name: 'Favorites', shared: false }
+                ],
                 localAvatarFavoritesList: [],
                 localFriendFavoritesList: ['usr_friend'],
                 detail: 'Favorites ready.'

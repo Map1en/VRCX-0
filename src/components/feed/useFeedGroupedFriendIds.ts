@@ -35,9 +35,9 @@ export function useFeedGroupedFriendIds(enabled: boolean): string[] {
                               .filter(Boolean),
                           remoteIdsByGroupKey:
                               groupedFavoriteFriendIdsByGroupKey,
-                          localGroupNames: localFriendFavoriteGroups.length
-                              ? localFriendFavoriteGroups
-                              : Object.keys(localFriendFavorites),
+                          localGroupIds: localFriendFavoriteGroups.map(
+                              (group) => group.id
+                          ),
                           localFriendFavorites,
                           selectedGroupKeys
                       })

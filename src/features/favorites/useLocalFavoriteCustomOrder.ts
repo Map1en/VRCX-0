@@ -27,12 +27,11 @@ export function buildCustomOrderByGroup(
 ): FavoriteGroupMap {
     const orderByGroup: FavoriteGroupMap = {};
     for (const row of rows) {
-        const groupName = row.groupName.trim();
         const entityId = rowEntityId(row, kind);
-        if (!groupName || !entityId) {
+        if (!entityId) {
             continue;
         }
-        const ids = (orderByGroup[groupName] ??= []);
+        const ids = (orderByGroup[String(row.groupId)] ??= []);
         if (!ids.includes(entityId)) {
             ids.push(entityId);
         }
@@ -88,19 +87,19 @@ export function useLocalFavoriteCustomOrder({
     }, [currentUserId, enabled, kind, reloadToken, revision]);
 
     const reorderGroup = useCallback(
-        async (groupName: string, entityIds: string[]) => {
+        async (groupKey: string, entityIds: string[]) => {
             sequenceRef.current += 1;
             setState((current) => ({
                 kind,
                 orderByGroup: {
                     ...(current?.kind === kind ? current.orderByGroup : {}),
-                    [groupName]: entityIds
+                    [groupKey]: entityIds
                 }
             }));
             try {
                 await commands.appLocalFavoriteReorder({
                     kind,
-                    groupName,
+                    groupId: Number(groupKey),
                     entityIds
                 });
             } catch (error) {

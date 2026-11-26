@@ -149,19 +149,19 @@ export function canExpandFeedRow(row: FeedRow): boolean {
 export function buildFeedFavoriteIdSet({
     remoteGroupKeys,
     remoteIdsByGroupKey,
-    localGroupNames,
+    localGroupIds,
     localFriendFavorites,
     selectedGroupKeys
 }: {
     remoteGroupKeys: readonly string[];
     remoteIdsByGroupKey: Readonly<Record<string, readonly string[]>>;
-    localGroupNames: readonly string[];
+    localGroupIds: readonly number[];
     localFriendFavorites: FavoriteGroupMap;
     selectedGroupKeys: readonly string[];
 }) {
     const allGroupKeys = [
         ...remoteGroupKeys,
-        ...localGroupNames.map((groupName) => `local:${groupName}`)
+        ...localGroupIds.map((groupId) => `local:${groupId}`)
     ];
     return collectFavoriteGroupFriendIds(
         resolveSelectedFavoriteGroupKeys(selectedGroupKeys, allGroupKeys),

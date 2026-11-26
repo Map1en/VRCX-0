@@ -70,9 +70,9 @@ pub struct SharedCollectionImportResult {
 }
 
 pub trait SharedCollectionImportActions: Send + Sync {
-    fn create_group(&self, group_name: &str) -> Result<()>;
+    fn create_group(&self, group_name: &str) -> Result<i64>;
     fn fetch_and_cache_world<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, Result<()>>;
-    fn add_world_favorite(&self, world_id: &str, group_name: &str) -> Result<()>;
+    fn add_world_favorite(&self, world_id: &str, group_id: i64) -> Result<()>;
 }
 
 pub fn prepare_shared_collection_import(
@@ -140,7 +140,7 @@ async fn run_shared_collection_import_with_interval(
         result.cancelled = true;
         return Ok(result);
     }
-    actions.create_group(&input.group_name)?;
+    let group_id = actions.create_group(&input.group_name)?;
 
     for (index, world_id) in input.world_ids.iter().enumerate() {
         if should_cancel() {
@@ -158,7 +158,7 @@ async fn run_shared_collection_import_with_interval(
             break;
         }
         let item_result =
-            fetch_result.and_then(|()| actions.add_world_favorite(world_id, &input.group_name));
+            fetch_result.and_then(|()| actions.add_world_favorite(world_id, group_id));
         result.processed += 1;
         match item_result {
             Ok(()) => result.imported += 1,

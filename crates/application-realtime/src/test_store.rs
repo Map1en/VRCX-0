@@ -21,7 +21,7 @@ use vrcx_0_contracts::notifications::{
 use vrcx_0_contracts::realtime::{
     FriendLogDelete, FriendLogUpsert, RealtimePersistenceBatch, RealtimeWriteCounts,
 };
-use vrcx_0_contracts::FavoriteRow;
+use vrcx_0_contracts::{FavoriteRow, LocalFavoriteGroup};
 use vrcx_0_core::friend_log::{plan_friend_log_upsert, FriendLogCurrent, FriendLogUpsertInput};
 use vrcx_0_core::json::text_of;
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
@@ -224,6 +224,14 @@ impl crate::FavoriteBaselineStore for TestRealtimeStore {
         _owner: Option<&OwnerId>,
         _kind: FavoriteEntityKind,
     ) -> Result<Vec<FavoriteRow>> {
+        Ok(Vec::new())
+    }
+
+    fn favorite_group_list(
+        &self,
+        _owner: Option<&OwnerId>,
+        _kind: FavoriteEntityKind,
+    ) -> Result<Vec<LocalFavoriteGroup>> {
         Ok(Vec::new())
     }
 }

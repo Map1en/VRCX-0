@@ -134,7 +134,7 @@ describe('deepLinkService', () => {
         mocks.appSharedCollectionImportStatus.mockResolvedValue(importStatus());
         mocks.appFavoriteLocalSnapshot.mockResolvedValue({
             favorites: [],
-            groupNames: []
+            groups: []
         });
         mocks.subscribe.mockImplementation(async (name, handler) => {
             mocks.eventHandlers.set(name, handler);
@@ -272,7 +272,9 @@ describe('deepLinkService', () => {
         });
         mocks.appFavoriteLocalSnapshot.mockResolvedValue({
             favorites: [],
-            groupNames: ['Scenic picks']
+            groups: [
+                { id: 1, kind: 'world', name: 'Scenic picks', shared: false }
+            ]
         });
         mocks.previewSharedCollection.mockResolvedValueOnce({
             title: 'Scenic picks',

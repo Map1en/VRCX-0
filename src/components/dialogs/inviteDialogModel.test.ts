@@ -15,6 +15,10 @@ import {
     pushUniqueLabel
 } from './inviteDialogModel';
 
+function localGroup(id: number, name: string) {
+    return { id, kind: 'friend' as const, name, shared: false };
+}
+
 describe('inviteDialogModel', () => {
     const friendsById = {
         usr_online_display: {
@@ -113,10 +117,13 @@ describe('inviteDialogModel', () => {
                     ],
                     group_duplicate: ['usr_online_display']
                 },
-                localFriendFavoriteGroups: ['Local Group', 'Shared Group'],
+                localFriendFavoriteGroups: [
+                    localGroup(1, 'Local Group'),
+                    localGroup(2, 'Shared Group')
+                ],
                 localFriendFavorites: {
-                    'Local Group': ['usr_online_display', 'usr_name_only'],
-                    'Shared Group': ['usr_online_display']
+                    1: ['usr_online_display', 'usr_name_only'],
+                    2: ['usr_online_display']
                 }
             })
         ).toEqual({
@@ -141,23 +148,6 @@ describe('inviteDialogModel', () => {
         ).toEqual(['usr_online_display', 'usr_offline']);
     });
 
-    it('builds favorite group labels from local favorites keys when group list is missing', () => {
-        expect(
-            buildFavoriteGroupLabelsByUserId({
-                favoriteFriendGroups: [],
-                groupedFavoriteFriendIdsByGroupKey: {},
-                localFriendFavoriteGroups: undefined,
-                localFriendFavorites: {
-                    'Group A': ['usr_online_display'],
-                    'Group B': ['usr_online_display', 'usr_name_only']
-                }
-            })
-        ).toEqual({
-            usr_online_display: ['Group A', 'Group B'],
-            usr_name_only: ['Group B']
-        });
-    });
-
     it('builds favorite group menu items with online friends and filters empty groups', () => {
         expect(
             buildFavoriteGroupItems({
@@ -174,10 +164,13 @@ describe('inviteDialogModel', () => {
                     ],
                     remote_empty: ['usr_offline']
                 },
-                localFriendFavoriteGroups: ['Local Online', 'Local Empty'],
+                localFriendFavoriteGroups: [
+                    localGroup(3, 'Local Online'),
+                    localGroup(4, 'Local Empty')
+                ],
                 localFriendFavorites: {
-                    'Local Online': ['usr_name_only', 'usr_missing'],
-                    'Local Empty': ['usr_offline']
+                    3: ['usr_name_only', 'usr_missing'],
+                    4: ['usr_offline']
                 },
                 friendsById
             })
@@ -191,7 +184,7 @@ describe('inviteDialogModel', () => {
             ],
             local: [
                 {
-                    key: 'local:Local Online',
+                    key: 'local:3',
                     label: 'Local Online',
                     userIds: ['usr_name_only']
                 }
@@ -200,9 +193,6 @@ describe('inviteDialogModel', () => {
     });
 
     it('returns no local groups when the local group list is missing', () => {
-        // buildFavoriteGroupItems only reads localFriendFavoriteGroups (no
-        // Object.keys fallback), unlike buildFavoriteGroupLabelsByUserId. This
-        // asymmetry is intentional — lock it so it is not "unified" by accident.
         expect(
             buildFavoriteGroupItems({
                 favoriteFriendGroups: [],

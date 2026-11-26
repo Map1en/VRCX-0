@@ -336,20 +336,32 @@ fn apply_favorite_action(
     entity_id: &str,
     group: &str,
 ) -> Result<i64, Error> {
+    let existing = favorites::favorite_group_list(db, Some(owner_user_id), kind)?
+        .into_iter()
+        .find(|candidate| candidate.name == group);
     match action {
-        FavoriteAction::Add => favorites::favorite_add(
-            db,
-            Some(owner_user_id),
-            kind,
-            entity_id.to_string(),
-            group.to_string(),
-        ),
-        FavoriteAction::Remove => favorites::favorite_remove(
-            db,
-            Some(owner_user_id),
-            kind,
-            entity_id.to_string(),
-            group.to_string(),
-        ),
+        FavoriteAction::Add => {
+            let group = match existing {
+                Some(group) => group,
+                None => favorites::favorite_group_create(db, Some(owner_user_id), kind, group)?,
+            };
+            favorites::favorite_add(
+                db,
+                Some(owner_user_id),
+                kind,
+                entity_id.to_string(),
+                group.id,
+            )
+        }
+        FavoriteAction::Remove => match existing {
+            Some(group) => favorites::favorite_remove(
+                db,
+                Some(owner_user_id),
+                kind,
+                entity_id.to_string(),
+                group.id,
+            ),
+            None => Ok(0),
+        },
     }
 }

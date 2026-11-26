@@ -1,4 +1,7 @@
-import type { FavoriteGroup } from '@/domain/favorites/types';
+import type {
+    FavoriteGroup,
+    LocalFavoriteGroup
+} from '@/domain/favorites/types';
 
 export type FeedFavoriteGroupOption = {
     key: string;
@@ -14,7 +17,7 @@ export function buildFeedFavoriteGroupOptions({
     localFriendFavoriteGroups
 }: {
     favoriteFriendGroups: readonly FavoriteGroup[];
-    localFriendFavoriteGroups: readonly string[];
+    localFriendFavoriteGroups: readonly LocalFavoriteGroup[];
 }): FeedFavoriteGroupOption[] {
     const options = new Map<string, FeedFavoriteGroupOption>();
     for (const group of favoriteFriendGroups) {
@@ -28,14 +31,9 @@ export function buildFeedFavoriteGroupOptions({
             });
         }
     }
-    for (const groupName of localFriendFavoriteGroups) {
-        const label = normalizeFeedId(groupName);
-        if (label) {
-            options.set(`local:${label}`, {
-                key: `local:${label}`,
-                label
-            });
-        }
+    for (const group of localFriendFavoriteGroups) {
+        const key = `local:${group.id}`;
+        options.set(key, { key, label: group.name });
     }
     return [...options.values()].sort((left, right) =>
         left.label.localeCompare(right.label)

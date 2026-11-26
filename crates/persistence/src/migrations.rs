@@ -10,5 +10,5 @@
 use crate::migration::Migration;
 
 pub fn migrations() -> Vec<Migration> {
-    Vec::new()
+    vec![crate::favorites::migration_v1::migration()]
 }

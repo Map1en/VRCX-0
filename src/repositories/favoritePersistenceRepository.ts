@@ -1,13 +1,9 @@
 import {
     commands,
-    type LocalFavoriteGroupInput as IpcLocalFavoriteGroupInput,
-    type LocalFavoriteGroupRenameInput as IpcLocalFavoriteGroupRenameInput,
-    type LocalFavoriteInput as IpcLocalFavoriteInput,
     type FavoriteEntityKind,
-    type FavoriteRow
+    type FavoriteRow,
+    type LocalFavoriteGroup
 } from '@/platform/tauri/bindings';
-
-import configRepository from './configRepository';
 
 type LocalFavoriteKind = FavoriteEntityKind;
 
@@ -20,62 +16,44 @@ interface WorldFavoriteRow {
 interface LocalFavoriteInput {
     kind: LocalFavoriteKind;
     entityId?: string;
-    groupName?: string;
+    groupId: number;
 }
 
-interface LocalFavoriteGroupInput {
+interface RenameLocalFavoriteGroupInput {
     kind: LocalFavoriteKind;
-    groupName?: string;
-}
-
-interface RenameLocalFavoriteGroupInput extends LocalFavoriteGroupInput {
-    newGroupName?: string;
-}
-
-function applyLocalFavoriteGroupWrite(write: {
-    configKey: string;
-    groupNames: string[];
-}): void {
-    configRepository.applyServerEntry(
-        write.configKey,
-        JSON.stringify(write.groupNames)
-    );
+    groupId: number;
+    name?: string;
 }
 
 function normalizeWorldFavoriteRow(row: FavoriteRow): WorldFavoriteRow {
     return {
-        created_at: normalizeEntityId(row.createdAt),
-        worldId: normalizeEntityId(row.worldId),
-        groupName: normalizeGroupName(row.groupName)
+        created_at: normalizeText(row.createdAt),
+        worldId: normalizeText(row.worldId),
+        groupName: normalizeText(row.groupName)
     };
 }
 
-function normalizeEntityId(value?: string | null) {
-    return value?.trim() ?? '';
-}
-
-function normalizeGroupName(value?: string | null) {
+function normalizeText(value?: string | null) {
     return value?.trim() ?? '';
 }
 
 async function createLocalFavoriteGroup({
     kind,
-    groupName
-}: LocalFavoriteGroupInput) {
-    const normalizedGroupName = normalizeGroupName(groupName);
-    if (!normalizedGroupName) {
+    name
+}: {
+    kind: LocalFavoriteKind;
+    name?: string;
+}): Promise<LocalFavoriteGroup> {
+    const normalizedName = normalizeText(name);
+    if (!normalizedName) {
         throw new Error(
-            'LocalFavoritesRepository.createLocalFavoriteGroup requires kind and groupName.'
+            'LocalFavoritesRepository.createLocalFavoriteGroup requires kind and name.'
         );
     }
-    const input = {
+    return commands.appLocalFavoriteGroupCreate({
         kind,
-        groupName: normalizedGroupName
-    } satisfies IpcLocalFavoriteGroupInput;
-
-    applyLocalFavoriteGroupWrite(
-        await commands.appLocalFavoriteGroupCreate(input)
-    );
+        name: normalizedName
+    });
 }
 
 async function getWorldFavorites() {
@@ -87,130 +65,63 @@ async function getWorldFavorites() {
 async function addLocalFavorite({
     kind,
     entityId,
-    groupName
+    groupId
 }: LocalFavoriteInput) {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    const normalizedGroupName = normalizeGroupName(groupName);
-
-    if (!normalizedEntityId || !normalizedGroupName) {
+    const normalizedEntityId = normalizeText(entityId);
+    if (!normalizedEntityId) {
         throw new Error(
-            'LocalFavoritesRepository.addLocalFavorite requires kind, entityId, and groupName.'
+            'LocalFavoritesRepository.addLocalFavorite requires kind, entityId, and groupId.'
         );
     }
-
-    const input = {
+    return commands.appLocalFavoriteAdd({
         kind,
         entityId: normalizedEntityId,
-        groupName: normalizedGroupName
-    } satisfies IpcLocalFavoriteInput;
-
-    return commands.appLocalFavoriteAdd(input);
-}
-
-function addAvatarToFavorites(avatarId: string, groupName: string) {
-    return addLocalFavorite({
-        kind: 'avatar',
-        entityId: avatarId,
-        groupName
-    });
-}
-
-function addWorldToFavorites(worldId: string, groupName: string) {
-    return addLocalFavorite({
-        kind: 'world',
-        entityId: worldId,
-        groupName
-    });
-}
-
-function addFriendToLocalFavorites(userId: string, groupName: string) {
-    return addLocalFavorite({
-        kind: 'friend',
-        entityId: userId,
-        groupName
+        groupId
     });
 }
 
 async function removeLocalFavorite({
     kind,
     entityId,
-    groupName
+    groupId
 }: LocalFavoriteInput) {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    const normalizedGroupName = normalizeGroupName(groupName);
-
-    if (!normalizedEntityId || !normalizedGroupName) {
+    const normalizedEntityId = normalizeText(entityId);
+    if (!normalizedEntityId) {
         throw new Error(
-            'LocalFavoritesRepository.removeLocalFavorite requires kind, entityId, and groupName.'
+            'LocalFavoritesRepository.removeLocalFavorite requires kind, entityId, and groupId.'
         );
     }
-
-    const input = {
+    return commands.appLocalFavoriteRemove({
         kind,
         entityId: normalizedEntityId,
-        groupName: normalizedGroupName
-    } satisfies IpcLocalFavoriteInput;
-
-    return commands.appLocalFavoriteRemove(input);
+        groupId
+    });
 }
 
 async function renameLocalFavoriteGroup({
     kind,
-    groupName,
-    newGroupName
+    groupId,
+    name
 }: RenameLocalFavoriteGroupInput) {
-    const normalizedGroupName = normalizeGroupName(groupName);
-    const normalizedNewGroupName = normalizeGroupName(newGroupName);
-
-    if (!normalizedGroupName || !normalizedNewGroupName) {
+    const normalizedName = normalizeText(name);
+    if (!normalizedName) {
         throw new Error(
-            'LocalFavoritesRepository.renameLocalFavoriteGroup requires kind, groupName, and newGroupName.'
+            'LocalFavoritesRepository.renameLocalFavoriteGroup requires kind, groupId, and name.'
         );
     }
-
-    const input = {
+    return commands.appLocalFavoriteGroupRename({
         kind,
-        groupName: normalizedGroupName,
-        newGroupName: normalizedNewGroupName
-    } satisfies IpcLocalFavoriteGroupRenameInput;
-
-    const write = await commands.appLocalFavoriteGroupRename(input);
-    applyLocalFavoriteGroupWrite(write);
-    return write.affected;
-}
-
-async function deleteLocalFavoriteGroup({
-    kind,
-    groupName
-}: LocalFavoriteGroupInput) {
-    const normalizedGroupName = normalizeGroupName(groupName);
-
-    if (!normalizedGroupName) {
-        throw new Error(
-            'LocalFavoritesRepository.deleteLocalFavoriteGroup requires kind and groupName.'
-        );
-    }
-
-    const input = {
-        kind,
-        groupName: normalizedGroupName
-    } satisfies IpcLocalFavoriteGroupInput;
-
-    const write = await commands.appLocalFavoriteGroupDelete(input);
-    applyLocalFavoriteGroupWrite(write);
-    return write.affected;
+        groupId,
+        name: normalizedName
+    });
 }
 
 const favoritePersistenceRepository = Object.freeze({
-    addAvatarToFavorites,
-    addFriendToLocalFavorites,
-    addWorldToFavorites,
     createLocalFavoriteGroup,
     getWorldFavorites,
     addLocalFavorite,
     removeLocalFavorite,
-    renameLocalFavoriteGroup,
-    deleteLocalFavoriteGroup
+    renameLocalFavoriteGroup
 });
 
 export default favoritePersistenceRepository;

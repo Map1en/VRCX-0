@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_contracts::{runtime_event_payload, RuntimeEventPayload};
+use vrcx_0_contracts::{runtime_event_payload, LocalFavoriteGroup, RuntimeEventPayload};
 
 use crate::backend_runtime::{BackendRuntimeTelemetry, RealtimeProjectionSync};
 use crate::events::FriendProfileLoadStatusPayload;
@@ -38,32 +38,29 @@ pub enum FavoriteChange {
         kind: FavoriteEntityKind,
         #[serde(rename = "entityId")]
         entity_id: String,
-        #[serde(rename = "groupName")]
-        group_name: String,
+        #[serde(rename = "groupId")]
+        group_id: i64,
     },
     LocalRemoved {
         kind: FavoriteEntityKind,
         #[serde(rename = "entityId")]
         entity_id: String,
-        #[serde(rename = "groupName")]
-        group_name: String,
+        #[serde(rename = "groupId")]
+        group_id: i64,
     },
     LocalGroupCreated {
-        kind: FavoriteEntityKind,
-        #[serde(rename = "groupName")]
-        group_name: String,
+        group: LocalFavoriteGroup,
     },
     LocalGroupRenamed {
         kind: FavoriteEntityKind,
-        #[serde(rename = "groupName")]
-        group_name: String,
-        #[serde(rename = "newGroupName")]
-        new_group_name: String,
+        #[serde(rename = "groupId")]
+        group_id: i64,
+        name: String,
     },
     LocalGroupDeleted {
         kind: FavoriteEntityKind,
-        #[serde(rename = "groupName")]
-        group_name: String,
+        #[serde(rename = "groupId")]
+        group_id: i64,
     },
     RemoteAdded {
         favorite: RawJson,
@@ -228,7 +225,7 @@ mod tests {
             vec![FavoriteChange::LocalAdded {
                 kind: FavoriteEntityKind::Friend,
                 entity_id: "usr_friend".into(),
-                group_name: "Close".into(),
+                group_id: 12,
             }],
         ));
 
@@ -247,7 +244,7 @@ mod tests {
                     "type": "localAdded",
                     "kind": "friend",
                     "entityId": "usr_friend",
-                    "groupName": "Close"
+                    "groupId": 12
                 }],
                 "requiresRefresh": false
             })

@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use vrcx_0_contracts::LocalFavoriteGroup;
 use vrcx_0_core::json::RawJson;
 
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
@@ -39,8 +40,8 @@ pub struct FavoriteBaselineSnapshot {
     pub local_world_favorites: BTreeMap<String, Vec<String>>,
     pub local_avatar_favorites: BTreeMap<String, Vec<String>>,
     pub local_friend_favorites: BTreeMap<String, Vec<String>>,
-    pub local_avatar_favorite_groups: Vec<String>,
-    pub local_friend_favorite_groups: Vec<String>,
+    pub local_avatar_favorite_groups: Vec<LocalFavoriteGroup>,
+    pub local_friend_favorite_groups: Vec<LocalFavoriteGroup>,
     pub local_avatar_favorites_list: Vec<String>,
     pub local_friend_favorites_list: Vec<String>,
     pub detail: String,

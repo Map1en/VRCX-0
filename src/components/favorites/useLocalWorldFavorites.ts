@@ -11,7 +11,7 @@ type LocalWorldFavoritesStatus = LoadStatus;
 
 const EMPTY_SNAPSHOT: LocalWorldFavoritesSnapshot = {
     favoritesByGroup: {},
-    groupNames: []
+    groups: []
 };
 
 export function useLocalWorldFavorites(enabled: boolean = true) {

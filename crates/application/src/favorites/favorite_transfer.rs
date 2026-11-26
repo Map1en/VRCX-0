@@ -707,10 +707,10 @@ fn add_local_favorite(
 ) -> Result<i64> {
     deps.mutation.ensure_current()?;
     let affected = deps.store.add(
-        Some(&OwnerId::new(deps.mutation.scope().current_user_id.clone())),
+        Some(&current_owner(deps)),
         input.kind,
         normalize_text(&item.entity_id),
-        normalize_text(&input.target.group),
+        local_group_id(&input.target.group)?,
     )?;
     cache_world_snapshot_if_safe(deps.world_cache, input, item);
     Ok(affected)
@@ -722,17 +722,15 @@ fn add_local_fallback_favorite(
     item: &FavoriteTransferItem,
 ) -> Result<i64> {
     deps.mutation.ensure_current()?;
-    super::local_favorites::create_local_favorite_group(
-        deps.store,
-        &OwnerId::new(deps.mutation.scope().current_user_id.clone()),
-        input.kind,
-        FAVORITE_RECOVERED_GROUP.to_string(),
-    )?;
+    let owner = current_owner(deps);
+    let group = deps
+        .store
+        .create_group(Some(&owner), input.kind, FAVORITE_RECOVERED_GROUP)?;
     let affected = deps.store.add(
-        Some(&OwnerId::new(deps.mutation.scope().current_user_id.clone())),
+        Some(&owner),
         input.kind,
         normalize_text(&item.entity_id),
-        FAVORITE_RECOVERED_GROUP.to_string(),
+        group.id,
     )?;
     cache_world_snapshot_if_safe(deps.world_cache, input, item);
     Ok(affected)
@@ -745,10 +743,10 @@ fn delete_local_favorite(
 ) -> Result<i64> {
     deps.mutation.ensure_current()?;
     deps.store.remove(
-        Some(&OwnerId::new(deps.mutation.scope().current_user_id.clone())),
+        Some(&current_owner(deps)),
         input.kind,
         normalize_text(&item.entity_id),
-        normalize_text(&input.source.group),
+        local_group_id(&input.source.group)?,
     )
 }
 
@@ -759,13 +757,23 @@ fn move_local_favorite(
 ) -> Result<i64> {
     deps.mutation.ensure_current()?;
     let result = deps.store.move_between_groups(
-        Some(&OwnerId::new(deps.mutation.scope().current_user_id.clone())),
+        Some(&current_owner(deps)),
         input.kind,
         normalize_text(&item.entity_id),
-        normalize_text(&input.source.group),
-        normalize_text(&input.target.group),
+        local_group_id(&input.source.group)?,
+        local_group_id(&input.target.group)?,
     )?;
     Ok(result.removed + result.added)
+}
+
+fn current_owner(deps: &FavoriteTransferDeps<'_>) -> OwnerId {
+    OwnerId::new(deps.mutation.scope().current_user_id.clone())
+}
+
+pub(super) fn local_group_id(group: &str) -> Result<i64> {
+    normalize_text(group)
+        .parse::<i64>()
+        .map_err(|_| Error::Custom(format!("Invalid local favorite group id: {group}")))
 }
 
 pub(super) fn kind_equivalent_favorite_types(kind: &str) -> &'static [&'static str] {

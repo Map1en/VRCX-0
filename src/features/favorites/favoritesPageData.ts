@@ -3,7 +3,8 @@ import type {
     FavoriteGroup,
     FavoriteGroupMap,
     FavoriteKind,
-    FavoriteRecord
+    FavoriteRecord,
+    LocalFavoriteGroup
 } from '@/domain/favorites/types';
 import {
     presenceSection,
@@ -151,16 +152,19 @@ function buildRemoteFavoriteGroups(
 }
 
 function buildLocalFavoriteGroups(
-    names: readonly string[],
+    groups: readonly LocalFavoriteGroup[],
     source: FavoriteGroupSourceMap
 ): FavoriteGroupView[] {
-    return names.map((name) => ({
-        source: 'local',
-        key: name,
-        label: name,
-        count: Array.isArray(source[name]) ? source[name].length : 0,
-        visibility: ''
-    }));
+    return groups.map((group) => {
+        const key = String(group.id);
+        return {
+            source: 'local',
+            key,
+            label: group.name,
+            count: Array.isArray(source[key]) ? source[key].length : 0,
+            visibility: ''
+        };
+    });
 }
 
 function isTranslateFn(value: unknown): value is TranslateFn {
@@ -339,14 +343,14 @@ export function buildFavoriteLocalGroups({
     localWorldFavorites
 }: {
     kind: FavoriteKind;
-    localFriendFavoriteGroups?: readonly string[];
-    localAvatarFavoriteGroups?: readonly string[];
-    localWorldFavoriteGroups?: readonly string[];
+    localFriendFavoriteGroups?: readonly LocalFavoriteGroup[];
+    localAvatarFavoriteGroups?: readonly LocalFavoriteGroup[];
+    localWorldFavoriteGroups?: readonly LocalFavoriteGroup[];
     localFriendFavorites?: FavoriteGroupSourceMap;
     localAvatarFavorites?: FavoriteGroupSourceMap;
     localWorldFavorites?: FavoriteGroupSourceMap;
 }): FavoriteGroupView[] {
-    const names =
+    const groups =
         kind === 'friend'
             ? localFriendFavoriteGroups
             : kind === 'avatar'
@@ -359,7 +363,7 @@ export function buildFavoriteLocalGroups({
               ? localAvatarFavorites
               : localWorldFavorites;
 
-    return buildLocalFavoriteGroups(names || [], source || {});
+    return buildLocalFavoriteGroups(groups || [], source || {});
 }
 
 export function buildFavoriteAvatarHistoryGroups({

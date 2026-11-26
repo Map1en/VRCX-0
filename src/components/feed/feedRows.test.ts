@@ -89,23 +89,23 @@ describe('feed row helpers', () => {
                 group_a: [USER_ID],
                 group_b: ['usr_other']
             },
-            localGroupNames: ['Local', 'Close'],
+            localGroupIds: [1, 2],
             localFriendFavorites: {
-                Local: [' usr_local ', ''],
-                Close: ['usr_close']
+                1: [' usr_local ', ''],
+                2: ['usr_close']
             }
         };
 
         expect([
             ...buildFeedFavoriteIdSet({
                 ...groups,
-                selectedGroupKeys: ['group_a', 'local:Close']
+                selectedGroupKeys: ['group_a', 'local:2']
             })
         ]).toEqual([USER_ID, 'usr_close']);
         expect([
             ...buildFeedFavoriteIdSet({
                 ...groups,
-                selectedGroupKeys: ['local:Local']
+                selectedGroupKeys: ['local:1']
             })
         ]).toEqual(['usr_local']);
     });
@@ -114,11 +114,11 @@ describe('feed row helpers', () => {
         const groups = {
             remoteGroupKeys: ['group_a'],
             remoteIdsByGroupKey: { group_a: [USER_ID] },
-            localGroupNames: ['Local'],
-            localFriendFavorites: { Local: ['usr_local'] }
+            localGroupIds: [1],
+            localFriendFavorites: { 1: ['usr_local'] }
         };
 
-        for (const selectedGroupKeys of [[], ['local:Deleted', 'group_gone']]) {
+        for (const selectedGroupKeys of [[], ['local:99', 'group_gone']]) {
             expect([
                 ...buildFeedFavoriteIdSet({ ...groups, selectedGroupKeys })
             ]).toEqual([USER_ID, 'usr_local']);

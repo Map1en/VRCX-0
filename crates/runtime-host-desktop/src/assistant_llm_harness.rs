@@ -2518,8 +2518,8 @@ async fn assistant_tools_agree_with_the_snapshot() {
         "favorites totalRows",
         favorite_total,
         sql.int(
-            "SELECT (SELECT COUNT(*) FROM favorite_world) + (SELECT COUNT(*) FROM favorite_avatar)
-                  + (SELECT COUNT(*) FROM favorite_friend WHERE owner_id IN (0, ?1))",
+            "SELECT COUNT(*) FROM vrcx0_favorite_item i JOIN vrcx0_favorite_group g ON g.id = i.group_id
+                  WHERE g.kind <> 'friend' OR g.owner_id IN (0, ?1)",
             [sql.owner_row],
         ),
     );

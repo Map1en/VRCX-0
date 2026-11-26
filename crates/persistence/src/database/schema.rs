@@ -2,14 +2,12 @@ use std::collections::HashSet;
 
 use serde_json::Value;
 
-use crate::common::ParamsBuilder;
 use crate::database::DatabaseService;
 use crate::ownership::{ensure_owner_table, COL_OWNER_ID};
 use crate::realtime::ensure_realtime_tables;
 use crate::Error;
 
 const GLOBAL_STORE_SCHEMA_KEY: &str = "global-store";
-const FAVORITE_UNIQUE_INDEX_SCHEMA_KEY: &str = "global-store:favorite-unique-indexes";
 
 pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Error> {
     db.ensure_schema_once(GLOBAL_STORE_SCHEMA_KEY, || {
@@ -18,9 +16,9 @@ pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Err
             "CREATE TABLE IF NOT EXISTS cache_avatar (id TEXT PRIMARY KEY, added_at TEXT, author_id TEXT, author_name TEXT, created_at TEXT, description TEXT, image_url TEXT, name TEXT, release_status TEXT, thumbnail_image_url TEXT, updated_at TEXT, version INTEGER)",
             "CREATE TABLE IF NOT EXISTS cache_world (id TEXT PRIMARY KEY, added_at TEXT, author_id TEXT, author_name TEXT, created_at TEXT, description TEXT, image_url TEXT, name TEXT, release_status TEXT, thumbnail_image_url TEXT, updated_at TEXT, version INTEGER)",
             "CREATE TABLE IF NOT EXISTS cache_file (id TEXT PRIMARY KEY, name TEXT NOT NULL DEFAULT '', owner_id TEXT NOT NULL DEFAULT '', fetched_at TEXT NOT NULL DEFAULT '')",
-            "CREATE TABLE IF NOT EXISTS favorite_world (id INTEGER PRIMARY KEY, created_at TEXT, world_id TEXT, group_name TEXT)",
-            "CREATE TABLE IF NOT EXISTS favorite_avatar (id INTEGER PRIMARY KEY, created_at TEXT, avatar_id TEXT, group_name TEXT)",
-            "CREATE TABLE IF NOT EXISTS favorite_friend (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, group_name TEXT, owner_id INTEGER NOT NULL DEFAULT 0)",
+            "CREATE TABLE IF NOT EXISTS vrcx0_favorite_group (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, owner_id INTEGER NOT NULL DEFAULT 0, name TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at TEXT NOT NULL, UNIQUE (kind, owner_id, name))",
+            "CREATE TABLE IF NOT EXISTS vrcx0_favorite_item (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id INTEGER NOT NULL, entity_id TEXT NOT NULL, sort_order INTEGER, created_at TEXT NOT NULL, UNIQUE (group_id, entity_id))",
+            "CREATE INDEX IF NOT EXISTS vrcx0_favorite_item_entity_idx ON vrcx0_favorite_item (entity_id)",
             "CREATE TABLE IF NOT EXISTS favorite_group_collection (id TEXT PRIMARY KEY, owner_id INTEGER NOT NULL, name TEXT NOT NULL, group_ids TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL)",
             "CREATE UNIQUE INDEX IF NOT EXISTS favorite_group_collection_owner_name_idx ON favorite_group_collection (owner_id, name)",
             "CREATE INDEX IF NOT EXISTS favorite_group_collection_owner_created_idx ON favorite_group_collection (owner_id, created_at, id)",
@@ -32,129 +30,8 @@ pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Err
         ] {
             db.execute_non_query(sql, &Default::default())?;
         }
-        add_column_if_missing(
-            db,
-            "favorite_friend",
-            COL_OWNER_ID,
-            "INTEGER NOT NULL DEFAULT 0",
-        )?;
-        for table in ["favorite_world", "favorite_avatar", "favorite_friend"] {
-            add_column_if_missing(db, table, "sort_order", "INTEGER")?;
-        }
-        db.execute_non_query(
-            "DROP INDEX IF EXISTS favorite_friend_user_id_group_idx",
-            &Default::default(),
-        )?;
         Ok(())
-    })?;
-    db.ensure_schema_until_stable(FAVORITE_UNIQUE_INDEX_SCHEMA_KEY, || {
-        ensure_favorite_unique_indexes(db)
     })
-}
-
-const FAVORITE_UNIQUE_INDEX_TABLES: [(&str, &str, &str); 2] = [
-    (
-        "favorite_world",
-        "world_id",
-        "favorite_world_world_id_group",
-    ),
-    (
-        "favorite_avatar",
-        "avatar_id",
-        "favorite_avatar_avatar_id_group",
-    ),
-];
-
-fn ensure_favorite_unique_indexes(db: &DatabaseService) -> Result<bool, Error> {
-    let mut stable = true;
-    for (table, column, index_stem) in FAVORITE_UNIQUE_INDEX_TABLES {
-        stable &= ensure_favorite_index(db, table, &format!("{column}, group_name"), index_stem)?;
-    }
-    stable &= ensure_favorite_index(
-        db,
-        "favorite_friend",
-        "owner_id, user_id, group_name",
-        "favorite_friend_owner_user_id_group",
-    )?;
-    Ok(stable)
-}
-
-fn ensure_favorite_index(
-    db: &DatabaseService,
-    table: &str,
-    columns: &str,
-    index_stem: &str,
-) -> Result<bool, Error> {
-    let unique_index = format!("{index_stem}_idx");
-    let lookup_index = format!("{index_stem}_lookup_idx");
-    if favorite_index_exists(db, &unique_index)? {
-        return Ok(true);
-    }
-    if favorite_index_exists(db, &lookup_index)? {
-        if favorite_duplicates_exist(db, table, columns)? {
-            return Ok(false);
-        }
-        db.execute_non_query(
-            &format!("CREATE UNIQUE INDEX IF NOT EXISTS {unique_index} ON {table} ({columns})"),
-            &Default::default(),
-        )?;
-        db.execute_non_query(
-            &format!("DROP INDEX IF EXISTS {lookup_index}"),
-            &Default::default(),
-        )?;
-        return Ok(true);
-    }
-
-    if favorite_duplicates_exist(db, table, columns)? {
-        tracing::warn!(
-            table,
-            index = unique_index,
-            "preserving duplicate legacy favorite rows and creating a non-unique lookup index"
-        );
-        db.execute_non_query(
-            &format!("CREATE INDEX IF NOT EXISTS {lookup_index} ON {table} ({columns})"),
-            &Default::default(),
-        )?;
-        Ok(false)
-    } else {
-        db.execute_non_query(
-            &format!("CREATE UNIQUE INDEX IF NOT EXISTS {unique_index} ON {table} ({columns})"),
-            &Default::default(),
-        )?;
-        Ok(true)
-    }
-}
-
-fn favorite_duplicates_exist(
-    db: &DatabaseService,
-    table: &str,
-    columns: &str,
-) -> Result<bool, Error> {
-    let non_null_columns = columns
-        .split(',')
-        .map(str::trim)
-        .map(|column| format!("{column} IS NOT NULL"))
-        .collect::<Vec<_>>()
-        .join(" AND ");
-    Ok(!db
-        .execute(
-            &format!(
-                "SELECT 1 FROM {table} WHERE {non_null_columns} GROUP BY {columns} HAVING COUNT(*) > 1 LIMIT 1"
-            ),
-            &Default::default(),
-        )?
-        .is_empty())
-}
-
-fn favorite_index_exists(db: &DatabaseService, index_name: &str) -> Result<bool, Error> {
-    Ok(!db
-        .execute(
-            "SELECT name FROM sqlite_master WHERE type = 'index' AND name = @name",
-            &ParamsBuilder::new()
-                .set("name", index_name.to_string())
-                .build(),
-        )?
-        .is_empty())
 }
 
 pub(crate) fn ensure_assistant_tables(db: &DatabaseService) -> Result<(), Error> {

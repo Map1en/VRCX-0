@@ -683,76 +683,63 @@ impl DesktopRuntimeHostState {
     pub fn favorite_local_group_create(
         &self,
         kind: vrcx_0_application_core::FavoriteEntityKind,
-        group_name: String,
-    ) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite> {
+        name: String,
+    ) -> Result<vrcx_0_application::favorites::LocalFavoriteGroup> {
         Ok(self
             .runtime
             .desktop_assembly()
             .favorite_mutations()
-            .create_local_group(kind, group_name)?)
+            .create_local_group(kind, name)?)
     }
 
     pub fn favorite_local_group_rename(
         &self,
         kind: vrcx_0_application_core::FavoriteEntityKind,
-        group_name: String,
-        new_group_name: String,
-    ) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite> {
-        let write = self
+        group_id: i64,
+        name: String,
+    ) -> Result<i64> {
+        Ok(self
             .runtime
             .desktop_assembly()
             .favorite_mutations()
-            .rename_local_group(kind, group_name.clone(), new_group_name.clone())?;
-        let config = self.runtime.desktop_assembly().config_store();
-        vrcx_0_application_game::presence_automation_local_group_renamed(
-            config.as_ref(),
-            kind,
-            &group_name,
-            &new_group_name,
-        )?;
-        if kind == vrcx_0_application_core::FavoriteEntityKind::Friend {
-            self.desktop
-                .services
-                .rename_local_favorite_group_in_activity_filters(&group_name, &new_group_name)?;
-        }
-        Ok(write)
+            .rename_local_group(kind, group_id, name)?)
     }
 
     pub fn favorite_local_group_delete(
         &self,
         kind: vrcx_0_application_core::FavoriteEntityKind,
-        group_name: String,
-    ) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite> {
+        group_id: i64,
+    ) -> Result<i64> {
         Ok(self
             .runtime
             .desktop_assembly()
             .favorite_mutations()
-            .delete_local_group(kind, group_name)?)
+            .delete_local_group(kind, group_id)?)
     }
 
     pub fn favorite_local_group_reorder(
         &self,
         kind: vrcx_0_application_core::FavoriteEntityKind,
-        group_names: Vec<String>,
-    ) -> Result<Vec<String>> {
+        group_ids: Vec<i64>,
+    ) -> Result<Vec<vrcx_0_application::favorites::LocalFavoriteGroup>> {
         Ok(self
             .runtime
             .desktop_assembly()
             .favorite_mutations()
-            .reorder_local_groups(kind, group_names)?)
+            .reorder_local_groups(kind, group_ids)?)
     }
 
     pub fn favorite_local_reorder(
         &self,
         kind: vrcx_0_application_core::FavoriteEntityKind,
-        group_name: String,
+        group_id: i64,
         entity_ids: Vec<String>,
     ) -> Result<i64> {
         Ok(self
             .runtime
             .desktop_assembly()
             .favorite_mutations()
-            .reorder_local(kind, group_name, entity_ids)?)
+            .reorder_local(kind, group_id, entity_ids)?)
     }
 
     pub fn favorite_import_start(

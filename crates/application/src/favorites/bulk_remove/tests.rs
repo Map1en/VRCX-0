@@ -56,7 +56,7 @@ fn item(key: &str, source: FavoriteBulkRemoveSource) -> FavoriteBulkRemoveWorkIt
             key: key.into(),
             source,
             entity_id: format!("wrld_{key}"),
-            group_name: "Worlds".into(),
+            group_id: Some(1),
         },
         rejection: None,
     }
@@ -139,12 +139,19 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_self", "");
     let remote_mutation_gate = RemoteMutationGate::default();
+    let group = store
+        .create_group(
+            Some(&OwnerId::new("usr_self")),
+            FavoriteEntityKind::Friend,
+            "Friends",
+        )
+        .unwrap();
     store
         .add(
             Some(&OwnerId::new("usr_self")),
             FavoriteEntityKind::Friend,
             "usr_target".into(),
-            "Friends".into(),
+            group.id,
         )
         .unwrap();
 
@@ -165,7 +172,7 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
                 key: "local:Friends:usr_target".into(),
                 source: FavoriteBulkRemoveSource::Local,
                 entity_id: "usr_target".into(),
-                group_name: "Friends".into(),
+                group_id: Some(group.id),
             }],
         },
     )
@@ -186,6 +193,13 @@ async fn selection_chunks_more_than_one_protected_batch() {
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_self", "");
     let remote_mutation_gate = RemoteMutationGate::default();
+    let group = store
+        .create_group(
+            Some(&OwnerId::new("usr_self")),
+            FavoriteEntityKind::Friend,
+            "Friends",
+        )
+        .unwrap();
     let items = (0..=FAVORITE_BULK_REMOVE_MAX_ITEMS)
         .map(|index| {
             let entity_id = format!("usr_{index}");
@@ -194,14 +208,14 @@ async fn selection_chunks_more_than_one_protected_batch() {
                     Some(&OwnerId::new("usr_self")),
                     FavoriteEntityKind::Friend,
                     entity_id.clone(),
-                    "Friends".into(),
+                    group.id,
                 )
                 .unwrap();
             FavoriteBulkRemoveItem {
                 key: format!("local:Friends:{entity_id}"),
                 source: FavoriteBulkRemoveSource::Local,
                 entity_id,
-                group_name: "Friends".into(),
+                group_id: Some(group.id),
             }
         })
         .collect();
@@ -254,13 +268,13 @@ async fn invalid_items_fail_individually_and_valid_items_still_run() {
                 key: "dirty".into(),
                 source: FavoriteBulkRemoveSource::Remote,
                 entity_id: "not-a-world-id".into(),
-                group_name: String::new(),
+                group_id: None,
             },
             FavoriteBulkRemoveItem {
                 key: "valid".into(),
                 source: FavoriteBulkRemoveSource::Remote,
                 entity_id: "wrld_valid".into(),
-                group_name: String::new(),
+                group_id: None,
             },
         ],
     )
@@ -287,7 +301,7 @@ fn input_enforces_item_limit() {
             key: format!("key-{index}"),
             source: FavoriteBulkRemoveSource::Remote,
             entity_id: format!("wrld_{index}"),
-            group_name: String::new(),
+            group_id: None,
         })
         .collect();
 

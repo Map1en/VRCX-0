@@ -320,12 +320,11 @@ export function FriendsSidebar({
             ...(favoriteFriendGroups || [])
                 .map((group) => group.key)
                 .filter((key): key is string => Boolean(key)),
-            ...(localFriendFavoriteGroups?.length
-                ? localFriendFavoriteGroups
-                : Object.keys(localFriendFavorites || {})
-            ).map((groupName) => `local:${groupName}`)
+            ...(localFriendFavoriteGroups || []).map(
+                (group) => `local:${group.id}`
+            )
         ],
-        [favoriteFriendGroups, localFriendFavoriteGroups, localFriendFavorites]
+        [favoriteFriendGroups, localFriendFavoriteGroups]
     );
     const hasFavoriteGroupFilter = useMemo(
         () =>
@@ -620,27 +619,25 @@ export function FriendsSidebar({
                     String(right.displayName || right.name || right.key || '')
                 );
             });
-        const orderedLocalGroups = [
-            ...(localFriendFavoriteGroups?.length
-                ? localFriendFavoriteGroups
-                : Object.keys(localFriendFavorites || {}))
-        ].sort((left, right) => {
-            const order = Array.isArray(prefs.sidebarFavoriteGroupOrder)
-                ? prefs.sidebarFavoriteGroupOrder
-                : [];
-            const leftIndex = order.indexOf(`local:${left}`);
-            const rightIndex = order.indexOf(`local:${right}`);
-            if (leftIndex >= 0 && rightIndex >= 0) {
-                return leftIndex - rightIndex;
+        const orderedLocalGroups = [...(localFriendFavoriteGroups || [])].sort(
+            (left, right) => {
+                const order = Array.isArray(prefs.sidebarFavoriteGroupOrder)
+                    ? prefs.sidebarFavoriteGroupOrder
+                    : [];
+                const leftIndex = order.indexOf(`local:${left.id}`);
+                const rightIndex = order.indexOf(`local:${right.id}`);
+                if (leftIndex >= 0 && rightIndex >= 0) {
+                    return leftIndex - rightIndex;
+                }
+                if (leftIndex >= 0) {
+                    return -1;
+                }
+                if (rightIndex >= 0) {
+                    return 1;
+                }
+                return 0;
             }
-            if (leftIndex >= 0) {
-                return -1;
-            }
-            if (rightIndex >= 0) {
-                return 1;
-            }
-            return 0;
-        });
+        );
 
         for (const group of orderedRemoteGroups) {
             if (!selectedFavoriteGroupKeys.has(group.key)) {
@@ -663,11 +660,14 @@ export function FriendsSidebar({
             }
         }
 
-        for (const groupName of orderedLocalGroups) {
-            if (!selectedFavoriteGroupKeys.has(`local:${groupName}`)) {
+        for (const localGroup of orderedLocalGroups) {
+            const localKey = `local:${localGroup.id}`;
+            if (!selectedFavoriteGroupKeys.has(localKey)) {
                 continue;
             }
-            const rowsForGroup = (localFriendFavorites?.[groupName] || [])
+            const rowsForGroup = (
+                localFriendFavorites?.[String(localGroup.id)] || []
+            )
                 .map((id) => favoriteRowById.get(normalizeId(id)))
                 .filter(isPresent);
             if (rowsForGroup.length) {
@@ -675,8 +675,8 @@ export function FriendsSidebar({
                     seen.add(normalizeId(friend.id))
                 );
                 sections.push({
-                    key: `local:${groupName}`,
-                    label: groupName,
+                    key: localKey,
+                    label: localGroup.name,
                     rows: sortRows(rowsForGroup, prefs, sortContext)
                 });
             }

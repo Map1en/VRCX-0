@@ -16,7 +16,6 @@ use vrcx_0_contracts::WorldSummaryOutput;
 use vrcx_0_persistence::DatabaseService;
 
 const SHARE_OWNER_TOKENS_CONFIG_KEY: &str = "VRCX_ShareOwnerKeys";
-const LOCAL_WORLD_FAVORITE_GROUPS_KEY: &str = "localFavoriteWorldGroups";
 
 #[derive(Clone)]
 pub struct LocalWorldCollectionAdapter {
@@ -139,28 +138,14 @@ struct LocalSharedCollectionImportActions {
 }
 
 impl SharedCollectionImportActions for LocalSharedCollectionImportActions {
-    fn create_group(&self, group_name: &str) -> crate::Result<()> {
-        let mut groups = vrcx_0_persistence::config::get_json(
+    fn create_group(&self, group_name: &str) -> crate::Result<i64> {
+        vrcx_0_persistence::favorites::favorite_group_create(
             self.db.as_ref(),
-            LOCAL_WORLD_FAVORITE_GROUPS_KEY,
-            json!([]),
-        )?
-        .as_array()
-        .cloned()
-        .unwrap_or_default()
-        .into_iter()
-        .filter_map(|value| value.as_str().map(ToOwned::to_owned))
-        .collect::<Vec<_>>();
-        if !groups.iter().any(|value| value == group_name) {
-            groups.push(group_name.to_string());
-            groups.sort();
-            groups.dedup();
-        }
-        vrcx_0_persistence::config::set_json(
-            self.db.as_ref(),
-            LOCAL_WORLD_FAVORITE_GROUPS_KEY,
-            &json!(groups),
+            None,
+            FavoriteEntityKind::World,
+            group_name,
         )
+        .map(|group| group.id)
         .map_err(crate::Error::from)
     }
 
@@ -195,13 +180,13 @@ impl SharedCollectionImportActions for LocalSharedCollectionImportActions {
         })
     }
 
-    fn add_world_favorite(&self, world_id: &str, group_name: &str) -> crate::Result<()> {
+    fn add_world_favorite(&self, world_id: &str, group_id: i64) -> crate::Result<()> {
         vrcx_0_persistence::favorites::favorite_add(
             self.db.as_ref(),
             None,
             FavoriteEntityKind::World,
             world_id.to_string(),
-            group_name.to_string(),
+            group_id,
         )
         .map(|_| ())
         .map_err(crate::Error::from)

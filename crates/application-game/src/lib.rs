@@ -21,13 +21,12 @@ pub use background_capabilities::chatbox;
 pub use background_capabilities::heart_rate;
 pub use background_capabilities::{
     build_background_discord_presence_command, build_background_presence_facts,
-    presence_automation_local_group_renamed, presence_automation_rule_enabled_set,
-    presence_automation_rules_get, presence_automation_rules_set,
-    run_background_presence_automation, BackgroundDiscordActivityPayload,
-    BackgroundDiscordPresenceCommand, BackgroundDiscordPresenceState,
-    BackgroundPresenceAutomationResult, BackgroundPresenceAutomationState, BackgroundPresenceFacts,
-    BackgroundPresenceFactsInput, DiscordPresenceLabels, PresenceAutomationRuleKind,
-    PresencePlayer,
+    presence_automation_rule_enabled_set, presence_automation_rules_get,
+    presence_automation_rules_set, run_background_presence_automation,
+    BackgroundDiscordActivityPayload, BackgroundDiscordPresenceCommand,
+    BackgroundDiscordPresenceState, BackgroundPresenceAutomationResult,
+    BackgroundPresenceAutomationState, BackgroundPresenceFacts, BackgroundPresenceFactsInput,
+    DiscordPresenceLabels, PresenceAutomationRuleKind, PresencePlayer,
 };
 pub use game_client::{
     DebugLoggingOutcome, DebugLoggingOutcomeKind, GameClientActions, GameClientCacheActions,

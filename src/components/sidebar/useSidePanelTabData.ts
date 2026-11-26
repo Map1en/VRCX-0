@@ -66,9 +66,9 @@ export function useSidePanelTabData({
                     label: group.displayName || group.name || group.key || '',
                     source: 'remote' as const
                 })),
-                ...(localFriendFavoriteGroups || []).map((groupName) => ({
-                    key: `local:${groupName}`,
-                    label: groupName,
+                ...(localFriendFavoriteGroups || []).map((group) => ({
+                    key: `local:${group.id}`,
+                    label: group.name,
                     source: 'local' as const
                 }))
             ].filter((group) => group.key),

@@ -5,7 +5,7 @@ use vrcx_0_application_core::{Error, Result, RuntimeAuthScope};
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_contracts::{
     social_aggregates::{FavoriteAction, FavoriteLocalInput, FavoriteOutput},
-    FavoriteRow,
+    FavoriteRow, LocalFavoriteGroup,
 };
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 
@@ -279,18 +279,25 @@ impl FavoriteRemote for TestFavoriteRemote {
 }
 
 #[derive(Clone)]
+struct StoredGroup {
+    id: i64,
+    kind: FavoriteEntityKind,
+    owner_user_id: Option<String>,
+    name: String,
+    sort_order: i64,
+}
+
+#[derive(Clone)]
 struct StoredFavorite {
     id: i64,
     sort_order: Option<i64>,
-    owner_user_id: Option<String>,
-    kind: FavoriteEntityKind,
+    group_id: i64,
     entity_id: String,
-    group_name: String,
 }
 
 #[derive(Default)]
 struct TestFavoriteStoreState {
-    configs: HashMap<String, serde_json::Value>,
+    groups: Vec<StoredGroup>,
     favorites: Vec<StoredFavorite>,
     next_id: i64,
 }
@@ -301,58 +308,235 @@ pub(super) struct TestFavoriteStore {
 }
 
 impl TestFavoriteStore {
-    fn owner(owner_user_id: Option<&OwnerId>) -> Option<String> {
-        owner_user_id.map(|owner| owner.as_str().to_string())
+    fn owner(kind: FavoriteEntityKind, owner_user_id: Option<&OwnerId>) -> Option<String> {
+        (kind == FavoriteEntityKind::Friend)
+            .then(|| owner_user_id.map(|owner| owner.as_str().to_string()))
+            .flatten()
     }
 
-    fn visible_rows(
+    fn lock(&self) -> std::sync::MutexGuard<'_, TestFavoriteStoreState> {
+        self.state.lock().unwrap_or_else(|error| error.into_inner())
+    }
+
+    fn visible_groups(
+        state: &TestFavoriteStoreState,
+        owner_user_id: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+    ) -> Vec<StoredGroup> {
+        let owner = Self::owner(kind, owner_user_id);
+        let mut groups = state
+            .groups
+            .iter()
+            .filter(|group| {
+                group.kind == kind
+                    && (group.owner_user_id.is_none() || group.owner_user_id == owner)
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        groups.sort_by_key(|group| (group.owner_user_id.is_none(), group.sort_order, group.id));
+        groups
+    }
+
+    fn visible_group(
+        state: &TestFavoriteStoreState,
+        owner_user_id: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+        group_id: i64,
+    ) -> Result<StoredGroup> {
+        Self::visible_groups(state, owner_user_id, kind)
+            .into_iter()
+            .find(|group| group.id == group_id)
+            .ok_or_else(|| Error::Custom("Local favorite group was not found.".into()))
+    }
+
+    fn to_group(group: &StoredGroup) -> LocalFavoriteGroup {
+        LocalFavoriteGroup {
+            id: group.id,
+            kind: group.kind,
+            name: group.name.clone(),
+            shared: group.kind == FavoriteEntityKind::Friend && group.owner_user_id.is_none(),
+        }
+    }
+
+    fn rows(
         &self,
         owner_user_id: Option<&OwnerId>,
         kind: FavoriteEntityKind,
-    ) -> Vec<StoredFavorite> {
-        let owner = Self::owner(owner_user_id);
-        self.state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
+        custom_order: bool,
+    ) -> Vec<FavoriteRow> {
+        let state = self.lock();
+        let groups = Self::visible_groups(&state, owner_user_id, kind);
+        let mut rows = state
             .favorites
             .iter()
-            .filter(|row| {
-                row.kind == kind && (row.owner_user_id == owner || row.owner_user_id.is_none())
+            .filter_map(|row| {
+                groups
+                    .iter()
+                    .find(|group| group.id == row.group_id)
+                    .map(|group| (row.clone(), group.name.clone()))
             })
-            .cloned()
+            .collect::<Vec<_>>();
+        if custom_order {
+            rows.sort_by_key(|(row, _)| (row.sort_order.unwrap_or(-row.id), row.id));
+        } else {
+            rows.sort_by_key(|(row, _)| row.id);
+        }
+        rows.into_iter()
+            .map(|(row, name)| {
+                FavoriteRow::new(kind, String::new(), row.entity_id, row.group_id, name)
+            })
             .collect()
     }
 
-    fn rows_to_favorites(rows: Vec<StoredFavorite>) -> Vec<FavoriteRow> {
-        rows.into_iter()
-            .map(|row| FavoriteRow::new(row.kind, String::new(), row.entity_id, row.group_name))
-            .collect()
+    fn insert(state: &mut TestFavoriteStoreState, group_id: i64, entity_id: String) -> i64 {
+        if state
+            .favorites
+            .iter()
+            .any(|row| row.group_id == group_id && row.entity_id == entity_id)
+        {
+            return 0;
+        }
+        state.next_id += 1;
+        let id = state.next_id;
+        state.favorites.push(StoredFavorite {
+            id,
+            sort_order: None,
+            group_id,
+            entity_id,
+        });
+        1
     }
 }
 
 impl FavoriteStore for TestFavoriteStore {
-    fn config_json(&self, key: &str, fallback: serde_json::Value) -> Result<serde_json::Value> {
-        Ok(self
-            .state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .configs
-            .get(key)
-            .cloned()
-            .unwrap_or(fallback))
+    fn list_groups(
+        &self,
+        owner_user_id: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+    ) -> Result<Vec<LocalFavoriteGroup>> {
+        Ok(Self::visible_groups(&self.lock(), owner_user_id, kind)
+            .iter()
+            .map(Self::to_group)
+            .collect())
     }
 
-    fn set_config_json(&self, key: &str, value: serde_json::Value) -> Result<()> {
-        self.state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .configs
-            .insert(key.to_string(), value);
-        Ok(())
+    fn create_group(
+        &self,
+        owner_user_id: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+        name: &str,
+    ) -> Result<LocalFavoriteGroup> {
+        let name = name.trim().to_string();
+        if name.is_empty() {
+            return Err(Error::Custom(
+                "Local favorite group name is required.".into(),
+            ));
+        }
+        let owner = Self::owner(kind, owner_user_id);
+        let mut state = self.lock();
+        if let Some(group) = state
+            .groups
+            .iter()
+            .find(|group| group.kind == kind && group.owner_user_id == owner && group.name == name)
+        {
+            return Ok(Self::to_group(group));
+        }
+        state.next_id += 1;
+        let group = StoredGroup {
+            id: state.next_id,
+            kind,
+            sort_order: state
+                .groups
+                .iter()
+                .filter(|group| group.kind == kind && group.owner_user_id == owner)
+                .map(|group| group.sort_order + 1)
+                .max()
+                .unwrap_or_default(),
+            owner_user_id: owner,
+            name,
+        };
+        state.groups.push(group.clone());
+        Ok(Self::to_group(&group))
     }
 
-    fn resolve_config_key(&self, key: &str) -> String {
-        key.to_string()
+    fn rename_group(
+        &self,
+        owner_user_id: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+        group_id: i64,
+        name: &str,
+    ) -> Result<i64> {
+        let name = name.trim().to_string();
+        let mut state = self.lock();
+        let group = Self::visible_group(&state, owner_user_id, kind, group_id)?;
+        if group.name == name {
+            return Ok(0);
+        }
+        if state.groups.iter().any(|other| {
+            other.id != group_id
+                && other.kind == kind
+                && other.owner_user_id == group.owner_user_id
+                && other.name == name
+        }) {
+            return Err(Error::Custom(
+                "A local favorite group with this name already exists.".into(),
+            ));
+        }
+        for stored in state
+            .groups
+            .iter_mut()
+            .filter(|stored| stored.id == group_id)
+        {
+            stored.name = name.clone();
+        }
+        Ok(1)
+    }
+
+    fn delete_group(
+        &self,
+        owner_user_id: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+        group_id: i64,
+    ) -> Result<i64> {
+        let mut state = self.lock();
+        Self::visible_group(&state, owner_user_id, kind, group_id)?;
+        let before = state.favorites.len();
+        state.favorites.retain(|row| row.group_id != group_id);
+        let removed = (before - state.favorites.len()) as i64;
+        state.groups.retain(|group| group.id != group_id);
+        Ok(removed)
+    }
+
+    fn reorder_groups(
+        &self,
+        owner_user_id: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+        group_ids: &[i64],
+    ) -> Result<Vec<LocalFavoriteGroup>> {
+        {
+            let mut state = self.lock();
+            let current = Self::visible_groups(&state, owner_user_id, kind);
+            let mut order: Vec<i64> = Vec::new();
+            for group_id in group_ids
+                .iter()
+                .copied()
+                .chain(current.iter().map(|group| group.id))
+            {
+                if current.iter().any(|group| group.id == group_id) && !order.contains(&group_id) {
+                    order.push(group_id);
+                }
+            }
+            for (position, group_id) in order.iter().enumerate() {
+                for group in state
+                    .groups
+                    .iter_mut()
+                    .filter(|group| group.id == *group_id)
+                {
+                    group.sort_order = position as i64;
+                }
+            }
+        }
+        self.list_groups(owner_user_id, kind)
     }
 
     fn list(
@@ -360,9 +544,7 @@ impl FavoriteStore for TestFavoriteStore {
         owner_user_id: Option<&OwnerId>,
         kind: FavoriteEntityKind,
     ) -> Result<Vec<FavoriteRow>> {
-        Ok(Self::rows_to_favorites(
-            self.visible_rows(owner_user_id, kind),
-        ))
+        Ok(self.rows(owner_user_id, kind, false))
     }
 
     fn list_custom_order(
@@ -370,9 +552,7 @@ impl FavoriteStore for TestFavoriteStore {
         owner_user_id: Option<&OwnerId>,
         kind: FavoriteEntityKind,
     ) -> Result<Vec<FavoriteRow>> {
-        let mut rows = self.visible_rows(owner_user_id, kind);
-        rows.sort_by_key(|row| (row.sort_order.unwrap_or(-row.id), row.id));
-        Ok(Self::rows_to_favorites(rows))
+        Ok(self.rows(owner_user_id, kind, true))
     }
 
     fn add(
@@ -380,29 +560,15 @@ impl FavoriteStore for TestFavoriteStore {
         owner_user_id: Option<&OwnerId>,
         kind: FavoriteEntityKind,
         entity_id: String,
-        group_name: String,
+        group_id: i64,
     ) -> Result<i64> {
-        let owner_user_id = Self::owner(owner_user_id);
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if state.favorites.iter().any(|row| {
-            row.owner_user_id == owner_user_id
-                && row.kind == kind
-                && row.entity_id == entity_id
-                && row.group_name == group_name
-        }) {
-            return Ok(0);
-        }
-        state.next_id += 1;
-        let id = state.next_id;
-        state.favorites.push(StoredFavorite {
-            id,
-            sort_order: None,
-            owner_user_id,
-            kind,
-            entity_id,
-            group_name,
-        });
-        Ok(1)
+        let mut state = self.lock();
+        Self::visible_group(&state, owner_user_id, kind, group_id)?;
+        Ok(Self::insert(
+            &mut state,
+            group_id,
+            entity_id.trim().to_string(),
+        ))
     }
 
     fn remove(
@@ -410,17 +576,16 @@ impl FavoriteStore for TestFavoriteStore {
         owner_user_id: Option<&OwnerId>,
         kind: FavoriteEntityKind,
         entity_id: String,
-        group_name: String,
+        group_id: i64,
     ) -> Result<i64> {
-        let owner_user_id = Self::owner(owner_user_id);
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        let mut state = self.lock();
+        if Self::visible_group(&state, owner_user_id, kind, group_id).is_err() {
+            return Ok(0);
+        }
         let before = state.favorites.len();
-        state.favorites.retain(|row| {
-            !(row.owner_user_id == owner_user_id
-                && row.kind == kind
-                && row.entity_id == entity_id
-                && row.group_name == group_name)
-        });
+        state
+            .favorites
+            .retain(|row| !(row.group_id == group_id && row.entity_id == entity_id));
         Ok((before - state.favorites.len()) as i64)
     }
 
@@ -429,11 +594,16 @@ impl FavoriteStore for TestFavoriteStore {
         owner_user_id: Option<&OwnerId>,
         kind: FavoriteEntityKind,
         entity_id: String,
-        source_group_name: String,
-        target_group_name: String,
+        source_group_id: i64,
+        target_group_id: i64,
     ) -> Result<FavoriteMoveResult> {
-        let removed = self.remove(owner_user_id, kind, entity_id.clone(), source_group_name)?;
-        let added = self.add(owner_user_id, kind, entity_id, target_group_name)?;
+        {
+            let state = self.lock();
+            Self::visible_group(&state, owner_user_id, kind, source_group_id)?;
+            Self::visible_group(&state, owner_user_id, kind, target_group_id)?;
+        }
+        let removed = self.remove(owner_user_id, kind, entity_id.clone(), source_group_id)?;
+        let added = self.add(owner_user_id, kind, entity_id, target_group_id)?;
         Ok(FavoriteMoveResult { removed, added })
     }
 
@@ -441,78 +611,23 @@ impl FavoriteStore for TestFavoriteStore {
         &self,
         owner_user_id: Option<&OwnerId>,
         kind: FavoriteEntityKind,
-        group_name: String,
+        group_id: i64,
         entity_ids: Vec<String>,
     ) -> Result<i64> {
-        let owner = Self::owner(owner_user_id);
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        let mut state = self.lock();
+        Self::visible_group(&state, owner_user_id, kind, group_id)?;
         let mut affected = 0;
         for (position, entity_id) in entity_ids.iter().enumerate() {
-            for row in &mut state.favorites {
-                if row.kind == kind
-                    && (row.owner_user_id == owner || row.owner_user_id.is_none())
-                    && row.group_name == group_name
-                    && &row.entity_id == entity_id
-                {
-                    row.sort_order = Some(position as i64);
-                    affected += 1;
-                }
-            }
-        }
-        Ok(affected)
-    }
-
-    fn rename_group_with_config(
-        &self,
-        owner_user_id: Option<&OwnerId>,
-        kind: FavoriteEntityKind,
-        config_key: &str,
-        group_name: &str,
-        new_group_name: &str,
-        groups: &[String],
-    ) -> Result<i64> {
-        self.set_config_json(config_key, serde_json::json!(groups))?;
-        let owner_user_id = if kind == FavoriteEntityKind::Friend && !config_key.contains(':') {
-            None
-        } else {
-            Self::owner(owner_user_id)
-        };
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let mut affected = 0;
-        for row in &mut state.favorites {
-            if row.owner_user_id == owner_user_id
-                && row.kind == kind
-                && row.group_name == group_name
+            for row in state
+                .favorites
+                .iter_mut()
+                .filter(|row| row.group_id == group_id && &row.entity_id == entity_id)
             {
-                row.group_name = new_group_name.to_string();
+                row.sort_order = Some(position as i64);
                 affected += 1;
             }
         }
         Ok(affected)
-    }
-
-    fn delete_group_with_config(
-        &self,
-        owner_user_id: Option<&OwnerId>,
-        kind: FavoriteEntityKind,
-        config_key: &str,
-        group_name: &str,
-        groups: &[String],
-    ) -> Result<i64> {
-        self.set_config_json(config_key, serde_json::json!(groups))?;
-        let owner_user_id = if kind == FavoriteEntityKind::Friend && !config_key.contains(':') {
-            None
-        } else {
-            Self::owner(owner_user_id)
-        };
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let before = state.favorites.len();
-        state.favorites.retain(|row| {
-            !(row.owner_user_id == owner_user_id
-                && row.kind == kind
-                && row.group_name == group_name)
-        });
-        Ok((before - state.favorites.len()) as i64)
     }
 
     fn mutate_local(
@@ -531,19 +646,32 @@ impl FavoriteStore for TestFavoriteStore {
         let affected_rows = if input.dry_run {
             0
         } else {
+            let existing = self
+                .list_groups(Some(owner_user_id), input.kind)?
+                .into_iter()
+                .find(|candidate| candidate.name == group);
             match input.action {
-                FavoriteAction::Add => self.add(
-                    Some(owner_user_id),
-                    input.kind,
-                    entity_id.clone(),
-                    group.clone(),
-                )?,
-                FavoriteAction::Remove => self.remove(
-                    Some(owner_user_id),
-                    input.kind,
-                    entity_id.clone(),
-                    group.clone(),
-                )?,
+                FavoriteAction::Add => {
+                    let target = match existing {
+                        Some(target) => target,
+                        None => self.create_group(Some(owner_user_id), input.kind, &group)?,
+                    };
+                    self.add(
+                        Some(owner_user_id),
+                        input.kind,
+                        entity_id.clone(),
+                        target.id,
+                    )?
+                }
+                FavoriteAction::Remove => match existing {
+                    Some(target) => self.remove(
+                        Some(owner_user_id),
+                        input.kind,
+                        entity_id.clone(),
+                        target.id,
+                    )?,
+                    None => 0,
+                },
             }
         };
         Ok(FavoriteOutput {

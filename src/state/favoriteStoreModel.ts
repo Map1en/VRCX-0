@@ -5,6 +5,7 @@ import type {
     FavoriteLimits,
     FavoriteRecord,
     FavoriteStoreState,
+    LocalFavoriteGroup,
     RemoteFavoriteCollections
 } from '@/domain/favorites/types';
 
@@ -108,86 +109,6 @@ export function normalizeFavoriteStoreId(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-export function removeFromFavoriteGroups(
-    source: FavoriteGroupMap | null | undefined,
-    groupName: string,
-    entityId: string
-): FavoriteGroupMap {
-    const normalizedGroupName = normalizeFavoriteStoreId(groupName);
-    const normalizedEntityId = normalizeFavoriteStoreId(entityId);
-    const next: FavoriteGroupMap = {};
-
-    for (const [key, values] of Object.entries(source || {})) {
-        const nextValues = Array.isArray(values)
-            ? values.filter(
-                  (value) =>
-                      normalizeFavoriteStoreId(value) !== normalizedEntityId
-              )
-            : [];
-
-        next[key] = key === normalizedGroupName ? nextValues : values;
-    }
-
-    return next;
-}
-
-export function createLocalFavoriteGroupState(
-    source: FavoriteGroupMap | null | undefined,
-    groupName: string
-): FavoriteGroupMap {
-    const normalizedGroupName = normalizeFavoriteStoreId(groupName);
-    if (!normalizedGroupName) {
-        return source || {};
-    }
-
-    return {
-        ...source,
-        [normalizedGroupName]: Array.isArray(source?.[normalizedGroupName])
-            ? source[normalizedGroupName]
-            : []
-    };
-}
-
-export function renameLocalFavoriteGroupState(
-    source: FavoriteGroupMap | null | undefined,
-    groupName: string,
-    newGroupName: string
-): FavoriteGroupMap {
-    const normalizedGroupName = normalizeFavoriteStoreId(groupName);
-    const normalizedNewGroupName = normalizeFavoriteStoreId(newGroupName);
-    if (
-        !normalizedGroupName ||
-        !normalizedNewGroupName ||
-        normalizedGroupName === normalizedNewGroupName
-    ) {
-        return source || {};
-    }
-
-    const next: FavoriteGroupMap = { ...source };
-    if (next[normalizedNewGroupName]) {
-        return next;
-    }
-    next[normalizedNewGroupName] = Array.isArray(next[normalizedGroupName])
-        ? next[normalizedGroupName]
-        : [];
-    delete next[normalizedGroupName];
-    return next;
-}
-
-export function deleteLocalFavoriteGroupState(
-    source: FavoriteGroupMap | null | undefined,
-    groupName: string
-): FavoriteGroupMap {
-    const normalizedGroupName = normalizeFavoriteStoreId(groupName);
-    if (!normalizedGroupName) {
-        return source || {};
-    }
-
-    const next: FavoriteGroupMap = { ...source };
-    delete next[normalizedGroupName];
-    return next;
-}
-
 export function flattenFavoriteGroups(
     source: FavoriteGroupMap | null | undefined
 ): string[] {
@@ -201,19 +122,33 @@ export function flattenFavoriteGroups(
     );
 }
 
-export function appendLocalGroupNames(
-    names: readonly string[],
+export function normalizeLocalFavoriteGroups(
+    source: unknown
+): LocalFavoriteGroup[] {
+    if (!Array.isArray(source)) {
+        return [];
+    }
+    return source.filter(
+        (group): group is LocalFavoriteGroup =>
+            isObjectRecord(group) &&
+            typeof group.id === 'number' &&
+            typeof group.name === 'string' &&
+            typeof group.kind === 'string' &&
+            typeof group.shared === 'boolean'
+    );
+}
+
+export function withLocalFavoriteGroupKeys(
+    groups: readonly LocalFavoriteGroup[],
     source: FavoriteGroupMap | null | undefined
-): string[] {
-    const next = Array.from(new Set(names));
-    for (const groupName of Object.keys(source || {})) {
-        if (!next.includes(groupName)) {
-            next.push(groupName);
-        }
+): FavoriteGroupMap {
+    const next: FavoriteGroupMap = {};
+    for (const group of groups) {
+        const key = String(group.id);
+        next[key] = Array.isArray(source?.[key]) ? source[key] : [];
     }
     return next;
 }
-
 export function normalizeStringArray(source: unknown): string[] {
     return Array.isArray(source)
         ? source.map((value) => normalizeFavoriteStoreId(value)).filter(Boolean)

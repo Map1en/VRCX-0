@@ -18,6 +18,13 @@ import {
 } from './auxiliaryEventHandlers';
 import type { FavoritesChangedEventPayload } from './types';
 
+const CLOSE_GROUP = {
+    id: 5,
+    kind: 'friend' as const,
+    name: 'Close',
+    shared: false
+};
+
 const scope = {
     ownerUserId: 'usr_self',
     endpoint: 'https://api.vrchat.cloud/api/1'
@@ -44,7 +51,8 @@ describe('handleFavoritesChangedEvent', () => {
         resetFavoritesChangedEventDelivery();
         useFavoriteStore.getState().resetFavorites();
         useFavoriteStore.getState().setFavoritesSnapshot({
-            currentUserId: scope.ownerUserId
+            currentUserId: scope.ownerUserId,
+            localFriendFavoriteGroups: [CLOSE_GROUP]
         });
         useFavoriteRevisionStore.setState({
             revision: 0,
@@ -67,14 +75,14 @@ describe('handleFavoritesChangedEvent', () => {
                         type: 'localAdded',
                         kind: 'friend',
                         entityId: 'usr_friend',
-                        groupName: 'Close'
+                        groupId: 5
                     }
                 ]
             })
         );
 
         expect(useFavoriteStore.getState().localFriendFavorites).toEqual({
-            Close: ['usr_friend']
+            5: ['usr_friend']
         });
         expect(useFavoriteRevisionStore.getState()).toMatchObject({
             revision: 1,
@@ -105,13 +113,15 @@ describe('handleFavoritesChangedEvent', () => {
                         type: 'localAdded',
                         kind: 'friend',
                         entityId: 'usr_friend',
-                        groupName: 'Close'
+                        groupId: 5
                     }
                 ]
             })
         );
 
-        expect(useFavoriteStore.getState().localFriendFavorites).toEqual({});
+        expect(useFavoriteStore.getState().localFriendFavorites).toEqual({
+            5: []
+        });
         expect(useFavoriteRevisionStore.getState().revision).toBe(0);
     });
 
@@ -125,7 +135,7 @@ describe('handleFavoritesChangedEvent', () => {
                         type: 'localAdded',
                         kind: 'friend',
                         entityId: 'usr_friend',
-                        groupName: 'Close'
+                        groupId: 5
                     }
                 ]
             })
@@ -136,11 +146,12 @@ describe('handleFavoritesChangedEvent', () => {
 
         useFavoriteStore.getState().setFavoritesSnapshot({
             currentUserId: scope.ownerUserId,
-            localFriendFavorites: {}
+            localFriendFavorites: {},
+            localFriendFavoriteGroups: [CLOSE_GROUP]
         });
 
         expect(useFavoriteStore.getState().localFriendFavorites).toEqual({
-            Close: ['usr_friend']
+            5: ['usr_friend']
         });
         expect(useFavoriteRevisionStore.getState().revision).toBe(1);
     });
@@ -154,7 +165,7 @@ describe('handleFavoritesChangedEvent', () => {
                         type: 'localAdded',
                         kind: 'friend',
                         entityId: 'usr_first',
-                        groupName: 'Close'
+                        groupId: 5
                     }
                 ]
             })
@@ -166,13 +177,13 @@ describe('handleFavoritesChangedEvent', () => {
                         type: 'localAdded',
                         kind: 'friend',
                         entityId: 'usr_second',
-                        groupName: 'Close'
+                        groupId: 5
                     }
                 ]
             })
         );
         const unsubscribe = useFavoriteStore.subscribe((state) => {
-            if (state.localFriendFavorites.Close?.includes('usr_first')) {
+            if (state.localFriendFavorites[5]?.includes('usr_first')) {
                 useRuntimeStore.getState().setAuthBootstrap({
                     currentUserId: 'usr_other',
                     currentUserEndpoint: scope.endpoint
@@ -182,12 +193,13 @@ describe('handleFavoritesChangedEvent', () => {
 
         useFavoriteStore.getState().setFavoritesSnapshot({
             currentUserId: scope.ownerUserId,
-            localFriendFavorites: {}
+            localFriendFavorites: {},
+            localFriendFavoriteGroups: [CLOSE_GROUP]
         });
         unsubscribe();
 
         expect(useFavoriteStore.getState().localFriendFavorites).toEqual({
-            Close: ['usr_first']
+            5: ['usr_first']
         });
         expect(useFavoriteRevisionStore.getState().revision).toBe(1);
     });

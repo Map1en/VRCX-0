@@ -87,7 +87,7 @@ function applyFavoriteChange(change: FavoriteChange): void {
                 favorites.addLocalFavorite({
                     kind: change.kind,
                     entityId: change.entityId,
-                    groupName: change.groupName
+                    groupId: change.groupId
                 });
             }
             return;
@@ -96,24 +96,19 @@ function applyFavoriteChange(change: FavoriteChange): void {
                 favorites.removeLocalFavorite({
                     kind: change.kind,
                     entityId: change.entityId,
-                    groupName: change.groupName
+                    groupId: change.groupId
                 });
             }
             return;
         case 'localGroupCreated':
-            if (isStoredLocalFavoriteKind(change.kind)) {
-                favorites.createLocalFavoriteGroup({
-                    kind: change.kind,
-                    groupName: change.groupName
-                });
-            }
+            favorites.createLocalFavoriteGroup(change.group);
             return;
         case 'localGroupRenamed':
             if (isStoredLocalFavoriteKind(change.kind)) {
                 favorites.renameLocalFavoriteGroup({
                     kind: change.kind,
-                    groupName: change.groupName,
-                    newGroupName: change.newGroupName
+                    groupId: change.groupId,
+                    name: change.name
                 });
             }
             return;
@@ -121,7 +116,7 @@ function applyFavoriteChange(change: FavoriteChange): void {
             if (isStoredLocalFavoriteKind(change.kind)) {
                 favorites.deleteLocalFavoriteGroup({
                     kind: change.kind,
-                    groupName: change.groupName
+                    groupId: change.groupId
                 });
             }
             return;

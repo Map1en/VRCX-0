@@ -11,7 +11,7 @@ use vrcx_0_contracts::friend_log::{
 };
 use vrcx_0_contracts::realtime::{RealtimePersistenceBatch, RealtimeWriteCounts};
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
-use vrcx_0_contracts::FavoriteRow;
+use vrcx_0_contracts::{FavoriteRow, LocalFavoriteGroup};
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 
 pub trait RealtimeBatchWriter: Send + Sync {
@@ -38,6 +38,11 @@ pub trait FavoriteBaselineStore: Send + Sync {
         owner: Option<&OwnerId>,
         kind: FavoriteEntityKind,
     ) -> Result<Vec<FavoriteRow>>;
+    fn favorite_group_list(
+        &self,
+        owner: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+    ) -> Result<Vec<LocalFavoriteGroup>>;
 }
 
 pub trait GameLogLookup: Send + Sync {

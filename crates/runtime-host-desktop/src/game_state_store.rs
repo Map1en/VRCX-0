@@ -174,11 +174,11 @@ impl LocationGroupNameFiller for PersistenceGameStateStore {
 }
 
 impl FavoriteFriendGroupLookup for PersistenceGameStateStore {
-    fn favorite_friend_group_names_for_users(
+    fn favorite_friend_group_ids_for_users(
         &self,
         owner: &OwnerId,
         user_ids: &[String],
-    ) -> vrcx_0_application_core::Result<Vec<String>> {
+    ) -> vrcx_0_application_core::Result<Vec<i64>> {
         let user_ids = user_ids
             .iter()
             .map(String::as_str)
@@ -191,8 +191,7 @@ impl FavoriteFriendGroupLookup for PersistenceGameStateStore {
         .into_iter()
         .filter_map(|row| {
             let user_id = row.user_id.unwrap_or_default();
-            (!row.group_name.is_empty() && user_ids.contains(user_id.as_str()))
-                .then_some(row.group_name)
+            user_ids.contains(user_id.as_str()).then_some(row.group_id)
         })
         .collect())
     }

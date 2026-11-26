@@ -3,16 +3,16 @@ import { create } from 'zustand';
 import type {
     FavoriteGroupMap,
     FavoriteRecord,
-    FavoriteStore
+    FavoriteStore,
+    FavoriteStoreState,
+    LocalFavoriteGroup,
+    StoredLocalFavoriteKind
 } from '@/domain/favorites/types';
 import { createDefaultFavoriteCachedRef } from '@/shared/utils/entityTransforms';
 
 import {
-    appendLocalGroupNames,
     buildRemoteFavoriteCollections,
     cloneFavoriteLimits,
-    createLocalFavoriteGroupState,
-    deleteLocalFavoriteGroupState,
     flattenFavoriteGroups,
     hasFavoriteStoreData,
     initialFavoriteStoreState,
@@ -21,15 +21,76 @@ import {
     normalizeFavoriteGroups,
     normalizeFavoriteRecordMap,
     normalizeFavoriteStoreId,
+    normalizeLocalFavoriteGroups,
     normalizeRecord,
     normalizeStringArray,
     recomputeGroupCounts,
     recomputeGroupCountsFromMap,
-    removeFromFavoriteGroups,
-    renameLocalFavoriteGroupState
+    withLocalFavoriteGroupKeys
 } from './favoriteStoreModel';
 
 export type { FavoriteStore } from '@/domain/favorites/types';
+
+type LocalFavoriteUpdate = {
+    favorites: FavoriteGroupMap;
+    groups: LocalFavoriteGroup[];
+};
+
+function updateLocalFavorites(
+    state: FavoriteStoreState,
+    kind: StoredLocalFavoriteKind,
+    update: (
+        favorites: FavoriteGroupMap,
+        groups: LocalFavoriteGroup[]
+    ) => LocalFavoriteUpdate
+): FavoriteStoreState {
+    if (kind !== 'friend' && kind !== 'avatar') {
+        return state;
+    }
+    const current =
+        kind === 'friend'
+            ? {
+                  favorites: state.localFriendFavorites,
+                  groups: state.localFriendFavoriteGroups
+              }
+            : {
+                  favorites: state.localAvatarFavorites,
+                  groups: state.localAvatarFavoriteGroups
+              };
+    const next = update(current.favorites, current.groups);
+    if (
+        next.favorites === current.favorites &&
+        next.groups === current.groups
+    ) {
+        return state;
+    }
+    const sameMembers =
+        next.favorites === current.favorites &&
+        next.groups.length === current.groups.length &&
+        next.groups.every(
+            (group, index) => group.id === current.groups[index].id
+        );
+    if (sameMembers) {
+        return kind === 'friend'
+            ? { ...state, localFriendFavoriteGroups: next.groups }
+            : { ...state, localAvatarFavoriteGroups: next.groups };
+    }
+    const favorites = withLocalFavoriteGroupKeys(next.groups, next.favorites);
+    const list = flattenFavoriteGroups(favorites);
+    return kind === 'friend'
+        ? {
+              ...state,
+              localFriendFavorites: favorites,
+              localFriendFavoriteGroups: next.groups,
+              localFriendFavoritesList: list
+          }
+        : {
+              ...state,
+              localAvatarFavorites: favorites,
+              localAvatarFavoriteGroups: next.groups,
+              localAvatarFavoritesList: list
+          };
+}
 
 export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
     ...initialFavoriteStoreState,
@@ -91,6 +152,12 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
         const favoriteAvatarGroups = normalizeFavoriteGroups(
             snapshot.favoriteAvatarGroups
         );
+        const localAvatarFavoriteGroups = normalizeLocalFavoriteGroups(
+            snapshot.localAvatarFavoriteGroups
+        );
+        const localFriendFavoriteGroups = normalizeLocalFavoriteGroups(
+            snapshot.localFriendFavoriteGroups
+        );
 
         const nextState: Partial<FavoriteStore> = {
             currentUserId:
@@ -123,18 +190,16 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
                 favoriteAvatarGroups,
                 remoteFavoritesById
             ),
-            localAvatarFavorites: normalizeFavoriteGroupMap(
-                snapshot.localAvatarFavorites
+            localAvatarFavorites: withLocalFavoriteGroupKeys(
+                localAvatarFavoriteGroups,
+                normalizeFavoriteGroupMap(snapshot.localAvatarFavorites)
             ),
-            localFriendFavorites: normalizeFavoriteGroupMap(
-                snapshot.localFriendFavorites
+            localFriendFavorites: withLocalFavoriteGroupKeys(
+                localFriendFavoriteGroups,
+                normalizeFavoriteGroupMap(snapshot.localFriendFavorites)
             ),
-            localAvatarFavoriteGroups: normalizeStringArray(
-                snapshot.localAvatarFavoriteGroups
-            ),
-            localFriendFavoriteGroups: normalizeStringArray(
-                snapshot.localFriendFavoriteGroups
-            ),
+            localAvatarFavoriteGroups,
+            localFriendFavoriteGroups,
             localAvatarFavoritesList: normalizeStringArray(
                 snapshot.localAvatarFavoritesList
             ),
@@ -155,237 +220,85 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
     resetFavorites() {
         set(initialFavoriteStoreState);
     },
-    addLocalFavorite({ kind, groupName, entityId }) {
-        set((state) => {
-            const normalizedGroupName = normalizeFavoriteStoreId(groupName);
-            const normalizedEntityId = normalizeFavoriteStoreId(entityId);
-            if (!normalizedGroupName || !normalizedEntityId) {
-                return state;
-            }
-
-            if (kind === 'friend') {
-                const localFriendFavorites: FavoriteGroupMap = {
-                    ...state.localFriendFavorites,
-                    [normalizedGroupName]: Array.from(
-                        new Set([
-                            normalizedEntityId,
-                            ...(Array.isArray(
-                                state.localFriendFavorites[normalizedGroupName]
-                            )
-                                ? state.localFriendFavorites[
-                                      normalizedGroupName
-                                  ]
-                                : [])
-                        ])
-                    )
-                };
+    addLocalFavorite({ kind, groupId, entityId }) {
+        const normalizedEntityId = normalizeFavoriteStoreId(entityId);
+        if (!normalizedEntityId) {
+            return;
+        }
+        set((state) =>
+            updateLocalFavorites(state, kind, (favorites, groups) => {
+                const key = String(groupId);
+                if (!(key in favorites)) {
+                    return { favorites, groups };
+                }
                 return {
-                    ...state,
-                    localFriendFavorites,
-                    localFriendFavoriteGroups: appendLocalGroupNames(
-                        state.localFriendFavoriteGroups,
-                        localFriendFavorites
-                    ),
-                    localFriendFavoritesList:
-                        flattenFavoriteGroups(localFriendFavorites)
+                    favorites: {
+                        ...favorites,
+                        [key]: Array.from(
+                            new Set([normalizedEntityId, ...favorites[key]])
+                        )
+                    },
+                    groups
                 };
-            }
-
-            if (kind === 'avatar') {
-                const localAvatarFavorites: FavoriteGroupMap = {
-                    ...state.localAvatarFavorites,
-                    [normalizedGroupName]: Array.from(
-                        new Set([
-                            normalizedEntityId,
-                            ...(Array.isArray(
-                                state.localAvatarFavorites[normalizedGroupName]
-                            )
-                                ? state.localAvatarFavorites[
-                                      normalizedGroupName
-                                  ]
-                                : [])
-                        ])
-                    )
-                };
-                return {
-                    ...state,
-                    localAvatarFavorites,
-                    localAvatarFavoriteGroups: appendLocalGroupNames(
-                        state.localAvatarFavoriteGroups,
-                        localAvatarFavorites
-                    ),
-                    localAvatarFavoritesList:
-                        flattenFavoriteGroups(localAvatarFavorites)
-                };
-            }
-
-            return state;
-        });
+            })
+        );
     },
-    removeLocalFavorite({ kind, groupName, entityId }) {
-        set((state) => {
-            if (kind === 'friend') {
-                const localFriendFavorites = removeFromFavoriteGroups(
-                    state.localFriendFavorites,
-                    groupName,
-                    entityId
-                );
+    removeLocalFavorite({ kind, groupId, entityId }) {
+        const normalizedEntityId = normalizeFavoriteStoreId(entityId);
+        set((state) =>
+            updateLocalFavorites(state, kind, (favorites, groups) => {
+                const key = String(groupId);
+                if (!(key in favorites)) {
+                    return { favorites, groups };
+                }
                 return {
-                    ...state,
-                    localFriendFavorites,
-                    localFriendFavoriteGroups: appendLocalGroupNames(
-                        state.localFriendFavoriteGroups,
-                        localFriendFavorites
-                    ),
-                    localFriendFavoritesList:
-                        flattenFavoriteGroups(localFriendFavorites)
+                    favorites: {
+                        ...favorites,
+                        [key]: favorites[key].filter(
+                            (value) => value !== normalizedEntityId
+                        )
+                    },
+                    groups
                 };
-            }
-
-            if (kind === 'avatar') {
-                const localAvatarFavorites = removeFromFavoriteGroups(
-                    state.localAvatarFavorites,
-                    groupName,
-                    entityId
-                );
-                const localAvatarFavoritesList =
-                    flattenFavoriteGroups(localAvatarFavorites);
-                return {
-                    ...state,
-                    localAvatarFavorites,
-                    localAvatarFavoriteGroups: appendLocalGroupNames(
-                        state.localAvatarFavoriteGroups,
-                        localAvatarFavorites
-                    ),
-                    localAvatarFavoritesList
-                };
-            }
-
-            return state;
-        });
+            })
+        );
     },
-    createLocalFavoriteGroup({ kind, groupName }) {
-        set((state) => {
-            if (kind === 'friend') {
-                const localFriendFavorites = createLocalFavoriteGroupState(
-                    state.localFriendFavorites,
-                    groupName
-                );
-                return {
-                    ...state,
-                    localFriendFavorites,
-                    localFriendFavoriteGroups: appendLocalGroupNames(
-                        state.localFriendFavoriteGroups,
-                        localFriendFavorites
-                    )
-                };
-            }
-
-            if (kind === 'avatar') {
-                const localAvatarFavorites = createLocalFavoriteGroupState(
-                    state.localAvatarFavorites,
-                    groupName
-                );
-                return {
-                    ...state,
-                    localAvatarFavorites,
-                    localAvatarFavoriteGroups: appendLocalGroupNames(
-                        state.localAvatarFavoriteGroups,
-                        localAvatarFavorites
-                    )
-                };
-            }
-
-            return state;
-        });
+    createLocalFavoriteGroup(group) {
+        const kind = group.kind;
+        if (kind === 'world') {
+            return;
+        }
+        set((state) =>
+            updateLocalFavorites(state, kind, (favorites, groups) =>
+                groups.some((existing) => existing.id === group.id)
+                    ? { favorites, groups }
+                    : { favorites, groups: [...groups, group] }
+            )
+        );
     },
-    renameLocalFavoriteGroup({ kind, groupName, newGroupName }) {
-        const normalizedGroupName = normalizeFavoriteStoreId(groupName);
-        const normalizedNewGroupName = normalizeFavoriteStoreId(newGroupName);
-        const renameGroup = (name: string) =>
-            name === normalizedGroupName && normalizedNewGroupName
-                ? normalizedNewGroupName
-                : name;
-        set((state) => {
-            if (kind === 'friend') {
-                const localFriendFavorites = renameLocalFavoriteGroupState(
-                    state.localFriendFavorites,
-                    groupName,
-                    newGroupName
-                );
-                return {
-                    ...state,
-                    localFriendFavorites,
-                    localFriendFavoriteGroups: appendLocalGroupNames(
-                        state.localFriendFavoriteGroups.map(renameGroup),
-                        localFriendFavorites
-                    ),
-                    localFriendFavoritesList:
-                        flattenFavoriteGroups(localFriendFavorites)
-                };
-            }
-
-            if (kind === 'avatar') {
-                const localAvatarFavorites = renameLocalFavoriteGroupState(
-                    state.localAvatarFavorites,
-                    groupName,
-                    newGroupName
-                );
-                return {
-                    ...state,
-                    localAvatarFavorites,
-                    localAvatarFavoriteGroups: appendLocalGroupNames(
-                        state.localAvatarFavoriteGroups.map(renameGroup),
-                        localAvatarFavorites
-                    ),
-                    localAvatarFavoritesList:
-                        flattenFavoriteGroups(localAvatarFavorites)
-                };
-            }
-
-            return state;
-        });
+    renameLocalFavoriteGroup({ kind, groupId, name }) {
+        const normalizedName = normalizeFavoriteStoreId(name);
+        if (!normalizedName) {
+            return;
+        }
+        set((state) =>
+            updateLocalFavorites(state, kind, (favorites, groups) => ({
+                favorites,
+                groups: groups.map((group) =>
+                    group.id === groupId
+                        ? { ...group, name: normalizedName }
+                        : group
+                )
+            }))
+        );
     },
-    deleteLocalFavoriteGroup({ kind, groupName }) {
-        const normalizedGroupName = normalizeFavoriteStoreId(groupName);
-        const keepGroup = (name: string) => name !== normalizedGroupName;
-        set((state) => {
-            if (kind === 'friend') {
-                const localFriendFavorites = deleteLocalFavoriteGroupState(
-                    state.localFriendFavorites,
-                    groupName
-                );
-                return {
-                    ...state,
-                    localFriendFavorites,
-                    localFriendFavoriteGroups: appendLocalGroupNames(
-                        state.localFriendFavoriteGroups.filter(keepGroup),
-                        localFriendFavorites
-                    ),
-                    localFriendFavoritesList:
-                        flattenFavoriteGroups(localFriendFavorites)
-                };
-            }
-
-            if (kind === 'avatar') {
-                const localAvatarFavorites = deleteLocalFavoriteGroupState(
-                    state.localAvatarFavorites,
-                    groupName
-                );
-                return {
-                    ...state,
-                    localAvatarFavorites,
-                    localAvatarFavoriteGroups: appendLocalGroupNames(
-                        state.localAvatarFavoriteGroups.filter(keepGroup),
-                        localAvatarFavorites
-                    ),
-                    localAvatarFavoritesList:
-                        flattenFavoriteGroups(localAvatarFavorites)
-                };
-            }
-
-            return state;
-        });
+    deleteLocalFavoriteGroup({ kind, groupId }) {
+        set((state) =>
+            updateLocalFavorites(state, kind, (favorites, groups) => ({
+                favorites,
+                groups: groups.filter((group) => group.id !== groupId)
+            }))
+        );
     },
     removeRemoteFavorite(objectId) {
         set((state) => {
@@ -479,35 +392,12 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
         });
     },
     setLocalFavoritesForKind(kind, { localFavorites, localFavoriteGroups }) {
-        set((state) => {
-            const normalizedFavorites =
-                normalizeFavoriteGroupMap(localFavorites);
-            const normalizedGroups = appendLocalGroupNames(
-                normalizeStringArray(localFavoriteGroups),
-                normalizedFavorites
-            );
-            const normalizedList = flattenFavoriteGroups(normalizedFavorites);
-
-            if (kind === 'friend') {
-                return {
-                    ...state,
-                    localFriendFavorites: normalizedFavorites,
-                    localFriendFavoriteGroups: normalizedGroups,
-                    localFriendFavoritesList: normalizedList
-                };
-            }
-
-            if (kind === 'avatar') {
-                return {
-                    ...state,
-                    localAvatarFavorites: normalizedFavorites,
-                    localAvatarFavoriteGroups: normalizedGroups,
-                    localAvatarFavoritesList: normalizedList
-                };
-            }
-
-            return state;
-        });
+        set((state) =>
+            updateLocalFavorites(state, kind, () => ({
+                favorites: localFavorites,
+                groups: localFavoriteGroups
+            }))
+        );
     },
     isInAnyLocalFriendGroup(userId) {
         const normalizedUserId =

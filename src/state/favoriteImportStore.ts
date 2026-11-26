@@ -23,7 +23,7 @@ type FavoriteImportStore = {
     importProgressTotal: number;
     errors: string;
     remoteGroupName: string;
-    localGroupName: string;
+    localGroupId: string;
     sessionId: number;
     openDialog(options?: FavoriteImportOpenOptions): void;
     closeDialog(): void;
@@ -42,7 +42,7 @@ type FavoriteImportStore = {
     removeRow(id: string): void;
     clearRows(): void;
     setRemoteGroupName(remoteGroupName: string): void;
-    setLocalGroupName(localGroupName: string): void;
+    setLocalGroupId(localGroupId: string): void;
     resetImportState(): void;
 };
 
@@ -59,7 +59,7 @@ type FavoriteImportState = Pick<
     | 'importProgressTotal'
     | 'errors'
     | 'remoteGroupName'
-    | 'localGroupName'
+    | 'localGroupId'
     | 'sessionId'
 >;
 
@@ -75,7 +75,7 @@ const initialState: FavoriteImportState = {
     importProgressTotal: 0,
     errors: '',
     remoteGroupName: '',
-    localGroupName: '',
+    localGroupId: '',
     sessionId: 0
 };
 
@@ -157,13 +157,13 @@ export const useFavoriteImportStore = create<FavoriteImportStore>((set) => ({
     setRemoteGroupName(remoteGroupName) {
         set({
             remoteGroupName,
-            localGroupName: remoteGroupName ? '' : ''
+            localGroupId: remoteGroupName ? '' : ''
         });
     },
-    setLocalGroupName(localGroupName) {
+    setLocalGroupId(localGroupId) {
         set({
-            localGroupName,
-            remoteGroupName: localGroupName ? '' : ''
+            localGroupId,
+            remoteGroupName: localGroupId ? '' : ''
         });
     },
     resetImportState() {

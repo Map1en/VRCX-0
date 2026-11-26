@@ -11,7 +11,6 @@ import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { bootstrapFavorites } from '@/services/favoriteBootstrapService';
-import { renameLocalFriendGroupReferences } from '@/services/localFriendGroupRenameService';
 import { toast } from '@/services/toastService';
 import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useModalStore } from '@/state/modalStore';
@@ -161,7 +160,7 @@ export function useFavoritesCollectionActions({
             await favoritePersistenceRepository.removeLocalFavorite({
                 kind: item.kind,
                 entityId: item.id,
-                groupName: item.groupKey
+                groupId: Number(item.groupKey)
             });
             if (!silent) {
                 toast.add({
@@ -396,10 +395,16 @@ export function useFavoritesCollectionActions({
             return;
         }
         const nextName = String(result.value ?? '').trim();
-        if (!nextName || nextName === group.key) {
+        if (!nextName || nextName === group.label) {
             return;
         }
-        if (localGroups.some((localGroup) => localGroup.key === nextName)) {
+        if (
+            localGroups.some(
+                (localGroup) =>
+                    localGroup.key !== group.key &&
+                    localGroup.label === nextName
+            )
+        ) {
             toast.add({
                 type: 'error',
                 title: t(
@@ -414,15 +419,9 @@ export function useFavoritesCollectionActions({
         try {
             await favoritePersistenceRepository.renameLocalFavoriteGroup({
                 kind,
-                groupName: group.key,
-                newGroupName: nextName
+                groupId: Number(group.key),
+                name: nextName
             });
-            if (kind === 'friend') {
-                await renameLocalFriendGroupReferences(group.key, nextName);
-            }
-            if (selectedSource === 'local' && selectedGroupKey === group.key) {
-                setSelectedGroupKey(nextName);
-            }
             toast.add({
                 type: 'success',
                 title: t('view.favorite.label.local_favorite_group_renamed')
@@ -454,9 +453,9 @@ export function useFavoritesCollectionActions({
             return;
         }
         try {
-            await favoritePersistenceRepository.deleteLocalFavoriteGroup({
+            await commands.appLocalFavoriteGroupDelete({
                 kind,
-                groupName: group.key
+                groupId: Number(group.key)
             });
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey('');
@@ -479,10 +478,13 @@ export function useFavoritesCollectionActions({
     }
 
     async function handleLocalGroupReorder(
-        groupNames: string[]
+        groupKeys: string[]
     ): Promise<boolean> {
         try {
-            await commands.appLocalFavoriteGroupReorder({ kind, groupNames });
+            await commands.appLocalFavoriteGroupReorder({
+                kind,
+                groupIds: groupKeys.map(Number)
+            });
             return true;
         } catch (error) {
             toast.add({

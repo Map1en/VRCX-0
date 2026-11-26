@@ -125,13 +125,6 @@ fn unique_values(values: Vec<String>) -> Vec<String> {
     output
 }
 
-fn get_config_array(deps: &SocialBaselineDeps, key: &str) -> Result<Vec<String>> {
-    let parsed = deps.config.get_json(key, serde_json::Value::Null)?;
-    Ok(vrcx_0_application_core::normalize_config_string_array(
-        parsed,
-    ))
-}
-
 fn auth_scope_matches(deps: &SocialBaselineDeps, user_id: &str, endpoint: &str) -> bool {
     deps.auth_scope.matches(user_id, endpoint)
 }

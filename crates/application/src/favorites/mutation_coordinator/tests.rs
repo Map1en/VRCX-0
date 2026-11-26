@@ -50,6 +50,14 @@ fn harness_with_remote(remote: Arc<TestFavoriteRemote>) -> Harness {
     }
 }
 
+fn local_group(harness: &Harness, kind: FavoriteEntityKind, name: &str) -> i64 {
+    harness
+        .store
+        .create_group(Some(&OwnerId::new("usr_self")), kind, name)
+        .unwrap()
+        .id
+}
+
 fn assert_single_local_invalidation(event_bus: &RuntimeEventBus) {
     let events = event_bus.take_events_for_test();
     assert_eq!(events.len(), 1);
@@ -72,14 +80,11 @@ fn assert_single_local_invalidation(event_bus: &RuntimeEventBus) {
 #[test]
 fn local_mutation_persists_and_emits_one_exact_delta() {
     let harness = harness("local-delta");
+    let close = local_group(&harness, FavoriteEntityKind::Friend, "Close");
 
     let affected = harness
         .coordinator
-        .add_local(
-            FavoriteEntityKind::Friend,
-            "usr_friend".into(),
-            "Close".into(),
-        )
+        .add_local(FavoriteEntityKind::Friend, "usr_friend".into(), close)
         .unwrap();
 
     assert_eq!(affected, 1);
@@ -106,7 +111,7 @@ fn local_mutation_persists_and_emits_one_exact_delta() {
                 "type": "localAdded",
                 "kind": "friend",
                 "entityId": "usr_friend",
-                "groupName": "Close"
+                "groupId": close
             }],
             "requiresRefresh": false
         })
@@ -166,13 +171,15 @@ fn tool_write_persists_and_emits_one_invalidation() {
 #[tokio::test]
 async fn local_transfer_emits_once_with_exact_changed_sides() {
     let harness = harness("local-transfer");
+    let source = local_group(&harness, FavoriteEntityKind::Friend, "Source");
+    let target = local_group(&harness, FavoriteEntityKind::Friend, "Target");
     harness
         .store
         .add(
             Some(&OwnerId::new("usr_self")),
             FavoriteEntityKind::Friend,
             "usr_friend".into(),
-            "Source".into(),
+            source,
         )
         .unwrap();
 
@@ -184,11 +191,11 @@ async fn local_transfer_emits_once_with_exact_changed_sides() {
                 mode: FavoriteTransferMode::Move,
                 source: FavoriteTransferSource {
                     location: FavoriteTransferLocation::Local,
-                    group: "Source".into(),
+                    group: source.to_string(),
                 },
                 target: FavoriteTransferTarget {
                     location: FavoriteTransferLocation::Local,
-                    group: "Target".into(),
+                    group: target.to_string(),
                     favorite_type: None,
                 },
                 items: vec![FavoriteTransferItem {
@@ -217,13 +224,14 @@ async fn local_transfer_emits_once_with_exact_changed_sides() {
 #[tokio::test]
 async fn local_bulk_remove_emits_once_with_exact_changed_sides() {
     let harness = harness("local-bulk-remove");
+    let close = local_group(&harness, FavoriteEntityKind::Friend, "Close");
     harness
         .store
         .add(
             Some(&OwnerId::new("usr_self")),
             FavoriteEntityKind::Friend,
             "usr_friend".into(),
-            "Close".into(),
+            close,
         )
         .unwrap();
 
@@ -235,7 +243,7 @@ async fn local_bulk_remove_emits_once_with_exact_changed_sides() {
                 key: "local:Close:usr_friend".into(),
                 source: FavoriteBulkRemoveSource::Local,
                 entity_id: "usr_friend".into(),
-                group_name: "Close".into(),
+                group_id: Some(close),
             }],
         })
         .await
@@ -323,13 +331,15 @@ async fn remote_group_clear_rejects_scope_replaced_while_request_is_in_flight() 
 #[tokio::test]
 async fn local_world_transfer_caches_the_world_through_the_world_cache_owner() {
     let harness = harness("local-world-transfer-cache");
+    let source = local_group(&harness, FavoriteEntityKind::World, "Source");
+    let target = local_group(&harness, FavoriteEntityKind::World, "Target");
     harness
         .store
         .add(
             Some(&OwnerId::new("usr_self")),
             FavoriteEntityKind::World,
             "wrld_transfer".into(),
-            "Source".into(),
+            source,
         )
         .unwrap();
 
@@ -341,11 +351,11 @@ async fn local_world_transfer_caches_the_world_through_the_world_cache_owner() {
                 mode: FavoriteTransferMode::Copy,
                 source: FavoriteTransferSource {
                     location: FavoriteTransferLocation::Local,
-                    group: "Source".into(),
+                    group: source.to_string(),
                 },
                 target: FavoriteTransferTarget {
                     location: FavoriteTransferLocation::Local,
-                    group: "Target".into(),
+                    group: target.to_string(),
                     favorite_type: None,
                 },
                 items: vec![FavoriteTransferItem {

@@ -1,7 +1,7 @@
 use super::evaluation::{condition_matches, PresenceRuleEvaluation};
 use super::*;
 use serde_json::json;
-use vrcx_0_application_core::{FavoriteEntityKind, MemoryConfigStore};
+use vrcx_0_application_core::MemoryConfigStore;
 
 #[test]
 fn presence_rule_storage_preserves_open_json_fields() {
@@ -59,77 +59,6 @@ fn toggling_one_presence_rule_keeps_the_other_rules_and_fields() {
     };
     assert_eq!(values(&saved), expected);
     assert_eq!(values(&loaded), expected);
-}
-
-#[test]
-fn renaming_a_local_favorite_group_rewrites_only_rules_of_that_kind() {
-    let config = MemoryConfigStore::default();
-    let rule = |groups: &[&str]| {
-        json!({
-            "id": "rule",
-            "selectedGroups": groups,
-            "selectedWorldGroups": groups,
-            "conditions": [
-                {"type": "hasFriendInGroups", "values": groups},
-                {"type": "worldInFavoriteGroups", "values": groups},
-                {"type": "futureCondition", "values": groups}
-            ]
-        })
-    };
-    for kind in [
-        PresenceAutomationRuleKind::Time,
-        PresenceAutomationRuleKind::Context,
-    ] {
-        presence_automation_rules_set(
-            &config,
-            kind,
-            vec![RawJson::from(rule(&["group_0", "local:Close"]))],
-        )
-        .unwrap();
-    }
-
-    presence_automation_local_group_renamed(&config, FavoriteEntityKind::Friend, "Close", "Inner")
-        .unwrap();
-
-    for kind in [
-        PresenceAutomationRuleKind::Time,
-        PresenceAutomationRuleKind::Context,
-    ] {
-        let loaded = presence_automation_rules_get(&config, kind).unwrap();
-        let rule = loaded[0].as_value();
-        assert_eq!(rule["selectedGroups"], json!(["group_0", "local:Inner"]));
-        assert_eq!(
-            rule["conditions"][0]["values"],
-            json!(["group_0", "local:Inner"])
-        );
-        assert_eq!(
-            rule["selectedWorldGroups"],
-            json!(["group_0", "local:Close"])
-        );
-        assert_eq!(
-            rule["conditions"][1]["values"],
-            json!(["group_0", "local:Close"])
-        );
-        assert_eq!(
-            rule["conditions"][2]["values"],
-            json!(["group_0", "local:Close"])
-        );
-    }
-
-    presence_automation_local_group_renamed(&config, FavoriteEntityKind::World, "Close", "Visited")
-        .unwrap();
-    let loaded =
-        presence_automation_rules_get(&config, PresenceAutomationRuleKind::Context).unwrap();
-    let rule = loaded[0].as_value();
-    assert_eq!(
-        rule["selectedWorldGroups"],
-        json!(["group_0", "local:Visited"])
-    );
-    assert_eq!(
-        rule["conditions"][1]["values"],
-        json!(["group_0", "local:Visited"])
-    );
-    assert_eq!(rule["selectedGroups"], json!(["group_0", "local:Inner"]));
 }
 
 #[test]

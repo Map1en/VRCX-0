@@ -12,7 +12,7 @@ mod remote_move;
 #[cfg(test)]
 mod test_support;
 
-pub use vrcx_0_contracts::FavoriteRow;
+pub use vrcx_0_contracts::{FavoriteRow, LocalFavoriteGroup};
 
 pub use bulk_remove::{
     FavoriteBulkRemoveInput, FavoriteBulkRemoveItem, FavoriteBulkRemoveItemResult,
@@ -41,7 +41,7 @@ pub use favorite_transfer::{
 };
 pub use local_favorites::{
     get_local_favorite_snapshot, list_local_favorite_custom_order, list_local_favorites,
-    FavoriteMoveResult, FavoriteStore, LocalFavoriteGroupWrite, LocalFavoriteSnapshot,
+    FavoriteMoveResult, FavoriteStore, LocalFavoriteSnapshot,
 };
 pub use local_world_details::{
     refresh_local_world_details, LocalWorldDetailsRefreshOutput, LocalWorldDetailsRemote,

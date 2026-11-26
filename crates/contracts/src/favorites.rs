@@ -59,8 +59,18 @@ impl From<VrchatFavoriteType> for vrcx_0_core::FavoriteChangeScope {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
+pub struct LocalFavoriteGroup {
+    pub id: i64,
+    pub kind: FavoriteEntityKind,
+    pub name: String,
+    pub shared: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct FavoriteRow {
     pub created_at: String,
+    pub group_id: i64,
     pub group_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_id: Option<String>,
@@ -75,10 +85,12 @@ impl FavoriteRow {
         kind: FavoriteEntityKind,
         created_at: String,
         entity_id: String,
+        group_id: i64,
         group_name: String,
     ) -> Self {
         let mut row = Self {
             created_at,
+            group_id,
             group_name,
             user_id: None,
             avatar_id: None,

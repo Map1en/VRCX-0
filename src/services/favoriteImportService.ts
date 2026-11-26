@@ -460,10 +460,10 @@ export async function importFavoriteImportRows(): Promise<void> {
               group: remoteGroup.name,
               favoriteType: normalizeFavoriteType(remoteGroup.type, type)
           }
-        : state.localGroupName
+        : state.localGroupId
           ? {
                 location: 'local',
-                group: state.localGroupName,
+                group: state.localGroupId,
                 favoriteType: null
             }
           : null;

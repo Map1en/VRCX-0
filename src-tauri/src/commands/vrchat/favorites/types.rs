@@ -77,41 +77,45 @@ pub struct LocalFavoriteInput {
     pub(crate) kind: FavoriteEntityKind,
     #[serde(default)]
     pub(crate) entity_id: String,
+    pub(crate) group_id: i64,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LocalFavoriteGroupCreateInput {
+    pub(crate) kind: FavoriteEntityKind,
     #[serde(default)]
-    pub(crate) group_name: String,
+    pub(crate) name: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LocalFavoriteGroupInput {
     pub(crate) kind: FavoriteEntityKind,
-    #[serde(default)]
-    pub(crate) group_name: String,
+    pub(crate) group_id: i64,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LocalFavoriteGroupRenameInput {
     pub(crate) kind: FavoriteEntityKind,
+    pub(crate) group_id: i64,
     #[serde(default)]
-    pub(crate) group_name: String,
-    #[serde(default)]
-    pub(crate) new_group_name: String,
+    pub(crate) name: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LocalFavoriteGroupReorderInput {
     pub(crate) kind: FavoriteEntityKind,
-    pub(crate) group_names: Vec<String>,
+    pub(crate) group_ids: Vec<i64>,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LocalFavoriteReorderInput {
     pub(crate) kind: FavoriteEntityKind,
-    #[serde(default)]
-    pub(crate) group_name: String,
+    pub(crate) group_id: i64,
     pub(crate) entity_ids: Vec<String>,
 }
 

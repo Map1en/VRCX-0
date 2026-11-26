@@ -376,7 +376,7 @@ export function useFavoritesItemActions({
             setNewLocalGroupName('');
             return;
         }
-        if (localGroups.some((group) => group.key === nextName)) {
+        if (localGroups.some((group) => group.label === nextName)) {
             toast.add({
                 type: 'error',
                 title: t(
@@ -389,12 +389,13 @@ export function useFavoritesItemActions({
             return;
         }
         try {
-            await favoritePersistenceRepository.createLocalFavoriteGroup({
-                kind,
-                groupName: nextName
-            });
+            const group =
+                await favoritePersistenceRepository.createLocalFavoriteGroup({
+                    kind,
+                    name: nextName
+                });
             setSelectedSource('local');
-            setSelectedGroupKey(nextName);
+            setSelectedGroupKey(String(group.id));
             setCreatingLocalGroup(false);
             setNewLocalGroupName('');
         } catch (error) {

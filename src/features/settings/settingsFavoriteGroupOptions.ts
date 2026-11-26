@@ -1,3 +1,5 @@
+import type { LocalFavoriteGroup } from '@/domain/favorites/types';
+
 type RemoteFavoriteFriendGroup = {
     key?: string;
     displayName?: string;
@@ -24,19 +26,19 @@ function buildRemoteFavoriteFriendGroupOptions(
 }
 
 function buildLocalFavoriteFriendGroupOptions(
-    localFriendFavoriteGroups: readonly string[] | null | undefined
+    localFriendFavoriteGroups: readonly LocalFavoriteGroup[] | null | undefined
 ) {
-    return (localFriendFavoriteGroups || [])
-        .map((groupName): FavoriteFriendGroupOption => ({
-            value: `local:${groupName}`,
-            label: groupName
-        }))
-        .filter((group) => group.value);
+    return (localFriendFavoriteGroups || []).map(
+        (group): FavoriteFriendGroupOption => ({
+            value: `local:${group.id}`,
+            label: group.name
+        })
+    );
 }
 
 type BuildFavoriteFriendGroupOptionsInput = {
     favoriteFriendGroups?: readonly RemoteFavoriteFriendGroup[] | null;
-    localFriendFavoriteGroups?: readonly string[] | null;
+    localFriendFavoriteGroups?: readonly LocalFavoriteGroup[] | null;
     localFavoriteFriendsGroups?: readonly string[] | null;
 };
 

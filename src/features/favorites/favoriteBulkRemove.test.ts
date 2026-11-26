@@ -16,7 +16,7 @@ describe('favoriteBulkRemove', () => {
                         id: 'wrld_local',
                         kind: 'world',
                         source: 'local',
-                        groupKey: 'Worlds'
+                        groupKey: '12'
                     },
                     {
                         key: 'remote:world:group_0:wrld_remote',
@@ -34,13 +34,13 @@ describe('favoriteBulkRemove', () => {
                     key: 'local:Worlds:wrld_local',
                     source: 'local',
                     entityId: 'wrld_local',
-                    groupName: 'Worlds'
+                    groupId: 12
                 },
                 {
                     key: 'remote:world:group_0:wrld_remote',
                     source: 'remote',
                     entityId: 'wrld_remote',
-                    groupName: 'world:group_0'
+                    groupId: null
                 }
             ]
         });

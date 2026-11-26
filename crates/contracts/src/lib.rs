@@ -56,7 +56,7 @@ pub use entity_cache::{
     AvatarCacheOutput, CacheEntityInput, FileMetadataOutput, WorldSummaryOutput,
 };
 pub use favorites::{
-    FavoriteRow, SavedGroupCollection, SavedGroupCollectionCreateInput,
+    FavoriteRow, LocalFavoriteGroup, SavedGroupCollection, SavedGroupCollectionCreateInput,
     SavedGroupCollectionDeleteInput, SavedGroupFavoriteAddInput, SavedGroupFavoriteRemoveInput,
     SavedGroupFavoritesSnapshot, VrchatFavoriteType,
 };

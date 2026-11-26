@@ -13,7 +13,7 @@ use vrcx_0_contracts::friend_log::{
     FriendLogUpsertOptionsInput,
 };
 use vrcx_0_contracts::realtime::{RealtimePersistenceBatch, RealtimeWriteCounts};
-use vrcx_0_contracts::FavoriteRow;
+use vrcx_0_contracts::{FavoriteRow, LocalFavoriteGroup};
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 use vrcx_0_persistence::DatabaseService;
 
@@ -63,6 +63,16 @@ impl FavoriteBaselineStore for PersistenceRealtimeStore {
         kind: FavoriteEntityKind,
     ) -> crate::Result<Vec<FavoriteRow>> {
         Ok(vrcx_0_persistence::favorites::favorite_list(
+            &self.db, owner, kind,
+        )?)
+    }
+
+    fn favorite_group_list(
+        &self,
+        owner: Option<&OwnerId>,
+        kind: FavoriteEntityKind,
+    ) -> crate::Result<Vec<LocalFavoriteGroup>> {
+        Ok(vrcx_0_persistence::favorites::favorite_group_list(
             &self.db, owner, kind,
         )?)
     }

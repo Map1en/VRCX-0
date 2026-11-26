@@ -21,9 +21,9 @@ struct FakeActions {
 }
 
 impl SharedCollectionImportActions for FakeActions {
-    fn create_group(&self, _group_name: &str) -> Result<()> {
+    fn create_group(&self, _group_name: &str) -> Result<i64> {
         self.created.fetch_add(1, Ordering::AcqRel);
-        Ok(())
+        Ok(1)
     }
 
     fn fetch_and_cache_world<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, Result<()>> {
@@ -40,7 +40,7 @@ impl SharedCollectionImportActions for FakeActions {
         })
     }
 
-    fn add_world_favorite(&self, world_id: &str, _group_name: &str) -> Result<()> {
+    fn add_world_favorite(&self, world_id: &str, _group_id: i64) -> Result<()> {
         self.added.lock().unwrap().push(world_id.to_string());
         if let Some(cancel) = &self.cancel_on_add {
             cancel.store(true, Ordering::Release);

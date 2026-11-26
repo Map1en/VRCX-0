@@ -36,8 +36,8 @@ const remoteGroups: FavoriteGroupView[] = [
     }
 ];
 const localGroups: FavoriteGroupView[] = [
-    { key: 'Local A', source: 'local', label: 'Local A' },
-    { key: 'Local B', source: 'local', label: 'Local B' }
+    { key: '1', source: 'local', label: 'Local A' },
+    { key: '2', source: 'local', label: 'Local B' }
 ];
 const remoteItem: FavoriteItem = {
     key: 'remote:world:group_0:wrld_1',
@@ -53,11 +53,11 @@ const remoteItem: FavoriteItem = {
     }
 };
 const localItem: FavoriteItem = {
-    key: 'local:Local A:wrld_1',
+    key: 'local:1:wrld_1',
     id: 'wrld_1',
     kind: 'world',
     source: 'local',
-    groupKey: 'Local A'
+    groupKey: '1'
 };
 const successfulTransferResult: FavoriteTransferItemResult = {
     key: remoteItem.key,
@@ -87,7 +87,7 @@ describe('favorite transfer helpers', () => {
                 selectedSource: 'remote',
                 selectedGroupKey: 'world:group_0'
             }).map((target) => `${target.source}:${target.key}`)
-        ).toEqual(['remote:world:group_1', 'local:Local A', 'local:Local B']);
+        ).toEqual(['remote:world:group_1', 'local:1', 'local:2']);
     });
 
     it('builds remote to local payload with the entity id used as the remote delete object id', () => {
@@ -106,7 +106,7 @@ describe('favorite transfer helpers', () => {
             },
             target: {
                 location: 'local',
-                group: 'Local A'
+                group: '1'
             },
             items: [
                 {
@@ -129,7 +129,7 @@ describe('favorite transfer helpers', () => {
         expect(input).toMatchObject({
             source: {
                 location: 'local',
-                group: 'Local A'
+                group: '1'
             },
             target: {
                 location: 'remote',
@@ -181,7 +181,7 @@ describe('favorite transfer helpers', () => {
         expect(
             isFavoriteMoveTargetOverCapacity(
                 {
-                    key: 'Local A',
+                    key: '1',
                     source: 'local',
                     label: 'Local A',
                     count: 500
@@ -195,7 +195,7 @@ describe('favorite transfer helpers', () => {
         expect(
             isFavoriteMoveTargetOverCapacity(
                 {
-                    key: 'Local A',
+                    key: '1',
                     source: 'local',
                     label: 'Local A',
                     count: 500,
@@ -278,7 +278,7 @@ describe('favorite transfer helpers', () => {
             selectedItemsHaveOnlineFavoriteConflict({
                 selectedItems: [localItem],
                 selectedSource: 'local',
-                selectedGroupKey: 'Local A',
+                selectedGroupKey: '1',
                 remoteFavoritesByObjectId: {}
             })
         ).toBe(false);
@@ -292,7 +292,7 @@ describe('favorite transfer helpers', () => {
             selectedItemsHaveOnlineFavoriteConflict({
                 selectedItems: [localItem],
                 selectedSource: 'local',
-                selectedGroupKey: 'Local A',
+                selectedGroupKey: '1',
                 remoteFavoritesByObjectId
             })
         ).toBe(true);
@@ -353,7 +353,7 @@ describe('favorite transfer helpers', () => {
             remoteGroups,
             localGroups,
             selectedSource: 'local',
-            selectedGroupKey: 'Local A',
+            selectedGroupKey: '1',
             selectedItems: [localItem],
             remoteFavoritesByObjectId
         });
@@ -367,7 +367,7 @@ describe('favorite transfer helpers', () => {
             remoteGroups,
             localGroups,
             selectedSource: 'local',
-            selectedGroupKey: 'Local A',
+            selectedGroupKey: '1',
             selectedItems: [localItem],
             remoteFavoritesByObjectId: {}
         });
@@ -396,7 +396,7 @@ describe('favorite transfer helpers', () => {
             remoteGroups,
             localGroups,
             selectedSource: 'local',
-            selectedGroupKey: 'Local A',
+            selectedGroupKey: '1',
             selectedItems: [localItem],
             remoteFavoritesByObjectId
         });

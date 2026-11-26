@@ -176,7 +176,7 @@ describe('favoriteImportService typed worker adapter', () => {
             importProgressTotal: 0,
             errors: '',
             remoteGroupName: '',
-            localGroupName: ''
+            localGroupId: ''
         });
         await vi.waitFor(() => {
             expect(mocks.favoriteImportCancel).toHaveBeenCalledOnce();
@@ -203,7 +203,7 @@ describe('favoriteImportService typed worker adapter', () => {
         useFavoriteImportStore
             .getState()
             .setRows([{ id: AVATAR_ID, name: 'Avatar' }]);
-        useFavoriteImportStore.getState().setLocalGroupName('Avatars');
+        useFavoriteImportStore.getState().setLocalGroupId('5');
 
         await importFavoriteImportRows();
 
@@ -213,7 +213,7 @@ describe('favoriteImportService typed worker adapter', () => {
             ids: [AVATAR_ID],
             target: {
                 location: 'local',
-                group: 'Avatars',
+                group: '5',
                 favoriteType: null
             }
         });

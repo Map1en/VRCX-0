@@ -16,6 +16,10 @@ impl OwnerRowId {
     pub(crate) fn value(self) -> i64 {
         self.0
     }
+
+    pub(crate) fn from_value(value: i64) -> Self {
+        Self(value)
+    }
 }
 
 impl From<OwnerRowId> for Value {

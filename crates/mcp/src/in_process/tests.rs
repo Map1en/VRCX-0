@@ -119,12 +119,19 @@ async fn favorites_list_the_newest_rows_and_count_every_group() {
         ("wrld_b", "Chill"),
         ("wrld_c", "Games"),
     ] {
+        let group = vrcx_0_persistence::favorites::favorite_group_create(
+            db.as_ref(),
+            Some(&OwnerId::new("usr_owner")),
+            vrcx_0_core::FavoriteEntityKind::World,
+            group,
+        )
+        .unwrap();
         vrcx_0_persistence::favorites::favorite_add(
             db.as_ref(),
             Some(&OwnerId::new("usr_owner")),
             vrcx_0_core::FavoriteEntityKind::World,
             world_id.into(),
-            group.into(),
+            group.id,
         )
         .unwrap();
     }

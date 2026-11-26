@@ -28,7 +28,7 @@ use super::{
     FavoriteBulkRemoveInput, FavoriteBulkRemoveResult, FavoriteImportLocation,
     FavoriteImportOperation, FavoriteImportStatus, FavoriteRemoteAddInput,
     FavoriteRemoteDeleteInput, FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput,
-    FavoriteTransferSelectionInput, FavoriteTransferSelectionResult, LocalFavoriteGroupWrite,
+    FavoriteTransferSelectionInput, FavoriteTransferSelectionResult, LocalFavoriteGroup,
 };
 use vrcx_0_application_core::{AuthenticatedMutationContext, Result};
 use vrcx_0_core::OwnerId;
@@ -135,13 +135,13 @@ impl FavoriteMutationCoordinator {
         &self,
         kind: FavoriteEntityKind,
         entity_id: String,
-        group_name: String,
+        group_id: i64,
     ) -> Result<i64> {
         add_local_favorite_scoped(
             &self.local_deps("Local favorite mutation")?,
             kind,
             entity_id,
-            group_name,
+            group_id,
         )
     }
 
@@ -149,76 +149,68 @@ impl FavoriteMutationCoordinator {
         &self,
         kind: FavoriteEntityKind,
         entity_id: String,
-        group_name: String,
+        group_id: i64,
     ) -> Result<i64> {
         remove_local_favorite_scoped(
             &self.local_deps("Local favorite mutation")?,
             kind,
             entity_id,
-            group_name,
+            group_id,
         )
     }
 
     pub fn create_local_group(
         &self,
         kind: FavoriteEntityKind,
-        group_name: String,
-    ) -> Result<LocalFavoriteGroupWrite> {
-        create_local_favorite_group_scoped(
-            &self.local_deps("Local favorite mutation")?,
-            kind,
-            group_name,
-        )
+        name: String,
+    ) -> Result<LocalFavoriteGroup> {
+        create_local_favorite_group_scoped(&self.local_deps("Local favorite mutation")?, kind, name)
     }
 
     pub fn rename_local_group(
         &self,
         kind: FavoriteEntityKind,
-        group_name: String,
-        new_group_name: String,
-    ) -> Result<LocalFavoriteGroupWrite> {
+        group_id: i64,
+        name: String,
+    ) -> Result<i64> {
         rename_local_favorite_group_scoped(
             &self.local_deps("Local favorite mutation")?,
             kind,
-            group_name,
-            new_group_name,
+            group_id,
+            name,
         )
     }
 
-    pub fn delete_local_group(
-        &self,
-        kind: FavoriteEntityKind,
-        group_name: String,
-    ) -> Result<LocalFavoriteGroupWrite> {
+    pub fn delete_local_group(&self, kind: FavoriteEntityKind, group_id: i64) -> Result<i64> {
         delete_local_favorite_group_scoped(
             &self.local_deps("Local favorite mutation")?,
             kind,
-            group_name,
+            group_id,
         )
     }
 
     pub fn reorder_local_groups(
         &self,
         kind: FavoriteEntityKind,
-        group_names: Vec<String>,
-    ) -> Result<Vec<String>> {
+        group_ids: Vec<i64>,
+    ) -> Result<Vec<LocalFavoriteGroup>> {
         reorder_local_favorite_groups_scoped(
             &self.local_deps("Local favorite mutation")?,
             kind,
-            group_names,
+            group_ids,
         )
     }
 
     pub fn reorder_local(
         &self,
         kind: FavoriteEntityKind,
-        group_name: String,
+        group_id: i64,
         entity_ids: Vec<String>,
     ) -> Result<i64> {
         reorder_local_favorites_scoped(
             &self.local_deps("Local favorite mutation")?,
             kind,
-            group_name,
+            group_id,
             entity_ids,
         )
     }

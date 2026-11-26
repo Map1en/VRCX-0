@@ -93,43 +93,6 @@ pub fn save_notification_activity_filters(
     Ok(profile)
 }
 
-pub fn rename_local_favorite_group_in_activity_filters(
-    config: &dyn ConfigStore,
-    group_name: &str,
-    new_group_name: &str,
-) -> Result<()> {
-    let old_key = format!("local:{group_name}");
-    let new_key = format!("local:{new_group_name}");
-    for surface in NotificationSurface::ALL {
-        let Some(raw) = config.get_raw(surface.config_key())? else {
-            continue;
-        };
-        let Ok(mut value) = serde_json::from_str::<Value>(&raw) else {
-            continue;
-        };
-        if rename_string_values(&mut value, &old_key, &new_key) {
-            config.set_json(surface.config_key(), &value)?;
-        }
-    }
-    Ok(())
-}
-
-fn rename_string_values(value: &mut Value, old: &str, new: &str) -> bool {
-    match value {
-        Value::String(text) if text == old => {
-            *text = new.to_string();
-            true
-        }
-        Value::Array(values) => values.iter_mut().fold(false, |changed, value| {
-            rename_string_values(value, old, new) | changed
-        }),
-        Value::Object(fields) => fields.values_mut().fold(false, |changed, value| {
-            rename_string_values(value, old, new) | changed
-        }),
-        _ => false,
-    }
-}
-
 pub fn load_overlay_activity_filters(config: &dyn ConfigStore) -> ActivityFilters {
     let mut alert_rules_saved = false;
     let mut filters = match config.get_raw(NotificationSurface::Wrist.config_key()) {

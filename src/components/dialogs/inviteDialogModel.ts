@@ -1,4 +1,8 @@
-import type { FavoriteGroup, FavoriteGroupMap } from '@/domain/favorites/types';
+import type {
+    FavoriteGroup,
+    FavoriteGroupMap,
+    LocalFavoriteGroup
+} from '@/domain/favorites/types';
 import { presenceSection } from '@/domain/friends/presence';
 import type {
     FriendRecordInput,
@@ -11,7 +15,7 @@ type InviteCurrentUser = FriendRecordInput | null | undefined;
 type InviteFavoriteInputs = {
     favoriteFriendGroups?: readonly FavoriteGroup[];
     groupedFavoriteFriendIdsByGroupKey?: Record<string, string[]> | null;
-    localFriendFavoriteGroups?: readonly string[];
+    localFriendFavoriteGroups?: readonly LocalFavoriteGroup[];
     localFriendFavorites?: FavoriteGroupMap | null;
 };
 
@@ -84,11 +88,9 @@ export function buildFavoriteGroupLabelsByUserId({
         }
     }
 
-    for (const groupName of localFriendFavoriteGroups ??
-        Object.keys(localFriendFavorites || {})) {
-        const key = normalizeId(groupName);
-        for (const userId of localFriendFavorites?.[key] ?? []) {
-            addLabel(userId, key);
+    for (const group of localFriendFavoriteGroups ?? []) {
+        for (const userId of localFriendFavorites?.[String(group.id)] ?? []) {
+            addLabel(userId, group.name);
         }
     }
 
@@ -129,18 +131,14 @@ export function buildFavoriteGroupItems({
         .filter((group) => group.key && group.userIds.length);
 
     const local = (localFriendFavoriteGroups ?? [])
-        .map((groupName) => {
-            const key = normalizeId(groupName);
-            const userIds = onlineFriendIdsFromGroup(
-                localFriendFavorites?.[key],
+        .map((group) => ({
+            key: `local:${group.id}`,
+            label: group.name,
+            userIds: onlineFriendIdsFromGroup(
+                localFriendFavorites?.[String(group.id)],
                 friendsById
-            );
-            return {
-                key: `local:${key}`,
-                label: key,
-                userIds
-            };
-        })
+            )
+        }))
         .filter((group) => group.key && group.userIds.length);
 
     return { remote, local };

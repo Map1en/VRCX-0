@@ -42,10 +42,8 @@ function buildFavoriteIdsForGroupSelection({
     const acceptsRemoteGroup = (groupKey: string | undefined) => {
         return allGroups || selectedGroups.has(normalizeId(groupKey));
     };
-    const acceptsLocalGroup = (groupName: string) => {
-        const normalizedGroupName = normalizeId(groupName);
-        return allGroups || selectedGroups.has(`local:${normalizedGroupName}`);
-    };
+    const acceptsLocalGroup = (groupId: string) =>
+        allGroups || selectedGroups.has(`local:${groupId}`);
 
     for (const favorite of Object.values(remoteFavoritesById || {})) {
         if (
@@ -60,10 +58,10 @@ function buildFavoriteIdsForGroupSelection({
         }
     }
 
-    for (const [groupName, groupIds] of Object.entries(
+    for (const [groupId, groupIds] of Object.entries(
         localFriendFavorites || {}
     )) {
-        if (!acceptsLocalGroup(groupName)) {
+        if (!acceptsLocalGroup(groupId)) {
             continue;
         }
         for (const userId of Array.isArray(groupIds) ? groupIds : []) {

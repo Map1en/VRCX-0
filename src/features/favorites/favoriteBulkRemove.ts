@@ -23,7 +23,7 @@ export function buildFavoriteBulkRemoveInput({
             key: item.key,
             source: item.source,
             entityId: item.id,
-            groupName: item.groupKey || ''
+            groupId: item.source === 'local' ? Number(item.groupKey) : null
         };
     });
     return {

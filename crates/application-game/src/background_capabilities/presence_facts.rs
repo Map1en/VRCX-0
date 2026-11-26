@@ -210,10 +210,8 @@ fn collect_present_favorite_group_keys(
         .into_iter()
         .map(str::to_string)
         .collect::<Vec<_>>();
-    for group_name in
-        store.favorite_friend_group_names_for_users(owner_user_id, &present_user_ids)?
-    {
-        keys.insert(format!("local:{group_name}"));
+    for group_id in store.favorite_friend_group_ids_for_users(owner_user_id, &present_user_ids)? {
+        keys.insert(format!("local:{group_id}"));
     }
     let mut keys: Vec<String> = keys.into_iter().collect();
     keys.sort();

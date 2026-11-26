@@ -9,7 +9,7 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useFavoritesCollectionsState } from './useFavoritesCollectionsState';
 
 const mocks = vi.hoisted(() => ({
-    localWorlds: { groupNames: [], favoritesByGroup: {}, reload: vi.fn() },
+    localWorlds: { groups: [], favoritesByGroup: {}, reload: vi.fn() },
     details: { data: {}, availabilityById: {}, status: 'ready' },
     avatarFallbacks: {},
     getAvatarHistory: vi.fn()

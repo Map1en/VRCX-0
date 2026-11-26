@@ -162,15 +162,13 @@ export function FavoriteImportPage() {
     const remoteGroupName = useFavoriteImportStore(
         (state) => state.remoteGroupName
     );
-    const localGroupName = useFavoriteImportStore(
-        (state) => state.localGroupName
-    );
+    const localGroupId = useFavoriteImportStore((state) => state.localGroupId);
     const setInput = useFavoriteImportStore((state) => state.setInput);
     const setRemoteGroupName = useFavoriteImportStore(
         (state) => state.setRemoteGroupName
     );
-    const setLocalGroupName = useFavoriteImportStore(
-        (state) => state.setLocalGroupName
+    const setLocalGroupId = useFavoriteImportStore(
+        (state) => state.setLocalGroupId
     );
     const removeRow = useFavoriteImportStore((state) => state.removeRow);
     const setErrors = useFavoriteImportStore((state) => state.setErrors);
@@ -207,7 +205,7 @@ export function FavoriteImportPage() {
         if (activeKind === 'world') {
             return {
                 remoteGroups: favoriteWorldGroups,
-                localGroups: localWorldFavorites.groupNames
+                localGroups: localWorldFavorites.groups
             };
         }
         return {
@@ -221,7 +219,7 @@ export function FavoriteImportPage() {
         favoriteWorldGroups,
         localAvatarFavoriteGroups,
         localFriendFavoriteGroups,
-        localWorldFavorites.groupNames
+        localWorldFavorites.groups
     ]);
 
     const detectedCount = useMemo(() => {
@@ -249,16 +247,16 @@ export function FavoriteImportPage() {
                           group.count >= group.capacity
                   }))
                 : localGroups.map((group) => ({
-                      key: group,
-                      value: group,
-                      label: group,
+                      key: String(group.id),
+                      value: String(group.id),
+                      label: group.name,
                       disabled: false
                   })),
         [location, remoteGroups, localGroups]
     );
 
     const selectedGroup =
-        location === 'remote' ? remoteGroupName : localGroupName;
+        location === 'remote' ? remoteGroupName : localGroupId;
 
     const activeTotal = progressTotal || importProgressTotal;
     const activeDone = progressTotal ? progress : importProgress;
@@ -280,7 +278,7 @@ export function FavoriteImportPage() {
         if (value === 'remote') {
             setRemoteGroupName('');
         } else {
-            setLocalGroupName('');
+            setLocalGroupId('');
         }
     }
 
@@ -288,7 +286,7 @@ export function FavoriteImportPage() {
         if (location === 'remote') {
             setRemoteGroupName(value ?? '');
         } else {
-            setLocalGroupName(value ?? '');
+            setLocalGroupId(value ?? '');
         }
     }
 

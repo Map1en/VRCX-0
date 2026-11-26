@@ -28,7 +28,7 @@ pub struct FavoriteBulkRemoveItem {
     pub source: FavoriteBulkRemoveSource,
     pub entity_id: String,
     #[serde(default)]
-    pub group_name: String,
+    pub group_id: Option<i64>,
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -140,13 +140,16 @@ impl VrchatFavoriteBulkRemoveActions<'_> {
 impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
     fn remove_local(&self, kind: FavoriteEntityKind, item: &FavoriteBulkRemoveItem) -> Result<i64> {
         self.deps.mutation.ensure_current()?;
+        let group_id = item.group_id.ok_or_else(|| {
+            Error::Custom("Local favorite bulk remove requires a group id.".into())
+        })?;
         self.deps.store.remove(
             Some(&OwnerId::new(
                 self.deps.mutation.scope().current_user_id.clone(),
             )),
             kind,
             item.entity_id.clone(),
-            item.group_name.clone(),
+            group_id,
         )
     }
 
@@ -349,7 +352,6 @@ fn normalize_items(
     for item in input_items {
         let key = item.key.trim().to_string();
         let entity_id = item.entity_id.trim().to_string();
-        let group_name = item.group_name.trim().to_string();
         if key.is_empty() {
             return Err(Error::Custom(
                 "Favorite bulk remove requires an item key.".into(),
@@ -359,8 +361,8 @@ fn normalize_items(
             || entity_id.len() == expected_prefix.len()
         {
             Some("Favorite bulk remove contains an invalid entity id.".to_string())
-        } else if item.source == FavoriteBulkRemoveSource::Local && group_name.is_empty() {
-            Some("Local favorite bulk remove requires a group name.".to_string())
+        } else if item.source == FavoriteBulkRemoveSource::Local && item.group_id.is_none() {
+            Some("Local favorite bulk remove requires a group id.".to_string())
         } else {
             None
         };
@@ -370,7 +372,7 @@ fn normalize_items(
                     key,
                     source: item.source,
                     entity_id,
-                    group_name,
+                    group_id: item.group_id,
                 },
                 rejection,
             });

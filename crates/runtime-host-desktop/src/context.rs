@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 use vrcx_0_application::auth::AuthCredentialStore;
 use vrcx_0_application_activity::notification::{
     extract_file_version, fallback_file_version, reload_activity_router,
-    rename_local_favorite_group_in_activity_filters, CachedNotificationUserImageResolver,
-    NotificationDoNotDisturbSlot, NotificationRemoteFuture, NotificationResolver,
+    CachedNotificationUserImageResolver, NotificationDoNotDisturbSlot, NotificationRemoteFuture,
+    NotificationResolver,
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySink, ActivitySinkRegistry};
 use vrcx_0_application_core::{
@@ -181,20 +181,6 @@ impl DesktopRuntimeServices {
             chatbox,
             heart_rate,
         })
-    }
-
-    pub fn rename_local_favorite_group_in_activity_filters(
-        &self,
-        group_name: &str,
-        new_group_name: &str,
-    ) -> vrcx_0_application_core::Result<()> {
-        rename_local_favorite_group_in_activity_filters(
-            self.config.as_ref(),
-            group_name,
-            new_group_name,
-        )?;
-        self.reload_overlay_activity_filters();
-        Ok(())
     }
 
     pub fn reload_overlay_activity_filters(&self) {

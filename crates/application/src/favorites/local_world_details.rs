@@ -90,12 +90,15 @@ mod tests {
             ("wrld_fresh", "Other"),
             ("wrld_gone", "Favorites"),
         ] {
+            let group = store
+                .create_group(Some(&owner), FavoriteEntityKind::World, group)
+                .unwrap();
             store
                 .add(
                     Some(&owner),
                     FavoriteEntityKind::World,
                     world_id.to_string(),
-                    group.to_string(),
+                    group.id,
                 )
                 .unwrap();
         }

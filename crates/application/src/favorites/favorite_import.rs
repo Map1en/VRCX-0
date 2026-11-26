@@ -17,14 +17,13 @@ use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_ids::{is_avatar_id, is_user_id, is_world_id};
 use vrcx_0_core::vrchat_json::response_error_message;
 
-use super::local_favorites::read_config_string_array;
+use super::favorite_transfer::local_group_id;
 
 use vrcx_0_application_core::{
     AvatarCache, Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
     RuntimeEventBus, TaskSupervisor, WorldCache,
 };
 
-use super::local_favorites::local_group_config_key;
 use super::FavoriteMutationCoordinator;
 use crate::scope_gate::ScopeGate;
 use vrcx_0_core::OwnerId;
@@ -288,7 +287,7 @@ impl FavoriteImportRuntime {
             .as_ref()
             .filter(|target| target.location == FavoriteImportLocation::Local)
         {
-            if let Err(error) = self.validate_local_target(prepared.kind, target) {
+            if let Err(error) = self.validate_local_target(&scope, prepared.kind, target) {
                 self.finish_error(&run_id, error);
                 return;
             }
@@ -437,7 +436,7 @@ impl FavoriteImportRuntime {
                     Some(&OwnerId::new(scope.current_user_id.clone())),
                     kind,
                     id.to_string(),
-                    target.group.clone(),
+                    local_group_id(&target.group)?,
                 )?;
                 if affected == 0 {
                     return Err(Error::Custom(format!(
@@ -530,11 +529,15 @@ impl FavoriteImportRuntime {
 
     fn validate_local_target(
         &self,
+        scope: &RuntimeAuthScopeSnapshot,
         kind: FavoriteImportKind,
         target: &FavoriteImportTarget,
     ) -> Result<()> {
-        let groups = read_config_string_array(self.store.as_ref(), local_group_config_key(kind))?;
-        if groups.iter().any(|group| group == &target.group) {
+        let group_id = local_group_id(&target.group)?;
+        let groups = self
+            .store
+            .list_groups(Some(&OwnerId::new(scope.current_user_id.clone())), kind)?;
+        if groups.iter().any(|group| group.id == group_id) {
             Ok(())
         } else {
             Err(Error::Custom(format!(
