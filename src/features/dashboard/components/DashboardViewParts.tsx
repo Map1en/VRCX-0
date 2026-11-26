@@ -198,6 +198,16 @@ export function DashboardWidgetConfigEditor({
                     onConfigChange={onConfigChange}
                 />
                 <DashboardSwitchConfig
+                    label={t('view.feed.toolbar.grouped_friends_only')}
+                    checked={config.favoritesOnly === true}
+                    onCheckedChange={(checked) =>
+                        onConfigChange({
+                            ...config,
+                            favoritesOnly: checked
+                        })
+                    }
+                />
+                <DashboardSwitchConfig
                     label={t('view.dashboard.action.show_type_column')}
                     description={t(
                         'view.dashboard.description.matches_the_stored_feed_widget_config'

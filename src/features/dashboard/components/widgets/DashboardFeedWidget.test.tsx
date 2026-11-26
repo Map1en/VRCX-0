@@ -15,6 +15,7 @@ import type { FeedLiveEntry } from '@/state/feedLiveTypes';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { useSessionStore } from '@/state/sessionStore';
 
 vi.unmock('react-i18next');
 
@@ -36,6 +37,7 @@ const initialFeedLiveState = useFeedLiveStore.getInitialState();
 const initialFavoriteState = useFavoriteStore.getInitialState();
 const initialFriendRosterState = useFriendRosterStore.getInitialState();
 const initialPreferencesState = usePreferencesStore.getInitialState();
+const initialSessionState = useSessionStore.getInitialState();
 
 function setDashboardFeedStoreState({
     currentUserId,
@@ -80,6 +82,7 @@ describe('DashboardFeedWidget', () => {
         useFavoriteStore.setState(initialFavoriteState);
         useFriendRosterStore.setState(initialFriendRosterState);
         usePreferencesStore.setState(initialPreferencesState);
+        useSessionStore.setState(initialSessionState);
     });
 
     it('shows the unavailable state without a signed-in user', () => {
@@ -125,6 +128,8 @@ describe('DashboardFeedWidget', () => {
             filters: [],
             excludedFavoriteUserIds: [],
             locationHiddenUserIds: [],
+            favoriteUserIds: [],
+            favoritesOnly: false,
             maxRows: 100
         });
         expect(screen.getByText('Friend')).toBeTruthy();
@@ -174,6 +179,82 @@ describe('DashboardFeedWidget', () => {
             expect.objectContaining({ locationHiddenUserIds: ['usr_hidden'] })
         );
         expect(screen.queryByText('Hidden Traveler')).toBeNull();
+    });
+
+    it('limits rows to friends in the selected favorite groups when grouped friends only is on', async () => {
+        mocks.queryFeedLatest.mockResolvedValue({ rows: [], maxSequence: 0 });
+        setDashboardFeedStoreState({
+            currentUserId: 'usr_self',
+            liveFeedEntries: [
+                {
+                    sequence: 1,
+                    ownerUserId: 'usr_self',
+                    entry: onlineFeedEntry({
+                        userId: 'usr_grouped',
+                        displayName: 'Grouped Friend'
+                    })
+                },
+                {
+                    sequence: 2,
+                    ownerUserId: 'usr_self',
+                    entry: onlineFeedEntry({
+                        userId: 'usr_other',
+                        displayName: 'Other Friend'
+                    })
+                }
+            ],
+            liveFeedVersion: 2
+        });
+        useFavoriteStore.setState({
+            favoriteFriendGroups: [
+                {
+                    key: 'group_0',
+                    name: 'group_0',
+                    displayName: 'Group 0',
+                    type: 'friend',
+                    visibility: 'private',
+                    capacity: 150,
+                    count: 1
+                },
+                {
+                    key: 'group_1',
+                    name: 'group_1',
+                    displayName: 'Group 1',
+                    type: 'friend',
+                    visibility: 'private',
+                    capacity: 150,
+                    count: 1
+                }
+            ],
+            groupedFavoriteFriendIdsByGroupKey: {
+                group_0: ['usr_grouped'],
+                group_1: ['usr_other']
+            }
+        });
+        usePreferencesStore.setState({
+            localFavoriteFriendsGroups: ['group_0']
+        });
+        useSessionStore.setState({ isFavoritesLoaded: true });
+
+        render(
+            <MemoryRouter>
+                <DashboardFeedWidget
+                    config={{ favoritesOnly: true }}
+                    configUpdater={null}
+                />
+            </MemoryRouter>
+        );
+
+        await waitFor(() =>
+            expect(screen.getByText('Grouped Friend')).toBeTruthy()
+        );
+        expect(mocks.queryFeedLatest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                favoriteUserIds: ['usr_grouped'],
+                favoritesOnly: true
+            })
+        );
+        expect(screen.queryByText('Other Friend')).toBeNull();
     });
 
     it('groups compact feed rows by day instead of repeating the date per row', async () => {

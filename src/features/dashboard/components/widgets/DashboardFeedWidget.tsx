@@ -13,6 +13,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import { FeedPersistenceDisabledIndicator } from '@/components/feed/FeedPersistenceDisabledIndicator';
 import type { FeedRow } from '@/components/feed/feedTypes';
+import { useFeedGroupedFriendIds } from '@/components/feed/useFeedGroupedFriendIds';
 import { useFeedHiddenUserFilters } from '@/components/feed/useFeedHiddenUserFilters';
 import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import type { FeedReadModelResult } from '@/domain/feed/readModel';
@@ -30,6 +31,7 @@ import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { useSessionStore } from '@/state/sessionStore';
 import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -86,6 +88,11 @@ export function DashboardFeedWidget({
             localFriendFavorites: state.localFriendFavorites
         }))
     );
+    const favoritesOnly = config.favoritesOnly === true;
+    const favoriteUserIds = useFeedGroupedFriendIds(favoritesOnly);
+    const isFavoritesLoaded = useSessionStore(
+        (state) => state.isFavoritesLoaded
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const feedPersistenceDisabled = usePreferencesStore(
         (state) => state.feedPersistenceDisabled
@@ -116,6 +123,8 @@ export function DashboardFeedWidget({
         () => buildFavoriteIdSet(remoteFavoriteFriendIds, localFriendFavorites),
         [localFriendFavorites, remoteFavoriteFriendIds]
     );
+
+    const awaitingFavorites = favoritesOnly && !isFavoritesLoaded;
 
     useEffect(() => {
         liveFeedSnapshotRef.current = {
@@ -162,6 +171,8 @@ export function DashboardFeedWidget({
                         filters: activeFilters,
                         excludedFavoriteUserIds: excludedUserIds,
                         locationHiddenUserIds,
+                        favoriteUserIds,
+                        favoritesOnly,
                         maxRows: FEED_WIDGET_MAX_ROWS
                     }),
                     liveEntries: liveFeedSnapshot.entries,
@@ -183,7 +194,14 @@ export function DashboardFeedWidget({
             }
             return null;
         },
-        [activeFilters, currentUserId, excludedUserIds, locationHiddenUserIds]
+        [
+            activeFilters,
+            currentUserId,
+            excludedUserIds,
+            favoriteUserIds,
+            favoritesOnly,
+            locationHiddenUserIds
+        ]
     );
 
     const prepareWidgetRowsForCommit = useCallback(
@@ -221,11 +239,11 @@ export function DashboardFeedWidget({
     useEffect(() => {
         let active = true;
 
-        if (!currentUserId) {
+        if (!currentUserId || awaitingFavorites) {
             lastLiveFeedSequenceRef.current =
                 liveFeedSnapshotRef.current.version;
             setRows([]);
-            setLoadStatus('idle');
+            setLoadStatus(awaitingFavorites ? 'running' : 'idle');
             setDetail('');
             return () => {
                 active = false;
@@ -243,6 +261,8 @@ export function DashboardFeedWidget({
                 filters: activeFilters,
                 excludedFavoriteUserIds: excludedUserIds,
                 locationHiddenUserIds,
+                favoriteUserIds,
+                favoritesOnly,
                 maxRows: FEED_WIDGET_MAX_ROWS
             })
             .then(async (result) => {
@@ -294,8 +314,11 @@ export function DashboardFeedWidget({
     }, [
         activeFilters,
         addGameLogEventCount,
+        awaitingFavorites,
         currentUserId,
         excludedUserIds,
+        favoriteUserIds,
+        favoritesOnly,
         feedPersistenceDisabled,
         locationHiddenUserIds,
         mergeWidgetRowsWithLatestLive,
@@ -306,6 +329,7 @@ export function DashboardFeedWidget({
         liveMergeRequestIdRef.current += 1;
         if (
             !currentUserId ||
+            awaitingFavorites ||
             liveFeedVersion <= lastLiveFeedSequenceRef.current
         ) {
             return;
@@ -342,6 +366,7 @@ export function DashboardFeedWidget({
             });
     }, [
         activeFilters,
+        awaitingFavorites,
         currentUserId,
         liveFeedEntries,
         liveFeedPatches,
@@ -376,6 +401,21 @@ export function DashboardFeedWidget({
                 />
             </HintTooltip>
             <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuGroup>
+                    <DropdownMenuCheckboxItem
+                        checked={favoritesOnly}
+                        onClick={(event) => event.preventDefault()}
+                        onCheckedChange={(checked) =>
+                            configUpdater({
+                                ...config,
+                                favoritesOnly: checked === true
+                            })
+                        }
+                    >
+                        {t('view.feed.toolbar.grouped_friends_only')}
+                    </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                     {FEED_FILTER_TYPES.map((filterType) => (
                         <DropdownMenuCheckboxItem

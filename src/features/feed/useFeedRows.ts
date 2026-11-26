@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-    buildFeedFavoriteIdSet as buildFavoriteIdSet,
     getFeedRowId,
     normalizeFeedId as normalizeId,
     resolveDisplayNameCandidate,
@@ -12,6 +11,7 @@ import type {
     FeedLoadStatus,
     FeedRow
 } from '@/components/feed/feedTypes';
+import { useFeedGroupedFriendIds } from '@/components/feed/useFeedGroupedFriendIds';
 import { useFeedHiddenUserFilters } from '@/components/feed/useFeedHiddenUserFilters';
 import { toIsoRangeStart, toIsoRangeEnd } from '@/lib/dateRange';
 import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
@@ -23,7 +23,6 @@ import {
     mergeFeedRowsWithLiveEntries,
     prepareFeedRowsForCommit
 } from '@/services/feedLiveMergeService';
-import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendLogStore } from '@/state/friendLogStore';
 import { useOfflineRecordStore } from '@/state/offlineRecordStore';
@@ -62,21 +61,7 @@ export function useFeedRows({
     const isFavoritesLoaded = useSessionStore(
         (state) => state.isFavoritesLoaded
     );
-    const favoriteFriendGroups = useFavoriteStore(
-        (state) => state.favoriteFriendGroups
-    );
-    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
-        (state) => state.groupedFavoriteFriendIdsByGroupKey
-    );
-    const localFriendFavoriteGroups = useFavoriteStore(
-        (state) => state.localFriendFavoriteGroups
-    );
-    const localFriendFavorites = useFavoriteStore(
-        (state) => state.localFriendFavorites
-    );
-    const favoriteGroupFilterIds = usePreferencesStore(
-        (state) => state.localFavoriteFriendsGroups
-    );
+    const favoriteUserIds = useFeedGroupedFriendIds(favoritesOnly);
     const {
         excludedUserIds: hiddenExcludedUserIds,
         locationHiddenUserIds: hiddenUserIds
@@ -113,33 +98,8 @@ export function useFeedRows({
     const viewingLatestRef = useRef(true);
     const hasUnloadedLatestRef = useRef(false);
 
-    const favoriteIdSet = useMemo(
-        () =>
-            buildFavoriteIdSet({
-                remoteGroupKeys: favoriteFriendGroups
-                    .map((group) => normalizeId(group.key))
-                    .filter(Boolean),
-                remoteIdsByGroupKey: groupedFavoriteFriendIdsByGroupKey,
-                localGroupNames: localFriendFavoriteGroups.length
-                    ? localFriendFavoriteGroups
-                    : Object.keys(localFriendFavorites),
-                localFriendFavorites,
-                selectedGroupKeys: favoriteGroupFilterIds
-            }),
-        [
-            favoriteFriendGroups,
-            favoriteGroupFilterIds,
-            groupedFavoriteFriendIdsByGroupKey,
-            localFriendFavoriteGroups,
-            localFriendFavorites
-        ]
-    );
     const searchMode = Boolean(
         deferredSearchQuery.trim() || scopedUserIds.length || dateFrom || dateTo
-    );
-    const favoriteUserIds = useMemo(
-        () => (favoritesOnly ? Array.from(favoriteIdSet) : []),
-        [favoriteIdSet, favoritesOnly]
     );
     const normalQueryKey = useMemo(
         () =>
