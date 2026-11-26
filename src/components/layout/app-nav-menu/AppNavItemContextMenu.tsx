@@ -24,7 +24,6 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { SidebarMenuAction } from '@/ui/shadcn/sidebar';
@@ -86,34 +85,29 @@ function DashboardEntryAction({
             </HintTooltip>
             <DropdownMenuContent side="right" align="start" className="w-48">
                 {isDashboard ? (
-                    <>
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem
-                                onClick={() => {
-                                    if (entry) {
-                                        onEditDashboard(entry);
-                                    }
-                                }}
-                            >
-                                <PencilIcon />
-                                {t('nav_menu.edit_dashboard')}
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => {
-                                    if (entry) {
-                                        onDeleteDashboard(entry);
-                                    }
-                                }}
-                            >
-                                <Trash2Icon />
-                                {t('nav_menu.delete_dashboard')}
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem
+                            onClick={() => {
+                                if (entry) {
+                                    onEditDashboard(entry);
+                                }
+                            }}
+                        >
+                            <PencilIcon />
+                            {t('nav_menu.edit_dashboard')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => {
+                                if (entry) {
+                                    onDeleteDashboard(entry);
+                                }
+                            }}
+                        >
+                            <Trash2Icon />
+                            {t('nav_menu.delete_dashboard')}
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                 ) : null}
                 {isTool ? (
                     <DropdownMenuGroup>
@@ -191,32 +185,27 @@ function NavItemContextMenu({
                 </ContextMenuGroup>
             ) : null}
             {isDashboard ? (
-                <>
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            onClick={() => {
-                                if (entry) {
-                                    onEditDashboard(entry);
-                                }
-                            }}
-                        >
-                            {t('nav_menu.edit_dashboard')}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                    <ContextMenuSeparator />
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            variant="destructive"
-                            onClick={() => {
-                                if (entry) {
-                                    onDeleteDashboard(entry);
-                                }
-                            }}
-                        >
-                            {t('nav_menu.delete_dashboard')}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                </>
+                <ContextMenuGroup>
+                    <ContextMenuItem
+                        onClick={() => {
+                            if (entry) {
+                                onEditDashboard(entry);
+                            }
+                        }}
+                    >
+                        {t('nav_menu.edit_dashboard')}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        variant="destructive"
+                        onClick={() => {
+                            if (entry) {
+                                onDeleteDashboard(entry);
+                            }
+                        }}
+                    >
+                        {t('nav_menu.delete_dashboard')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
             ) : null}
             {isDashboard ? <ContextMenuSeparator /> : null}
             {isTool ? (
