@@ -20,9 +20,8 @@ use crate::server::VrcxMcpServer;
 use crate::{McpFeedQueryPort, McpInterruptCheck};
 
 use super::common::{
-    deserialize_optional_bool, map_application_query_error, require_current_user_id,
-    resolve_optional_target_or_result, structured_result, TargetResolutionOutcome,
-    TimeWindowParams, WithResolution,
+    map_application_query_error, require_current_user_id, resolve_optional_target_or_result,
+    structured_result, TargetResolutionOutcome, TimeWindowParams, WithResolution,
 };
 use vrcx_0_core::OwnerId;
 
@@ -36,7 +35,7 @@ static FRIEND_FEED_SEARCH_PERMIT: Semaphore = Semaphore::const_new(1);
 #[tool_router(router = feed_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L1·query] Search observed persisted friend Feed events (GPS, online/offline, status, bio, avatar), newest first. Use for exact event evidence, not current state or aggregate counts. Pass target when known and narrow with eventTypes/timeWindow. A search with neither target nor a lower time bound requires allHistory=true or timeWindow=\"all\". Returns at most 50 rows plus nextCursor; request another page only when needed. History is incomplete and private locations may be redacted.",
+        description = "[L1·query] Search observed persisted friend Feed events (GPS, online/offline, status, bio, avatar), newest first. Use for exact event evidence, not current state or aggregate counts. Pass target when known and narrow with eventTypes/timeWindow. Without target or timeWindow it scans all history and may hit the 25-second limit on large databases. Returns at most 50 rows plus nextCursor; request another page only when needed. History is incomplete and private locations may be redacted.",
         annotations(read_only_hint = true)
     )]
     async fn search_friend_feed(
@@ -66,20 +65,13 @@ impl VrcxMcpServer {
             ));
         }
 
-        let time_window = input.time_window.unwrap_or_default();
-        let all_history = input.all_history == Some(true) || time_window.requests_all_history();
-        let time_window: social_aggregates::TimeWindow = time_window.into();
+        let time_window: social_aggregates::TimeWindow =
+            input.time_window.unwrap_or_default().into();
         let date_from = canonical_time_bound(time_window.from)?;
         let date_to = canonical_time_bound(time_window.to)?;
         if !date_from.is_empty() && !date_to.is_empty() && date_from > date_to {
             return Err(
                 "search_friend_feed timeWindow.from must not be after timeWindow.to".into(),
-            );
-        }
-        if target_user_id.is_none() && date_from.is_empty() && !all_history {
-            return Err(
-                "search_friend_feed global searches require timeWindow with a lower bound; for an explicit all-history request set allHistory=true or timeWindow=\"all\". Broad all-history searches may be slow on large local databases."
-                    .into(),
             );
         }
 
@@ -354,9 +346,6 @@ struct SearchFriendFeedParams {
     event_types: Option<Vec<FriendFeedEventTypeParam>>,
     /// Relative string such as "90d", or an object with RFC3339/shorthand from/to bounds.
     time_window: Option<TimeWindowParams>,
-    /// Required for a global search without a lower time bound; acknowledges the potentially slow all-history scan.
-    #[serde(default, deserialize_with = "deserialize_optional_bool")]
-    all_history: Option<bool>,
     /// Rows per page. Defaults to 20 and is clamped to 1..=50.
     limit: Option<i64>,
     /// Opaque nextCursor from the preceding page. Keep every other search argument unchanged.

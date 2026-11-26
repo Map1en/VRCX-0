@@ -168,7 +168,7 @@ async fn favorites_list_the_newest_rows_and_count_every_group() {
 }
 
 #[tokio::test]
-async fn friend_feed_search_resolves_target_pages_results_and_guards_global_history() {
+async fn friend_feed_search_resolves_target_pages_results_and_searches_global_history() {
     let (_dir, runtime, db) =
         crate::test_support::test_runtime_with_database("in-process-friend-feed", "usr_owner")
             .unwrap();
@@ -278,7 +278,6 @@ async fn friend_feed_search_resolves_target_pages_results_and_guards_global_hist
         .call_tool(
             "search_friend_feed",
             Some(Map::from_iter([
-                ("allHistory".into(), json!(true)),
                 ("eventTypes".into(), json!(["bio"])),
                 ("limit".into(), json!(10)),
                 ("timeWindow".into(), json!("24h")),
@@ -327,47 +326,26 @@ async fn friend_feed_search_resolves_target_pages_results_and_guards_global_hist
         assert!(invalid.text.contains("timeWindow"));
     }
 
-    let unbounded = tools
-        .call_tool(
-            "search_friend_feed",
-            Some(Map::from_iter([("query".into(), json!("needle"))])),
-        )
-        .await
-        .unwrap();
-    assert!(unbounded.is_error);
-    assert!(unbounded.text.contains("allHistory=true"));
-
-    let explicit_all_window = tools
-        .call_tool(
-            "search_friend_feed",
-            Some(Map::from_iter([
-                ("eventTypes".into(), json!(["bio"])),
-                ("timeWindow".into(), json!("all")),
-            ])),
-        )
-        .await
-        .unwrap();
-    assert!(
-        !explicit_all_window.is_error,
-        "{}",
-        explicit_all_window.text
-    );
-    assert_eq!(
-        explicit_all_window.structured.unwrap()["rows"]
-            .as_array()
-            .unwrap()
-            .len(),
-        3
-    );
-
-    let empty_window = tools
-        .call_tool(
-            "search_friend_feed",
-            Some(Map::from_iter([("timeWindow".into(), json!(""))])),
-        )
-        .await
-        .unwrap();
-    assert!(empty_window.is_error);
+    for global_history in [
+        Map::from_iter([("query".into(), json!("needle"))]),
+        Map::from_iter([
+            ("eventTypes".into(), json!(["bio"])),
+            ("timeWindow".into(), json!("all")),
+        ]),
+    ] {
+        let unbounded = tools
+            .call_tool("search_friend_feed", Some(global_history))
+            .await
+            .unwrap();
+        assert!(!unbounded.is_error, "{}", unbounded.text);
+        assert_eq!(
+            unbounded.structured.unwrap()["rows"]
+                .as_array()
+                .unwrap()
+                .len(),
+            3
+        );
+    }
 }
 
 #[tokio::test]
@@ -613,7 +591,6 @@ fn friend_feed_search_completes_with_one_blocking_thread() {
             tools.call_tool(
                 "search_friend_feed",
                 Some(Map::from_iter([
-                    ("allHistory".into(), json!(true)),
                     ("query".into(), json!("needle")),
                     ("eventTypes".into(), json!(["bio"])),
                 ])),
@@ -677,7 +654,7 @@ fn friend_feed_cancellation_releases_the_only_blocking_thread() {
         let started = {
             let call = tools.call_tool(
                 "search_friend_feed",
-                Some(Map::from_iter([("allHistory".into(), json!(true))])),
+                Some(Map::new()),
             );
             tokio::pin!(call);
             tokio::select! {
