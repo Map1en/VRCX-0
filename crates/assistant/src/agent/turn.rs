@@ -819,7 +819,9 @@ fn finish_llm_error(ctx: &TurnContext, error: &AssistantLlmError) {
 
 fn llm_error_summary(error: &AssistantLlmError) -> String {
     match error {
-        AssistantLlmError::Api { status, .. } => format!("LLM API error ({status})"),
+        AssistantLlmError::Api { status, .. } if (400..=599).contains(status) => {
+            format!("LLM API error ({status})")
+        }
         _ => error.to_string(),
     }
 }

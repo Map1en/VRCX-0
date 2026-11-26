@@ -323,6 +323,19 @@ fn llm_api_error_summary_omits_provider_response_body() {
 }
 
 #[test]
+fn llm_protocol_error_summary_keeps_the_failure_reason() {
+    let error = AssistantLlmError::Api {
+        status: 200,
+        message: "chat stream ended before the model finished its response".into(),
+    };
+
+    assert_eq!(
+        llm_error_summary(&error),
+        "LLM API error (200): chat stream ended before the model finished its response"
+    );
+}
+
+#[test]
 fn empty_final_answer_after_tools_uses_generic_fallback_when_summary_is_missing() {
     let mut final_answer = String::new();
 
