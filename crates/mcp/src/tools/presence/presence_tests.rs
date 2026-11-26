@@ -199,3 +199,28 @@ fn online_friends_params_accept_string_booleans_from_models() {
     let params: OnlineFriendsParams = serde_json::from_value(json!({})).unwrap();
     assert_eq!(params.include_location, None);
 }
+
+#[test]
+fn online_friends_states_accept_a_single_or_delimited_string() {
+    let friends = || {
+        vec![
+            friend("usr_a", "Alice", "active", ""),
+            friend("usr_b", "Bob", "online", ""),
+            friend("usr_c", "Carol", "offline", ""),
+        ]
+    };
+
+    let single: OnlineFriendsParams =
+        serde_json::from_value(json!({ "states": "offline" })).unwrap();
+    assert_eq!(
+        row_ids(&build_online_friends_output(friends(), single)),
+        vec!["usr_c"]
+    );
+
+    let delimited: OnlineFriendsParams =
+        serde_json::from_value(json!({ "states": "online, active" })).unwrap();
+    assert_eq!(
+        row_ids(&build_online_friends_output(friends(), delimited)),
+        vec!["usr_a", "usr_b"]
+    );
+}

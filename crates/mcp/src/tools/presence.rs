@@ -127,9 +127,33 @@ fn normalize_access_bucket(access_type: &str) -> String {
     }
 }
 
+fn deserialize_states<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    match Value::deserialize(deserializer)? {
+        Value::Null => Ok(None),
+        Value::String(value) => Ok(Some(
+            value.split([',', ';', '|']).map(str::to_owned).collect(),
+        )),
+        Value::Array(values) => values
+            .into_iter()
+            .map(|value| match value {
+                Value::String(value) => Ok(value),
+                _ => Err(serde::de::Error::custom("states entries must be strings")),
+            })
+            .collect::<Result<_, _>>()
+            .map(Some),
+        _ => Err(serde::de::Error::custom(
+            "states must be an array of presence state strings",
+        )),
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct OnlineFriendsParams {
+    #[serde(default, deserialize_with = "deserialize_states")]
     states: Option<Vec<String>>,
     #[serde(default, deserialize_with = "deserialize_optional_bool")]
     include_location: Option<bool>,
