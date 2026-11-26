@@ -101,7 +101,8 @@ describe('assistant health telemetry', () => {
         });
         mod.recordAssistantToolError({
             source: 'search_friend_feed',
-            summary: 'search_friend_feed requires query or target'
+            summary:
+                'search_friend_feed exceeded 25 seconds; narrow target, eventTypes, or timeWindow'
         });
 
         expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
@@ -142,7 +143,7 @@ describe('assistant health telemetry', () => {
         expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(8, {
             type: 'assistantToolError',
             source: 'search_friend_feed',
-            summary: 'result=invalid_args'
+            summary: 'result=timeout'
         });
     });
 

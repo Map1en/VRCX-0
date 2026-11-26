@@ -173,7 +173,10 @@ function classifyToolResult(summary?: string): string | undefined {
     ) {
         return 'malformed_args';
     }
-    if (/\b(time(?:d)? out|timeout|deadline|elapsed)\b/.test(normalized)) {
+    if (
+        /\b(time(?:d)? out|timeout|deadline|elapsed)\b/.test(normalized) ||
+        /\bexceeded \d+ seconds?\b/.test(normalized)
+    ) {
         return 'timeout';
     }
     if (/\b(unknown tool|method not found)\b/.test(normalized)) {
@@ -184,7 +187,6 @@ function classifyToolResult(summary?: string): string | undefined {
             normalized
         ) ||
         /\b(missing field|invalid type|unknown variant)\b/.test(normalized) ||
-        /\brequires query or target\b/.test(normalized) ||
         /\b(unrecognized timewindow|timewindow(?:\.[a-z]+| calendar year)? must be)\b/.test(
             normalized
         )
