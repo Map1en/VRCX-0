@@ -2,8 +2,10 @@ import { ChevronDownIcon, StarIcon } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { DateRangeFilter } from '@/components/date-range-filter/DateRangeFilter';
 import { FeedPersistenceDisabledIndicator } from '@/components/feed/FeedPersistenceDisabledIndicator';
+import type { FeedTableInstance } from '@/components/feed/feedTypes';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
@@ -28,6 +30,11 @@ import { FeedSearchBox } from './FeedSearchBox';
 import { FeedViewModeToggle } from './FeedViewModeToggle';
 
 type FeedToolbarProps = {
+    columnLayout?: {
+        columnOrderLocked: boolean;
+        columnVisibility: Record<string, boolean>;
+        table: FeedTableInstance;
+    };
     onViewModeChange(value: FeedViewMode): void;
     filterCommands: {
         onDateRangeChange(from: string, to: string): void;
@@ -146,6 +153,7 @@ function FeedTypeFilterMenu({
 }
 
 export const FeedToolbar = memo(function FeedToolbar({
+    columnLayout,
     onViewModeChange,
     filterCommands,
     filterModel,
@@ -229,6 +237,9 @@ export const FeedToolbar = memo(function FeedToolbar({
                 <ToolbarActions>
                     {feedPersistenceDisabled ? (
                         <FeedPersistenceDisabledIndicator />
+                    ) : null}
+                    {columnLayout ? (
+                        <TableColumnVisibilityMenu table={columnLayout.table} />
                     ) : null}
                 </ToolbarActions>
             </PageToolbarRow>

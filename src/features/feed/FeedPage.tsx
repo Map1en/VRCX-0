@@ -205,6 +205,12 @@ function FeedTableMode({
         ]
     );
 
+    const { columnOrderLocked, columnVisibility } = tableModel;
+    const columnLayout = useMemo(
+        () => ({ columnOrderLocked, columnVisibility, table }),
+        [columnOrderLocked, columnVisibility, table]
+    );
+
     const emptyFilterModel = useMemo(
         () => ({
             hasActiveFilters: Boolean(
@@ -243,6 +249,7 @@ function FeedTableMode({
     return (
         <>
             <FeedToolbar
+                columnLayout={columnLayout}
                 onViewModeChange={onViewModeChange}
                 filterModel={filterModel}
                 filterCommands={filterCommands}

@@ -121,7 +121,6 @@ export function useFeedColumns(
             {
                 id: 'created_at',
                 size: searchMode ? 150 : 96,
-                enableHiding: false,
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'created_at', meta),
                 meta: {
@@ -136,7 +135,6 @@ export function useFeedColumns(
             {
                 id: 'displayName',
                 size: 180,
-                enableHiding: false,
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'displayName', meta),
                 meta: {
@@ -150,7 +148,6 @@ export function useFeedColumns(
             },
             {
                 id: 'type',
-                enableHiding: false,
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'type', meta),
                 meta: { label: t('table.feed.type') },
@@ -182,7 +179,6 @@ export function useFeedColumns(
                         .filter(Boolean)
                         .join(' '),
                 enableSorting: false,
-                enableHiding: false,
                 meta: { label: t('table.feed.detail'), stretch: true },
                 header: () => (
                     <DataTableHeaderLabel>

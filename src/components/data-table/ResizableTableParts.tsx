@@ -2,16 +2,17 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { RowData } from '@tanstack/react-table';
 import { flexRender } from '@tanstack/react-table';
-import { GripVerticalIcon } from 'lucide-react';
-import type { CSSProperties, ComponentProps, MouseEvent } from 'react';
-import { useTranslation } from 'react-i18next';
+import type { CSSProperties, MouseEvent } from 'react';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@/ui/shadcn/button';
 import { TableCell, TableHead } from '@/ui/shadcn/table';
 
 import type { AppCell, AppHeader, AppTable } from './appTable';
 import { useDataTableColumnDnd } from './dataTableColumnDndContext';
+import {
+    DataTableColumnDragHandle,
+    type DataTableColumnDragHandleProps as DragHandleProps
+} from './DataTableColumnDragHandle';
 import { DataTableColumnResizeHandle } from './DataTableColumnResizeHandle';
 import {
     DATA_TABLE_CELL_CLASS_NAME,
@@ -19,8 +20,6 @@ import {
 } from './dataTableStyles';
 import { isColumnReorderable, resolveColumnLabel } from './tableColumnLayout';
 import { TableColumnContextMenu } from './TableColumnVisibilityMenu';
-
-type DragHandleProps = Partial<ComponentProps<typeof Button>>;
 
 type ColumnMenuProps<TData extends RowData> = {
     table: AppTable<TData>;
@@ -37,7 +36,6 @@ function ResizableTableHeadContent<TData extends RowData>({
     dragHandleProps?: DragHandleProps;
     columnMenu: ColumnMenuProps<TData>;
 }) {
-    const { t } = useTranslation();
     const columnLabel = resolveColumnLabel(header.column);
 
     return (
@@ -61,18 +59,10 @@ function ResizableTableHeadContent<TData extends RowData>({
                               )}
                     </div>
                     {dragHandleProps ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t('accessibility.reorder_column', {
-                                column: columnLabel
-                            })}
-                            className="shrink-0 cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+                        <DataTableColumnDragHandle
+                            label={columnLabel}
                             {...dragHandleProps}
-                        >
-                            <GripVerticalIcon data-icon="inline-end" />
-                        </Button>
+                        />
                     ) : null}
                 </div>
                 {header.column.getCanResize() ? (

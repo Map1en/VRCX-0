@@ -56,10 +56,34 @@ const row: FeedRow = {
     userId: 'usr_test'
 };
 
-const table = {
-    getColumn: (id: string) => ({ id, getSize: () => 120 }),
-    getHeaderGroups: () => [{ headers: [] }]
-} as unknown as FeedTableInstance;
+const FEED_COLUMN_IDS = [
+    'expander',
+    'created_at',
+    'displayName',
+    'type',
+    'detail'
+];
+
+function createTable(columnIds = FEED_COLUMN_IDS) {
+    const columns = columnIds.map((id) => ({
+        id,
+        getSize: () => 120,
+        columnDef: {
+            maxSize: id === 'expander' ? 40 : undefined,
+            meta: {
+                label: id === 'expander' ? '' : `table.feed.${id}`,
+                stretch: id === 'detail'
+            }
+        }
+    }));
+    return {
+        getVisibleLeafColumns: () => columns,
+        getHeaderGroups: () => [{ headers: [] }],
+        options: { meta: {} }
+    } as unknown as FeedTableInstance;
+}
+
+const table = createTable();
 
 const onlyType = vi.fn();
 
@@ -98,6 +122,26 @@ describe('FeedVirtualListShell', () => {
             '[data-feed-list-summary]'
         );
         expect(summary?.textContent).toMatch(/:\d{2}usertypedetail$/);
+    });
+
+    it('renders row cells in the visible column order', () => {
+        const view = render(
+            <FeedVirtualListShell
+                {...props}
+                table={createTable([
+                    'expander',
+                    'type',
+                    'detail',
+                    'created_at'
+                ])}
+            />
+        );
+
+        const summary = view.container.querySelector(
+            '[data-feed-list-summary]'
+        );
+        expect(summary?.textContent).toMatch(/^typedetail\d{1,2}:\d{2}/);
+        expect(screen.queryByRole('button', { name: 'user' })).toBeNull();
     });
 
     it('marks only earlier days with a heading and shows the clock per row', () => {
@@ -147,13 +191,16 @@ describe('FeedVirtualListShell', () => {
                 {
                     headers: [
                         {
+                            id: 'created_at',
                             column: {
                                 id: 'created_at',
                                 columnDef: {
                                     header: () => (
                                         <button type="button">sort date</button>
-                                    )
+                                    ),
+                                    meta: { label: 'table.feed.date' }
                                 },
+                                getCanResize: () => true,
                                 getIsResizing: () => false,
                                 getSize: () => 120
                             },

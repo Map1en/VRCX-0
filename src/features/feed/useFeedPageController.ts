@@ -158,12 +158,16 @@ export function useFeedPageController({
         manualSorting: true,
         rowCount: feedRows.rows.length,
         state: {
+            columnOrder: tableModel.columnOrder,
             columnSizing: tableModel.columnSizing,
+            columnVisibility: tableModel.columnVisibility,
             expanded: tableModel.expanded,
             sorting: tableModel.sorting,
             pagination: tableModel.pagination
         },
+        onColumnOrderChange: tableModel.setColumnOrder,
         onColumnSizingChange: tableModel.setColumnSizing,
+        onColumnVisibilityChange: tableModel.setColumnVisibility,
         onExpandedChange: tableModel.setExpanded,
         onSortingChange: tableModel.setSorting,
         onPaginationChange: tableModel.setPagination,
@@ -175,7 +179,9 @@ export function useFeedPageController({
         getRowId: (row) => getFeedRowId(row),
         getRowCanExpand: (row) => canExpandFeedRow(row.original),
         meta: {
-            feed: feedTableMeta
+            columnOrderLocked: tableModel.columnOrderLocked,
+            feed: feedTableMeta,
+            setColumnOrderLocked: tableModel.setColumnOrderLocked
         }
     });
 

@@ -18,6 +18,8 @@ import {
     FEED_TABLE_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
     readPersistedFeedTableState as readPersistedState,
     resolveFeedPageSize as resolvePageSize,
+    sanitizeFeedColumnOrder,
+    sanitizeFeedColumnVisibility,
     sanitizeFeedPageSizes as sanitizePageSizes,
     sanitizeFeedSorting as sanitizeSorting,
     writePersistedFeedTableState as writePersistedState
@@ -57,11 +59,21 @@ export function useFeedTableState({
     );
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
+    const hasWrittenColumnLayoutRef = useRef(false);
     const [preferencesReady, setPreferencesReady] = useState(false);
     const [expanded, setExpanded] = useState({});
     const [pageSizes, setPageSizes] = useState(DEFAULT_PAGE_SIZES);
     const [sorting, setSorting] = useState(() =>
         sanitizeSorting(persistedState.sorting)
+    );
+    const [columnVisibility, setColumnVisibility] = useState(() =>
+        sanitizeFeedColumnVisibility(persistedState.columnVisibility)
+    );
+    const [columnOrder, setColumnOrder] = useState(() =>
+        sanitizeFeedColumnOrder(persistedState.columnOrder)
+    );
+    const [columnOrderLocked, setColumnOrderLocked] = useState(
+        () => persistedState.columnOrderLocked === true
     );
     const [columnSizing, setColumnSizing] = usePersistedTableColumnSizing({
         columnIds: FEED_RESIZABLE_COLUMN_IDS,
@@ -179,6 +191,18 @@ export function useFeedTableState({
     }, [pagination.pageSize]);
 
     useEffect(() => {
+        if (!hasWrittenColumnLayoutRef.current) {
+            hasWrittenColumnLayoutRef.current = true;
+            return;
+        }
+        writePersistedState({
+            columnVisibility: sanitizeFeedColumnVisibility(columnVisibility),
+            columnOrder: sanitizeFeedColumnOrder(columnOrder),
+            columnOrderLocked
+        });
+    }, [columnOrder, columnOrderLocked, columnVisibility]);
+
+    useEffect(() => {
         setPagination((current) => ({
             ...current,
             pageIndex: 0
@@ -193,12 +217,18 @@ export function useFeedTableState({
     ]);
 
     return {
+        columnOrder,
+        columnOrderLocked,
         columnSizing,
+        columnVisibility,
         expanded,
         pageSizes,
         pagination,
         preferencesReady,
+        setColumnOrder,
+        setColumnOrderLocked,
         setColumnSizing,
+        setColumnVisibility,
         setExpanded,
         setPagination,
         setSorting,

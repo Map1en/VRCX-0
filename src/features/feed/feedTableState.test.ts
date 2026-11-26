@@ -5,6 +5,8 @@ import {
     FEED_TABLE_DEFAULT_SORTING,
     readPersistedFeedTableState,
     resolveFeedPageSize,
+    sanitizeFeedColumnOrder,
+    sanitizeFeedColumnVisibility,
     sanitizeFeedPageSizes,
     sanitizeFeedSorting,
     writePersistedFeedTableState
@@ -71,5 +73,36 @@ describe('feed table state helpers', () => {
         expect(sanitizeFeedPageSizes(null)).toBe(FEED_TABLE_DEFAULT_PAGE_SIZES);
         expect(resolveFeedPageSize(50, [10, 25, 50], 25)).toBe(50);
         expect(resolveFeedPageSize(100, [10, 25, 50], 25)).toBe(50);
+    });
+
+    it('keeps the expander first and fills missing columns when restoring order', () => {
+        expect(
+            sanitizeFeedColumnOrder([
+                'detail',
+                'expander',
+                'bad',
+                'type',
+                'type'
+            ])
+        ).toEqual(['expander', 'detail', 'type', 'created_at', 'displayName']);
+        expect(sanitizeFeedColumnOrder(null)).toEqual([
+            'expander',
+            'created_at',
+            'displayName',
+            'type',
+            'detail'
+        ]);
+    });
+
+    it('restores visibility only for hideable feed columns', () => {
+        expect(
+            sanitizeFeedColumnVisibility({
+                expander: false,
+                type: false,
+                detail: 'no',
+                bad: false
+            })
+        ).toEqual({ type: false });
+        expect(sanitizeFeedColumnVisibility(null)).toEqual({});
     });
 });

@@ -15,6 +15,7 @@ export const FEED_RESIZABLE_COLUMN_IDS = [
     'displayName',
     'detail'
 ];
+const FEED_DATA_COLUMN_IDS = ['created_at', 'displayName', 'type', 'detail'];
 
 const STORAGE_KEY = getDataTableStorageKey('feed');
 
@@ -41,6 +42,37 @@ export function sanitizeFeedSorting(value: unknown): SortingState {
 
     const filtered = value.filter(isFeedSortingEntry);
     return filtered.length ? filtered : FEED_TABLE_DEFAULT_SORTING;
+}
+
+export function sanitizeFeedColumnVisibility(
+    value: unknown
+): Record<string, boolean> {
+    const visibility: Record<string, boolean> = {};
+    if (!value || typeof value !== 'object') {
+        return visibility;
+    }
+    const source = Object.fromEntries(Object.entries(value));
+    for (const columnId of FEED_DATA_COLUMN_IDS) {
+        if (typeof source[columnId] === 'boolean') {
+            visibility[columnId] = source[columnId];
+        }
+    }
+    return visibility;
+}
+
+export function sanitizeFeedColumnOrder(value: unknown): string[] {
+    const ordered = Array.isArray(value)
+        ? value.filter(
+              (columnId, index): columnId is string =>
+                  typeof columnId === 'string' &&
+                  FEED_DATA_COLUMN_IDS.includes(columnId) &&
+                  value.indexOf(columnId) === index
+          )
+        : [];
+    const missing = FEED_DATA_COLUMN_IDS.filter(
+        (columnId) => !ordered.includes(columnId)
+    );
+    return ['expander', ...ordered, ...missing];
 }
 
 export function sanitizeFeedPageSizes(value: unknown): number[] {

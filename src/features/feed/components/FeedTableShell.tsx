@@ -3,7 +3,9 @@ import { Fragment, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+    DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
     DataTableCell,
     DataTableEmptyRow,
     DataTableHeader,
@@ -78,121 +80,130 @@ export function FeedTableShell({
         <>
             <DataTableSurface>
                 <DataTableScrollArea>
-                    <Table
-                        className="table-fixed"
-                        style={getDataTableSizingStyle(table)}
-                    >
-                        <DataTableColumnSizeColGroup table={table} />
-                        <DataTableHeader
-                            table={table}
-                            enableColumnReorder={false}
-                        />
-                        <LogFilterContextMenu commands={filterCommands}>
-                            <TableBody>
-                                {table.getRowModel().rows.length > 0 ? (
-                                    table.getRowModel().rows.map((row) => (
-                                        <Fragment key={row.id}>
-                                            <DataTableRow
-                                                {...getLogFilterRowAttributes(
-                                                    getFeedRowFilterTarget(
-                                                        row.original,
-                                                        row.original.type
-                                                            ? t(
-                                                                  `view.feed.filters.${row.original.type}`
-                                                              )
-                                                            : '',
-                                                        row.original
-                                                            .displayName || ''
-                                                    )
-                                                )}
-                                                className={
-                                                    row.getCanExpand()
-                                                        ? 'group/feed-row cursor-pointer'
-                                                        : ''
-                                                }
-                                                onClick={
-                                                    row.getCanExpand()
-                                                        ? (
-                                                              event: MouseEvent<HTMLTableRowElement>
-                                                          ) => {
-                                                              if (
-                                                                  shouldSkipFeedRowToggle(
-                                                                      event
+                    <DataTableColumnDndProvider table={table}>
+                        <Table
+                            className="table-fixed"
+                            style={getDataTableSizingStyle(table)}
+                        >
+                            <DataTableColumnSizeColGroup table={table} />
+                            <DataTableHeader table={table} />
+                            <LogFilterContextMenu commands={filterCommands}>
+                                <TableBody>
+                                    {table.getRowModel().rows.length > 0 ? (
+                                        table.getRowModel().rows.map((row) => (
+                                            <Fragment key={row.id}>
+                                                <DataTableRow
+                                                    {...getLogFilterRowAttributes(
+                                                        getFeedRowFilterTarget(
+                                                            row.original,
+                                                            row.original.type
+                                                                ? t(
+                                                                      `view.feed.filters.${row.original.type}`
                                                                   )
-                                                              ) {
-                                                                  return;
+                                                                : '',
+                                                            row.original
+                                                                .displayName ||
+                                                                ''
+                                                        )
+                                                    )}
+                                                    className={
+                                                        row.getCanExpand()
+                                                            ? 'group/feed-row cursor-pointer'
+                                                            : ''
+                                                    }
+                                                    onClick={
+                                                        row.getCanExpand()
+                                                            ? (
+                                                                  event: MouseEvent<HTMLTableRowElement>
+                                                              ) => {
+                                                                  if (
+                                                                      shouldSkipFeedRowToggle(
+                                                                          event
+                                                                      )
+                                                                  ) {
+                                                                      return;
+                                                                  }
+                                                                  row.toggleExpanded();
                                                               }
-                                                              row.toggleExpanded();
-                                                          }
-                                                        : undefined
-                                                }
-                                            >
-                                                {row
-                                                    .getVisibleCells()
-                                                    .map((cell) => (
-                                                        <ResizableTableCell
-                                                            key={cell.id}
-                                                            cell={cell}
-                                                        />
-                                                    ))}
-                                            </DataTableRow>
-                                            {row.getIsExpanded() ? (
-                                                <DataTableRow data-state="expanded">
-                                                    <DataTableCell
-                                                        colSpan={
-                                                            row.getVisibleCells()
-                                                                .length
-                                                        }
+                                                            : undefined
+                                                    }
+                                                >
+                                                    <DataTableColumnSortableContext
+                                                        table={table}
                                                     >
-                                                        <FeedExpandedRow
-                                                            loadingHistoryKey={
-                                                                loadingPreviousInstancesKey
-                                                            }
-                                                            onNewInstance={
-                                                                onNewInstance
-                                                            }
-                                                            onOpenPreviousInstances={
-                                                                onOpenPreviousInstances
-                                                            }
-                                                            row={row.original}
-                                                        />
-                                                    </DataTableCell>
+                                                        {row
+                                                            .getVisibleCells()
+                                                            .map((cell) => (
+                                                                <ResizableTableCell
+                                                                    key={
+                                                                        cell.id
+                                                                    }
+                                                                    cell={cell}
+                                                                />
+                                                            ))}
+                                                    </DataTableColumnSortableContext>
                                                 </DataTableRow>
-                                            ) : null}
-                                        </Fragment>
-                                    ))
-                                ) : (
-                                    <DataTableEmptyRow
-                                        colSpan={
-                                            table.getVisibleLeafColumns().length
-                                        }
-                                    >
-                                        {loadStatus === 'running' ? (
-                                            <span className="inline-flex items-center gap-2">
-                                                <Spinner />
-                                                {t(
-                                                    'view.feed.loading.loading_feed_rows'
-                                                )}
-                                            </span>
-                                        ) : favoritesOnly &&
-                                          !isFavoritesLoaded ? (
-                                            t(
-                                                'view.feed.label.favorites_are_still_hydrating'
-                                            )
-                                        ) : loadStatus === 'error' ? (
-                                            t(
-                                                'view.feed.error.feed_query_failed'
-                                            )
-                                        ) : (
-                                            <FeedEmptyState
-                                                {...emptyFilterModel}
-                                            />
-                                        )}
-                                    </DataTableEmptyRow>
-                                )}
-                            </TableBody>
-                        </LogFilterContextMenu>
-                    </Table>
+                                                {row.getIsExpanded() ? (
+                                                    <DataTableRow data-state="expanded">
+                                                        <DataTableCell
+                                                            colSpan={
+                                                                row.getVisibleCells()
+                                                                    .length
+                                                            }
+                                                        >
+                                                            <FeedExpandedRow
+                                                                loadingHistoryKey={
+                                                                    loadingPreviousInstancesKey
+                                                                }
+                                                                onNewInstance={
+                                                                    onNewInstance
+                                                                }
+                                                                onOpenPreviousInstances={
+                                                                    onOpenPreviousInstances
+                                                                }
+                                                                row={
+                                                                    row.original
+                                                                }
+                                                            />
+                                                        </DataTableCell>
+                                                    </DataTableRow>
+                                                ) : null}
+                                            </Fragment>
+                                        ))
+                                    ) : (
+                                        <DataTableEmptyRow
+                                            colSpan={
+                                                table.getVisibleLeafColumns()
+                                                    .length
+                                            }
+                                        >
+                                            {loadStatus === 'running' ? (
+                                                <span className="inline-flex items-center gap-2">
+                                                    <Spinner />
+                                                    {t(
+                                                        'view.feed.loading.loading_feed_rows'
+                                                    )}
+                                                </span>
+                                            ) : favoritesOnly &&
+                                              !isFavoritesLoaded ? (
+                                                t(
+                                                    'view.feed.label.favorites_are_still_hydrating'
+                                                )
+                                            ) : loadStatus === 'error' ? (
+                                                t(
+                                                    'view.feed.error.feed_query_failed'
+                                                )
+                                            ) : (
+                                                <FeedEmptyState
+                                                    {...emptyFilterModel}
+                                                />
+                                            )}
+                                        </DataTableEmptyRow>
+                                    )}
+                                </TableBody>
+                            </LogFilterContextMenu>
+                        </Table>
+                    </DataTableColumnDndProvider>
                 </DataTableScrollArea>
             </DataTableSurface>
 

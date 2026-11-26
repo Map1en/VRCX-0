@@ -6,15 +6,13 @@ import {
     getColumnGridLayout,
     getColumnSizeVars
 } from '@/components/data-table/columnSizing';
-import { DataTableColumnResizeHandle } from '@/components/data-table/DataTableColumnResizeHandle';
 import {
     LogFilterContextMenu,
     getLogFilterRowAttributes,
     type LogFilterCommands
 } from '@/components/data-table/LogFilterContextMenu';
-import { getColumnOrderLocked } from '@/components/data-table/tableColumnLayout';
-import { TableColumnContextMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { VirtualHistoryList } from '@/components/data-table/VirtualHistoryList';
+import { VirtualListColumnHeader } from '@/components/data-table/VirtualListColumnHeader';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -116,7 +114,6 @@ export function FriendLogVirtualList({
             })),
         [rows, deleteAction.rowsOwnerUserId]
     );
-    const headers = table.getHeaderGroups().flatMap((group) => group.headers);
     const columns = table.getVisibleLeafColumns();
     const columnIds = useMemo(
         () => columns.map((column) => column.id),
@@ -156,13 +153,6 @@ export function FriendLogVirtualList({
             shiftHeld
         ]
     );
-    const labels: Record<string, string> = {
-        created_at: t('table.friendLog.date'),
-        type: t('table.friendLog.type'),
-        displayName: t('table.friendLog.user'),
-        action: t('table.friendLog.action')
-    };
-
     const footer = loadOlderFailed ? (
         <div role="status" className="flex items-center gap-2">
             {t('view.friend_log.load_older_failed')}
@@ -202,36 +192,10 @@ export function FriendLogVirtualList({
                     onViewingLatestChange={onViewingLatestChange}
                     latestLabel={t('view.friend_log.latest')}
                     header={
-                        <div
-                            className="grid min-h-[var(--vrcx-0-table-header-height)] items-center text-xs text-[var(--vrcx-0-table-header-foreground)]"
-                            style={layout}
-                        >
-                            {headers.map((header) => (
-                                <TableColumnContextMenu
-                                    key={header.id}
-                                    column={header.column}
-                                    table={table}
-                                    enableColumnReorder={
-                                        !getColumnOrderLocked(table)
-                                    }
-                                >
-                                    <div className="relative flex h-full min-w-0 items-center px-[var(--vrcx-0-table-cell-padding-inline)]">
-                                        <span className="truncate">
-                                            {labels[header.column.id]}
-                                        </span>
-                                        {header.column.getCanResize() ? (
-                                            <DataTableColumnResizeHandle
-                                                header={header}
-                                                label={
-                                                    labels[header.column.id] ??
-                                                    ''
-                                                }
-                                            />
-                                        ) : null}
-                                    </div>
-                                </TableColumnContextMenu>
-                            ))}
-                        </div>
+                        <VirtualListColumnHeader
+                            layout={layout}
+                            table={table}
+                        />
                     }
                     renderRow={({ row }) => (
                         <FriendLogVirtualListRow

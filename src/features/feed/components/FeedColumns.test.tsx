@@ -48,7 +48,7 @@ function createMeta(): FeedTableMeta {
 }
 
 describe('useFeedColumns', () => {
-    it('keeps the fixed time, user, type, detail order without hide controls', () => {
+    it('defaults to time, user, type, detail and only locks the expander visible', () => {
         const { result } = renderHook(() => useFeedColumns(createMeta(), true));
 
         expect(result.current.map((column) => column.id)).toEqual([
@@ -59,8 +59,10 @@ describe('useFeedColumns', () => {
             'detail'
         ]);
         expect(
-            result.current.every((column) => column.enableHiding === false)
-        ).toBe(true);
+            result.current
+                .filter((column) => column.enableHiding === false)
+                .map((column) => column.id)
+        ).toEqual(['expander']);
     });
 
     it('defaults the time column narrower for the clock-only live stream', () => {

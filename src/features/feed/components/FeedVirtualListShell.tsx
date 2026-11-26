@@ -1,12 +1,5 @@
 import { ChevronRightIcon } from 'lucide-react';
-import {
-    Fragment,
-    memo,
-    useCallback,
-    useEffect,
-    useMemo,
-    useState
-} from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -14,16 +7,15 @@ import {
     getColumnGridLayout,
     getColumnSizeVars
 } from '@/components/data-table/columnSizing';
-import { DataTableColumnResizeHandle } from '@/components/data-table/DataTableColumnResizeHandle';
-import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
 import {
     LogFilterContextMenu,
     getLogFilterRowAttributes,
     type LogFilterCommands
 } from '@/components/data-table/LogFilterContextMenu';
-import { TableColumnContextMenu } from '@/components/data-table/TableColumnVisibilityMenu';
+import { getStretchColumnId } from '@/components/data-table/tableColumnLayout';
 import { TimestampText } from '@/components/data-table/TimestampText';
 import { VirtualHistoryList } from '@/components/data-table/VirtualHistoryList';
+import { VirtualListColumnHeader } from '@/components/data-table/VirtualListColumnHeader';
 import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
 import {
     canExpandFeedRow,
@@ -77,74 +69,6 @@ type FeedVirtualListShellProps = {
 
 type FeedListLayout = ColumnGridLayout;
 
-const FEED_LIST_COLUMN_IDS = [
-    'expander',
-    'created_at',
-    'displayName',
-    'type',
-    'detail'
-] as const;
-
-function getFeedListColumns(table: FeedTableInstance) {
-    return FEED_LIST_COLUMN_IDS.flatMap((id) => {
-        const column = table.getColumn(id);
-        return column ? [column] : [];
-    });
-}
-
-function FeedListHeader({
-    layout,
-    table
-}: {
-    layout: FeedListLayout;
-    table: FeedTableInstance;
-}) {
-    const { t } = useTranslation();
-    const headers = table.getHeaderGroups().flatMap((group) => group.headers);
-    const definitions = [
-        { id: 'created_at', label: t('table.feed.date') },
-        { id: 'displayName', label: t('table.feed.user') },
-        { id: 'type', label: t('table.feed.type') },
-        { id: 'detail', label: t('table.feed.detail') }
-    ];
-    return (
-        <div
-            className="grid h-[var(--vrcx-0-table-header-height)] items-center"
-            style={layout}
-        >
-            <span aria-hidden="true" />
-            {definitions.map(({ id, label }) => {
-                const header = headers.find((entry) => entry.column.id === id);
-                const cell = (
-                    <div className="relative flex h-full min-w-0 items-center px-[var(--vrcx-0-table-cell-padding-inline)]">
-                        <DataTableHeaderLabel className="min-w-0 truncate">
-                            {label}
-                        </DataTableHeaderLabel>
-                        {header ? (
-                            <DataTableColumnResizeHandle
-                                header={header}
-                                label={label}
-                            />
-                        ) : null}
-                    </div>
-                );
-                return header ? (
-                    <TableColumnContextMenu
-                        key={id}
-                        column={header.column}
-                        table={table}
-                        enableColumnReorder={false}
-                    >
-                        {cell}
-                    </TableColumnContextMenu>
-                ) : (
-                    <Fragment key={id}>{cell}</Fragment>
-                );
-            })}
-        </div>
-    );
-}
-
 function FeedListTime({ row }: { row: FeedRow }) {
     return (
         <TimestampText
@@ -178,6 +102,7 @@ function FeedListDayHeading({
 const FeedVirtualListRow = memo(function FeedVirtualListRow({
     actions,
     cachedDisplayName,
+    columnIds,
     expanded,
     layout,
     filterCommands,
@@ -189,6 +114,7 @@ const FeedVirtualListRow = memo(function FeedVirtualListRow({
 }: {
     actions: FeedFriendActions;
     cachedDisplayName: string;
+    columnIds: readonly string[];
     expanded: boolean;
     filterCommands: LogFilterCommands;
     layout: FeedListLayout;
@@ -235,53 +161,68 @@ const FeedVirtualListRow = memo(function FeedVirtualListRow({
                         : undefined
                 }
             >
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className={cn(
-                        'text-muted-foreground hover:text-foreground justify-self-center !px-0 group-hover/feed-row:opacity-100 focus-visible:opacity-100',
-                        !canExpand && 'invisible',
-                        !expanded && 'opacity-0'
-                    )}
-                    aria-label={
-                        expanded
-                            ? t('view.feed.actions.collapse_entry')
-                            : t('view.feed.actions.expand_entry')
-                    }
-                    disabled={!canExpand}
-                    onClick={() => onToggle(rowKey)}
-                >
-                    <ChevronRightIcon
-                        data-icon="icon"
-                        className={cn(
-                            'transition-transform duration-150 ease-out',
-                            expanded && 'rotate-90'
-                        )}
-                    />
-                </Button>
-                <div className="min-w-0 truncate">
-                    <FeedListTime row={row} />
-                </div>
-                <div className="min-w-0 truncate">
-                    <FeedUserLink
-                        actions={actions}
-                        cachedDisplayName={cachedDisplayName}
-                        className="px-0 py-0"
-                        filterCommands={filterCommands}
-                        row={row}
-                    />
-                </div>
-                <FeedTypeIndicator label={typeLabel} type={row.type} />
-                <div className="min-w-0 truncate">
-                    <FeedDetailCell
-                        filterCommands={filterCommands}
-                        loadingHistoryKey={loadingPreviousInstancesKey}
-                        onNewInstance={actions.openFeedNewInstance}
-                        onOpenPreviousInstances={onOpenPreviousInstances}
-                        row={row}
-                    />
-                </div>
+                {columnIds.map((columnId) =>
+                    columnId === 'expander' ? (
+                        <Button
+                            key={columnId}
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn(
+                                'text-muted-foreground hover:text-foreground justify-self-center !px-0 group-hover/feed-row:opacity-100 focus-visible:opacity-100',
+                                !canExpand && 'invisible',
+                                !expanded && 'opacity-0'
+                            )}
+                            aria-label={
+                                expanded
+                                    ? t('view.feed.actions.collapse_entry')
+                                    : t('view.feed.actions.expand_entry')
+                            }
+                            disabled={!canExpand}
+                            onClick={() => onToggle(rowKey)}
+                        >
+                            <ChevronRightIcon
+                                data-icon="icon"
+                                className={cn(
+                                    'transition-transform duration-150 ease-out',
+                                    expanded && 'rotate-90'
+                                )}
+                            />
+                        </Button>
+                    ) : columnId === 'type' ? (
+                        <FeedTypeIndicator
+                            key={columnId}
+                            label={typeLabel}
+                            type={row.type}
+                        />
+                    ) : (
+                        <div key={columnId} className="min-w-0 truncate">
+                            {columnId === 'created_at' ? (
+                                <FeedListTime row={row} />
+                            ) : columnId === 'displayName' ? (
+                                <FeedUserLink
+                                    actions={actions}
+                                    cachedDisplayName={cachedDisplayName}
+                                    className="px-0 py-0"
+                                    filterCommands={filterCommands}
+                                    row={row}
+                                />
+                            ) : columnId === 'detail' ? (
+                                <FeedDetailCell
+                                    filterCommands={filterCommands}
+                                    loadingHistoryKey={
+                                        loadingPreviousInstancesKey
+                                    }
+                                    onNewInstance={actions.openFeedNewInstance}
+                                    onOpenPreviousInstances={
+                                        onOpenPreviousInstances
+                                    }
+                                    row={row}
+                                />
+                            ) : null}
+                        </div>
+                    )
+                )}
             </div>
             {expanded ? (
                 <div
@@ -339,10 +280,14 @@ export function FeedVirtualListShell({
         () => new Set<string>()
     );
     const newRowKeys = useFeedNewTopRowKeys(sourceRows, resetKey);
-    const listColumns = getFeedListColumns(table);
+    const listColumns = table.getVisibleLeafColumns();
+    const columnIds = useMemo(
+        () => listColumns.map((column) => column.id),
+        [listColumns]
+    );
     const { gridTemplateColumns, minWidth } = getColumnGridLayout(
         listColumns,
-        'detail'
+        getStretchColumnId(table)
     );
     const layout = useMemo(
         () => ({ gridTemplateColumns, minWidth }),
@@ -378,7 +323,12 @@ export function FeedVirtualListShell({
                     resetKey={resetKey}
                     minWidth={layout.minWidth}
                     sizingStyle={getColumnSizeVars(listColumns)}
-                    header={<FeedListHeader layout={layout} table={table} />}
+                    header={
+                        <VirtualListColumnHeader
+                            layout={layout}
+                            table={table}
+                        />
+                    }
                     hasMore={hasMore}
                     loadingOlder={loadingOlder}
                     onLoadOlder={onLoadOlder}
@@ -409,6 +359,7 @@ export function FeedVirtualListShell({
                                         resolveFeedUserId(entry.row)
                                     ] || ''
                                 }
+                                columnIds={columnIds}
                                 expanded={expandedRowKeys.has(entry.key)}
                                 filterCommands={filterCommands}
                                 layout={layout}
