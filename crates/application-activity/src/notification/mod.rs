@@ -50,4 +50,7 @@ pub use webhook_delivery::WebhookDeliveryMonitor;
 pub use webhook_delivery::{
     WebhookDeliveryChannelSnapshot, WebhookDeliveryRecord, WebhookDeliverySnapshot,
 };
-pub use webhook_sink::{NotificationWebhookSink, NotificationWebhookSinkDeps};
+pub use webhook_sink::{
+    NotificationDoNotDisturbProbe, NotificationDoNotDisturbSlot, NotificationWebhookSink,
+    NotificationWebhookSinkDeps,
+};

@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use chrono::{DateTime, Duration, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
+use vrcx_0_application_activity::notification::NotificationDoNotDisturbProbe;
 use vrcx_0_application_core::{ConfigStore, GameProcessEventSink, RuntimeEventBus, TaskSupervisor};
 use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::game_process::GameProcessEvent;
@@ -291,6 +292,12 @@ impl NotificationDoNotDisturbRuntime {
                 _ = self.inner.expiration_changed.notified() => {}
             }
         }
+    }
+}
+
+impl NotificationDoNotDisturbProbe for NotificationDoNotDisturbRuntime {
+    fn is_active(&self) -> bool {
+        NotificationDoNotDisturbRuntime::is_active(self)
     }
 }
 

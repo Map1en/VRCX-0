@@ -100,6 +100,7 @@ type WebhookPayloadFieldsDialogProps = {
 type WebhookSettingsPrefs = Record<string, unknown> & {
     webhookAuthEventsEnabled?: boolean;
     webhookEnabled?: boolean;
+    webhookPauseWithDoNotDisturb?: boolean;
     webhookFields?: unknown;
     webhookFormat?: NotificationWebhookFormat;
     webhookUrl?: string;
@@ -109,6 +110,7 @@ type WebhookSettingsGroupProps = {
     prefs: WebhookSettingsPrefs;
     onWebhookEnabledChange(value: boolean): void;
     onWebhookAuthEventsEnabledChange(value: boolean): void;
+    onWebhookPauseWithDoNotDisturbChange(value: boolean): void;
     onWebhookUrlCommit(value: string): void;
     onWebhookFormatChange(value: NotificationWebhookFormat): void;
     onWebhookFieldsChange(value: string): void;
@@ -165,6 +167,7 @@ export function WebhookSettingsGroup({
     prefs,
     onWebhookEnabledChange,
     onWebhookAuthEventsEnabledChange,
+    onWebhookPauseWithDoNotDisturbChange,
     onWebhookUrlCommit,
     onWebhookFormatChange,
     onWebhookFieldsChange,
@@ -209,6 +212,27 @@ export function WebhookSettingsGroup({
                 <Switch
                     checked={Boolean(prefs.webhookEnabled)}
                     onCheckedChange={onWebhookEnabledChange}
+                />
+            </Field>
+
+            <Field
+                settingId="notifications.webhook.pause-with-do-not-disturb"
+                onReset={() =>
+                    onWebhookPauseWithDoNotDisturbChange(
+                        SETTINGS_DEFAULT_VALUES.webhookPauseWithDoNotDisturb
+                    )
+                }
+                label={t(
+                    'view.settings.notifications.notifications.webhook.pause_with_do_not_disturb'
+                )}
+                description={t(
+                    'view.settings.notifications.notifications.webhook.pause_with_do_not_disturb_description'
+                )}
+                disabled={!prefs.webhookEnabled}
+            >
+                <Switch
+                    checked={Boolean(prefs.webhookPauseWithDoNotDisturb)}
+                    onCheckedChange={onWebhookPauseWithDoNotDisturbChange}
                 />
             </Field>
 

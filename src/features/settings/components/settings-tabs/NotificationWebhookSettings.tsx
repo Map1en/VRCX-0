@@ -24,6 +24,7 @@ export function NotificationWebhookSettings() {
         useShallow((state) => ({
             webhookEnabled: state.webhookEnabled,
             webhookAuthEventsEnabled: state.webhookAuthEventsEnabled,
+            webhookPauseWithDoNotDisturb: state.webhookPauseWithDoNotDisturb,
             webhookUrl: state.webhookUrl,
             webhookFormat: state.webhookFormat,
             webhookFields: state.webhookFields
@@ -69,6 +70,14 @@ export function NotificationWebhookSettings() {
         saveBoolPreference(
             'webhookAuthEventsEnabled',
             'webhookAuthEventsEnabled',
+            checked
+        );
+    }
+
+    function saveWebhookPauseWithDoNotDisturb(checked: boolean) {
+        saveBoolPreference(
+            'webhookPauseWithDoNotDisturb',
+            'webhookPauseWithDoNotDisturb',
             checked
         );
     }
@@ -121,6 +130,9 @@ export function NotificationWebhookSettings() {
             prefs={prefs}
             onWebhookEnabledChange={saveWebhookEnabled}
             onWebhookAuthEventsEnabledChange={saveWebhookAuthEventsEnabled}
+            onWebhookPauseWithDoNotDisturbChange={
+                saveWebhookPauseWithDoNotDisturb
+            }
             onWebhookUrlCommit={saveWebhookUrl}
             onWebhookFormatChange={saveWebhookFormat}
             onWebhookFieldsChange={saveWebhookFields}

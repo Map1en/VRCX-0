@@ -3490,7 +3490,7 @@
                     },
                     "do_not_disturb": {
                         "header": "방해 금지",
-                        "description": "데스크톱 알림, TTS, XSOverlay, OVR Toolkit 및 VRCX-0 HMD 팝업을 일시 중지합니다. Webhook, 손목 오버레이 피드 및 알림 기록은 계속 작동합니다.",
+                        "description": "데스크톱 알림, TTS, XSOverlay, OVR Toolkit 및 VRCX-0 HMD 팝업을 일시 중지합니다. 손목 오버레이 피드와 알림 기록은 계속 작동합니다. Webhook은 'Webhook 알림'에서 '방해 금지 중 일시 중지'를 켠 경우에만 멈춥니다.",
                         "end_on_game_start": "VRChat 시작 시 방해 금지 끄기",
                         "end_on_game_start_description": "VRChat이 중지 상태에서 실행 상태로 바뀔 때만 적용됩니다. 플레이 중 다시 방해 금지를 켤 수 있습니다.",
                         "busy_status": "상태가 '방해 금지'일 때 방해 금지 켜기",
@@ -3542,6 +3542,8 @@
                     "webhook": {
                         "header": "Webhook 알림",
                         "enabled": "Webhook 전송 활성화",
+                        "pause_with_do_not_disturb": "방해 금지 중 일시 중지",
+                        "pause_with_do_not_disturb_description": "방해 금지가 켜져 있는 동안 알림 Webhook도 보내지 않습니다. VRChat의 '방해 금지' 상태와 개인정보 잠금으로는 멈추지 않습니다. 자동 로그인 실패 알림은 계속 보냅니다.",
                         "auth_events_enabled": "자동 로그인 실패 시 알림 보내기",
                         "auth_events_description": "VRCX-0이 백그라운드에서 끊어진 로그인을 자동으로 복구하지 못했을 때 알림을 보냅니다.",
                         "url": "Webhook URL",

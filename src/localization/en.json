@@ -3564,7 +3564,7 @@
                     },
                     "do_not_disturb": {
                         "header": "Do Not Disturb",
-                        "description": "Temporarily pauses desktop notifications, TTS, XSOverlay, OVR Toolkit, and VRCX-0 HMD popups. Webhooks, the wrist overlay feed, and notification history keep working.",
+                        "description": "Temporarily pauses desktop notifications, TTS, XSOverlay, OVR Toolkit, and VRCX-0 HMD popups. The wrist overlay feed and notification history keep working. Webhooks keep sending unless Pause During Do Not Disturb is on in Webhook Notifications.",
                         "end_on_game_start": "Turn off when VRChat starts",
                         "end_on_game_start_description": "Only applies when VRChat changes from stopped to running. You can turn Do Not Disturb on again while playing.",
                         "busy_status": "Turn on while your status is Do Not Disturb",
@@ -3616,6 +3616,8 @@
                     "webhook": {
                         "header": "Webhook Notifications",
                         "enabled": "Enable Webhook Delivery",
+                        "pause_with_do_not_disturb": "Pause During Do Not Disturb",
+                        "pause_with_do_not_disturb_description": "While Do Not Disturb is on, notification webhooks stop too. Your VRChat Do Not Disturb status and the privacy lock don’t stop webhooks. Sign-in failure notifications are still sent.",
                         "auth_events_enabled": "Send Automatic Sign-In Failure Notifications",
                         "auth_events_description": "Send a notification when VRCX-0 cannot automatically restore a dropped background sign-in.",
                         "url": "Webhook URL",

@@ -3553,7 +3553,7 @@
                     },
                     "do_not_disturb": {
                         "header": "勿擾模式",
-                        "description": "暫時停止桌面通知、TTS、XSOverlay、OVR Toolkit 與 VRCX-0 頭顯彈出通知。Webhook、手腕動態與通知紀錄仍會繼續。",
+                        "description": "暫時停止桌面通知、TTS、XSOverlay、OVR Toolkit 與 VRCX-0 頭顯彈出通知。手腕動態與通知紀錄仍會繼續。Webhook 預設照常傳送，在「Webhook 通知」中開啟「勿擾模式時暫停」後會一併暫停。",
                         "end_on_game_start": "啟動 VRChat 時關閉勿擾模式",
                         "end_on_game_start_description": "僅在 VRChat 從未執行變為執行時觸發。進入遊戲後仍可再次開啟勿擾模式。",
                         "busy_status": "VRChat 狀態為“請勿打擾”時開啟勿擾模式",
@@ -3605,6 +3605,8 @@
                     "webhook": {
                         "header": "Webhook 通知",
                         "enabled": "啟用 Webhook 傳送功能",
+                        "pause_with_do_not_disturb": "勿擾模式時暫停",
+                        "pause_with_do_not_disturb_description": "開啟勿擾模式時，通知 Webhook 也會暫停傳送。VRChat 的「請勿打擾」狀態與隱私鎖不會暫停 Webhook。自動登入失敗通知仍會傳送。",
                         "auth_events_enabled": "傳送自動登入失敗通知",
                         "auth_events_description": "當 VRCX-0 無法自動恢復中斷的背景登入時，傳送通知。",
                         "url": "Webhook 網址",

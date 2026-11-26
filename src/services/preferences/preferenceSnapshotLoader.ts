@@ -164,6 +164,7 @@ export async function loadPreferenceSnapshot() {
         desktopWidgetNewestOnTop,
         webhookEnabled,
         webhookAuthEventsEnabled,
+        webhookPauseWithDoNotDisturb,
         webhookUrl,
         webhookFormat,
         webhookFields,
@@ -327,6 +328,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('desktopWidgetNewestOnTop', true),
         configRepository.getBool('webhookEnabled', false),
         configRepository.getBool('webhookAuthEventsEnabled', true),
+        configRepository.getBool('webhookPauseWithDoNotDisturb', false),
         configRepository.getString('webhookUrl', ''),
         configRepository.getString('webhookFormat', 'generic'),
         configRepository.getString(
@@ -580,6 +582,7 @@ export async function loadPreferenceSnapshot() {
         desktopWidgetNewestOnTop: Boolean(desktopWidgetNewestOnTop),
         webhookEnabled: Boolean(webhookEnabled),
         webhookAuthEventsEnabled: Boolean(webhookAuthEventsEnabled),
+        webhookPauseWithDoNotDisturb: Boolean(webhookPauseWithDoNotDisturb),
         webhookUrl: String(webhookUrl || ''),
         webhookFormat: webhookFormat === 'discord' ? 'discord' : 'generic',
         webhookFields: String(webhookFields || DEFAULT_GENERIC_WEBHOOK_FIELDS),

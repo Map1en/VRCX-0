@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use vrcx_0_application_core::ConfigStore;
 
 use crate::{ActivityDelivery, ActivitySink, ActivitySnapshot};
@@ -20,16 +20,46 @@ const NOTIFICATION_WEBHOOK_QUEUE_CAPACITY: usize = 64;
 
 fn select_notification_webhook_format(
     preferences: &NotificationWebhookPreferences,
+    do_not_disturb_active: bool,
 ) -> Option<NotificationWebhookFormat> {
     if !preferences.enabled || preferences.url.trim().is_empty() {
+        return None;
+    }
+    if preferences.pause_with_do_not_disturb && do_not_disturb_active {
         return None;
     }
     Some(preferences.format)
 }
 
+pub trait NotificationDoNotDisturbProbe: Send + Sync {
+    fn is_active(&self) -> bool;
+}
+
+#[derive(Clone, Default)]
+pub struct NotificationDoNotDisturbSlot {
+    probe: Arc<RwLock<Option<Arc<dyn NotificationDoNotDisturbProbe>>>>,
+}
+
+impl NotificationDoNotDisturbSlot {
+    pub fn set(&self, probe: Arc<dyn NotificationDoNotDisturbProbe>) {
+        if let Ok(mut slot) = self.probe.write() {
+            *slot = Some(probe);
+        }
+    }
+
+    fn is_active(&self) -> bool {
+        self.probe
+            .read()
+            .ok()
+            .and_then(|slot| slot.clone())
+            .is_some_and(|probe| probe.is_active())
+    }
+}
+
 pub struct NotificationWebhookSink {
     session: HostSessionRuntime,
     config: Arc<dyn ConfigStore>,
+    do_not_disturb: NotificationDoNotDisturbSlot,
     diagnostics: RuntimeDiagnostics,
     monitor: WebhookDeliveryMonitor,
     queue: tokio::sync::mpsc::Sender<NotificationWebhookJob>,
@@ -53,6 +83,7 @@ struct NotificationWebhookWorkerDeps {
 pub struct NotificationWebhookSinkDeps {
     pub session: HostSessionRuntime,
     pub config: Arc<dyn ConfigStore>,
+    pub do_not_disturb: NotificationDoNotDisturbSlot,
     pub resolver: Arc<NotificationResolver>,
     pub webhook_transport: Arc<dyn NotificationWebhookTransport>,
     pub diagnostics: RuntimeDiagnostics,
@@ -75,6 +106,7 @@ impl NotificationWebhookSink {
         Self {
             session: deps.session,
             config: deps.config,
+            do_not_disturb: deps.do_not_disturb,
             diagnostics: deps.diagnostics,
             monitor: deps.monitor,
             queue,
@@ -90,7 +122,9 @@ impl ActivitySink for NotificationWebhookSink {
             return;
         }
         let preferences = load_webhook_preferences(self.config.as_ref());
-        let Some(format) = select_notification_webhook_format(&preferences) else {
+        let Some(format) =
+            select_notification_webhook_format(&preferences, self.do_not_disturb.is_active())
+        else {
             return;
         };
         let locale = load_notification_locale(self.config.as_ref());
@@ -214,16 +248,53 @@ mod tests {
         let mut preferences = enabled_preferences();
         preferences.format = NotificationWebhookFormat::Discord;
         assert_eq!(
-            select_notification_webhook_format(&preferences),
+            select_notification_webhook_format(&preferences, false),
             Some(NotificationWebhookFormat::Discord)
         );
 
         preferences.enabled = false;
-        assert_eq!(select_notification_webhook_format(&preferences), None);
+        assert_eq!(
+            select_notification_webhook_format(&preferences, false),
+            None
+        );
 
         preferences.enabled = true;
         preferences.url = "  ".into();
-        assert_eq!(select_notification_webhook_format(&preferences), None);
+        assert_eq!(
+            select_notification_webhook_format(&preferences, false),
+            None
+        );
+    }
+
+    #[test]
+    fn do_not_disturb_stops_the_webhook_only_when_opted_in() {
+        let mut preferences = enabled_preferences();
+        assert_eq!(
+            select_notification_webhook_format(&preferences, true),
+            Some(NotificationWebhookFormat::Generic)
+        );
+
+        preferences.pause_with_do_not_disturb = true;
+        assert_eq!(select_notification_webhook_format(&preferences, true), None);
+        assert_eq!(
+            select_notification_webhook_format(&preferences, false),
+            Some(NotificationWebhookFormat::Generic)
+        );
+    }
+
+    #[test]
+    fn an_empty_do_not_disturb_slot_is_inactive() {
+        struct Active;
+        impl NotificationDoNotDisturbProbe for Active {
+            fn is_active(&self) -> bool {
+                true
+            }
+        }
+
+        let slot = NotificationDoNotDisturbSlot::default();
+        assert!(!slot.is_active());
+        slot.set(Arc::new(Active));
+        assert!(slot.is_active());
     }
 
     fn enabled_preferences() -> NotificationWebhookPreferences {
@@ -233,6 +304,7 @@ mod tests {
             format: NotificationWebhookFormat::Generic,
             fields: Vec::new(),
             show_instance_id_in_location: false,
+            pause_with_do_not_disturb: false,
         }
     }
 }

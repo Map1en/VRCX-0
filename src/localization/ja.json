@@ -3549,7 +3549,7 @@
                     },
                     "do_not_disturb": {
                         "header": "通知を一時停止",
-                        "description": "デスクトップ通知、TTS、XSOverlay、OVR Toolkit、VRCX-0 のヘッドセット通知を一時停止します。Webhook、手首オーバーレイのフィード、通知履歴は引き続き動作します。",
+                        "description": "デスクトップ通知、TTS、XSOverlay、OVR Toolkit、VRCX-0 のヘッドセット通知を一時停止します。手首オーバーレイのフィードと通知履歴は引き続き動作します。Webhook は「Webhook 通知」で「通知の一時停止中は送信しない」をオンにした場合のみ止まります。",
                         "end_on_game_start": "VRChat の起動時に一時停止を解除",
                         "end_on_game_start_description": "VRChat が停止中から起動中に変わったときだけ解除します。プレイ中にもう一度一時停止することもできます。",
                         "busy_status": "ステータスが「取り込み中」の間も一時停止",
@@ -3601,6 +3601,8 @@
                     "webhook": {
                         "header": "Webhook 通知",
                         "enabled": "Webhook 配信を有効化",
+                        "pause_with_do_not_disturb": "通知の一時停止中は送信しない",
+                        "pause_with_do_not_disturb_description": "通知を一時停止している間は、通知の Webhook も送信しません。VRChat のステータス「取り込み中」やプライバシーロックでは止まりません。自動ログイン失敗の通知は送信されます。",
                         "auth_events_enabled": "自動ログイン失敗時に通知を送信",
                         "auth_events_description": "VRCX-0 がバックグラウンドで切断されたログインを自動復旧できなかったときに通知を送信します。",
                         "url": "Webhook URL",

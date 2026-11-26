@@ -3560,7 +3560,7 @@
                     },
                     "do_not_disturb": {
                         "header": "Não incomodar",
-                        "description": "Pausa temporariamente as notificações do ambiente de trabalho, TTS, XSOverlay, OVR Toolkit e os avisos HMD do VRCX-0. Os webhooks, a atividade no pulso e o histórico de notificações continuam.",
+                        "description": "Pausa temporariamente as notificações do ambiente de trabalho, TTS, XSOverlay, OVR Toolkit e os avisos HMD do VRCX-0. A atividade no pulso e o histórico de notificações continuam. Os webhooks continuam a ser enviados, a menos que ative Pausar com Não incomodar em Notificações por Webhook.",
                         "end_on_game_start": "Desativar ao iniciar o VRChat",
                         "end_on_game_start_description": "Aplica-se apenas quando o VRChat passa de fechado para em execução. Pode voltar a ativar Não incomodar durante o jogo.",
                         "busy_status": "Ativar com o status Não Perturbe",
@@ -3612,6 +3612,8 @@
                     "webhook": {
                         "header": "Notificações por Webhook",
                         "enabled": "Ativar Envio por Webhook",
+                        "pause_with_do_not_disturb": "Pausar com Não incomodar",
+                        "pause_with_do_not_disturb_description": "Enquanto o Não incomodar estiver ativo, os webhooks de notificações também não são enviados. O status Não Perturbe do VRChat e o bloqueio de privacidade não param os webhooks. As notificações de falha no login continuam a ser enviadas.",
                         "auth_events_enabled": "Enviar notificações de falha do login automático",
                         "auth_events_description": "Envia uma notificação quando o VRCX-0 não consegue restaurar automaticamente um login em segundo plano interrompido.",
                         "url": "URL do Webhook",

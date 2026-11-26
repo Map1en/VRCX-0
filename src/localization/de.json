@@ -3560,7 +3560,7 @@
                     },
                     "do_not_disturb": {
                         "header": "Nicht stören",
-                        "description": "Pausiert vorübergehend Desktop-Benachrichtigungen, TTS, XSOverlay, OVR Toolkit und HMD-Einblendungen von VRCX-0. Webhooks, Handgelenk-Aktivitäten und der Benachrichtigungsverlauf laufen weiter.",
+                        "description": "Pausiert vorübergehend Desktop-Benachrichtigungen, TTS, XSOverlay, OVR Toolkit und HMD-Einblendungen von VRCX-0. Handgelenk-Aktivitäten und der Benachrichtigungsverlauf laufen weiter. Webhooks werden weiter gesendet, außer „Bei „Nicht stören“ pausieren“ ist unter Webhook-Benachrichtigungen aktiviert.",
                         "end_on_game_start": "Beim Start von VRChat ausschalten",
                         "end_on_game_start_description": "Gilt nur, wenn VRChat vom beendeten in den laufenden Zustand wechselt. Während des Spielens kann „Nicht stören“ erneut aktiviert werden.",
                         "busy_status": "Bei Status „Nicht stören“ aktivieren",
@@ -3612,6 +3612,8 @@
                     "webhook": {
                         "header": "Webhook-Benachrichtigungen",
                         "enabled": "Webhook-Zustellung aktivieren",
+                        "pause_with_do_not_disturb": "Bei „Nicht stören“ pausieren",
+                        "pause_with_do_not_disturb_description": "Solange „Nicht stören“ aktiv ist, werden auch keine Benachrichtigungs-Webhooks gesendet. Der VRChat-Status „Nicht stören“ und die Privatsphäre-Sperre halten Webhooks nicht an. Benachrichtigungen über fehlgeschlagene Anmeldungen werden weiterhin gesendet.",
                         "auth_events_enabled": "Automatische Login-Fehler-Benachrichtigungen senden",
                         "auth_events_description": "Sendet eine Benachrichtigung, wenn VRCX-0 einen abgebrochenen Hintergrund-Login nicht automatisch wiederherstellen kann.",
                         "url": "Webhook-URL",

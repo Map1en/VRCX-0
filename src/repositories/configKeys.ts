@@ -198,6 +198,7 @@ export const ConfigKeys = defineConfigKeys({
     desktopWidgetNewestOnTop: { type: 'bool', default: true },
     webhookEnabled: { type: 'bool', default: false },
     webhookAuthEventsEnabled: { type: 'bool', default: true },
+    webhookPauseWithDoNotDisturb: { type: 'bool', default: false },
     webhookUrl: { type: 'string', default: '' },
     webhookFormat: { type: 'string', default: 'generic' },
     webhookFields: {

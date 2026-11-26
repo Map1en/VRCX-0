@@ -3587,7 +3587,7 @@
                     },
                     "do_not_disturb": {
                         "header": "Nerušit",
-                        "description": "Dočasně pozastaví oznámení na ploše, TTS, XSOverlay, OVR Toolkit a vyskakovací oznámení VRCX-0 v headsetu. Webhooky, aktivita na zápěstí a historie oznámení pokračují.",
+                        "description": "Dočasně pozastaví oznámení na ploše, TTS, XSOverlay, OVR Toolkit a vyskakovací oznámení VRCX-0 v headsetu. Aktivita na zápěstí a historie oznámení pokračují. Webhooky se odesílají dál, pokud v Oznámeních webhooku nezapnete Pozastavit při režimu Nerušit.",
                         "end_on_game_start": "Vypnout při spuštění VRChat",
                         "end_on_game_start_description": "Platí pouze při přechodu VRChat z vypnutého do spuštěného stavu. Během hraní lze režim Nerušit znovu zapnout.",
                         "busy_status": "Zapnout při stavu Busy",
@@ -3639,6 +3639,8 @@
                     "webhook": {
                         "header": "Oznámení webhooku",
                         "enabled": "Povolit doručování přes webhook",
+                        "pause_with_do_not_disturb": "Pozastavit při režimu Nerušit",
+                        "pause_with_do_not_disturb_description": "Když je zapnutý režim Nerušit, neodesílají se ani webhooky oznámení. Stav Busy ve VRChatu ani zámek soukromí webhooky nezastaví. Oznámení o selhání přihlášení se odesílají dál.",
                         "auth_events_enabled": "Posílat oznámení o selhání automatického přihlášení",
                         "auth_events_description": "Pošle oznámení, když VRCX-0 nedokáže automaticky obnovit přerušené přihlášení na pozadí.",
                         "url": "URL webhooku",

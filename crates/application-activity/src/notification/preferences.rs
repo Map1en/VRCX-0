@@ -26,6 +26,7 @@ pub(super) struct NotificationWebhookPreferences {
     pub format: NotificationWebhookFormat,
     pub fields: Vec<String>,
     pub show_instance_id_in_location: bool,
+    pub pause_with_do_not_disturb: bool,
 }
 
 pub(super) fn load_webhook_preferences(config: &dyn ConfigStore) -> NotificationWebhookPreferences {
@@ -39,6 +40,7 @@ pub(super) fn load_webhook_preferences(config: &dyn ConfigStore) -> Notification
         )),
         fields: parse_webhook_fields(&config_string(config, "webhookFields", "")),
         show_instance_id_in_location: config_bool(config, "VRCX_showInstanceIdInLocation", false),
+        pause_with_do_not_disturb: config_bool(config, "webhookPauseWithDoNotDisturb", false),
     }
 }
 

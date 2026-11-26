@@ -16,9 +16,9 @@ use vrcx_0_application::social::{
 use vrcx_0_application_activity::notification::{
     reload_activity_router, save_notification_activity_filters, ActivityFilterProfile,
     AuthWebhookEvent, AuthWebhookQueue, AuthWebhookQueueDeps, NotificationActivityFilterProfiles,
-    NotificationActivityFiltersSetInput, NotificationRemote, NotificationResolver,
-    NotificationWebhookSink, NotificationWebhookSinkDeps, WebhookDeliveryMonitor,
-    WebhookDeliverySnapshot,
+    NotificationActivityFiltersSetInput, NotificationDoNotDisturbSlot, NotificationRemote,
+    NotificationResolver, NotificationWebhookSink, NotificationWebhookSinkDeps,
+    WebhookDeliveryMonitor, WebhookDeliverySnapshot,
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySinkRegistry, GroupInstanceMonitor};
 use vrcx_0_application_core::{
@@ -81,6 +81,7 @@ pub(crate) struct RuntimeHostContext {
     notification_projection_observers: RealtimeNotificationProjectionObserverRegistry,
     auth_webhook_queue: AuthWebhookQueue,
     webhook_delivery_monitor: WebhookDeliveryMonitor,
+    notification_do_not_disturb: NotificationDoNotDisturbSlot,
 }
 
 #[derive(Clone)]
@@ -247,6 +248,10 @@ impl RuntimeHostDesktopAssemblyDeps {
         self.context.webhook_delivery_snapshot()
     }
 
+    pub fn notification_do_not_disturb_slot(&self) -> NotificationDoNotDisturbSlot {
+        self.context.notification_do_not_disturb_slot()
+    }
+
     pub fn reload_overlay_activity_filters(&self) {
         self.context.reload_overlay_activity_filters();
     }
@@ -318,6 +323,7 @@ impl RuntimeHostContext {
         let notification_projection_observers =
             RealtimeNotificationProjectionObserverRegistry::default();
         let webhook_delivery_monitor = WebhookDeliveryMonitor::default();
+        let notification_do_not_disturb = NotificationDoNotDisturbSlot::default();
         let notification_remote: Arc<dyn NotificationRemote> =
             Arc::new(vrcx_0_outbound_adapters::VrchatNotificationRemote::new(
                 Arc::clone(&web),
@@ -345,6 +351,7 @@ impl RuntimeHostContext {
             NotificationWebhookSinkDeps {
                 session: session.clone(),
                 config: Arc::clone(&config_store),
+                do_not_disturb: notification_do_not_disturb.clone(),
                 resolver: Arc::clone(&notification_resolver),
                 webhook_transport: notification_webhook_transport,
                 diagnostics: diagnostics.clone(),
@@ -421,6 +428,7 @@ impl RuntimeHostContext {
             notification_projection_observers,
             auth_webhook_queue,
             webhook_delivery_monitor,
+            notification_do_not_disturb,
         }
     }
 
@@ -560,6 +568,10 @@ impl RuntimeHostContext {
 
     pub fn webhook_delivery_snapshot(&self) -> WebhookDeliverySnapshot {
         self.webhook_delivery_monitor.snapshot()
+    }
+
+    pub fn notification_do_not_disturb_slot(&self) -> NotificationDoNotDisturbSlot {
+        self.notification_do_not_disturb.clone()
     }
 
     pub fn reload_overlay_activity_filters(&self) {

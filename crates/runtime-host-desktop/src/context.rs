@@ -4,7 +4,7 @@ use vrcx_0_application::auth::AuthCredentialStore;
 use vrcx_0_application_activity::notification::{
     extract_file_version, fallback_file_version, reload_activity_router,
     rename_local_favorite_group_in_activity_filters, CachedNotificationUserImageResolver,
-    NotificationRemoteFuture, NotificationResolver,
+    NotificationDoNotDisturbSlot, NotificationRemoteFuture, NotificationResolver,
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySink, ActivitySinkRegistry};
 use vrcx_0_application_core::{
@@ -54,6 +54,7 @@ pub(crate) struct DesktopRuntimeServicesDeps {
     pub activity_router: ActivityRouter,
     pub activity_sinks: ActivitySinkRegistry,
     pub notification_projection_observers: RealtimeNotificationProjectionObserverRegistry,
+    pub notification_do_not_disturb_slot: NotificationDoNotDisturbSlot,
 }
 
 pub struct DesktopRuntimeServices {
@@ -102,6 +103,8 @@ impl DesktopRuntimeServices {
             host.clone(),
             deps.tasks.clone(),
         )?;
+        deps.notification_do_not_disturb_slot
+            .set(Arc::new(notification_do_not_disturb.clone()));
         let game_isolation =
             GameIsolationRuntime::new(deps.config.clone(), deps.event_bus.clone(), host.clone())?;
         let privacy_lock = Arc::new(PrivacyLockRuntime::new(

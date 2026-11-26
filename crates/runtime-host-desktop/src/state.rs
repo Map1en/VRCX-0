@@ -117,6 +117,7 @@ pub(crate) fn build_desktop_runtime_services_deps(
         activity_sinks: context.activity_sink_registry(),
         notification_projection_observers: context
             .realtime_notification_projection_observer_registry(),
+        notification_do_not_disturb_slot: context.notification_do_not_disturb_slot(),
     }
 }
 

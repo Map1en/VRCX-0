@@ -163,6 +163,7 @@ describe('WebhookSettingsGroup', () => {
                 }}
                 onWebhookEnabledChange={noop}
                 onWebhookAuthEventsEnabledChange={noop}
+                onWebhookPauseWithDoNotDisturbChange={noop}
                 onWebhookUrlCommit={noop}
                 onWebhookFormatChange={noop}
                 onWebhookFieldsChange={noop}
@@ -199,6 +200,7 @@ describe('WebhookSettingsGroup', () => {
                 }}
                 onWebhookEnabledChange={noop}
                 onWebhookAuthEventsEnabledChange={noop}
+                onWebhookPauseWithDoNotDisturbChange={noop}
                 onWebhookUrlCommit={onWebhookUrlCommit}
                 onWebhookFormatChange={noop}
                 onWebhookFieldsChange={noop}

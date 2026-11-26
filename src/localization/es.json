@@ -3564,7 +3564,7 @@
                     },
                     "do_not_disturb": {
                         "header": "No molestar",
-                        "description": "Pausa temporalmente las notificaciones del escritorio, TTS, XSOverlay, OVR Toolkit y los avisos del visor de VRCX-0. Los webhooks, el feed del overlay de muñeca y el historial de notificaciones siguen funcionando.",
+                        "description": "Pausa temporalmente las notificaciones del escritorio, TTS, XSOverlay, OVR Toolkit y los avisos del visor de VRCX-0. El feed del overlay de muñeca y el historial de notificaciones siguen funcionando. Los webhooks se siguen enviando salvo que actives «Pausar con «No molestar»» en Notificaciones por webhook.",
                         "end_on_game_start": "Desactivar al iniciar VRChat",
                         "end_on_game_start_description": "Solo se aplica cuando VRChat pasa de estar cerrado a ejecutarse. Puedes volver a activar No molestar mientras juegas.",
                         "busy_status": "Activar con el estado «No molestar»",
@@ -3616,6 +3616,8 @@
                     "webhook": {
                         "header": "Notificaciones por webhook",
                         "enabled": "Activar el envío por webhook",
+                        "pause_with_do_not_disturb": "Pausar con «No molestar»",
+                        "pause_with_do_not_disturb_description": "Mientras «No molestar» esté activado, los webhooks de notificaciones tampoco se envían. El estado «No molestar» de VRChat y el bloqueo de privacidad no detienen los webhooks. Las notificaciones de fallo de inicio de sesión se siguen enviando.",
                         "auth_events_enabled": "Enviar notificaciones de fallo del inicio de sesión automático",
                         "auth_events_description": "Envía una notificación cuando VRCX-0 no puede restaurar automáticamente una sesión en segundo plano interrumpida.",
                         "url": "URL del webhook",

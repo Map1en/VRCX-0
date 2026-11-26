@@ -719,6 +719,14 @@ defineCard(
             prefKey: 'webhookEnabled'
         },
         {
+            key: 'pause-with-do-not-disturb',
+            labelKey:
+                'view.settings.notifications.notifications.webhook.pause_with_do_not_disturb',
+            descriptionKey:
+                'view.settings.notifications.notifications.webhook.pause_with_do_not_disturb_description',
+            prefKey: 'webhookPauseWithDoNotDisturb'
+        },
+        {
             key: 'auth-events',
             labelKey:
                 'view.settings.notifications.notifications.webhook.auth_events_enabled',
