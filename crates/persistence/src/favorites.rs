@@ -215,6 +215,9 @@ fn delete_rows_already_in_group(
     owner_scope: &str,
     owner_id: OwnerRowId,
 ) -> Result<i64, Error> {
+    if group_name == new_group_name {
+        return Ok(0);
+    }
     tx.execute_non_query(
         &format!(
             "DELETE FROM {table} WHERE group_name = @group_name {owner_scope} AND {column} IN (SELECT {column} FROM {table} WHERE group_name = @new_group_name {owner_scope})"
@@ -245,25 +248,29 @@ pub fn favorite_group_rename_with_config(
     let normalized_new_group_name = normalize_text(new_group_name);
     let (owner_scope, owner_id) = config_realm_owner_scope(db, kind, config_key, owner_user_id)?;
     db.write_transaction(|tx| {
-        delete_rows_already_in_group(
-            tx,
-            table,
-            column,
-            &normalized_group_name,
-            &normalized_new_group_name,
-            owner_scope,
-            owner_id,
-        )?;
-        let affected = tx.execute_non_query(
-            &format!(
-                "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name {owner_scope}"
-            ),
-            &ParamsBuilder::new()
-                .set("new_group_name", normalized_new_group_name.clone())
-                .set("group_name", normalized_group_name.clone())
-                .set("owner_id", owner_id)
-                .build(),
-        )?;
+        let affected = if normalized_group_name == normalized_new_group_name {
+            0
+        } else {
+            delete_rows_already_in_group(
+                tx,
+                table,
+                column,
+                &normalized_group_name,
+                &normalized_new_group_name,
+                owner_scope,
+                owner_id,
+            )?;
+            tx.execute_non_query(
+                &format!(
+                    "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name {owner_scope}"
+                ),
+                &ParamsBuilder::new()
+                    .set("new_group_name", normalized_new_group_name.clone())
+                    .set("group_name", normalized_group_name.clone())
+                    .set("owner_id", owner_id)
+                    .build(),
+            )?
+        };
         tx.execute_non_query(
             LOCAL_GROUP_CONFIG_UPSERT_SQL,
             &ParamsBuilder::new()

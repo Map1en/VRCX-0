@@ -130,6 +130,54 @@ fn rename_with_config_merges_into_existing_group_despite_unique_index() {
 }
 
 #[test]
+fn rename_with_config_preserves_favorites_when_trimmed_names_match() {
+    let (_dir, db) = test_db("favorite-rename-same-trimmed-name");
+    favorite_add(
+        &db,
+        None,
+        FavoriteEntityKind::Friend,
+        "usr_1".into(),
+        "Friends".into(),
+    )
+    .unwrap();
+    favorite_add(
+        &db,
+        None,
+        FavoriteEntityKind::Friend,
+        "usr_2".into(),
+        "Friends".into(),
+    )
+    .unwrap();
+
+    for (from, to) in [
+        ("Friends", "Friends"),
+        ("Friends", "Friends "),
+        (" Friends", "Friends"),
+    ] {
+        let affected = favorite_group_rename_with_config(
+            &db,
+            None,
+            FavoriteEntityKind::Friend,
+            "localFavoriteFriendGroups",
+            from,
+            to,
+            &["Friends".to_string()],
+        )
+        .unwrap();
+
+        assert_eq!(affected, 0);
+        assert_eq!(
+            group_names(&db, FavoriteEntityKind::Friend),
+            vec!["Friends".to_string(), "Friends".to_string()]
+        );
+        assert_eq!(
+            config_array(&db, "localFavoriteFriendGroups"),
+            vec!["Friends".to_string()]
+        );
+    }
+}
+
+#[test]
 fn delete_removes_favorites_and_rewrites_config_atomically() {
     let (_dir, db) = test_db("favorite-delete-with-config");
     favorite_add(
