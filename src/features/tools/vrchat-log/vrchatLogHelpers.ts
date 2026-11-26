@@ -1,15 +1,18 @@
+import {
+    STORAGE_KEYS,
+    readStoredJson,
+    writeStoredText
+} from '@/lib/browserStorage';
 import type {
     VrchatLogEntryOutput,
     VrchatLogFileOutput
 } from '@/platform/tauri/bindings';
-import storageRepository from '@/repositories/storageRepository';
 import { formatBytes } from '@/shared/utils/formatBytes';
 
 export type VrchatLogLevel = 'Debug' | 'Warning' | 'Error';
 
 export const LOG_LEVELS: VrchatLogLevel[] = ['Debug', 'Warning', 'Error'];
 const ALL_CATEGORY_VALUE = '__all__';
-export const PREFS_KEY = 'prefs';
 export const PAGE_LIMIT = 350;
 export const TAIL_LIMIT = 300;
 const MAX_CLIENT_ENTRIES = 2500;
@@ -20,8 +23,6 @@ export const LOG_ROW_OVERSCAN = 18;
 export const LOG_LOAD_OLDER_HEIGHT = 40;
 export const LOG_TABLE_GRID_CLASS =
     'grid-cols-[64px_172px_78px_minmax(136px,190px)_minmax(420px,1fr)]';
-
-export const logViewerStorage = storageRepository.withPrefix('tool:vrchatLog:');
 
 export type VrchatLogViewerPrefs = {
     levels?: string[];
@@ -36,6 +37,17 @@ export type VrchatLogViewerPrefs = {
 
 function isVrchatLogLevel(value: string): value is VrchatLogLevel {
     return LOG_LEVELS.some((level) => level === value);
+}
+
+export function readVrchatLogViewerPrefs(): VrchatLogViewerPrefs | null {
+    const value = readStoredJson(STORAGE_KEYS.vrchatLogViewerPrefs);
+    return value !== null && typeof value === 'object'
+        ? (value as VrchatLogViewerPrefs)
+        : null;
+}
+
+export function writeVrchatLogViewerPrefs(prefs: VrchatLogViewerPrefs): void {
+    writeStoredText(STORAGE_KEYS.vrchatLogViewerPrefs, JSON.stringify(prefs));
 }
 
 export function normalizePrefs(value: VrchatLogViewerPrefs | null) {

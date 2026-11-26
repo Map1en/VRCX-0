@@ -64,6 +64,7 @@ vi.mock('../trustColorService', () => ({
     applyTrustColorClasses: mocks.applyTrustColorClasses
 }));
 
+import { STORAGE_KEYS, writeStoredText } from '@/lib/browserStorage';
 import {
     DEFAULT_PREFERENCES,
     usePreferencesStore
@@ -104,6 +105,7 @@ function installDocumentStub() {
 describe('preferenceSnapshotLoader', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        localStorage.clear();
         installDocumentStub();
         usePreferencesStore.getState().hydratePreferences(DEFAULT_PREFERENCES);
         useShellStore.setState({
@@ -154,9 +156,9 @@ describe('preferenceSnapshotLoader', () => {
             };
             return Promise.resolve(values[key] ?? String(fallback ?? ''));
         });
+        writeStoredText(STORAGE_KEYS.navPanelWidth, '9999');
         mocks.getInt.mockImplementation((key: string, fallback = 0) => {
             const values: Record<string, number> = {
-                navPanelWidth: 9999,
                 recentActionCooldownMinutes: 9999,
                 hmdNotificationTimeout: 999999,
                 hmdNotificationOpacity: -1,

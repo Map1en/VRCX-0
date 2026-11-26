@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { STORAGE_KEYS, writeStoredText } from '@/lib/browserStorage';
 import {
     commands,
     type VrchatLogEntriesReadOutput,
@@ -11,7 +12,6 @@ import {
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useVrchatLogController } from './useVrchatLogController';
-import { logViewerStorage } from './vrchatLogHelpers';
 
 vi.mock('@/platform/tauri/bindings', async () =>
     (await import('@/test/mockCommands')).mockBindingsModule()
@@ -53,10 +53,11 @@ const response: VrchatLogEntriesReadOutput = {
 beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
-    vi.spyOn(logViewerStorage, 'getJson').mockResolvedValue({
-        followLatest: false
-    });
-    vi.spyOn(logViewerStorage, 'setJson').mockResolvedValue(null);
+    localStorage.clear();
+    writeStoredText(
+        STORAGE_KEYS.vrchatLogViewerPrefs,
+        JSON.stringify({ followLatest: false })
+    );
     vi.mocked(commands.appVrchatLogFilesList).mockResolvedValue([file]);
     vi.mocked(commands.appVrchatLogEntriesRead).mockResolvedValue(response);
     vi.mocked(commands.appVrchatLogTailRead).mockResolvedValue({
@@ -113,10 +114,10 @@ describe('VRChat log search', () => {
     });
 
     it('restores the saved query immediately and keeps tail reads on the applied query', async () => {
-        vi.mocked(logViewerStorage.getJson).mockResolvedValue({
-            searchQuery: 'old',
-            followLatest: true
-        });
+        writeStoredText(
+            STORAGE_KEYS.vrchatLogViewerPrefs,
+            JSON.stringify({ searchQuery: 'old', followLatest: true })
+        );
         const { result } = renderHook(() => useVrchatLogController());
         await act(async () => {});
         expect(commands.appVrchatLogEntriesRead).toHaveBeenCalledTimes(2);

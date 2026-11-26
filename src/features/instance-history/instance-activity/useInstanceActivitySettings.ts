@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import configRepository from '@/repositories/configRepository';
 
 const DEFAULT_BAR_WIDTH = 25;
-const BAR_WIDTH_KEY = 'InstanceActivityBarWidth';
 const SOLO_INSTANCE_VISIBLE_KEY = 'VRCX_InstanceActivitySoloInstanceVisible';
 const NO_FRIEND_INSTANCE_VISIBLE_KEY =
     'VRCX_InstanceActivityNoFriendInstanceVisible';
@@ -16,7 +20,14 @@ function normalizeBarWidth(value: number) {
 }
 
 export function useInstanceActivitySettings() {
-    const [barWidth, setBarWidth] = useState(DEFAULT_BAR_WIDTH);
+    const [barWidth, setBarWidth] = useState(() =>
+        normalizeBarWidth(
+            Number.parseInt(
+                readStoredText(STORAGE_KEYS.instanceActivityBarWidth) ?? '',
+                10
+            )
+        )
+    );
     const [isSoloInstanceVisible, setIsSoloInstanceVisible] = useState(true);
     const [isNoFriendInstanceVisible, setIsNoFriendInstanceVisible] =
         useState(true);
@@ -26,14 +37,12 @@ export function useInstanceActivitySettings() {
         let active = true;
 
         Promise.all([
-            configRepository.getInt(BAR_WIDTH_KEY, DEFAULT_BAR_WIDTH),
             configRepository.getBool(SOLO_INSTANCE_VISIBLE_KEY, true),
             configRepository.getBool(NO_FRIEND_INSTANCE_VISIBLE_KEY, true),
             configRepository.getBool(CHART_COLLAPSED_KEY, false)
         ])
             .then(
                 ([
-                    nextBarWidth,
                     nextSoloVisible,
                     nextNoFriendVisible,
                     nextChartCollapsed
@@ -42,7 +51,6 @@ export function useInstanceActivitySettings() {
                         return;
                     }
 
-                    setBarWidth(normalizeBarWidth(nextBarWidth));
                     setIsSoloInstanceVisible(nextSoloVisible);
                     setIsNoFriendInstanceVisible(nextNoFriendVisible);
                     setIsChartCollapsed(nextChartCollapsed);
@@ -60,7 +68,10 @@ export function useInstanceActivitySettings() {
             Number.parseInt(String(value), 10) || DEFAULT_BAR_WIDTH
         );
         setBarWidth(nextValue);
-        configRepository.setInt(BAR_WIDTH_KEY, nextValue);
+        writeStoredText(
+            STORAGE_KEYS.instanceActivityBarWidth,
+            String(nextValue)
+        );
     }
 
     function setSoloInstanceVisible(value: boolean) {

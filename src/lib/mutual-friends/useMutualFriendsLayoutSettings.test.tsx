@@ -3,22 +3,17 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({
-    getInt: vi.fn(),
-    getFloat: vi.fn(),
-    setInt: vi.fn(),
-    setFloat: vi.fn()
-}));
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 
-vi.mock('@/repositories/configRepository', () => ({
-    default: mocks
-}));
-
-const SAVED: Record<string, number> = {
-    MutualGraphLayoutIterations: 1200,
-    MutualGraphLayoutSpacing: 999,
-    MutualGraphEdgeCurvature: 0.05,
-    MutualGraphCommunitySeparation: 1.5
+const SAVED: Record<string, string> = {
+    [STORAGE_KEYS.mutualGraphLayoutIterations]: '1200',
+    [STORAGE_KEYS.mutualGraphLayoutSpacing]: '999',
+    [STORAGE_KEYS.mutualGraphEdgeCurvature]: '0.05',
+    [STORAGE_KEYS.mutualGraphCommunitySeparation]: '1.5'
 };
 
 async function loadHook() {
@@ -28,19 +23,18 @@ async function loadHook() {
 }
 
 beforeEach(() => {
-    mocks.getInt.mockImplementation(async (key: string) => SAVED[key]);
-    mocks.getFloat.mockImplementation(async (key: string) => SAVED[key]);
-    mocks.setInt.mockResolvedValue(undefined);
-    mocks.setFloat.mockResolvedValue(undefined);
+    localStorage.clear();
+    for (const [key, value] of Object.entries(SAVED)) {
+        writeStoredText(key, value);
+    }
 });
 
 afterEach(() => {
     cleanup();
-    vi.clearAllMocks();
 });
 
 describe('mutual graph layout settings', () => {
-    it('loads the saved settings once for every panel and keeps them within range', async () => {
+    it('loads the saved settings for every panel and keeps them within range', async () => {
         const useLayoutSettings = await loadHook();
         const graphPage = renderHook(() => useLayoutSettings());
         const profileGraph = renderHook(() => useLayoutSettings());
@@ -56,8 +50,6 @@ describe('mutual graph layout settings', () => {
         expect(profileGraph.result.current.layoutSettings).toEqual(
             graphPage.result.current.layoutSettings
         );
-        expect(mocks.getInt).toHaveBeenCalledTimes(2);
-        expect(mocks.getFloat).toHaveBeenCalledTimes(2);
     });
 
     it('shows a slider change in the other open panel and saves it', async () => {
@@ -75,9 +67,8 @@ describe('mutual graph layout settings', () => {
         );
 
         expect(graphPage.result.current.layoutSettings.layoutSpacing).toBe(80);
-        expect(mocks.setInt).toHaveBeenCalledWith(
-            'MutualGraphLayoutSpacing',
-            80
+        expect(readStoredText(STORAGE_KEYS.mutualGraphLayoutSpacing)).toBe(
+            '80'
         );
     });
 
@@ -99,13 +90,11 @@ describe('mutual graph layout settings', () => {
             edgeCurvature: 0.1,
             communitySeparation: 0.5
         });
-        expect(mocks.setInt).toHaveBeenCalledWith(
-            'MutualGraphLayoutIterations',
-            800
+        expect(readStoredText(STORAGE_KEYS.mutualGraphLayoutIterations)).toBe(
+            '800'
         );
-        expect(mocks.setFloat).toHaveBeenCalledWith(
-            'MutualGraphCommunitySeparation',
-            0.5
-        );
+        expect(
+            readStoredText(STORAGE_KEYS.mutualGraphCommunitySeparation)
+        ).toBe('0.5');
     });
 });

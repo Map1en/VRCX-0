@@ -1,3 +1,4 @@
+import { STORAGE_KEYS, writeStoredText } from '@/lib/browserStorage';
 import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
@@ -140,7 +141,7 @@ export async function setRightSidebarOpenPreference(open: boolean) {
 export async function setNavWidthPreference(value: string | number) {
     const width = normalizeNavWidth(value);
     useShellStore.getState().setNavWidth(width);
-    await configRepository.setInt('VRCX_navPanelWidth', width);
+    writeStoredText(STORAGE_KEYS.navPanelWidth, String(width));
     patchPreferences({ navPanelWidth: width });
     return width;
 }

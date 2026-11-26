@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import configRepository from '@/repositories/configRepository';
 import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 
@@ -26,7 +31,12 @@ export function useFriendsLocationsPreferences() {
     const [showSameInstanceInOnline, setShowSameInstanceInOnline] =
         useState(true);
     const [showFavoritesInOnline, setShowFavoritesInOnline] = useState(true);
-    const [density, setDensity] = useState(DEFAULT_FRIENDS_LOCATIONS_DENSITY);
+    const [density, setDensity] = useState<FriendsLocationsDensity>(() =>
+        sanitizeFriendsLocationsDensity(
+            readStoredText(STORAGE_KEYS.friendLocationDensity) ??
+                DEFAULT_FRIENDS_LOCATIONS_DENSITY
+        )
+    );
     const [viewMode, setViewMode] = useState<FriendsLocationsViewMode>(() =>
         sanitizeFriendsLocationsViewMode(
             configRepository.getCachedString(
@@ -51,10 +61,6 @@ export function useFriendsLocationsPreferences() {
         let active = true;
 
         Promise.all([
-            configRepository.getString(
-                'FriendLocationDensity',
-                DEFAULT_FRIENDS_LOCATIONS_DENSITY
-            ),
             configRepository.getBool('FriendLocationShowSameInstance', true),
             configRepository.getBool(
                 'FriendLocationShowFavoritesInOnline',
@@ -76,7 +82,6 @@ export function useFriendsLocationsPreferences() {
         ])
             .then(
                 ([
-                    nextDensity,
                     nextShowSameInstance,
                     nextShowFavorites,
                     nextViewMode,
@@ -91,7 +96,6 @@ export function useFriendsLocationsPreferences() {
                         return;
                     }
 
-                    setDensity(sanitizeFriendsLocationsDensity(nextDensity));
                     setShowSameInstanceInOnline(nextShowSameInstance);
                     setShowFavoritesInOnline(nextShowFavorites);
                     setViewMode(sanitizeFriendsLocationsViewMode(nextViewMode));
@@ -199,7 +203,7 @@ export function useFriendsLocationsPreferences() {
 
     function changeDensityPreference(value: FriendsLocationsDensity) {
         setDensity(value);
-        configRepository.setString('FriendLocationDensity', value);
+        writeStoredText(STORAGE_KEYS.friendLocationDensity, value);
     }
 
     function changeViewMode(value: FriendsLocationsViewMode) {

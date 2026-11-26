@@ -28,14 +28,13 @@ import {
     LOG_LOAD_OLDER_HEIGHT,
     LOG_ROW_HEIGHT,
     LOG_ROW_OVERSCAN,
-    logViewerStorage,
     mergeEntries,
     mergeLogCategories,
     normalizePrefs,
     PAGE_LIMIT,
-    PREFS_KEY,
+    readVrchatLogViewerPrefs,
     TAIL_LIMIT,
-    type VrchatLogViewerPrefs
+    writeVrchatLogViewerPrefs
 } from './vrchatLogHelpers';
 
 export function useVrchatLogController() {
@@ -460,31 +459,19 @@ export function useVrchatLogController() {
         }
 
         let active = true;
-        logViewerStorage
-            .getJson<VrchatLogViewerPrefs>(PREFS_KEY, null)
-            .then(async (value) => {
-                if (!active) {
-                    return;
-                }
-                const prefs = normalizePrefs(value);
-                setLevels(prefs.levels);
-                setSelectedCategories(prefs.categories);
-                setSearchQuery(prefs.searchQuery);
-                setDebouncedSearchQuery(prefs.searchQuery);
-                setSearchCaseSensitive(prefs.searchCaseSensitive);
-                setSearchRegex(prefs.searchRegex);
-                setFollowLatest(prefs.followLatest);
-                await loadFiles(prefs.recentFileName);
+        const prefs = normalizePrefs(readVrchatLogViewerPrefs());
+        setLevels(prefs.levels);
+        setSelectedCategories(prefs.categories);
+        setSearchQuery(prefs.searchQuery);
+        setDebouncedSearchQuery(prefs.searchQuery);
+        setSearchCaseSensitive(prefs.searchCaseSensitive);
+        setSearchRegex(prefs.searchRegex);
+        setFollowLatest(prefs.followLatest);
+        loadFiles(prefs.recentFileName)
+            .catch(() => (active ? loadFiles('') : undefined))
+            .finally(() => {
                 if (active) {
                     setPrefsLoaded(true);
-                }
-            })
-            .catch(async () => {
-                if (active) {
-                    await loadFiles('');
-                    if (active) {
-                        setPrefsLoaded(true);
-                    }
                 }
             });
 
@@ -497,17 +484,15 @@ export function useVrchatLogController() {
         if (!prefsLoaded) {
             return;
         }
-        logViewerStorage
-            .setJson(PREFS_KEY, {
-                levels,
-                categories: selectedCategories,
-                searchQuery,
-                searchCaseSensitive,
-                searchRegex,
-                followLatest,
-                recentFileName: selectedFileName
-            } satisfies VrchatLogViewerPrefs)
-            .catch(() => {});
+        writeVrchatLogViewerPrefs({
+            levels,
+            categories: selectedCategories,
+            searchQuery,
+            searchCaseSensitive,
+            searchRegex,
+            followLatest,
+            recentFileName: selectedFileName
+        });
     }, [
         followLatest,
         levels,

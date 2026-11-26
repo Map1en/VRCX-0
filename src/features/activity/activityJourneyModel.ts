@@ -15,9 +15,6 @@ export function normalizeActivityPageMode(
     return value === 'journey' ? 'journey' : 'overview';
 }
 
-export const ACTIVITY_JOURNEY_DENSITY_KEY =
-    ACTIVITY_PAGE_CONFIG_KEYS.journeyDensity;
-
 export const JOURNEY_DENSITIES = ['standard', 'compact', 'dense'] as const;
 
 export type JourneyDensity = (typeof JOURNEY_DENSITIES)[number];

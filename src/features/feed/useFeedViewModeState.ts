@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import configRepository from '@/repositories/configRepository';
 import { safeJsonParse } from '@/shared/utils/json';
 
@@ -19,27 +24,25 @@ import {
 export function useFeedViewModeState() {
     const [ready, setReady] = useState(false);
     const [viewMode, setViewModeState] = useState<FeedViewMode>('table');
-    const [density, setDensityState] = useState<FeedColumnDensity>(
-        DEFAULT_FEED_COLUMN_DENSITY
+    const [density, setDensityState] = useState<FeedColumnDensity>(() =>
+        sanitizeFeedColumnDensity(
+            readStoredText(STORAGE_KEYS.feedColumnsDensity) ??
+                DEFAULT_FEED_COLUMN_DENSITY
+        )
     );
     const [columns, setColumns] = useState<FeedColumnConfig[]>(() =>
         FEED_COLUMNS_DEFAULT_CONFIG.map((column) => ({ ...column }))
     );
     const hasWrittenModeRef = useRef(false);
-    const hasWrittenDensityRef = useRef(false);
     const hasWrittenColumnsRef = useRef(false);
 
     useEffect(() => {
         let active = true;
         Promise.all([
             configRepository.getString('feedViewMode', 'table'),
-            configRepository.getString('feedColumnsConfig', '[]'),
-            configRepository.getString(
-                'feedColumnsDensity',
-                DEFAULT_FEED_COLUMN_DENSITY
-            )
+            configRepository.getString('feedColumnsConfig', '[]')
         ])
-            .then(([savedMode, savedColumns, savedDensity]) => {
+            .then(([savedMode, savedColumns]) => {
                 if (!active) {
                     return;
                 }
@@ -47,7 +50,6 @@ export function useFeedViewModeState() {
                 setColumns(
                     sanitizeFeedColumnsConfig(safeJsonParse(savedColumns))
                 );
-                setDensityState(sanitizeFeedColumnDensity(savedDensity));
                 setReady(true);
             })
             .catch(() => {
@@ -75,17 +77,6 @@ export function useFeedViewModeState() {
         if (!ready) {
             return;
         }
-        if (!hasWrittenDensityRef.current) {
-            hasWrittenDensityRef.current = true;
-            return;
-        }
-        configRepository.setString('feedColumnsDensity', density);
-    }, [density, ready]);
-
-    useEffect(() => {
-        if (!ready) {
-            return;
-        }
         if (!hasWrittenColumnsRef.current) {
             hasWrittenColumnsRef.current = true;
             return;
@@ -98,6 +89,7 @@ export function useFeedViewModeState() {
 
     const setDensity = useCallback((value: FeedColumnDensity) => {
         setDensityState(value);
+        writeStoredText(STORAGE_KEYS.feedColumnsDensity, value);
     }, []);
 
     const setViewMode = useCallback((value: FeedViewMode) => {

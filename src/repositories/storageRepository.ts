@@ -4,21 +4,8 @@ import { safeJsonParse } from '@/shared/utils/json';
 import { asString, safeJsonStringify } from './baseRepository';
 
 export class StorageRepository {
-    #prefix = '';
     #cache = new Map<string, string>();
     #hydration: Promise<void> | null = null;
-
-    constructor(prefix: string = '') {
-        this.#prefix = prefix;
-    }
-
-    key(key: string): string {
-        return `${this.#prefix}${key}`;
-    }
-
-    withPrefix(prefix: string): StorageRepository {
-        return new StorageRepository(`${this.#prefix}${prefix}`);
-    }
 
     async init(): Promise<void> {
         this.#hydration ??= commands.storageGetAll().then((entries) => {
@@ -33,7 +20,7 @@ export class StorageRepository {
 
     async getString(key: string, defaultValue: string | null = null) {
         await this.init();
-        const value = this.#cache.get(this.key(key));
+        const value = this.#cache.get(key);
         if (value === undefined || value === 'undefined') {
             return defaultValue;
         }
@@ -52,9 +39,8 @@ export class StorageRepository {
 
     async setString(key: string, value: string) {
         await this.init();
-        const dbKey = this.key(key);
-        const result = await commands.storageSet(dbKey, value);
-        this.#cache.set(dbKey, value);
+        const result = await commands.storageSet(key, value);
+        this.#cache.set(key, value);
         return result;
     }
 
@@ -68,31 +54,18 @@ export class StorageRepository {
 
     async remove(key: string) {
         await this.init();
-        const dbKey = this.key(key);
-        const result = await commands.storageRemove(dbKey);
-        this.#cache.delete(dbKey);
+        const result = await commands.storageRemove(key);
+        this.#cache.delete(key);
         return result;
     }
 
     async has(key: string): Promise<boolean> {
         await this.init();
-        const value = this.#cache.get(this.key(key));
+        const value = this.#cache.get(key);
         return value !== undefined && value !== 'undefined';
     }
 
     async flush(): Promise<void> {
-        await commands.storageFlush();
-    }
-
-    async clear(): Promise<void> {
-        await this.init();
-        const keys = [...this.#cache.keys()].filter((key) =>
-            key.startsWith(this.#prefix)
-        );
-        await Promise.all(keys.map((key) => commands.storageRemove(key)));
-        for (const key of keys) {
-            this.#cache.delete(key);
-        }
         await commands.storageFlush();
     }
 }

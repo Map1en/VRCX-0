@@ -1,3 +1,4 @@
+import { STORAGE_KEYS, readStoredText } from '@/lib/browserStorage';
 import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
@@ -238,7 +239,7 @@ export async function loadPreferenceSnapshot() {
         discordWorldNameAsDiscordStatus
     ] = await Promise.all([
         configRepository.getBool('navIsCollapsed', false),
-        configRepository.getInt('navPanelWidth', 240),
+        Number(readStoredText(STORAGE_KEYS.navPanelWidth) ?? 240),
         configRepository.getBool('rightSidebarOpen', true),
         configRepository.getString(
             'notificationLayout',

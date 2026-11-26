@@ -47,6 +47,10 @@ vi.mock('./backgroundMaintenanceService', () => ({
     runStartupMaintenance: mocks.runStartupMaintenance
 }));
 
+vi.mock('./browserStorageMigrationService', () => ({
+    moveLayoutPreferencesToBrowserStorage: vi.fn().mockResolvedValue(undefined)
+}));
+
 vi.mock('./databaseUpgradeService', () => ({
     initializeDatabaseUpgradeFlow: mocks.initializeDatabaseUpgradeFlow
 }));

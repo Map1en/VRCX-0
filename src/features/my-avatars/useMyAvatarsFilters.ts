@@ -1,11 +1,14 @@
 import { useDeferredValue, useEffect, useState } from 'react';
 
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import configRepository from '@/repositories/configRepository';
 
 import {
-    MY_AVATARS_DEFAULT_CARD_SCALE,
-    MY_AVATARS_GRID_DENSITY_CONFIG_KEY,
-    MY_AVATARS_LEGACY_GRID_DENSITY_CONFIG_KEY,
+    MY_AVATARS_DB_GRID_DENSITY_KEYS,
     resolveMyAvatarsGridDensity,
     sanitizeMyAvatarsGridDensity
 } from './myAvatarsState';
@@ -28,47 +31,48 @@ export function useMyAvatarsFilters() {
         useState<MyAvatarsPlatformFilter>('all');
     const [tagFilters, setTagFilters] = useState<Set<string>>(() => new Set());
     const [gridDensity, setGridDensity] = useState<MyAvatarsGridDensity>(() =>
-        resolveMyAvatarsGridDensity()
+        sanitizeMyAvatarsGridDensity(
+            readStoredText(STORAGE_KEYS.myAvatarsGridDensity)
+        )
     );
 
     useEffect(() => {
         let active = true;
         Promise.all([
             configRepository.getString('MyAvatarsViewMode', 'grid'),
-            configRepository.getString(MY_AVATARS_GRID_DENSITY_CONFIG_KEY, ''),
-            configRepository.getString(
-                MY_AVATARS_LEGACY_GRID_DENSITY_CONFIG_KEY,
-                ''
-            ),
-            configRepository.getString(
-                'VRCX_MyAvatarsCardScale',
-                String(MY_AVATARS_DEFAULT_CARD_SCALE)
+            Promise.all(
+                MY_AVATARS_DB_GRID_DENSITY_KEYS.map((key) =>
+                    configRepository.getRawValue(key)
+                )
             )
         ])
-            .then(
-                ([
-                    nextViewMode,
-                    nextGridDensity,
-                    nextLegacyGridDensity,
-                    nextLegacyCardScale
-                ]) => {
-                    if (!active) {
-                        return;
-                    }
-                    setViewMode(
-                        nextViewMode === 'grid' || nextViewMode === 'table'
-                            ? nextViewMode
-                            : 'grid'
-                    );
-                    setGridDensity(
-                        resolveMyAvatarsGridDensity({
-                            persistedDensity: nextGridDensity,
-                            legacyGridDensity: nextLegacyGridDensity,
-                            legacyCardScale: nextLegacyCardScale
-                        })
-                    );
+            .then(async ([nextViewMode, storedDensityValues]) => {
+                if (!active) {
+                    return;
                 }
-            )
+                setViewMode(
+                    nextViewMode === 'grid' || nextViewMode === 'table'
+                        ? nextViewMode
+                        : 'grid'
+                );
+                if (storedDensityValues.every((value) => value === null)) {
+                    return;
+                }
+                const [persistedDensity, legacyGridDensity, legacyCardScale] =
+                    storedDensityValues;
+                const nextDensity = resolveMyAvatarsGridDensity({
+                    persistedDensity: persistedDensity ?? undefined,
+                    legacyGridDensity: legacyGridDensity ?? undefined,
+                    legacyCardScale: legacyCardScale ?? undefined
+                });
+                setGridDensity(nextDensity);
+                writeStoredText(STORAGE_KEYS.myAvatarsGridDensity, nextDensity);
+                await Promise.all(
+                    MY_AVATARS_DB_GRID_DENSITY_KEYS.filter(
+                        (_, index) => storedDensityValues[index] !== null
+                    ).map((key) => configRepository.remove(key))
+                );
+            })
             .catch(() => {});
         return () => {
             active = false;
@@ -83,10 +87,7 @@ export function useMyAvatarsFilters() {
     function handleGridDensityChange(value: MyAvatarsGridDensity) {
         const nextDensity = sanitizeMyAvatarsGridDensity(value);
         setGridDensity(nextDensity);
-        configRepository.setString(
-            MY_AVATARS_GRID_DENSITY_CONFIG_KEY,
-            nextDensity
-        );
+        writeStoredText(STORAGE_KEYS.myAvatarsGridDensity, nextDensity);
     }
 
     function clearFilters() {

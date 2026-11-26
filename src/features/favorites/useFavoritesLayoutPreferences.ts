@@ -1,6 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 import { FAVORITES_LAYOUT_CONFIG_KEYS } from '@/repositories/configKeys';
 import configRepository from '@/repositories/configRepository';
 
@@ -78,59 +83,71 @@ function usePersistedPreference<T extends string>(
     return [value, handleChange];
 }
 
-export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
-    const [splitterSizePx, setSplitterSizePx] = useState(
-        SPLITTER_DEFAULT_SIZE_PX
+const FAVORITES_DENSITY_STORAGE_KEYS: Readonly<Record<FavoriteKind, string>> =
+    Object.freeze({
+        friend: STORAGE_KEYS.favoritesFriendDensity,
+        world: STORAGE_KEYS.favoritesWorldDensity,
+        avatar: STORAGE_KEYS.favoritesAvatarDensity
+    });
+
+const FAVORITES_SPLITTER_STORAGE_KEYS: Readonly<Record<FavoriteKind, string>> =
+    Object.freeze({
+        friend: STORAGE_KEYS.favoritesFriendSplitter,
+        world: STORAGE_KEYS.favoritesWorldSplitter,
+        avatar: STORAGE_KEYS.favoritesAvatarSplitter
+    });
+
+function readFavoritesDensity(kind: FavoriteKind): FavoritesDensity {
+    return sanitizeFavoritesDensity(
+        kind,
+        readStoredText(FAVORITES_DENSITY_STORAGE_KEYS[kind]) ??
+            DEFAULT_FAVORITES_DENSITY_BY_KIND[kind]
     );
-    const [splitterLayoutVersion, setSplitterLayoutVersion] = useState(0);
+}
+
+function readFavoritesSplitterSizePx(kind: FavoriteKind): number {
+    const stored = readStoredText(FAVORITES_SPLITTER_STORAGE_KEYS[kind]);
+    if (stored === null) {
+        return SPLITTER_DEFAULT_SIZE_PX;
+    }
+    const parsed = Number(stored);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+        return SPLITTER_DEFAULT_SIZE_PX;
+    }
+    return normalizeSplitterSizePx(parsed);
+}
+
+export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
+    const [densityByKind, setDensityByKind] = useState<
+        Partial<Record<FavoriteKind, FavoritesDensity>>
+    >({});
+    const [splitterSizeByKind, setSplitterSizeByKind] = useState<
+        Partial<Record<FavoriteKind, number>>
+    >({});
     const pendingSplitterSizePxRef = useRef<number | null>(null);
-    const [density, handleDensityChange] =
-        usePersistedPreference<FavoritesDensity>(
-            FAVORITES_LAYOUT_CONFIG_KEYS.density[kind],
-            DEFAULT_FAVORITES_DENSITY_BY_KIND[kind],
-            (value) => sanitizeFavoritesDensity(kind, value)
-        );
+    const density = densityByKind[kind] ?? readFavoritesDensity(kind);
+    const splitterSizePx =
+        splitterSizeByKind[kind] ?? readFavoritesSplitterSizePx(kind);
     const [sortValue, handleSortValueChange] = usePersistedPreference(
         FAVORITES_LAYOUT_CONFIG_KEYS.sort[kind],
         DEFAULT_SORT_VALUE,
         (value) => normalizeFavoriteSortValue(kind, value)
     );
 
-    useEffect(() => {
-        let active = true;
-        const configKey = FAVORITES_LAYOUT_CONFIG_KEYS.splitter[kind];
-        configRepository
-            .getString(configKey, '260')
-            .then((value) => {
-                if (!active) {
-                    return;
-                }
-                const parsed = Number(value);
-                if (!Number.isFinite(parsed) || parsed < 0) {
-                    setSplitterSizePx(SPLITTER_DEFAULT_SIZE_PX);
-                    setSplitterLayoutVersion((version) => version + 1);
-                    return;
-                }
-                setSplitterSizePx(normalizeSplitterSizePx(parsed));
-                setSplitterLayoutVersion((version) => version + 1);
-            })
-            .catch(() => {
-                if (active) {
-                    setSplitterSizePx(SPLITTER_DEFAULT_SIZE_PX);
-                    setSplitterLayoutVersion((version) => version + 1);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [kind]);
+    function handleDensityChange(next: FavoritesDensity): void {
+        const nextDensity = sanitizeFavoritesDensity(kind, next);
+        setDensityByKind((current) => ({ ...current, [kind]: nextDensity }));
+        writeStoredText(FAVORITES_DENSITY_STORAGE_KEYS[kind], nextDensity);
+    }
 
     function persistSplitterSizePx(nextSizePx: number): void {
         const normalizedSizePx = normalizeSplitterSizePx(nextSizePx);
-        setSplitterSizePx(normalizedSizePx);
-        configRepository.setString(
-            FAVORITES_LAYOUT_CONFIG_KEYS.splitter[kind],
+        setSplitterSizeByKind((current) => ({
+            ...current,
+            [kind]: normalizedSizePx
+        }));
+        writeStoredText(
+            FAVORITES_SPLITTER_STORAGE_KEYS[kind],
             String(normalizedSizePx)
         );
     }
@@ -158,7 +175,6 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
         handleSplitterResize,
         persistSplitterLayout,
         sortValue: normalizeFavoriteSortValue(kind, sortValue),
-        splitterLayoutVersion,
         splitterSizePx
     };
 }

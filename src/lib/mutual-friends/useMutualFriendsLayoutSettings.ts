@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
 
-import configRepository from '@/repositories/configRepository';
+import {
+    STORAGE_KEYS,
+    readStoredText,
+    writeStoredText
+} from '@/lib/browserStorage';
 
 import {
     clampMutualGraphNumber,
@@ -14,8 +18,7 @@ import type {
 } from './mutualFriendsTypes';
 
 interface LayoutSettingConfig {
-    load: (fallback: number) => Promise<number>;
-    persist: (value: number) => void;
+    storageKey: string;
     decimals?: number;
 }
 
@@ -23,33 +26,14 @@ const layoutSettingConfig: Record<
     MutualFriendsLayoutSettingKey,
     LayoutSettingConfig
 > = {
-    layoutIterations: {
-        load: (fallback) =>
-            configRepository.getInt('MutualGraphLayoutIterations', fallback),
-        persist: (value) =>
-            configRepository.setInt('MutualGraphLayoutIterations', value)
-    },
-    layoutSpacing: {
-        load: (fallback) =>
-            configRepository.getInt('MutualGraphLayoutSpacing', fallback),
-        persist: (value) =>
-            configRepository.setInt('MutualGraphLayoutSpacing', value)
-    },
+    layoutIterations: { storageKey: STORAGE_KEYS.mutualGraphLayoutIterations },
+    layoutSpacing: { storageKey: STORAGE_KEYS.mutualGraphLayoutSpacing },
     edgeCurvature: {
-        load: (fallback) =>
-            configRepository.getFloat('MutualGraphEdgeCurvature', fallback),
-        persist: (value) =>
-            configRepository.setFloat('MutualGraphEdgeCurvature', value),
+        storageKey: STORAGE_KEYS.mutualGraphEdgeCurvature,
         decimals: 2
     },
     communitySeparation: {
-        load: (fallback) =>
-            configRepository.getFloat(
-                'MutualGraphCommunitySeparation',
-                fallback
-            ),
-        persist: (value) =>
-            configRepository.setFloat('MutualGraphCommunitySeparation', value),
+        storageKey: STORAGE_KEYS.mutualGraphCommunitySeparation,
         decimals: 1
     }
 };
@@ -78,40 +62,49 @@ function normalizeLayoutSetting(
         : nextValue;
 }
 
+function readLayoutSetting(key: MutualFriendsLayoutSettingKey): number {
+    const stored = readStoredText(layoutSettingConfig[key].storageKey);
+    return normalizeLayoutSetting(
+        key,
+        stored === null ? MUTUAL_GRAPH_LAYOUT_DEFAULTS[key] : Number(stored)
+    );
+}
+
+function persistLayoutSetting(
+    key: MutualFriendsLayoutSettingKey,
+    value: number
+) {
+    writeStoredText(layoutSettingConfig[key].storageKey, String(value));
+}
+
 const useLayoutSettingsStore = create<MutualFriendsLayoutSettings>(() => ({
     ...MUTUAL_GRAPH_LAYOUT_DEFAULTS
 }));
 
-let hydration: Promise<void> | null = null;
+let hydrated = false;
 
 function hydrateLayoutSettings() {
-    hydration ??= Promise.all(
-        layoutSettingKeys.map(async (key) => {
-            const value = await layoutSettingConfig[key].load(
-                MUTUAL_GRAPH_LAYOUT_DEFAULTS[key]
-            );
-            return [key, normalizeLayoutSetting(key, value)] as const;
-        })
-    )
-        .then((entries) => {
-            useLayoutSettingsStore.setState(Object.fromEntries(entries));
-        })
-        .catch(() => {
-            hydration = null;
-        });
-    return hydration;
+    if (hydrated) {
+        return;
+    }
+    hydrated = true;
+    useLayoutSettingsStore.setState(
+        Object.fromEntries(
+            layoutSettingKeys.map((key) => [key, readLayoutSetting(key)])
+        )
+    );
 }
 
 function setLayoutSetting(key: MutualFriendsLayoutSettingKey, value: number) {
     const nextValue = normalizeLayoutSetting(key, value);
     useLayoutSettingsStore.setState({ [key]: nextValue });
-    layoutSettingConfig[key].persist(nextValue);
+    persistLayoutSetting(key, nextValue);
 }
 
 function resetLayoutSettings() {
     useLayoutSettingsStore.setState({ ...MUTUAL_GRAPH_LAYOUT_DEFAULTS });
     for (const key of layoutSettingKeys) {
-        layoutSettingConfig[key].persist(MUTUAL_GRAPH_LAYOUT_DEFAULTS[key]);
+        persistLayoutSetting(key, MUTUAL_GRAPH_LAYOUT_DEFAULTS[key]);
     }
 }
 
@@ -119,7 +112,7 @@ export function useMutualFriendsLayoutSettings() {
     const layoutSettings = useLayoutSettingsStore();
 
     useEffect(() => {
-        void hydrateLayoutSettings();
+        hydrateLayoutSettings();
     }, []);
 
     return {

@@ -31,10 +31,12 @@ export const MY_AVATARS_PLATFORM_OPTIONS = [
     'android',
     'ios'
 ] satisfies readonly MyAvatarsPlatformFilter[];
-export const MY_AVATARS_DEFAULT_CARD_SCALE = 0.6;
-export const MY_AVATARS_GRID_DENSITY_CONFIG_KEY = 'VRCX_MyAvatarsGridDensityV2';
-export const MY_AVATARS_LEGACY_GRID_DENSITY_CONFIG_KEY =
-    'VRCX_MyAvatarsGridDensity';
+export const MY_AVATARS_DB_GRID_DENSITY_KEYS = [
+    'VRCX_MyAvatarsGridDensityV2',
+    'VRCX_MyAvatarsGridDensity',
+    'VRCX_MyAvatarsCardScale',
+    'VRCX_MyAvatarsCardSpacing'
+] as const;
 const MY_AVATARS_DEFAULT_GRID_DENSITY = 'standard';
 export const MY_AVATARS_GRID_DENSITY_OPTIONS = Object.freeze([
     {

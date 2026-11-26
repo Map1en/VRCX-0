@@ -23,12 +23,14 @@ vi.mock('@/repositories/configRepository', () => ({
     }
 }));
 
+import { STORAGE_KEYS, writeStoredText } from '@/lib/browserStorage';
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
 
 import { useFriendsLocationsPreferences } from './useFriendsLocationsPreferences';
 
 describe('useFriendsLocationsPreferences', () => {
     beforeEach(() => {
+        localStorage.clear();
         mocks.boolValues.clear();
         mocks.stringValues.clear();
         mocks.getBool
@@ -54,7 +56,7 @@ describe('useFriendsLocationsPreferences', () => {
     });
 
     it('loads persisted preferences and writes changes back', async () => {
-        mocks.stringValues.set('FriendLocationDensity', 'dense');
+        writeStoredText(STORAGE_KEYS.friendLocationDensity, 'dense');
         mocks.stringValues.set('FriendLocationViewMode', 'worlds');
         mocks.boolValues.set('FriendLocationShowSameInstance', true);
         mocks.stringValues.set('sidebarFavoriteGroups', '["group_a"]');

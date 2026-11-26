@@ -9,6 +9,11 @@ import { useTranslation } from 'react-i18next';
 import type { useSearchParams } from 'react-router';
 
 import {
+    STORAGE_KEYS,
+    readStoredJson,
+    writeStoredText
+} from '@/lib/browserStorage';
+import {
     commands,
     type ScreenshotFolderTree,
     type ScreenshotLibraryImage,
@@ -30,7 +35,6 @@ import {
     normalizeGalleryScrollTop,
     resolveGalleryFolder,
     SCREENSHOT_GALLERY_FOLDER_CONFIG_KEY,
-    SCREENSHOT_GALLERY_SCROLL_CONFIG_KEY,
     SCREENSHOT_GALLERY_SCROLL_SAVE_DELAY_MS,
     SCREENSHOT_TIMELINE_FOLDER,
     serializeGalleryScrollPositions
@@ -45,12 +49,10 @@ function loadGalleryFolderImages(folder: string) {
 type SetSearchParams = ReturnType<typeof useSearchParams>[1];
 
 function persistGalleryScrollPositions(positions: Map<string, number>) {
-    return configRepository
-        .setObject(
-            SCREENSHOT_GALLERY_SCROLL_CONFIG_KEY,
-            serializeGalleryScrollPositions(positions)
-        )
-        .catch(() => {});
+    writeStoredText(
+        STORAGE_KEYS.screenshotGalleryScrollPositions,
+        JSON.stringify(serializeGalleryScrollPositions(positions))
+    );
 }
 
 export function useScreenshotGalleryController({
@@ -68,7 +70,14 @@ export function useScreenshotGalleryController({
     const galleryRequestRef = useRef(0);
     const galleryImagesRequestKeyRef = useRef('');
     const selectedGalleryFolderRef = useRef('');
-    const galleryScrollPositionsRef = useRef<Map<string, number>>(new Map());
+    const [storedGalleryScrollPositions] = useState(() =>
+        normalizeGalleryScrollPositions(
+            readStoredJson(STORAGE_KEYS.screenshotGalleryScrollPositions)
+        )
+    );
+    const galleryScrollPositionsRef = useRef<Map<string, number>>(
+        storedGalleryScrollPositions
+    );
     const galleryScrollPersistTimerRef = useRef<number | null>(null);
     const galleryScanActiveRef = useRef(false);
     const [folderTree, setFolderTree] = useState<ScreenshotFolderTree | null>(
@@ -103,20 +112,13 @@ export function useScreenshotGalleryController({
 
     useEffect(() => {
         let active = true;
-        Promise.all([
-            configRepository.getString(
-                SCREENSHOT_GALLERY_FOLDER_CONFIG_KEY,
-                ''
-            ),
-            configRepository.getObject(SCREENSHOT_GALLERY_SCROLL_CONFIG_KEY, {})
-        ])
-            .then(([folder, scrollPositions]) => {
+        configRepository
+            .getString(SCREENSHOT_GALLERY_FOLDER_CONFIG_KEY, '')
+            .then((folder) => {
                 if (!active) {
                     return;
                 }
                 setStoredGalleryFolder(folder || '');
-                galleryScrollPositionsRef.current =
-                    normalizeGalleryScrollPositions(scrollPositions);
             })
             .catch(() => {})
             .finally(() => {
