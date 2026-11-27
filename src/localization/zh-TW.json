@@ -1888,7 +1888,8 @@
                 "failed_to_search_worlds": "搜尋世界失敗",
                 "failed_to_search_groups": "搜尋群組失敗",
                 "failed_to_search_avatars": "搜尋角色失敗",
-                "avatar_provider_blocked": "角色資料庫提供方的伺服器端攔截了這次請求，請稍後再試或更換提供方",
+                "avatar_provider_blocked": "角色資料庫提供方的伺服器端攔截了這次請求（HTTP {{status}}），請稍後再試或更換提供方",
+                "avatar_search_http_error": "搜尋角色失敗（HTTP {{status}}）",
                 "failed_to_save_avatar_provider": "儲存角色資料庫提供方失敗",
                 "failed_to_load_hot_worlds": "載入熱門世界失敗"
             }

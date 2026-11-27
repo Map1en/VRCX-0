@@ -1916,7 +1916,8 @@
                 "failed_to_search_worlds": "Не удалось найти миры",
                 "failed_to_search_groups": "Не удалось создать поисковые группы",
                 "failed_to_search_avatars": "Не удалось найти аватары",
-                "avatar_provider_blocked": "Сервер провайдера аватаров заблокировал запрос. Попробуйте позже или выберите другого провайдера.",
+                "avatar_provider_blocked": "Сервер провайдера аватаров заблокировал запрос (HTTP {{status}}). Попробуйте позже или выберите другого провайдера.",
+                "avatar_search_http_error": "Не удалось найти аватары (HTTP {{status}})",
                 "failed_to_save_avatar_provider": "Не удалось сохранить провайдера аватаров",
                 "failed_to_load_hot_worlds": "Не удалось загрузить популярные миры"
             }

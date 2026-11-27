@@ -1896,7 +1896,8 @@
                 "failed_to_search_worlds": "No se pudo buscar mundos",
                 "failed_to_search_groups": "No se pudo buscar grupos",
                 "failed_to_search_avatars": "No se pudo buscar avatares",
-                "avatar_provider_blocked": "El servidor del proveedor de avatares bloqueó la solicitud. Inténtalo más tarde o cambia de proveedor.",
+                "avatar_provider_blocked": "El servidor del proveedor de avatares bloqueó la solicitud (HTTP {{status}}). Inténtalo más tarde o cambia de proveedor.",
+                "avatar_search_http_error": "No se pudo buscar avatares (HTTP {{status}})",
                 "failed_to_save_avatar_provider": "No se pudo guardar el proveedor de avatares",
                 "failed_to_load_hot_worlds": "No se pudieron cargar los mundos populares"
             }

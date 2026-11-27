@@ -31,9 +31,7 @@ import { commands } from '@/platform/tauri/bindings';
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
 
 import avatarProfileRepository from './avatarProfileRepository';
-import avatarSearchProviderRepository, {
-    AvatarProviderBlockedError
-} from './avatarSearchProviderRepository';
+import avatarSearchProviderRepository from './avatarSearchProviderRepository';
 import configRepository from './configRepository';
 
 const DEFAULT_PROVIDER = 'https://api.avtrdb.com/v3/avatar/search/vrcx';
@@ -198,21 +196,24 @@ describe('AvatarSearchProviderRepository', () => {
         ).toEqual(['avtr_alpha', 'avtr_beta']);
     });
 
-    it('rejects with a blocked error when the provider server blocks the request', async () => {
-        vi.mocked(commands.appExternalApiAvatarSearchGet).mockResolvedValue({
-            status: 403,
-            data: '<html>challenge-platform</html>',
-            raw: {},
-            serverBlocked: true
-        });
+    it.each([
+        { status: 403, serverBlocked: true },
+        { status: 451, serverBlocked: false }
+    ])(
+        'rejects with status $status and blocked=$serverBlocked when the provider fails',
+        async ({ status, serverBlocked }) => {
+            vi.mocked(commands.appExternalApiAvatarSearchGet).mockResolvedValue(
+                { status, data: '', raw: {}, serverBlocked }
+            );
 
-        await expect(
-            avatarSearchProviderRepository.search({
-                provider: DEFAULT_PROVIDER,
-                query: 'alpha'
-            })
-        ).rejects.toBeInstanceOf(AvatarProviderBlockedError);
-    });
+            await expect(
+                avatarSearchProviderRepository.search({
+                    provider: DEFAULT_PROVIDER,
+                    query: 'alpha'
+                })
+            ).rejects.toMatchObject({ status, blocked: serverBlocked });
+        }
+    );
 
     it('persists the default provider list when no provider list is configured', async () => {
         vi.mocked(configRepository.has).mockResolvedValue(false);

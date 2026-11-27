@@ -1888,7 +1888,8 @@
                 "failed_to_search_worlds": "搜索世界失败",
                 "failed_to_search_groups": "搜索群组失败",
                 "failed_to_search_avatars": "搜索模型失败",
-                "avatar_provider_blocked": "模型提供方的服务器端拦截了本次请求，请稍后再试或更换提供方",
+                "avatar_provider_blocked": "模型提供方的服务器端拦截了本次请求（HTTP {{status}}），请稍后再试或更换提供方",
+                "avatar_search_http_error": "搜索模型失败（HTTP {{status}}）",
                 "failed_to_save_avatar_provider": "保存模型提供方失败",
                 "failed_to_load_hot_worlds": "加载热门世界失败"
             }

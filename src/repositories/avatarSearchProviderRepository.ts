@@ -36,10 +36,13 @@ interface SearchInput {
     query: string;
 }
 
-export class AvatarProviderBlockedError extends Error {
-    constructor(status: number) {
-        super(`Avatar provider blocked the request (${status})`);
-        this.name = 'AvatarProviderBlockedError';
+export class AvatarProviderHttpError extends Error {
+    constructor(
+        readonly status: number,
+        readonly blocked: boolean
+    ) {
+        super(`Avatar search failed (${status})`);
+        this.name = 'AvatarProviderHttpError';
     }
 }
 
@@ -302,11 +305,11 @@ async function search({
     });
     const json = parseResponse(response.data);
 
-    if (response.serverBlocked) {
-        throw new AvatarProviderBlockedError(response.status);
-    }
     if (response.status !== 200) {
-        throw new Error(`Avatar search failed (${response.status})`);
+        throw new AvatarProviderHttpError(
+            response.status,
+            response.serverBlocked
+        );
     }
     if (!Array.isArray(json)) {
         throw new Error('Avatar provider returned an unsupported response.');

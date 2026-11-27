@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import avatarSearchProviderRepository, {
-    AvatarProviderBlockedError
+    AvatarProviderHttpError
 } from '@/repositories/avatarSearchProviderRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
@@ -219,8 +219,13 @@ export function useSearchResults({
                     toast.add({
                         type: 'error',
                         title:
-                            error instanceof AvatarProviderBlockedError
-                                ? t('view.search.toast.avatar_provider_blocked')
+                            error instanceof AvatarProviderHttpError
+                                ? t(
+                                      error.blocked
+                                          ? 'view.search.toast.avatar_provider_blocked'
+                                          : 'view.search.toast.avatar_search_http_error',
+                                      { status: error.status }
+                                  )
                                 : userFacingErrorMessage(
                                       error,
                                       t(

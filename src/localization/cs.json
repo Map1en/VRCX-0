@@ -1916,7 +1916,8 @@
                 "failed_to_search_worlds": "Nepodařilo se vyhledat světy",
                 "failed_to_search_groups": "Nepodařilo se vyhledat skupiny",
                 "failed_to_search_avatars": "Nepodařilo se vyhledat avatary",
-                "avatar_provider_blocked": "Server poskytovatele avatarů požadavek zablokoval. Zkuste to později nebo vyberte jiného poskytovatele.",
+                "avatar_provider_blocked": "Server poskytovatele avatarů požadavek zablokoval (HTTP {{status}}). Zkuste to později nebo vyberte jiného poskytovatele.",
+                "avatar_search_http_error": "Nepodařilo se vyhledat avatary (HTTP {{status}})",
                 "failed_to_save_avatar_provider": "Nepodařilo se uložit poskytovatele avatarů",
                 "failed_to_load_hot_worlds": "Nepodařilo se načíst populární světy"
             }

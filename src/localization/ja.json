@@ -1884,7 +1884,8 @@
                 "failed_to_search_worlds": "ワールド検索に失敗しました",
                 "failed_to_search_groups": "グループ検索に失敗しました",
                 "failed_to_search_avatars": "アバター検索に失敗しました",
-                "avatar_provider_blocked": "アバタープロバイダーのサーバー側でリクエストがブロックされました。時間をおいて再試行するか、別のプロバイダーをお試しください。",
+                "avatar_provider_blocked": "アバタープロバイダーのサーバー側でリクエストがブロックされました（HTTP {{status}}）。時間をおいて再試行するか、別のプロバイダーをお試しください。",
+                "avatar_search_http_error": "アバター検索に失敗しました（HTTP {{status}}）",
                 "failed_to_save_avatar_provider": "アバタープロバイダーの保存に失敗しました",
                 "failed_to_load_hot_worlds": "人気ワールドを読み込めませんでした"
             }
