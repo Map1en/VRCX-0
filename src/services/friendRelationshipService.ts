@@ -30,19 +30,10 @@ type DeleteFriendsResult = SocialUnfriendBatchResult & {
     stale: boolean;
 };
 
-const STALE_AUTH_SCOPE_ERROR_TEXT = 'stale for the current auth scope';
-
 function normalizeUserId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-function isStaleAuthScopeError(error: unknown): boolean {
-    return (
-        error instanceof Error &&
-        error.message.includes(STALE_AUTH_SCOPE_ERROR_TEXT)
-    );
 }
 
 function currentAuthScopeMatches(ownerUserId: string, endpoint: string) {
@@ -112,7 +103,6 @@ async function deleteFriend({
         };
     } catch (error) {
         if (
-            isStaleAuthScopeError(error) ||
             !currentAuthScopeMatches(normalizeUserId(currentUserId), endpoint)
         ) {
             return {
