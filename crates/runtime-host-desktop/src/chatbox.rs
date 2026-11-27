@@ -24,6 +24,19 @@ use crate::heart_rate::HeartRateRuntime;
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 
+pub(crate) fn osc_output_gate(
+    game_isolation: &GameIsolationRuntime,
+    is_game_running: bool,
+) -> ChatboxGate {
+    if game_isolation.is_enabled() {
+        ChatboxGate::Paused(ChatboxPauseReason::Isolated)
+    } else if !is_game_running {
+        ChatboxGate::Paused(ChatboxPauseReason::GameNotRunning)
+    } else {
+        ChatboxGate::Ready
+    }
+}
+
 pub struct ChatboxRuntime {
     config: Arc<dyn ConfigStore>,
     session: HostSessionRuntime,
@@ -283,13 +296,7 @@ impl ChatboxRuntime {
     }
 
     fn gate(&self, is_game_running: bool) -> ChatboxGate {
-        if self.game_isolation.is_enabled() {
-            ChatboxGate::Paused(ChatboxPauseReason::Isolated)
-        } else if !is_game_running {
-            ChatboxGate::Paused(ChatboxPauseReason::GameNotRunning)
-        } else {
-            ChatboxGate::Ready
-        }
+        osc_output_gate(&self.game_isolation, is_game_running)
     }
 
     fn transmit(

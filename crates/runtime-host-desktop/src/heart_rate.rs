@@ -7,7 +7,7 @@ use tokio::time::Instant;
 use vrcx_0_application_core::{
     ConfigStore, HostSessionRuntime, RuntimeEventBus, TaskStopToken, TaskSupervisor,
 };
-use vrcx_0_application_game::chatbox::{ChatboxConfig, CHATBOX_CONFIG_KEY};
+use vrcx_0_application_game::chatbox::{ChatboxConfig, ChatboxGate, CHATBOX_CONFIG_KEY};
 use vrcx_0_application_game::heart_rate::{
     choose_heart_rate_device, heart_rate_beat_interval, heart_rate_beat_parameters,
     heart_rate_parameters, heart_rate_status, HeartRateBackoff, HeartRateCandidate,
@@ -24,6 +24,7 @@ use vrcx_0_host_desktop::heart_rate_ble::{
 use vrcx_0_host_desktop::osc_udp::OscUdpSender;
 use vrcx_0_osc::{avatar_parameter_message, AvatarParameterValue};
 
+use crate::chatbox::osc_output_gate;
 use crate::game_isolation::GameIsolationRuntime;
 
 const STOP_POLL: Duration = Duration::from_secs(1);
@@ -323,8 +324,7 @@ impl HeartRateRuntime {
                 (state.config.enabled, Self::live_reading(&state, now))
             };
             self.publish_status();
-            let ready =
-                self.session.snapshot().is_game_running && !self.game_isolation.is_enabled();
+            let ready = self.osc_output_ready();
             if now >= next_frame {
                 if ready && (enabled || owes_reset) {
                     let frame = heart_rate_parameters(reading, &self.output_settings().parameters);
@@ -357,12 +357,22 @@ impl HeartRateRuntime {
                 .unwrap_or(next_frame);
             tokio::time::sleep_until(wake_at).await;
         }
-        let ready = self.session.snapshot().is_game_running && !self.game_isolation.is_enabled();
+        let ready = self.osc_output_ready();
         if ready && owes_reset {
             let parameters = self.output_settings().parameters;
             self.send_frame(&mut sender, &heart_rate_parameters(None, &parameters));
             self.send_beat(&mut sender, false);
         }
+    }
+
+    fn osc_output_ready(&self) -> bool {
+        matches!(
+            osc_output_gate(
+                &self.game_isolation,
+                self.session.snapshot().is_game_running
+            ),
+            ChatboxGate::Ready
+        )
     }
 
     fn send_beat(&self, sender: &mut OscUdpSender, on: bool) {

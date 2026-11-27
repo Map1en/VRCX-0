@@ -485,17 +485,18 @@ fn turning_status_off_clears_the_bubble_once() {
 }
 
 #[test]
-fn paused_gate_sends_nothing_and_resumes_with_a_fresh_send() {
+fn paused_gate_clears_once_and_resumes_with_a_fresh_send() {
     let mut harness = Harness::new(config(vec![page("a", 300, vec![module(&["status"])])]));
     assert_eq!(harness.tick(0.0).outgoing.as_deref(), Some("status"));
 
     harness.gate = ChatboxGate::Paused(ChatboxPauseReason::Isolated);
     let paused = harness.tick(2.0);
-    assert_eq!(paused.outgoing, None);
+    assert_eq!(paused.outgoing.as_deref(), Some(""));
     assert_eq!(
         paused.status.pause_reason,
         Some(ChatboxPauseReason::Isolated)
     );
+    assert_eq!(harness.tick(2.5).outgoing, None);
     assert_eq!(
         harness.submit(3.0, "hello"),
         Err(ChatboxSendError::Paused(ChatboxPauseReason::Isolated))
@@ -504,6 +505,26 @@ fn paused_gate_sends_nothing_and_resumes_with_a_fresh_send() {
 
     harness.gate = ChatboxGate::Ready;
     assert_eq!(harness.tick(4.0).outgoing.as_deref(), Some("status"));
+}
+
+#[test]
+fn pause_right_after_a_send_waits_for_the_send_interval_before_clearing() {
+    let mut harness = Harness::new(config(vec![page("a", 300, vec![module(&["status"])])]));
+    assert_eq!(harness.tick(0.0).outgoing.as_deref(), Some("status"));
+
+    harness.gate = ChatboxGate::Paused(ChatboxPauseReason::GameNotRunning);
+    assert_eq!(harness.tick(0.5).outgoing, None);
+    assert_eq!(harness.tick(1.0).outgoing.as_deref(), Some(""));
+    assert_eq!(harness.tick(5.0).outgoing, None);
+}
+
+#[test]
+fn pause_without_anything_shown_sends_nothing() {
+    let mut harness = Harness::new(config(vec![page("a", 300, vec![module(&["status"])])]));
+    harness.gate = ChatboxGate::Paused(ChatboxPauseReason::GameNotRunning);
+
+    assert_eq!(harness.tick(0.0).outgoing, None);
+    assert_eq!(harness.tick(5.0).outgoing, None);
 }
 
 #[test]
