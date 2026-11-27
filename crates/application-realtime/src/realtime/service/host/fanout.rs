@@ -149,8 +149,7 @@ impl RealtimeHostRuntime {
         world_name_fetch_ids.extend(self.enrich_persistence_world_names(&mut output.persistence));
         let persisted = match self
             .deps
-            .stores
-            .batch_writer
+            .store
             .write_realtime_batch(&output.owner_user_id, &output.persistence)
         {
             Ok(_) => {
@@ -287,8 +286,7 @@ impl RealtimeHostRuntime {
         let projection = self.visible_notification_projection(output.projection.clone());
         match self
             .deps
-            .stores
-            .batch_writer
+            .store
             .write_realtime_batch(&output.owner_user_id, &output.persistence)
         {
             Ok(_) => {
@@ -338,8 +336,7 @@ impl RealtimeHostRuntime {
         let snapshot = output.snapshot;
         match self
             .deps
-            .stores
-            .batch_writer
+            .store
             .write_realtime_batch(&output.owner_user_id, &output.persistence)
         {
             Ok(_) => {
@@ -401,8 +398,7 @@ impl RealtimeHostRuntime {
         }
         match self
             .deps
-            .stores
-            .batch_writer
+            .store
             .write_realtime_batch(owner_user_id, &output.persistence)
         {
             Ok(_) => {

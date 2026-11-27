@@ -22,10 +22,7 @@ pub use instance_dwell::{
 pub use notification_observer::{
     RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
 };
-pub use ports::{
-    FavoriteBaselineStore, FeedQueryStore, FriendLogStore, GameLogLookup, RealtimeBatchWriter,
-    RealtimeRemoteRequests, RealtimeStores, SocialMutationStore,
-};
+pub use ports::{RealtimeRemoteRequests, RealtimeStore, SocialMutationStore};
 pub use realtime::replay::{replay_logger_frames, ReplayOutcome, ReplayResolvers};
 pub use realtime::PENDING_OFFLINE_DELAY_MS;
 pub use realtime::{

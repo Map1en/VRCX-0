@@ -199,9 +199,6 @@ fn test_server_with_game_context(
         ),
         event_bus.clone(),
     );
-    let realtime_stores = vrcx_0_application_realtime::RealtimeStores::shared(Arc::new(
-        vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(Arc::clone(&db)),
-    ));
     let realtime_transport: Arc<dyn vrcx_0_application_realtime::RealtimeTransport> =
         Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeTransport::new(
             db.db_path().to_path_buf(),
@@ -210,7 +207,9 @@ fn test_server_with_game_context(
         ));
     let realtime_runtime = Arc::new(RealtimeHostRuntime::new(
         RealtimeHostRuntimeDeps {
-            stores: realtime_stores,
+            store: Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
+                Arc::clone(&db),
+            )),
             config: Arc::new(vrcx_0_outbound_adapters::LocalConfigStore::new(
                 Arc::clone(&db),
                 Arc::clone(&storage),

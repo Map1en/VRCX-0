@@ -470,8 +470,6 @@ impl RuntimeHostStateBuilder {
         let realtime_store = Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
             Arc::clone(&self.runtime_context.db),
         ));
-        let realtime_stores =
-            vrcx_0_application_realtime::RealtimeStores::shared(Arc::clone(&realtime_store));
         let remote_requests: Arc<dyn vrcx_0_application_realtime::RealtimeRemoteRequests> =
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests);
         let backend_status = BackendRuntimeStatusPublisher::new(
@@ -486,7 +484,7 @@ impl RuntimeHostStateBuilder {
             ));
         let realtime_runtime = Arc::new(RealtimeHostRuntime::new(
             RealtimeHostRuntimeDeps {
-                stores: realtime_stores,
+                store: realtime_store.clone(),
                 config: self.runtime_context.config_store(),
                 transport: realtime_transport,
                 remote_requests: Arc::clone(&remote_requests),
@@ -540,7 +538,6 @@ impl RuntimeHostStateBuilder {
         let authenticated_runtime =
             AuthenticatedRuntimeOrchestrator::new(AuthenticatedRuntimeDeps {
                 social_baseline: vrcx_0_application_realtime::SocialBaselineDeps::new(
-                    realtime_store.clone(),
                     realtime_store,
                     self.runtime_context.config_store(),
                     remote_requests,

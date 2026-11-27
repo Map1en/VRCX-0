@@ -111,8 +111,7 @@ impl RealtimeHostRuntime {
         }
         let world_name = match self
             .deps
-            .stores
-            .game_log
+            .store
             .lookup_game_log_world_name(&location_entry.world_id)
         {
             Ok(world_name) => world_name,

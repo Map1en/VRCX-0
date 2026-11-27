@@ -84,11 +84,7 @@ impl RealtimeHostRuntime {
     }
 
     pub(super) fn persisted_friend_numbers(&self, user_id: &str) -> Option<HashMap<String, i64>> {
-        persisted_friend_numbers(
-            self.deps.stores.friend_log.as_ref(),
-            self.deps.config.as_ref(),
-            user_id,
-        )
+        persisted_friend_numbers(self.deps.store.as_ref(), self.deps.config.as_ref(), user_id)
     }
 
     pub(super) fn sync_roster_friend_numbers(&self, user_id: &str) -> Vec<FriendProjectionPatch> {
@@ -253,7 +249,7 @@ impl RealtimeHostRuntime {
                     changed: friend_log_changed,
                     feed_entries,
                 } = reconcile_friend_roster_records(
-                    &self.deps.stores,
+                    self.deps.store.as_ref(),
                     self.deps.config.as_ref(),
                     &pending_snapshot.current_user_id,
                     &pending_snapshot.friends_by_id,
@@ -370,7 +366,7 @@ impl RealtimeHostRuntime {
             .map(|snapshot| {
                 let roster_order = roster_order_from_friend_records(&snapshot.friends_by_id);
                 reconcile_friend_roster_records(
-                    &self.deps.stores,
+                    self.deps.store.as_ref(),
                     self.deps.config.as_ref(),
                     &snapshot.current_user_id,
                     &snapshot.friends_by_id,

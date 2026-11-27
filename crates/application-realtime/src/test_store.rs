@@ -60,7 +60,7 @@ impl TestRealtimeStore {
     }
 
     pub fn friend_log_current_list(&self, user_id: &str) -> Result<Vec<FriendLogCurrentOutput>> {
-        <Self as crate::FriendLogStore>::friend_log_current_list(self, user_id)
+        <Self as crate::RealtimeStore>::friend_log_current_list(self, user_id)
     }
 
     pub fn friend_log_delete_current(
@@ -189,7 +189,7 @@ impl TestRealtimeStore {
     }
 }
 
-impl crate::GameLogLookup for TestRealtimeStore {
+impl crate::RealtimeStore for TestRealtimeStore {
     fn game_log_join_count(
         &self,
         _owner: &OwnerId,
@@ -216,9 +216,7 @@ impl crate::GameLogLookup for TestRealtimeStore {
             .cloned()
             .unwrap_or_default())
     }
-}
 
-impl crate::FavoriteBaselineStore for TestRealtimeStore {
     fn favorite_list(
         &self,
         _owner: Option<&OwnerId>,
@@ -234,9 +232,7 @@ impl crate::FavoriteBaselineStore for TestRealtimeStore {
     ) -> Result<Vec<LocalFavoriteGroup>> {
         Ok(Vec::new())
     }
-}
 
-impl crate::FriendLogStore for TestRealtimeStore {
     fn friend_log_current_list(&self, user_id: &str) -> Result<Vec<FriendLogCurrentOutput>> {
         Ok(self
             .state
@@ -285,6 +281,149 @@ impl crate::FriendLogStore for TestRealtimeStore {
             inserted: None,
             history_count,
         })
+    }
+
+    fn write_realtime_batch(
+        &self,
+        owner: &OwnerId,
+        batch: &RealtimePersistenceBatch,
+    ) -> Result<RealtimeWriteCounts> {
+        if owner.as_str().contains('!') {
+            return Err(Error::Custom("invalid test owner id".into()));
+        }
+        if let Some(entry) = batch.feed_entries.iter().find(|entry| {
+            matches!(
+                entry,
+                FeedLiveEntry::OnPlayerJoining { .. } | FeedLiveEntry::InstanceClosed { .. }
+            )
+        }) {
+            return Err(Error::Custom(format!(
+                "Unknown realtime feed entry type: {}",
+                entry.entry_type()
+            )));
+        }
+        let mut state = self.lock()?;
+        let owner_id = owner.as_str().to_string();
+        let mut affected = 0u64;
+        for entry in &batch.friend_log_upserts {
+            affected = affected.saturating_add(apply_friend_upsert(&mut state, &owner_id, entry));
+        }
+        for entry in &batch.friend_log_deletes {
+            affected = affected.saturating_add(apply_friend_delete(&mut state, &owner_id, entry));
+        }
+        let feeds = state.feeds.entry(owner_id.clone()).or_default();
+        for entry in &batch.feed_entries {
+            let mut entry = entry.clone();
+            entry.set_owner_user_id(owner_id.clone());
+            feeds.push(entry);
+            affected = affected.saturating_add(1);
+        }
+        for entry in &batch.notification_v1_upserts {
+            upsert_json_row(
+                state.notifications_v1.entry(owner_id.clone()).or_default(),
+                entry.clone(),
+            );
+            affected = affected.saturating_add(1);
+        }
+        for entry in &batch.notification_v2_upserts {
+            upsert_json_row(
+                state.notifications_v2.entry(owner_id.clone()).or_default(),
+                entry.clone(),
+            );
+            affected = affected.saturating_add(1);
+        }
+        for notification in &batch.app_notification_upserts {
+            let rows = state.app_notifications.entry(owner_id.clone()).or_default();
+            if !rows.iter().any(|row| row.id == notification.id) {
+                rows.push(notification.clone());
+                affected = affected.saturating_add(1);
+            }
+        }
+        for update in &batch.notification_v2_updates {
+            let rows = state.notifications_v2.entry(owner_id.clone()).or_default();
+            if let Some(row) = rows
+                .iter_mut()
+                .find(|row| value_string(row, &["id"]) == update.id)
+            {
+                if let (Some(row), Some(updates)) =
+                    (row.as_object_mut(), update.updates.as_object())
+                {
+                    row.extend(updates.clone());
+                }
+            } else if let Some(updates) = update.updates.as_object() {
+                let mut row = updates.clone();
+                row.insert("id".into(), Value::String(update.id.clone()));
+                row.entry("createdAt")
+                    .or_insert_with(|| Value::String(update.received_at.clone()));
+                row.entry("created_at")
+                    .or_insert_with(|| Value::String(update.received_at.clone()));
+                rows.push(Value::Object(row));
+            }
+        }
+        for expiration in &batch.notification_expirations {
+            set_notification_flag(
+                state.notifications_v1.entry(owner_id.clone()).or_default(),
+                &expiration.id,
+                "expired",
+            );
+            set_notification_flag(
+                state.notifications_v2.entry(owner_id.clone()).or_default(),
+                &expiration.id,
+                "expired",
+            );
+        }
+        for id in &batch.notification_seen {
+            set_notification_flag(
+                state.notifications_v1.entry(owner_id.clone()).or_default(),
+                id,
+                "seen",
+            );
+            set_notification_flag(
+                state.notifications_v2.entry(owner_id.clone()).or_default(),
+                id,
+                "seen",
+            );
+        }
+        Ok(RealtimeWriteCounts {
+            affected_count: affected,
+            game_log_affected_count: 0,
+        })
+    }
+
+    fn feed_latest(
+        &self,
+        query: FeedLatestQueryInput,
+        live_entries: Vec<FeedLiveEntryInput>,
+        watermark: i64,
+        include_persisted_rows: bool,
+    ) -> Result<FeedReadModelOutput> {
+        let matcher = FeedLiveQueryMatcher::for_latest(&query);
+        self.feed_read_model(
+            &query.user_id,
+            matcher,
+            live_entries,
+            watermark,
+            include_persisted_rows,
+            query.max_rows,
+        )
+    }
+
+    fn feed_search(
+        &self,
+        query: FeedSearchQueryInput,
+        live_entries: Vec<FeedLiveEntryInput>,
+        watermark: i64,
+        include_persisted_rows: bool,
+    ) -> Result<FeedReadModelOutput> {
+        let matcher = FeedLiveQueryMatcher::for_search(&query);
+        self.feed_read_model(
+            &query.user_id,
+            matcher,
+            live_entries,
+            watermark,
+            include_persisted_rows,
+            query.max_rows,
+        )
     }
 }
 
@@ -399,153 +538,6 @@ impl crate::SocialMutationStore for TestRealtimeStore {
             "expired",
         );
         Ok(())
-    }
-}
-
-impl crate::RealtimeBatchWriter for TestRealtimeStore {
-    fn write_realtime_batch(
-        &self,
-        owner: &OwnerId,
-        batch: &RealtimePersistenceBatch,
-    ) -> Result<RealtimeWriteCounts> {
-        if owner.as_str().contains('!') {
-            return Err(Error::Custom("invalid test owner id".into()));
-        }
-        if let Some(entry) = batch.feed_entries.iter().find(|entry| {
-            matches!(
-                entry,
-                FeedLiveEntry::OnPlayerJoining { .. } | FeedLiveEntry::InstanceClosed { .. }
-            )
-        }) {
-            return Err(Error::Custom(format!(
-                "Unknown realtime feed entry type: {}",
-                entry.entry_type()
-            )));
-        }
-        let mut state = self.lock()?;
-        let owner_id = owner.as_str().to_string();
-        let mut affected = 0u64;
-        for entry in &batch.friend_log_upserts {
-            affected = affected.saturating_add(apply_friend_upsert(&mut state, &owner_id, entry));
-        }
-        for entry in &batch.friend_log_deletes {
-            affected = affected.saturating_add(apply_friend_delete(&mut state, &owner_id, entry));
-        }
-        let feeds = state.feeds.entry(owner_id.clone()).or_default();
-        for entry in &batch.feed_entries {
-            let mut entry = entry.clone();
-            entry.set_owner_user_id(owner_id.clone());
-            feeds.push(entry);
-            affected = affected.saturating_add(1);
-        }
-        for entry in &batch.notification_v1_upserts {
-            upsert_json_row(
-                state.notifications_v1.entry(owner_id.clone()).or_default(),
-                entry.clone(),
-            );
-            affected = affected.saturating_add(1);
-        }
-        for entry in &batch.notification_v2_upserts {
-            upsert_json_row(
-                state.notifications_v2.entry(owner_id.clone()).or_default(),
-                entry.clone(),
-            );
-            affected = affected.saturating_add(1);
-        }
-        for notification in &batch.app_notification_upserts {
-            let rows = state.app_notifications.entry(owner_id.clone()).or_default();
-            if !rows.iter().any(|row| row.id == notification.id) {
-                rows.push(notification.clone());
-                affected = affected.saturating_add(1);
-            }
-        }
-        for update in &batch.notification_v2_updates {
-            let rows = state.notifications_v2.entry(owner_id.clone()).or_default();
-            if let Some(row) = rows
-                .iter_mut()
-                .find(|row| value_string(row, &["id"]) == update.id)
-            {
-                if let (Some(row), Some(updates)) =
-                    (row.as_object_mut(), update.updates.as_object())
-                {
-                    row.extend(updates.clone());
-                }
-            } else if let Some(updates) = update.updates.as_object() {
-                let mut row = updates.clone();
-                row.insert("id".into(), Value::String(update.id.clone()));
-                row.entry("createdAt")
-                    .or_insert_with(|| Value::String(update.received_at.clone()));
-                row.entry("created_at")
-                    .or_insert_with(|| Value::String(update.received_at.clone()));
-                rows.push(Value::Object(row));
-            }
-        }
-        for expiration in &batch.notification_expirations {
-            set_notification_flag(
-                state.notifications_v1.entry(owner_id.clone()).or_default(),
-                &expiration.id,
-                "expired",
-            );
-            set_notification_flag(
-                state.notifications_v2.entry(owner_id.clone()).or_default(),
-                &expiration.id,
-                "expired",
-            );
-        }
-        for id in &batch.notification_seen {
-            set_notification_flag(
-                state.notifications_v1.entry(owner_id.clone()).or_default(),
-                id,
-                "seen",
-            );
-            set_notification_flag(
-                state.notifications_v2.entry(owner_id.clone()).or_default(),
-                id,
-                "seen",
-            );
-        }
-        Ok(RealtimeWriteCounts {
-            affected_count: affected,
-            game_log_affected_count: 0,
-        })
-    }
-}
-
-impl crate::FeedQueryStore for TestRealtimeStore {
-    fn feed_latest(
-        &self,
-        query: FeedLatestQueryInput,
-        live_entries: Vec<FeedLiveEntryInput>,
-        watermark: i64,
-        include_persisted_rows: bool,
-    ) -> Result<FeedReadModelOutput> {
-        let matcher = FeedLiveQueryMatcher::for_latest(&query);
-        self.feed_read_model(
-            &query.user_id,
-            matcher,
-            live_entries,
-            watermark,
-            include_persisted_rows,
-            query.max_rows,
-        )
-    }
-
-    fn feed_search(
-        &self,
-        query: FeedSearchQueryInput,
-        live_entries: Vec<FeedLiveEntryInput>,
-        watermark: i64,
-        include_persisted_rows: bool,
-    ) -> Result<FeedReadModelOutput> {
-        let matcher = FeedLiveQueryMatcher::for_search(&query);
-        self.feed_read_model(
-            &query.user_id,
-            matcher,
-            live_entries,
-            watermark,
-            include_persisted_rows,
-            query.max_rows,
-        )
     }
 }
 

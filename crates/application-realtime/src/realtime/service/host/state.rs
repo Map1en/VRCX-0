@@ -214,7 +214,7 @@ impl RealtimeStopRequest {
 
 #[derive(Clone)]
 pub struct RealtimeHostRuntimeDeps {
-    pub stores: crate::RealtimeStores,
+    pub store: Arc<dyn crate::RealtimeStore>,
     pub config: Arc<dyn ConfigStore>,
     pub transport: Arc<dyn crate::realtime::RealtimeTransport>,
     pub remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,

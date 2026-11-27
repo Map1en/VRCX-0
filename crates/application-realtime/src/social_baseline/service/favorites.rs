@@ -501,8 +501,8 @@ async fn build_favorites_baseline_inner(
         .await?;
 
     let owner = OwnerId::new(user_id.clone());
-    let local_rows = |kind| deps.favorites.favorite_list(Some(&owner), kind);
-    let local_groups = |kind| deps.favorites.favorite_group_list(Some(&owner), kind);
+    let local_rows = |kind| deps.store.favorite_list(Some(&owner), kind);
+    let local_groups = |kind| deps.store.favorite_group_list(Some(&owner), kind);
     let local_world_favorite_rows = local_rows(FavoriteEntityKind::World)?;
     let local_avatar_favorite_rows = local_rows(FavoriteEntityKind::Avatar)?;
     let local_friend_favorite_rows = local_rows(FavoriteEntityKind::Friend)?;

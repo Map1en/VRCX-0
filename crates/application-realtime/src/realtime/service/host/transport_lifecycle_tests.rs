@@ -1565,7 +1565,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         .config
         .set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
-        runtime.runtime().deps.stores.batch_writer.as_ref(),
+        runtime.runtime().deps.store.as_ref(),
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {

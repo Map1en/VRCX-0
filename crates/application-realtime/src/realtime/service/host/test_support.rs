@@ -222,7 +222,7 @@ pub(super) use vrcx_0_application_core::DiscardTaskExecutor;
 
 #[cfg(test)]
 pub(super) fn write_realtime_batch(
-    store: &dyn crate::RealtimeBatchWriter,
+    store: &dyn crate::RealtimeStore,
     owner: &OwnerId,
     batch: &vrcx_0_contracts::realtime::RealtimePersistenceBatch,
 ) -> Result<vrcx_0_contracts::realtime::RealtimeWriteCounts> {
@@ -239,7 +239,7 @@ pub(super) fn notification_list_query(
 
 #[cfg(test)]
 pub(super) fn friend_log_current_list(
-    store: &dyn crate::FriendLogStore,
+    store: &dyn crate::RealtimeStore,
     user_id: String,
 ) -> Result<Vec<vrcx_0_contracts::friend_log::FriendLogCurrentOutput>> {
     store.friend_log_current_list(&user_id)
@@ -686,7 +686,7 @@ fn runtime_with_active_session_game_context(
     let event_bus = RuntimeEventBus::new();
     let runtime = Arc::new(RealtimeHostRuntime::new(
         RealtimeHostRuntimeDeps {
-            stores: crate::RealtimeStores::shared(Arc::clone(&store)),
+            store: store.clone(),
             config: Arc::new(store.config.clone()),
             transport: Arc::new(TestRealtimeTransport),
             remote_requests: Arc::new(TestRealtimeRemoteRequests),

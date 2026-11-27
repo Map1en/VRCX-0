@@ -89,7 +89,7 @@ fn start_requires_active_realtime_session() -> Result<()> {
     let runtime = Arc::new(RealtimeHostRuntime::new(
         RealtimeHostRuntimeDeps {
             config: Arc::new(store.config.clone()),
-            stores: crate::RealtimeStores::shared(store),
+            store,
             transport: Arc::new(TestRealtimeTransport),
             remote_requests: Arc::new(TestRealtimeRemoteRequests),
             event_bus: event_bus.clone(),
