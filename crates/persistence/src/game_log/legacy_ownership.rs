@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-
-use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
+use crate::common::{normalize_text, row_i64, ParamsBuilder};
 use crate::config::{self, ensure_config_table, resolve_config_key};
 use crate::database::schema::{ensure_assistant_tables, ensure_global_store_tables};
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
-use crate::favorites::group_refs::rewrite_config_references;
-use crate::favorites::{GROUP_TABLE, ITEM_TABLE};
+use crate::favorites::GROUP_TABLE;
 use crate::ownership::{owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 
@@ -93,61 +90,16 @@ fn claim_shared_friend_groups(
         .first()
         .map(|row| row_i64(row, 0))
         .unwrap_or_default();
-    let shared = tx.execute(
+    tx.execute_non_query(
         &format!(
-            "SELECT id, name FROM {GROUP_TABLE} WHERE kind = 'friend' AND owner_id = 0 ORDER BY sort_order, id"
+            "UPDATE {GROUP_TABLE} SET owner_id = @owner_id, sort_order = sort_order + @offset WHERE kind = 'friend' AND owner_id = 0"
         ),
-        &Default::default(),
+        &ParamsBuilder::new()
+            .set("owner_id", owner_id)
+            .set("offset", next_sort_order)
+            .build(),
     )?;
-    let mut merged: HashMap<String, i64> = HashMap::new();
-    for (position, row) in shared.iter().enumerate() {
-        let shared_id = row_i64(row, 0);
-        let existing = tx.execute(
-            &format!(
-                "SELECT id FROM {GROUP_TABLE} WHERE kind = 'friend' AND owner_id = @owner_id AND name = @name"
-            ),
-            &ParamsBuilder::new()
-                .set("owner_id", owner_id)
-                .set("name", row_string(row, 1))
-                .build(),
-        )?;
-        let Some(account_id) = existing.first().map(|row| row_i64(row, 0)) else {
-            tx.execute_non_query(
-                &format!(
-                    "UPDATE {GROUP_TABLE} SET owner_id = @owner_id, sort_order = @sort_order WHERE id = @group_id"
-                ),
-                &ParamsBuilder::new()
-                    .set("owner_id", owner_id)
-                    .set("sort_order", next_sort_order + position as i64)
-                    .set("group_id", shared_id)
-                    .build(),
-            )?;
-            continue;
-        };
-        let group_params = ParamsBuilder::new()
-            .set("shared_id", shared_id)
-            .set("account_id", account_id)
-            .build();
-        tx.execute_non_query(
-            &format!(
-                "INSERT OR IGNORE INTO {ITEM_TABLE} (group_id, entity_id, created_at) SELECT @account_id, entity_id, created_at FROM {ITEM_TABLE} WHERE group_id = @shared_id ORDER BY id"
-            ),
-            &group_params,
-        )?;
-        tx.execute_non_query(
-            &format!("DELETE FROM {ITEM_TABLE} WHERE group_id = @shared_id"),
-            &group_params,
-        )?;
-        tx.execute_non_query(
-            &format!("DELETE FROM {GROUP_TABLE} WHERE id = @shared_id"),
-            &group_params,
-        )?;
-        merged.insert(shared_id.to_string(), account_id);
-    }
-    if merged.is_empty() {
-        return Ok(());
-    }
-    rewrite_config_references(tx, &|_, token| merged.get(token).map(|id| vec![*id]))
+    Ok(())
 }
 
 #[cfg(test)]
@@ -231,30 +183,21 @@ mod tests {
         seed_legacy_rows(&db);
         create_prefix_marker(&db, "usr_a");
         let owner_a = OwnerId::new("usr_a");
-        let account_same =
-            favorite_group_create(&db, Some(&owner_a), FavoriteEntityKind::Friend, "same").unwrap();
+        let mine =
+            favorite_group_create(&db, Some(&owner_a), FavoriteEntityKind::Friend, "mine").unwrap();
         favorite_add(
             &db,
             Some(&owner_a),
             FavoriteEntityKind::Friend,
             "usr_account".into(),
-            account_same.id,
+            mine.id,
         )
         .unwrap();
-        let shared_same = favorite_group_list(&db, None, FavoriteEntityKind::Friend)
+        let ids_before = favorite_group_list(&db, Some(&owner_a), FavoriteEntityKind::Friend)
             .unwrap()
             .into_iter()
-            .find(|group| group.name == "same")
-            .unwrap();
-        config::set_json(
-            &db,
-            "sidebarFavoriteGroups",
-            &serde_json::json!([
-                format!("local:{}", shared_same.id),
-                format!("local:{}", account_same.id)
-            ]),
-        )
-        .unwrap();
+            .map(|group| group.id)
+            .collect::<Vec<_>>();
 
         claim_legacy_ownership(&db, &owner_a).unwrap();
         claim_legacy_ownership(&db, &OwnerId::new("usr_b")).unwrap();
@@ -278,7 +221,19 @@ mod tests {
         }
         assert_eq!(
             friend_groups(&db, "usr_a"),
-            vec![("same".to_string(), false), ("legacy".to_string(), false)]
+            vec![
+                ("mine".to_string(), false),
+                ("legacy".to_string(), false),
+                ("same".to_string(), false)
+            ]
+        );
+        assert_eq!(
+            favorite_group_list(&db, Some(&owner_a), FavoriteEntityKind::Friend)
+                .unwrap()
+                .into_iter()
+                .map(|group| group.id)
+                .collect::<Vec<_>>(),
+            ids_before
         );
         assert!(friend_groups(&db, "usr_b").is_empty());
         let mut members = favorite_list(&db, Some(&owner_a), FavoriteEntityKind::Friend)
@@ -291,13 +246,9 @@ mod tests {
             members,
             vec![
                 ("legacy".to_string(), "usr_friend".to_string()),
-                ("same".to_string(), "usr_account".to_string()),
+                ("mine".to_string(), "usr_account".to_string()),
                 ("same".to_string(), "usr_shared".to_string()),
             ]
-        );
-        assert_eq!(
-            config::get_json(&db, "sidebarFavoriteGroups", serde_json::Value::Null).unwrap(),
-            serde_json::json!([format!("local:{}", account_same.id)])
         );
         assert_eq!(
             config::get_string(&db, OWNERSHIP_DECIDED_KEY, "0").unwrap(),

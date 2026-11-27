@@ -44,7 +44,7 @@ const SELECTED_GROUP_KEYS: [(&str, FavoriteEntityKind); 3] = [
     ),
 ];
 
-type GroupLookup<'a> = dyn Fn(FavoriteEntityKind, &str) -> Option<Vec<i64>> + 'a;
+type GroupLookup<'a> = dyn Fn(FavoriteEntityKind, &str) -> Vec<i64> + 'a;
 
 pub(crate) fn rewrite_config_references(
     tx: &dyn MigrationTx,
@@ -149,10 +149,7 @@ fn rewrite_selected_group(
     let Some(key) = fields.get("key").and_then(Value::as_str) else {
         return false;
     };
-    let Some(group_ids) = lookup(kind, key.trim()) else {
-        return false;
-    };
-    let key = group_ids
+    let key = lookup(kind, key.trim())
         .first()
         .map(ToString::to_string)
         .unwrap_or_default();
@@ -214,9 +211,9 @@ fn replacement_keys(
     lookup: &GroupLookup<'_>,
 ) -> Option<Vec<String>> {
     let token = text.strip_prefix(LOCAL_PREFIX)?.trim();
-    let ids = lookup(kind, token)?;
     Some(
-        ids.into_iter()
+        lookup(kind, token)
+            .into_iter()
             .map(|id| format!("{LOCAL_PREFIX}{id}"))
             .collect(),
     )
@@ -226,12 +223,12 @@ fn replacement_keys(
 mod tests {
     use super::*;
 
-    fn names(kind: FavoriteEntityKind, token: &str) -> Option<Vec<i64>> {
-        Some(match (kind, token) {
+    fn names(kind: FavoriteEntityKind, token: &str) -> Vec<i64> {
+        match (kind, token) {
             (FavoriteEntityKind::Friend, "Close") => vec![3, 7],
             (FavoriteEntityKind::World, "Close") => vec![9],
             _ => Vec::new(),
-        })
+        }
     }
 
     #[test]
@@ -244,20 +241,6 @@ mod tests {
         .unwrap();
 
         assert_eq!(rewritten, r#"["friend:group_0","local:3","local:7"]"#);
-    }
-
-    #[test]
-    fn remapping_one_id_onto_an_existing_entry_keeps_a_single_reference() {
-        let merged = |_: FavoriteEntityKind, token: &str| (token == "3").then(|| vec![7]);
-
-        let rewritten = rewrite_config_value(
-            &resolve_config_key("sidebarFavoriteGroups"),
-            r#"["local:3","local:7","local:9"]"#,
-            &merged,
-        )
-        .unwrap();
-
-        assert_eq!(rewritten, r#"["local:7","local:9"]"#);
     }
 
     #[test]

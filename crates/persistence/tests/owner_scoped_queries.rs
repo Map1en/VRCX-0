@@ -48,9 +48,7 @@ const OWNER_FILTER_EXCEPTIONS: &[(&str, &str)] = &[
     ("src/favorites/migration_v1.rs", "select kind, owner_id, name from vrcx0_favorite_group"),
     // Claims shared pre-upgrade rows (owner_id = 0) for the only local account.
     ("src/game_log/legacy_ownership.rs", "update {table} set owner_id = @owner_id where owner_id = 0"),
-    ("src/game_log/legacy_ownership.rs", "select id, name from vrcx0_favorite_group where kind = 'friend' and owner_id = 0"),
-    ("src/game_log/legacy_ownership.rs", "update vrcx0_favorite_group set owner_id = @owner_id, sort_order = @sort_order where id = @group_id"),
-    ("src/game_log/legacy_ownership.rs", "delete from vrcx0_favorite_group where id = @shared_id"),
+    ("src/game_log/legacy_ownership.rs", "update vrcx0_favorite_group set owner_id = @owner_id, sort_order = sort_order + @offset where kind = 'friend' and owner_id = 0"),
     // Machine replay cursor: the latest location row from any owner.
     ("src/game_log/query.rs", "fn last_location_sql: sea-query from(gamelog_location)"),
     // (created_at, video_url) is the machine-global unique key of a video play row.

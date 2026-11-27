@@ -66,6 +66,23 @@ impl LegacyKind {
         &mut self.realms[index].1
     }
 
+    fn fold_account_names_into_shared(&mut self) {
+        let Some((_, shared)) = self.realms.iter().find(|(owner, _)| *owner == 0) else {
+            return;
+        };
+        let shared = shared.iter().cloned().collect::<BTreeSet<_>>();
+        for (owner_id, names) in self.realms.iter_mut() {
+            if *owner_id != 0 {
+                names.retain(|name| !shared.contains(name));
+            }
+        }
+        for row in self.rows.iter_mut() {
+            if shared.contains(&row.group_name) {
+                row.owner_id = 0;
+            }
+        }
+    }
+
     fn add_group_name(&mut self, owner_id: i64, name: String) {
         let realm = self.realm_mut(owner_id);
         if !name.is_empty() && !realm.contains(&name) {
@@ -140,12 +157,10 @@ fn seed(tx: &dyn MigrationTx) -> Result<(), Error> {
     }
 
     rewrite_config_references(tx, &|kind, token| {
-        Some(
-            group_ids
-                .get(&(kind.as_str(), token.to_string()))
-                .cloned()
-                .unwrap_or_default(),
-        )
+        group_ids
+            .get(&(kind.as_str(), token.to_string()))
+            .cloned()
+            .unwrap_or_default()
     })
 }
 
@@ -264,6 +279,7 @@ fn collect_legacy(tx: &dyn MigrationTx) -> Result<Vec<LegacyKind>, Error> {
                 });
             }
         }
+        data.fold_account_names_into_shared();
         legacy.push(data);
     }
     Ok(legacy)

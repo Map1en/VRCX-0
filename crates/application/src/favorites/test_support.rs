@@ -434,12 +434,21 @@ impl FavoriteStore for TestFavoriteStore {
         }
         let owner = Self::owner(kind, owner_user_id);
         let mut state = self.lock();
-        if let Some(group) = state
-            .groups
-            .iter()
-            .find(|group| group.kind == kind && group.owner_user_id == owner && group.name == name)
+        if let Some(group) = Self::visible_groups(&state, owner_user_id, kind)
+            .into_iter()
+            .find(|group| group.name == name)
         {
-            return Ok(Self::to_group(group));
+            return Ok(Self::to_group(&group));
+        }
+        if owner.is_none()
+            && state
+                .groups
+                .iter()
+                .any(|group| group.kind == kind && group.name == name)
+        {
+            return Err(Error::Custom(
+                "A local favorite group with this name already exists.".into(),
+            ));
         }
         state.next_id += 1;
         let group = StoredGroup {
@@ -475,8 +484,10 @@ impl FavoriteStore for TestFavoriteStore {
         if state.groups.iter().any(|other| {
             other.id != group_id
                 && other.kind == kind
-                && other.owner_user_id == group.owner_user_id
                 && other.name == name
+                && (group.owner_user_id.is_none()
+                    || other.owner_user_id.is_none()
+                    || other.owner_user_id == group.owner_user_id)
         }) {
             return Err(Error::Custom(
                 "A local favorite group with this name already exists.".into(),

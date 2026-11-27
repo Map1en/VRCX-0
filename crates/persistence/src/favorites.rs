@@ -68,19 +68,8 @@ pub fn favorite_group_rename(
         if current_name == name {
             return Ok(0);
         }
-        let clash = tx.execute(
-            &format!(
-                "SELECT 1 FROM {GROUP_TABLE} WHERE kind = @kind AND owner_id = @owner_id AND name = @name AND id <> @group_id"
-            ),
-            &scope_params(kind, group_owner)
-                .set("name", name.clone())
-                .set("group_id", group_id)
-                .build(),
-        )?;
-        if !clash.is_empty() {
-            return Err(Error::Custom(
-                "A local favorite group with this name already exists.".into(),
-            ));
+        if name_taken(tx, kind, group_owner, &name, group_id)? {
+            return Err(duplicate_group_name());
         }
         tx.execute_non_query(
             &format!("UPDATE {GROUP_TABLE} SET name = @name WHERE id = @group_id"),
@@ -304,25 +293,73 @@ fn ensure_group_in_realm(
 ) -> Result<LocalFavoriteGroup, Error> {
     let params = scope_params(kind, owner_id)
         .set("name", name.to_string())
+        .set("group_id", 0)
         .set("created_at", now_iso())
         .build();
+    let same_name = tx.execute(
+        &format!(
+            "SELECT g.id, g.name, g.owner_id FROM {GROUP_TABLE} g WHERE {} ORDER BY g.owner_id = @owner_id DESC LIMIT 1",
+            same_name_scope(owner_id)
+        ),
+        &params,
+    )?;
+    if let Some(row) = same_name.first() {
+        let row_owner = row_i64(row, 2);
+        return if row_owner == 0 || row_owner == owner_id.value() {
+            Ok(group_from_row(kind, row))
+        } else {
+            Err(duplicate_group_name())
+        };
+    }
     tx.execute_non_query(
         &format!(
-            "INSERT OR IGNORE INTO {GROUP_TABLE} (kind, owner_id, name, sort_order, created_at) SELECT @kind, @owner_id, @name, COALESCE(MAX(sort_order) + 1, 0), @created_at FROM {GROUP_TABLE} WHERE kind = @kind AND owner_id = @owner_id"
+            "INSERT INTO {GROUP_TABLE} (kind, owner_id, name, sort_order, created_at) SELECT @kind, @owner_id, @name, COALESCE(MAX(sort_order) + 1, 0), @created_at FROM {GROUP_TABLE} WHERE kind = @kind AND owner_id = @owner_id"
         ),
         &params,
     )?;
-    let rows = tx.execute(
-        &format!(
-            "SELECT g.id, g.name, g.owner_id FROM {GROUP_TABLE} g WHERE g.kind = @kind AND g.owner_id = @owner_id AND g.name = @name"
-        ),
-        &params,
-    )?;
-    rows.first()
-        .map(|row| group_from_row(kind, row))
-        .ok_or_else(|| {
-            Error::Database("Local favorite group was not available after insertion.".into())
-        })
+    let id = tx
+        .execute("SELECT last_insert_rowid()", &Default::default())?
+        .first()
+        .map(|row| row_i64(row, 0))
+        .unwrap_or_default();
+    Ok(LocalFavoriteGroup {
+        id,
+        kind,
+        name: name.to_string(),
+        shared: kind == FavoriteEntityKind::Friend && owner_id == OwnerRowId::UNASSIGNED,
+    })
+}
+
+fn same_name_scope(owner_id: OwnerRowId) -> &'static str {
+    if owner_id == OwnerRowId::UNASSIGNED {
+        "g.kind = @kind AND g.name = @name AND g.id <> @group_id"
+    } else {
+        "g.kind = @kind AND g.owner_id IN (0, @owner_id) AND g.name = @name AND g.id <> @group_id"
+    }
+}
+
+fn name_taken(
+    tx: &DatabaseWriteTransaction<'_>,
+    kind: FavoriteEntityKind,
+    owner_id: OwnerRowId,
+    name: &str,
+    except_group_id: i64,
+) -> Result<bool, Error> {
+    Ok(!tx
+        .execute(
+            &format!(
+                "SELECT 1 FROM {GROUP_TABLE} g WHERE {} LIMIT 1",
+                same_name_scope(owner_id)
+            ),
+            &scope_params(kind, owner_id)
+                .set("name", name.to_string())
+                .set("group_id", except_group_id)
+                .build(),
+        )?
+        .is_empty())
+}
+fn duplicate_group_name() -> Error {
+    Error::Custom("A local favorite group with this name already exists.".into())
 }
 
 fn insert_item(

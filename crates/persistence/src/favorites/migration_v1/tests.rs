@@ -6,6 +6,7 @@ use crate::config;
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::DatabaseService;
 use crate::favorites::{favorite_group_list, favorite_list, favorite_list_custom_order};
+use crate::game_log::claim_legacy_ownership;
 use crate::migration::{run, NoopProgress};
 use crate::ownership::{owner_id_get, OwnerId};
 
@@ -142,7 +143,7 @@ fn world_groups_keep_config_order_then_row_only_names_and_preserve_item_order() 
 }
 
 #[test]
-fn friend_groups_keep_shared_and_account_realms_apart() {
+fn account_groups_named_like_a_shared_group_fold_into_the_shared_group() {
     let (_dir, db) = test_db("friend-realms");
     create_vrcx0_legacy_tables(&db);
     exec(&db, "INSERT INTO owners (user_id) VALUES ('usr_a')");
@@ -158,15 +159,28 @@ fn friend_groups_keep_shared_and_account_realms_apart() {
         &db,
         "INSERT INTO favorite_friend (created_at, user_id, group_name, owner_id) VALUES
             ('t1', 'usr_1', 'Same', 0),
-            ('t2', 'usr_2', 'Same', 1)",
+            ('t2', 'usr_2', 'Same', 1),
+            ('t3', 'usr_3', ' Shared ', 1)",
     );
+    config::set_json(&db, "sidebarFavoriteGroups", &json!(["local:Same"])).unwrap();
 
     run(&db, &[migration()], &NoopProgress).unwrap();
 
     let owner_a = OwnerId::new("usr_a");
     assert_eq!(
         group_names(&db, Some(&owner_a), FavoriteEntityKind::Friend),
-        vec!["Mine", "Same", "Shared", "Same"]
+        vec!["Mine", "Shared", "Same"]
+    );
+    let same = group_id(
+        &db,
+        Some(&owner_a),
+        FavoriteEntityKind::Friend,
+        "Same",
+        true,
+    );
+    assert_eq!(
+        config::get_json(&db, "sidebarFavoriteGroups", json!(null)).unwrap(),
+        json!([format!("local:{same}")])
     );
     assert_eq!(
         group_names(
@@ -178,8 +192,58 @@ fn friend_groups_keep_shared_and_account_realms_apart() {
     );
     assert!(owner_id_get(&db, &OwnerId::new("usr_b")).unwrap().is_some());
     let rows = favorite_list(&db, Some(&owner_a), FavoriteEntityKind::Friend).unwrap();
-    assert_eq!(rows.len(), 2);
-    assert_ne!(rows[0].group_id, rows[1].group_id);
+    assert_eq!(
+        rows.iter()
+            .map(|row| (
+                row.entity_id(),
+                row.group_name.as_str(),
+                row.group_id == same
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            ("usr_1", "Same", true),
+            ("usr_2", "Same", true),
+            ("usr_3", "Shared", false)
+        ]
+    );
+}
+
+#[test]
+fn login_claim_after_migration_moves_folded_groups_to_the_account() {
+    let (_dir, db) = test_db("migration-then-claim");
+    create_vrcx0_legacy_tables(&db);
+    exec(&db, "INSERT INTO owners (user_id) VALUES ('usr_a')");
+    exec(&db, "CREATE TABLE usr_a_feed_gps (id INTEGER PRIMARY KEY)");
+    config::set_json(&db, "localFavoriteFriendGroups", &json!(["Same"])).unwrap();
+    config::set_json(&db, "localFavoriteFriendGroups:usr_a", &json!(["Same"])).unwrap();
+    exec(
+        &db,
+        "INSERT INTO favorite_friend (created_at, user_id, group_name, owner_id) VALUES
+            ('t1', 'usr_1', 'Same', 0),
+            ('t2', 'usr_2', 'Same', 1)",
+    );
+    run(&db, &[migration()], &NoopProgress).unwrap();
+
+    claim_legacy_ownership(&db, &OwnerId::new("usr_a")).unwrap();
+
+    let groups = favorite_group_list(
+        &db,
+        Some(&OwnerId::new("usr_a")),
+        FavoriteEntityKind::Friend,
+    )
+    .unwrap();
+    assert_eq!(groups.len(), 1);
+    assert_eq!((groups[0].name.as_str(), groups[0].shared), ("Same", false));
+    assert_eq!(
+        favorite_list(
+            &db,
+            Some(&OwnerId::new("usr_a")),
+            FavoriteEntityKind::Friend
+        )
+        .unwrap()
+        .len(),
+        2
+    );
 }
 
 #[test]
@@ -216,8 +280,8 @@ fn group_references_point_at_new_group_ids() {
     let (_dir, db) = test_db("references");
     ensure_global_store_tables(&db).unwrap();
     exec(&db, "INSERT INTO owners (user_id) VALUES ('usr_a')");
-    config::set_json(&db, "localFavoriteFriendGroups", &json!(["Close"])).unwrap();
     config::set_json(&db, "localFavoriteFriendGroups:usr_a", &json!(["Close"])).unwrap();
+    config::set_json(&db, "localFavoriteFriendGroups:usr_b", &json!(["Close"])).unwrap();
     config::set_json(&db, "localFavoriteWorldGroups", &json!(["Close"])).unwrap();
     config::set_json(
         &db,
@@ -240,23 +304,22 @@ fn group_references_point_at_new_group_ids() {
 
     run(&db, &[migration()], &NoopProgress).unwrap();
 
-    let owner_a = OwnerId::new("usr_a");
-    let shared = group_id(
+    let account_a = group_id(
         &db,
-        Some(&owner_a),
+        Some(&OwnerId::new("usr_a")),
         FavoriteEntityKind::Friend,
         "Close",
-        true,
+        false,
     );
-    let account = group_id(
+    let account_b = group_id(
         &db,
-        Some(&owner_a),
+        Some(&OwnerId::new("usr_b")),
         FavoriteEntityKind::Friend,
         "Close",
         false,
     );
     let world = group_id(&db, None, FavoriteEntityKind::World, "Close", false);
-    let mut friend_refs = vec![format!("local:{shared}"), format!("local:{account}")];
+    let mut friend_refs = vec![format!("local:{account_a}"), format!("local:{account_b}")];
     friend_refs.sort();
     let sidebar = config::get_json(&db, "sidebarFavoriteGroups", json!(null)).unwrap();
     let sidebar = sidebar.as_array().unwrap();

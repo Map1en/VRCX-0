@@ -91,7 +91,7 @@ fn friend_groups_are_owner_scoped_and_shared_groups_stay_visible_after_account_g
     let owner_a = OwnerId::new("usr_a");
     let owner_b = OwnerId::new("usr_b");
     let shared = group(&db, None, FavoriteEntityKind::Friend, "Close");
-    let account_a = group(&db, Some(&owner_a), FavoriteEntityKind::Friend, "Close");
+    let account_a = group(&db, Some(&owner_a), FavoriteEntityKind::Friend, "Mine");
     group(&db, Some(&owner_b), FavoriteEntityKind::Friend, "Only B");
 
     let groups_a = favorite_group_list(&db, Some(&owner_a), FavoriteEntityKind::Friend).unwrap();
@@ -116,6 +116,60 @@ fn friend_groups_are_owner_scoped_and_shared_groups_stay_visible_after_account_g
     .is_err());
 }
 
+#[test]
+fn group_names_stay_unique_across_the_shared_and_account_realms() {
+    let (_dir, db) = test_db("favorite-group-unique-names");
+    let owner_a = OwnerId::new("usr_a");
+    let owner_b = OwnerId::new("usr_b");
+    let shared = group(&db, None, FavoriteEntityKind::Friend, "Close");
+    let account_a = group(&db, Some(&owner_a), FavoriteEntityKind::Friend, "Mine");
+    let account_b = group(&db, Some(&owner_b), FavoriteEntityKind::Friend, "Only B");
+    let duplicate = |result: Result<i64, Error>| {
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "A local favorite group with this name already exists."
+        );
+    };
+
+    assert_eq!(
+        group(&db, Some(&owner_a), FavoriteEntityKind::Friend, "Close"),
+        shared
+    );
+    duplicate(favorite_group_rename(
+        &db,
+        Some(&owner_a),
+        FavoriteEntityKind::Friend,
+        account_a,
+        "Close",
+    ));
+    duplicate(favorite_group_rename(
+        &db,
+        Some(&owner_a),
+        FavoriteEntityKind::Friend,
+        shared,
+        "Only B",
+    ));
+    duplicate(
+        favorite_group_create(&db, None, FavoriteEntityKind::Friend, "Only B")
+            .map(|group| group.id),
+    );
+    assert_eq!(
+        favorite_group_rename(
+            &db,
+            Some(&owner_a),
+            FavoriteEntityKind::Friend,
+            account_a,
+            "Only B"
+        )
+        .unwrap(),
+        1
+    );
+    assert_ne!(account_a, account_b);
+    assert_eq!(
+        group_names(&db, Some(&owner_a), FavoriteEntityKind::Friend),
+        vec!["Only B", "Close"]
+    );
+}
 #[test]
 fn rename_to_the_same_trimmed_name_keeps_every_member() {
     let (_dir, db) = test_db("favorite-group-rename-same");
