@@ -25,7 +25,7 @@ Windows · macOS · Linux
 
 VRChat 桌面辅助工具：查看好友在线状态和所在位置、记录遇到过的人和去过的世界、管理收藏等。
 
-VRCX-0 是 VRCX 的完全重写版本，由 VRCX 前维护者之一开发。基于 Rust 重建，更快、更轻，多年积累的数据依然流畅。
+VRCX-0 是 [VRCX](https://github.com/vrcx-team/VRCX) 的完全重写版本，由 VRCX 前维护者之一开发。基于 Rust 重建，更快、更轻，多年积累的数据依然流畅。
 
 ## 主要特点
 

@@ -25,7 +25,7 @@ Windows · macOS · Linux
 
 A desktop companion for VRChat: see where your friends are, keep a history of the people you've met and the worlds you've visited, manage your favorites, and more.
 
-VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt in Rust, it's faster and lighter, and years of history stay smooth.
+VRCX-0 is a ground-up rewrite of [VRCX](https://github.com/vrcx-team/VRCX) by one of its former maintainers. Rebuilt in Rust, it's faster and lighter, and years of history stay smooth.
 
 ## Highlights
 

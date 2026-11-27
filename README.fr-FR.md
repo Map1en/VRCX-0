@@ -28,7 +28,7 @@ Windows · macOS · Linux
 > Cette traduction n'est peut-être pas à jour. Consultez la
 > [version anglaise](README.md) pour les informations les plus récentes.
 
-VRCX-0 est une réécriture de VRCX sur une base native Rust (Tauri + React) par
+VRCX-0 est une réécriture de [VRCX](https://github.com/vrcx-team/VRCX) sur une base native Rust (Tauri + React) par
 l'un de ses anciens mainteneurs, permettant de meilleures performances : Des
 années de données maintenues, ainsi qu'une utilisation mémoire et taille
 d'installation bien plus petites que l'originel.
