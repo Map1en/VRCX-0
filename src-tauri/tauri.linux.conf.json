@@ -5,6 +5,14 @@
     },
     "bundle": {
         "targets": ["appimage", "deb", "rpm"],
+        "linux": {
+            "deb": {
+                "depends": ["libasound2t64 | libasound2"]
+            },
+            "rpm": {
+                "depends": ["libasound.so.2()(64bit)"]
+            }
+        },
         "createUpdaterArtifacts": true
     }
 }

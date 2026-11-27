@@ -8,6 +8,7 @@ mod overlay_transport;
 mod ovrt;
 mod policy;
 mod preferences;
+mod sound;
 #[cfg(test)]
 pub(crate) mod test_support;
 mod tts;
@@ -31,3 +32,4 @@ pub use preferences::{
     config_tts_name_mode, load_preferences, migrate_legacy_overlay_notification_keys,
     notification_tts_name_mode, seed_hmd_notifications_default,
 };
+pub(crate) use sound::NotificationSounds;

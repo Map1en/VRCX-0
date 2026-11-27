@@ -32,6 +32,10 @@ fn validate_config_mutation(key: &str, value: Option<&str>) -> Result<()> {
         "config:vrcx_feedlogger" => Err(Error::Custom(
             "feedLogger must be changed through the feed logger settings.".into(),
         )),
+        "config:vrcx_notificationsoundrules" => Err(Error::Custom(
+            "Notification sound rules must be changed through the notification sound settings."
+                .into(),
+        )),
         "config:vrcx_avatarautocleanup" => validate_avatar_auto_cleanup(value),
         "config:vrcx_usergeneratedcontentpath" => validate_ugc_path(value.unwrap_or_default()),
         "config:vrcx_avatarremotedatabaseprovider" => validate_optional_provider_url(
@@ -159,6 +163,13 @@ mod tests {
         assert!(set_config_values(&db, vec![entry("savedCredentials", "{}")]).is_err());
         assert!(set_config_values(&db, vec![entry("feedLogger", "{}")]).is_err());
         assert!(remove_config_value(&db, "config:vrcx_savedcredentials".into()).is_err());
+    }
+
+    #[test]
+    fn notification_sound_rules_require_the_dedicated_settings() {
+        let db = MemoryConfigStore::default();
+        assert!(set_config_values(&db, vec![entry("notificationSoundRules", "{}")]).is_err());
+        assert!(remove_config_value(&db, "config:vrcx_notificationsoundrules".into()).is_err());
     }
 
     #[test]

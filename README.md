@@ -60,6 +60,9 @@ VRCX-0 is a ground-up rewrite of [VRCX](https://github.com/vrcx-team/VRCX) by on
   instances
 - **Game Log import** — fill in the Game Log from VRChat's own logs for times
   VRCX-0 wasn't running
+- **Notification sounds** — set a built-in sound or a WAV, MP3, OGG (Vorbis),
+  or FLAC file for each event in Settings → Notifications → Activity sounds.
+  Each event starts off and has its own volume and preview, independent of TTS.
 - **Chatbox** — built-in chatbox features like those in [VRCOSC](https://github.com/VolcanicArts/VRCOSC), with no extra
   app to run: rotate your status and the song that's playing, and translate the
   messages you send automatically
@@ -147,6 +150,7 @@ Use these steps to contribute or build VRCX-0 locally. Before contributing, see 
 Requirements: Node.js ≥ 24.10, npm ≥ 11.5, and a stable Rust toolchain via rustup.
 On Windows, also install **Visual Studio Build Tools** with the **Desktop development with C++** workload.
 On Linux, also install the system packages listed in Tauri's [prerequisites](https://v2.tauri.app/start/prerequisites/#linux).
+On Debian and Ubuntu, also install `libasound2-dev` for audio playback.
 
 ```bash
 git clone https://github.com/Map1en/VRCX-0

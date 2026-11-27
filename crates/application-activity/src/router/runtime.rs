@@ -6,6 +6,7 @@ use vrcx_0_core::game_log_parser::VIDEO_ERROR_EVENT_PREFIX;
 
 use chrono::{DateTime, Utc};
 use vrcx_0_contracts::activity::{ActivityEvent, ActivityKind, ActivitySubject};
+use vrcx_0_contracts::GameLogSoundKind;
 use vrcx_0_core::location::parse_location;
 
 use super::content::build_activity_content;
@@ -93,15 +94,7 @@ impl ActivityFavoriteGroups {
 
     pub fn group_instance_notification_group_ids(&self, filters: &ActivityFilters) -> Vec<String> {
         let mut group_ids = BTreeSet::new();
-        for surface in [
-            NotificationSurface::Wrist,
-            NotificationSurface::Desktop,
-            NotificationSurface::ExternalOverlay,
-            NotificationSurface::Hmd,
-            NotificationSurface::Webhook,
-            NotificationSurface::Tts,
-            NotificationSurface::DesktopWidget,
-        ] {
+        for surface in NotificationSurface::ALL {
             let rule = filters.rule_for(surface, ActivityKind::GroupInstanceOpened);
             match rule.scope {
                 ActivityScope::AllFavorites => {
@@ -150,11 +143,14 @@ pub trait ActivitySink: Send + Sync {
     fn emit_overlay_activity_snapshot(&self, snapshot: ActivitySnapshot);
 
     fn emit_overlay_activity_delivery(&self, _delivery: ActivityDelivery) {}
+
+    fn emit_game_log_sound(&self, _kind: GameLogSoundKind) {}
 }
 
 #[derive(Clone, Debug)]
 pub(super) struct ActivityState {
     pub(super) filters: ActivityFilters,
+    notification_sound_kinds: HashSet<String>,
     pub(super) friend_favorite_groups: ActivityFavoriteGroups,
     pub(super) group_favorite_groups: ActivityFavoriteGroups,
     pub(super) friend_user_ids: HashSet<String>,
@@ -178,6 +174,7 @@ impl Default for ActivityState {
     fn default() -> Self {
         Self {
             filters: ActivityFilters::default(),
+            notification_sound_kinds: HashSet::new(),
             friend_favorite_groups: ActivityFavoriteGroups::default(),
             group_favorite_groups: ActivityFavoriteGroups::default(),
             friend_user_ids: HashSet::new(),
@@ -245,6 +242,35 @@ impl ActivityRouter {
         self.inner
             .group_notification_inputs_revision
             .load(Ordering::Acquire)
+    }
+
+    pub(crate) fn set_notification_sound_kinds(&self, kinds: HashSet<String>) {
+        if let Ok(mut state) = self.inner.state.lock() {
+            let group_kind = ActivityKind::GroupInstanceOpened.key();
+            if state.notification_sound_kinds.contains(group_kind) != kinds.contains(group_kind) {
+                self.invalidate_group_notification_inputs();
+            }
+            state.notification_sound_kinds = kinds;
+        }
+    }
+
+    pub fn group_instance_notification_group_ids(
+        &self,
+        favorite_groups: &ActivityFavoriteGroups,
+    ) -> Vec<String> {
+        let Ok(state) = self.inner.state.lock() else {
+            return Vec::new();
+        };
+        if state
+            .notification_sound_kinds
+            .contains(ActivityKind::GroupInstanceOpened.key())
+        {
+            let mut groups: Vec<String> = favorite_groups.all_favorites.iter().cloned().collect();
+            groups.sort_unstable();
+            groups
+        } else {
+            favorite_groups.group_instance_notification_group_ids(&state.filters)
+        }
     }
 
     pub fn invalidate_group_notification_inputs(&self) {
@@ -381,6 +407,34 @@ impl ActivityRouter {
             .collect()
     }
 
+    pub(super) fn ingest_game_log_sound_event(&self, kind: GameLogSoundKind, created_at: &str) {
+        let routed_kind = {
+            let Ok(state) = self.inner.state.lock() else {
+                return;
+            };
+            if !is_live_event(&state, created_at) {
+                return;
+            }
+            if state.notification_sound_kinds.contains(kind.key()) {
+                kind
+            } else if matches!(
+                kind,
+                GameLogSoundKind::StringLoad | GameLogSoundKind::ImageLoad
+            ) && state
+                .notification_sound_kinds
+                .contains(GameLogSoundKind::ResourceLoad.key())
+            {
+                GameLogSoundKind::ResourceLoad
+            } else {
+                return;
+            }
+        };
+        let sink = self.inner.sink.lock().ok().and_then(|sink| sink.clone());
+        if let Some(sink) = sink {
+            sink.emit_game_log_sound(routed_kind);
+        }
+    }
+
     pub fn ingest(&self, event: ActivityEvent) -> Option<ActivityEntry> {
         let (entry, snapshot, delivery) = {
             let mut state = self.inner.state.lock().ok()?;
@@ -431,6 +485,7 @@ impl ActivityRouter {
                 && surface_matches(&state, &event, NotificationSurface::Webhook, &definition);
             let tts =
                 notifies && surface_matches(&state, &event, NotificationSurface::Tts, &definition);
+            let sound = notifies && state.notification_sound_kinds.contains(event.kind.key());
             let widget = notifies
                 && surface_matches(
                     &state,
@@ -452,7 +507,8 @@ impl ActivityRouter {
             if hmd_suppressed {
                 hmd = false;
             }
-            if !wrist && !desktop && !vr && !hmd && !webhook && !tts && !widget {
+            let has_delivery_surface = desktop || vr || hmd || webhook || tts || sound || widget;
+            if !wrist && !has_delivery_surface {
                 if vr_suppressed || hmd_suppressed {
                     remember_source_id(&mut state, source_id);
                 }
@@ -485,8 +541,7 @@ impl ActivityRouter {
                 None
             };
 
-            let delivery_is_live = (desktop || vr || hmd || webhook || tts || widget)
-                && is_live_event(&state, &entry.created_at);
+            let delivery_is_live = has_delivery_surface && is_live_event(&state, &entry.created_at);
             let delivery = if delivery_is_live {
                 remember_joined_delivery(&mut state, &entry, vr, hmd);
                 Some(ActivityDelivery {
@@ -496,6 +551,7 @@ impl ActivityRouter {
                     hmd,
                     webhook,
                     tts,
+                    sound,
                     widget,
                 })
             } else {
@@ -546,6 +602,7 @@ impl ActivityRouter {
             hmd: true,
             webhook: false,
             tts: true,
+            sound: false,
             widget: true,
         });
     }

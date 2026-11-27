@@ -264,7 +264,7 @@ jobs:
               if: runner.os == 'Linux'
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y --no-install-recommends libfontconfig1-dev libfreetype6-dev libdbus-1-dev pkg-config
+                  sudo apt-get install -y --no-install-recommends libasound2-dev libfontconfig1-dev libfreetype6-dev libdbus-1-dev pkg-config
             - uses: actions/setup-node@v6
               with:
                   node-version: 24.x

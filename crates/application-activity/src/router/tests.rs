@@ -7,6 +7,49 @@ use super::*;
 use vrcx_0_contracts::activity::{ActivityActor, ActivityEvent, ActivityKind, ActivitySubject};
 use vrcx_0_i18n::{OverlayMessage, OverlayMessageKey};
 
+#[test]
+fn sound_only_activity_uses_live_delivery_and_keeps_other_surfaces_off() {
+    let runtime = ActivityRouter::new();
+    let sink = TestOverlayActivitySink::default();
+    runtime.set_sink(sink.clone());
+    runtime
+        .set_notification_sound_kinds(HashSet::from([ActivityKind::AvatarChange.key().to_owned()]));
+    runtime.arm_delivery();
+
+    runtime.ingest(event(ActivityKind::AvatarChange, "usr_old"));
+    runtime.ingest(recent_event(ActivityKind::Bio, "usr_unconfigured"));
+    let change = recent_event(ActivityKind::AvatarChange, "usr_live");
+    runtime.ingest(change.clone());
+    runtime.ingest(change);
+
+    assert!(runtime.snapshot().entries.is_empty());
+    let deliveries = sink.take_deliveries();
+    assert_eq!(deliveries.len(), 1);
+    let delivery = &deliveries[0];
+    assert!(delivery.sound);
+    assert!(!delivery.desktop && !delivery.vr && !delivery.hmd);
+    assert!(!delivery.tts && !delivery.webhook && !delivery.widget);
+}
+
+#[test]
+fn group_instance_sound_subscribes_to_favorite_groups() {
+    let runtime = ActivityRouter::new();
+    let favorites = ActivityFavoriteGroups::from_pairs([("groups", ["grp_z", "grp_a"].as_slice())]);
+    assert!(runtime
+        .group_instance_notification_group_ids(&favorites)
+        .is_empty());
+    let revision = runtime.group_notification_inputs_revision();
+
+    runtime.set_notification_sound_kinds(HashSet::from([ActivityKind::GroupInstanceOpened
+        .key()
+        .to_owned()]));
+    assert_eq!(
+        runtime.group_instance_notification_group_ids(&favorites),
+        ["grp_a", "grp_z"],
+    );
+    assert_ne!(runtime.group_notification_inputs_revision(), revision);
+}
+
 #[derive(Clone, Default)]
 struct TestOverlayActivitySink {
     snapshots: Arc<Mutex<Vec<ActivitySnapshot>>>,

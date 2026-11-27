@@ -372,6 +372,7 @@ fn delivery(name: &str, widget: bool) -> ActivityDelivery {
         hmd: false,
         webhook: false,
         tts: false,
+        sound: false,
         widget,
     }
 }

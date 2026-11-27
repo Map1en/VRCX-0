@@ -3557,20 +3557,20 @@
                     "post_update_changelog_prompt_description": "Automatically open what's new on first launch after an update.",
                     "test_notification": {
                         "header": "Test Notification",
-                        "description": "Sends a sample event through every notification channel. Notification filters are skipped; each channel's switch, display condition and Do Not Disturb still apply.",
+                        "description": "Sends a sample desktop, overlay, and spoken notification. Channel switches, display conditions, and Do Not Disturb still apply. Use Preview under Activity Sounds to try an event's sound.",
                         "send": "Send a test notification",
                         "button": "Send",
                         "message": "Test notification."
                     },
                     "do_not_disturb": {
                         "header": "Do Not Disturb",
-                        "description": "Temporarily pauses desktop notifications, TTS, XSOverlay, OVR Toolkit, and VRCX-0 HMD popups. The wrist overlay feed and notification history keep working. Webhooks keep sending unless Pause During Do Not Disturb is on in Webhook Notifications.",
+                        "description": "Temporarily pauses desktop notifications, activity notification sounds, TTS, XSOverlay, OVR Toolkit, and VRCX-0 HMD popups. The wrist overlay feed and notification history keep working. Webhooks keep sending unless Pause During Do Not Disturb is on in Webhook Notifications.",
                         "end_on_game_start": "Turn off when VRChat starts",
                         "end_on_game_start_description": "Only applies when VRChat changes from stopped to running. You can turn Do Not Disturb on again while playing.",
                         "busy_status": "Turn on while your status is Do Not Disturb",
                         "busy_status_description": "While your VRChat status is Do Not Disturb, notifications pause the same way as Do Not Disturb mode.",
                         "hide_video_errors": "Don't notify video playback errors",
-                        "hide_video_errors_description": "When a video player fails (for example, YouTube won't load), no desktop notification, TTS, VR notification, or webhook is sent."
+                        "hide_video_errors_description": "When a video player fails (for example, YouTube won't load), silence activity sounds and skip desktop, TTS, VR, and webhook notifications."
                     },
                     "vr_notifications": {
                         "header": "VR Overlay Notifications",
@@ -3669,6 +3669,37 @@
                         "field_option_world_name": "worldName",
                         "field_option_timestamp": "timestamp",
                         "field_option_local_time": "localTime"
+                    },
+                    "activity_sounds": {
+                        "header": "Activity Notification Sounds",
+                        "description": "Choose a sound and volume for each event. These settings work independently of text-to-speech.",
+                        "event": "Event type",
+                        "source": "Sound",
+                        "volume": "Sound volume",
+                        "preview": "Preview sound",
+                        "play": "Play preview",
+                        "off": "Off",
+                        "resource_load": "Resource load (common sound)",
+                        "resource_load_hint": "Applies to string and image loads without their own sound. Set an individual event’s volume to 0% to mute it.",
+                        "use_resource_default": "Use common resource sound",
+                        "custom": "Custom file",
+                        "custom_formats": "Custom files can be WAV, MP3, Ogg Vorbis, or FLAC up to 16 MiB. Playback lasts up to 10 seconds.",
+                        "choose_file": "Change file",
+                        "game_log": "Game Log",
+                        "loading": "Loading notification sound settings…",
+                        "load_failed": "Could not load notification sound settings.",
+                        "save_failed": "Could not save the notification sound setting.",
+                        "file_failed": "Could not set the selected audio file. Check that it exists and uses a supported audio format.",
+                        "preview_failed": "Could not play the notification sound. Check the audio file and your output device.",
+                        "builtin": {
+                            "join_01_chime": "Join chime",
+                            "join_03_arp": "Join arpeggio",
+                            "leave_01_chime": "Leave chime",
+                            "leave_03_arp": "Leave arpeggio",
+                            "notify_01_ding": "Bell",
+                            "notify_02_double": "Double tap",
+                            "notify_03_glass": "Glass chime"
+                        }
                     },
                     "text_to_speech": {
                         "header": "Text-to-Speech",
@@ -6580,6 +6611,7 @@
                 "TrustLevel": "Trust Level Change",
                 "Bio": "Bio Change",
                 "groupChange": "Group Change",
+                "group_instanceOpened": "Group Instance Opened",
                 "group_announcement": "Group Announcement",
                 "group_event_created": "Group Event Created",
                 "group_event_starting": "Group Event Starting",

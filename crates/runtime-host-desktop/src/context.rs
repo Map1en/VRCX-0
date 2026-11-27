@@ -33,7 +33,8 @@ use crate::host_actions::RuntimeHost;
 use crate::notification::{
     migrate_legacy_overlay_notification_keys, seed_hmd_notifications_default, DesktopNotifier,
     DesktopNotifierSlot, LocalNotificationPolicy, NotificationDispatcher,
-    NotificationDispatcherDeps, NotificationDoNotDisturbRuntime, RealtimeNotificationIndicator,
+    NotificationDispatcherDeps, NotificationDoNotDisturbRuntime, NotificationSounds,
+    RealtimeNotificationIndicator,
 };
 use crate::privacy_lock::PrivacyLockRuntime;
 
@@ -75,6 +76,7 @@ pub struct DesktopRuntimeServices {
     notification_policy: Arc<LocalNotificationPolicy>,
     pub host: RuntimeHost,
     tts: Arc<dyn TtsEngine>,
+    notification_sounds: Arc<NotificationSounds>,
     notification_desktop_notifier: DesktopNotifierSlot,
     notification_resolver: Arc<NotificationResolver>,
     realtime_user_image_resolver_owner: Mutex<Option<Arc<dyn CachedNotificationUserImageResolver>>>,
@@ -93,6 +95,7 @@ impl DesktopRuntimeServices {
             tracing::warn!(error = %error, "failed to seed HMD notification preference");
         }
         let tts: Arc<dyn TtsEngine> = Arc::new(SystemTtsEngine::new());
+        let notification_sounds = Arc::new(NotificationSounds::new(deps.config.clone()));
         let notification_desktop_notifier = DesktopNotifierSlot::default();
         let host = RuntimeHost::new();
         deps.auth_scope
@@ -138,6 +141,7 @@ impl DesktopRuntimeServices {
                 resolver: Arc::clone(&deps.notification_resolver),
                 desktop: Arc::new(notification_desktop_notifier.clone()),
                 tts: Arc::clone(&tts),
+                sounds: Arc::clone(&notification_sounds),
                 tasks: deps.tasks.clone(),
                 policy: Arc::clone(&notification_policy),
             }));
@@ -173,6 +177,7 @@ impl DesktopRuntimeServices {
             notification_policy,
             host,
             tts,
+            notification_sounds,
             notification_desktop_notifier,
             notification_resolver: deps.notification_resolver,
             realtime_user_image_resolver_owner: Mutex::new(None),
@@ -236,6 +241,10 @@ impl DesktopRuntimeServices {
 
     pub fn tts(&self) -> Arc<dyn TtsEngine> {
         Arc::clone(&self.tts)
+    }
+
+    pub(crate) fn notification_sounds(&self) -> &Arc<NotificationSounds> {
+        &self.notification_sounds
     }
 
     pub fn notification_do_not_disturb(&self) -> NotificationDoNotDisturbRuntime {

@@ -3,6 +3,7 @@ use vrcx_0_contracts::game_log::{
     GameLogLocationTimeUpdate, GameLogPortalSpawnEntry, GameLogResourceLoadEntry,
     GameLogWriteBatch,
 };
+use vrcx_0_contracts::GameLogSoundKind;
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
 use vrcx_0_core::game_process::GameProcessEvent;
 use vrcx_0_core::location::parse_location;
@@ -93,6 +94,7 @@ pub struct GameLogIngestOutput {
     pub departed_user_ids: Vec<String>,
     pub replayed_departed_user_ids: Vec<String>,
     pub avatar_changes: Vec<GameLogAvatarChange>,
+    pub(crate) sound_events: Vec<(GameLogSoundKind, String)>,
     pub projection: Option<GameLogProjection>,
     pub side_effects: Vec<GameLogSideEffect>,
 }
@@ -123,6 +125,7 @@ impl GameLogIngestOutput {
         self.replayed_departed_user_ids
             .append(&mut next.replayed_departed_user_ids);
         self.avatar_changes.append(&mut next.avatar_changes);
+        self.sound_events.append(&mut next.sound_events);
         self.side_effects.append(&mut next.side_effects);
     }
 }
@@ -134,6 +137,7 @@ pub struct GameLogIngestEngine {
     last_video_created_at: String,
     now_playing_log: NowPlayingLogFollow,
     provider_world_video_url: String,
+    last_sound_resource: Option<(GameLogSoundKind, String)>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -153,6 +157,7 @@ impl GameLogIngestEngine {
         self.state.clone()
     }
     pub(super) fn start_log_file(&mut self) {
+        self.last_sound_resource = None;
         self.state = GameLogRuntimeState {
             is_game_running: self.state.is_game_running,
             is_steamvr_running: self.state.is_steamvr_running,
@@ -185,6 +190,11 @@ impl GameLogIngestEngine {
                     world_name,
                 } => {
                     self.ingest_location(&mut output.batch, event, location, world_name);
+                    if !location.is_empty() {
+                        output
+                            .sound_events
+                            .push((GameLogSoundKind::Location, event.created_at.clone()));
+                    }
                     if let Some(group_id) = parse_location(location)
                         .group_id
                         .filter(|id| !id.is_empty())
@@ -235,7 +245,12 @@ impl GameLogIngestEngine {
                     }
                     output.instance_roster_changed = true;
                 }
-                GameLogEventKind::PortalSpawn => self.ingest_portal_spawn(&mut output.batch, event),
+                GameLogEventKind::PortalSpawn => {
+                    self.ingest_portal_spawn(&mut output.batch, event);
+                    output
+                        .sound_events
+                        .push((GameLogSoundKind::PortalSpawn, event.created_at.clone()));
+                }
                 GameLogEventKind::AvatarChange {
                     display_name,
                     avatar_name,
@@ -244,13 +259,28 @@ impl GameLogIngestEngine {
                 GameLogEventKind::ResourceLoad {
                     resource_type,
                     resource_url,
-                } => self.ingest_resource_load(
-                    &mut output.batch,
-                    event,
-                    resource_type,
-                    resource_url,
-                    options.log_resource_load,
-                ),
+                } => {
+                    self.ingest_resource_load(
+                        &mut output.batch,
+                        event,
+                        resource_type,
+                        resource_url,
+                        options.log_resource_load,
+                    );
+                    let kind = match resource_type.as_str() {
+                        "StringLoad" => GameLogSoundKind::StringLoad,
+                        "ImageLoad" => GameLogSoundKind::ImageLoad,
+                        _ => GameLogSoundKind::ResourceLoad,
+                    };
+                    if !resource_url.is_empty()
+                        && !self.last_sound_resource.as_ref().is_some_and(
+                            |(last_kind, last_url)| *last_kind == kind && last_url == resource_url,
+                        )
+                    {
+                        self.last_sound_resource = Some((kind, resource_url.clone()));
+                        output.sound_events.push((kind, event.created_at.clone()));
+                    }
+                }
                 GameLogEventKind::VideoPlay {
                     video_url,
                     display_name,
@@ -393,6 +423,7 @@ impl GameLogIngestEngine {
             self.state.current_location_started_at.clear();
             self.state.current_location_started_at_ms = None;
             self.state.last_resource_url.clear();
+            self.last_sound_resource = None;
             self.state.last_video_url.clear();
             self.state.now_playing_url.clear();
             output.side_effects.push(GameLogSideEffect::NowPlayingReset);
@@ -447,6 +478,7 @@ impl GameLogIngestEngine {
         self.state.player_avatar_names.clear();
         self.state.has_player_events = false;
         self.state.last_resource_url.clear();
+        self.last_sound_resource = None;
         self.state.last_video_url.clear();
         self.provider_world_video_url.clear();
     }

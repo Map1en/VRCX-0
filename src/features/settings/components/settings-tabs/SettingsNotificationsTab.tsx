@@ -28,6 +28,7 @@ import { SettingsTabContent } from '../SettingsViewParts';
 import { useSettingsNotificationsTabState } from '../useSettingsNotificationsTabState';
 import { NotificationWebhookSettings } from './NotificationWebhookSettings';
 import { SettingsNotificationsInAppCard } from './SettingsNotificationsInAppCard';
+import { SettingsNotificationSoundsCard } from './SettingsNotificationSoundsCard';
 
 type SettingsOptionList = ReadonlyArray<readonly [string, string]>;
 
@@ -61,6 +62,7 @@ type SettingsNotificationsTabContentProps = {
     onNotificationIconDotChange: (checked: boolean) => void;
     onTaskbarIconDotChange: (checked: boolean) => void;
     onFriendLogNotificationDotChange: (checked: boolean) => void;
+    notificationSoundSettings?: ReactNode;
     webhookSettings?: ReactNode;
     desktopToastOptions: SettingsOptionList;
     notificationTtsOptions: SettingsOptionList;
@@ -96,6 +98,7 @@ export function SettingsNotificationsTab() {
     return (
         <SettingsNotificationsTabContent
             {...state}
+            notificationSoundSettings={<SettingsNotificationSoundsCard />}
             webhookSettings={<NotificationWebhookSettings />}
         />
     );
@@ -110,6 +113,7 @@ export function SettingsNotificationsTabContent({
     onNotificationIconDotChange,
     onTaskbarIconDotChange,
     onFriendLogNotificationDotChange,
+    notificationSoundSettings,
     webhookSettings,
     desktopToastOptions,
     notificationTtsOptions,
@@ -722,6 +726,7 @@ export function SettingsNotificationsTabContent({
                     </div>
                 ) : null}
             </SettingsCard>
+            {notificationSoundSettings}
             {webhookSettings}
             <SettingsCard
                 cardId="notifications.test"

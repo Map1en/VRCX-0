@@ -709,6 +709,34 @@ defineCard(
 
 defineCard(
     'notifications',
+    'activity_sounds',
+    'view.settings.notifications.notifications.activity_sounds.header',
+    [
+        {
+            key: 'event',
+            labelKey:
+                'view.settings.notifications.notifications.activity_sounds.event'
+        },
+        {
+            key: 'source',
+            labelKey:
+                'view.settings.notifications.notifications.activity_sounds.source'
+        },
+        {
+            key: 'volume',
+            labelKey:
+                'view.settings.notifications.notifications.activity_sounds.volume'
+        },
+        {
+            key: 'preview',
+            labelKey:
+                'view.settings.notifications.notifications.activity_sounds.preview'
+        }
+    ]
+);
+
+defineCard(
+    'notifications',
     'webhook',
     'view.settings.notifications.notifications.webhook.header',
     [

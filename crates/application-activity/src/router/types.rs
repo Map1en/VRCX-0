@@ -340,5 +340,7 @@ pub struct ActivityDelivery {
     pub hmd: bool,
     pub webhook: bool,
     pub tts: bool,
+    #[serde(default)]
+    pub sound: bool,
     pub widget: bool,
 }

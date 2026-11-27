@@ -14,9 +14,10 @@ use crate::RuntimeEventBus;
 use crate::{GameLogWriter, RuntimeSyncEngine, TaskSupervisor};
 use vrcx_0_application_activity::{
     ActivityDelivery, ActivityFavoriteGroups, ActivityFilters, ActivityRouter, ActivitySink,
-    ActivitySnapshot,
+    ActivitySinkRegistry, ActivitySnapshot,
 };
 use vrcx_0_contracts::activity::{ActivityActor, ActivityEvent, ActivityKind, ActivitySubject};
+use vrcx_0_contracts::{GameLogSoundKind, NOTIFICATION_SOUND_RULES_CONFIG_KEY};
 use vrcx_0_core::game_process::GameProcessEvent;
 
 use super::{GameLogProcessEvent, GameLogProcessor, GameLogProcessorDeps, GameLogWorkerJob};
@@ -35,6 +36,7 @@ fn place_from_record(
 #[derive(Clone, Default)]
 struct RecordingOverlaySink {
     deliveries: Arc<Mutex<Vec<ActivityDelivery>>>,
+    sounds: Arc<Mutex<Vec<GameLogSoundKind>>>,
 }
 
 impl ActivitySink for RecordingOverlaySink {
@@ -42,6 +44,10 @@ impl ActivitySink for RecordingOverlaySink {
 
     fn emit_overlay_activity_delivery(&self, delivery: ActivityDelivery) {
         self.deliveries.lock().unwrap().push(delivery);
+    }
+
+    fn emit_game_log_sound(&self, kind: GameLogSoundKind) {
+        self.sounds.lock().unwrap().push(kind);
     }
 }
 
@@ -96,6 +102,71 @@ fn test_processor(name: &str) -> Result<(TestDir, Arc<TestGameStateStore>, GameL
     let store = Arc::new(TestGameStateStore::default());
     let processor = build_test_processor(Arc::clone(&store))?;
     Ok((dir, store, processor))
+}
+
+#[test]
+fn game_log_sound_uses_live_events_without_enabling_resource_recording() -> Result<()> {
+    let (_dir, store, processor) = test_processor("game-log-sounds")?;
+    let overlay = test_overlay();
+    let sink = RecordingOverlaySink::default();
+    let registry = ActivitySinkRegistry::default();
+    registry.add(Arc::new(sink.clone()));
+    overlay.set_sink(registry);
+    let sound = serde_json::json!({ "source": { "kind": "builtin", "id": "join" }, "volume": 50 });
+    processor.deps.config.set_json(
+        NOTIFICATION_SOUND_RULES_CONFIG_KEY,
+        &serde_json::json!({
+            "Location": &sound,
+            "PortalSpawn": &sound,
+            "StringLoad": &sound,
+            "ResourceLoad": &sound
+        }),
+    )?;
+    vrcx_0_application_activity::notification::reload_activity_router(
+        &overlay,
+        processor.deps.config.as_ref(),
+    );
+    overlay.arm_delivery();
+    let now = chrono::Utc::now().to_rfc3339();
+    let resource = |resource_type: &str, resource_url: &str| GameLogEventKind::ResourceLoad {
+        resource_type: resource_type.into(),
+        resource_url: resource_url.into(),
+    };
+    processor.handle_jobs(vec![
+        GameLogWorkerJob::InitialEvent(event(&now, GameLogEventKind::PortalSpawn)),
+        GameLogWorkerJob::Event(event(
+            &now,
+            GameLogEventKind::Location {
+                location: "wrld_room:1".into(),
+                world_name: "Room".into(),
+            },
+        )),
+        GameLogWorkerJob::Event(event(&now, GameLogEventKind::PortalSpawn)),
+        GameLogWorkerJob::Event(event(
+            &now,
+            resource("StringLoad", "https://example.com/text"),
+        )),
+        GameLogWorkerJob::Event(event(
+            &now,
+            resource("StringLoad", "https://example.com/text"),
+        )),
+        GameLogWorkerJob::Event(event(
+            &now,
+            resource("ImageLoad", "https://example.com/image"),
+        )),
+    ])?;
+
+    assert_eq!(
+        *sink.sounds.lock().unwrap(),
+        [
+            GameLogSoundKind::Location,
+            GameLogSoundKind::PortalSpawn,
+            GameLogSoundKind::StringLoad,
+            GameLogSoundKind::ResourceLoad,
+        ]
+    );
+    assert!(!store.config.get_bool("logResourceLoad", false)?);
+    Ok(())
 }
 
 #[test]

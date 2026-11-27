@@ -11,12 +11,14 @@ use vrcx_0_application_activity::notification::{
 };
 use vrcx_0_application_activity::{ActivityDelivery, ActivitySink, ActivitySnapshot};
 use vrcx_0_application_core::{ImageCache, RuntimeAuthScope, TaskSupervisor};
+use vrcx_0_contracts::GameLogSoundKind;
 use vrcx_0_host_desktop::tts::TtsEngine;
 use vrcx_0_persistence::DatabaseService;
 
 use super::desktop::{send_desktop_notification, DesktopNotificationAction, DesktopNotifier};
 use super::overlay_transport::OverlayNotificationTransport;
-use super::policy::LocalNotificationPolicy;
+use super::policy::{LocalNotificationPolicy, NotificationSettings};
+use super::sound::NotificationSounds;
 use super::tts::{notification_tts_memo_actor_user_id, send_tts_notification};
 use super::{NotificationDeliveryPlan, NotificationDeliveryPreferences};
 use vrcx_0_contracts::activity::ActivityKind;
@@ -44,6 +46,7 @@ pub(crate) struct NotificationDispatcherDeps {
     pub resolver: Arc<NotificationResolver>,
     pub desktop: Arc<dyn DesktopNotifier>,
     pub tts: Arc<dyn TtsEngine>,
+    pub sounds: Arc<NotificationSounds>,
     pub tasks: TaskSupervisor,
     pub policy: Arc<LocalNotificationPolicy>,
 }
@@ -53,6 +56,7 @@ struct NotificationOutputContext {
     db: Arc<DatabaseService>,
     desktop: Arc<dyn DesktopNotifier>,
     tts: Arc<dyn TtsEngine>,
+    sounds: Arc<NotificationSounds>,
     policy: Arc<LocalNotificationPolicy>,
 }
 
@@ -122,6 +126,7 @@ impl NotificationDispatcher {
             db: deps.db,
             desktop: deps.desktop,
             tts: deps.tts,
+            sounds: deps.sounds,
             policy: deps.policy,
         });
         let (completion_tx, completion_rx) = mpsc::unbounded_channel();
@@ -141,11 +146,36 @@ impl NotificationDispatcher {
     }
 }
 
+impl NotificationOutputContext {
+    fn play_sound(&self, event: &'static str, settings: &NotificationSettings) {
+        let Some(rule) = self.policy.sound_rule(event, settings) else {
+            return;
+        };
+        let policy = Arc::clone(&self.policy);
+        let expected = rule.clone();
+        self.sounds.play(
+            rule.clone(),
+            Arc::new(move || {
+                let settings = policy.settings();
+                policy.sound_rule(event, &settings) == Some(&expected)
+            }),
+        );
+    }
+}
+
 impl ActivitySink for NotificationDispatcher {
     fn emit_overlay_activity_snapshot(&self, _snapshot: ActivitySnapshot) {}
 
+    fn emit_game_log_sound(&self, kind: GameLogSoundKind) {
+        let settings = self.output.policy.settings();
+        self.output.play_sound(kind.key(), &settings);
+    }
+
     fn emit_overlay_activity_delivery(&self, delivery: ActivityDelivery) {
         let settings = self.output.policy.settings();
+        if delivery.sound {
+            self.output.play_sound(delivery.entry.kind.key(), &settings);
+        }
         let plan = self.output.policy.plan(&delivery, &settings);
         if !plan.has_local_transport() {
             return;

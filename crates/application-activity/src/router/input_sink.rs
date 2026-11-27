@@ -1,11 +1,16 @@
 use vrcx_0_application_core::ActivityIngress;
 use vrcx_0_contracts::activity::ActivityEvent;
+use vrcx_0_contracts::GameLogSoundKind;
 
 use super::ActivityRouter;
 
 impl ActivityIngress for ActivityRouter {
     fn ingest_activity(&self, events: Vec<ActivityEvent>) {
         ActivityRouter::ingest_activity(self, events);
+    }
+
+    fn ingest_game_log_sound(&self, kind: GameLogSoundKind, created_at: &str) {
+        self.ingest_game_log_sound_event(kind, created_at);
     }
 
     fn replace_friend_ids(&self, user_ids: Vec<String>) {

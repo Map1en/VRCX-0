@@ -88,6 +88,24 @@ export const commands = {
     appHostTtsVoices: () => __TAURI_INVOKE<TtsVoice[]>('app__host_tts_voices'),
     appHostTtsSpeak: (text: string, voiceId: string | null, volume: number) =>
         __TAURI_INVOKE<null>('app__host_tts_speak', { text, voiceId, volume }),
+    appHostNotificationSoundRules: () =>
+        __TAURI_INVOKE<{ [key in string]: NotificationSoundRule }>(
+            'app__host_notification_sound_rules'
+        ),
+    appHostNotificationSoundSetRule: (
+        event: string,
+        rule: NotificationSoundRule | null
+    ) =>
+        __TAURI_INVOKE<null>('app__host_notification_sound_set_rule', {
+            event,
+            rule
+        }),
+    appHostNotificationSoundChooseFile: () =>
+        __TAURI_INVOKE<string | null>(
+            'app__host_notification_sound_choose_file'
+        ),
+    appHostNotificationSoundPreview: (rule: NotificationSoundRule) =>
+        __TAURI_INVOKE<null>('app__host_notification_sound_preview', { rule }),
     appCurrentUserRefresh: () =>
         __TAURI_INVOKE<CurrentUserRefreshOutcome>('app__current_user_refresh'),
     appRealtimeRetryNow: () => __TAURI_INVOKE<void>('app__realtime_retry_now'),
@@ -6579,6 +6597,15 @@ export type NotificationRespondInput = {
     responseType?: string;
     responseData?: RawJson;
 };
+
+export type NotificationSoundRule = {
+    source: NotificationSoundSource;
+    volume: number;
+};
+
+export type NotificationSoundSource =
+    | { kind: 'builtin'; id: string }
+    | { kind: 'custom'; path: string };
 
 export type NotificationSyncOutcome = {
     v1Count: number;

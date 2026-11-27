@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::activity::ActivityKind;
+use vrcx_0_contracts::{
+    parse_notification_sound_rules, NotificationSoundRule, NOTIFICATION_SOUND_RULES_CONFIG_KEY,
+};
 
 use vrcx_0_application_core::ConfigStore;
 
@@ -154,7 +157,19 @@ pub fn load_overlay_activity_filters(config: &dyn ConfigStore) -> ActivityFilter
 
 pub fn reload_activity_router(activity_router: &ActivityRouter, config: &dyn ConfigStore) {
     activity_router.set_filters(load_overlay_activity_filters(config));
+    activity_router
+        .set_notification_sound_kinds(load_notification_sound_rules(config).into_keys().collect());
     apply_location_notification_rules(activity_router, config);
+}
+
+pub fn load_notification_sound_rules(
+    config: &dyn ConfigStore,
+) -> BTreeMap<String, NotificationSoundRule> {
+    config
+        .get_raw(NOTIFICATION_SOUND_RULES_CONFIG_KEY)
+        .ok()
+        .flatten()
+        .map_or_else(BTreeMap::new, |raw| parse_notification_sound_rules(&raw))
 }
 
 fn apply_location_notification_rules(activity_router: &ActivityRouter, config: &dyn ConfigStore) {

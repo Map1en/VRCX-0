@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{ActivityDelivery, ActivitySink, ActivitySnapshot};
+use vrcx_0_contracts::GameLogSoundKind;
 
 #[derive(Clone, Default)]
 pub struct ActivitySinkRegistry {
@@ -36,6 +37,12 @@ impl ActivitySink for ActivitySinkRegistry {
     fn emit_overlay_activity_delivery(&self, delivery: ActivityDelivery) {
         for sink in self.sinks() {
             sink.emit_overlay_activity_delivery(delivery.clone());
+        }
+    }
+
+    fn emit_game_log_sound(&self, kind: GameLogSoundKind) {
+        for sink in self.sinks() {
+            sink.emit_game_log_sound(kind);
         }
     }
 }

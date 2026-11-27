@@ -4,6 +4,27 @@ use serde_json::json;
 use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 use vrcx_0_contracts::activity::ActivityKind;
 
+#[test]
+fn sound_rules_ignore_invalid_entries_and_clamp_volume() {
+    let config = MemoryConfigStore::default();
+    config
+        .set_json(
+            NOTIFICATION_SOUND_RULES_CONFIG_KEY,
+            &json!({
+                "OnPlayerJoined": { "source": { "kind": "builtin", "id": "join" }, "volume": 101 },
+                "PortalSpawn": { "source": { "kind": "custom", "path": "party.wav" }, "volume": 20 },
+                "OnPlayerLeft": { "source": { "kind": "custom", "path": "" }, "volume": 42 },
+                "ImageLoad": { "source": { "kind": "builtin", "id": "join" }, "volume": "loud" },
+                "unknown": { "source": { "kind": "builtin", "id": "join" }, "volume": 90 }
+            }),
+        )
+        .unwrap();
+    let rules = load_notification_sound_rules(&config);
+    assert_eq!(rules.len(), 2);
+    assert_eq!(rules["OnPlayerJoined"].volume, 100);
+    assert_eq!(rules["PortalSpawn"].volume, 20);
+}
+
 fn test_config(
     _name: &str,
 ) -> std::result::Result<((), MemoryConfigStore), Box<dyn std::error::Error>> {

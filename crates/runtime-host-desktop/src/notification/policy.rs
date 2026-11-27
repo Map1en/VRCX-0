@@ -1,9 +1,13 @@
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
-use vrcx_0_application_activity::notification::{load_notification_locale, OverlayLocale};
+use vrcx_0_application_activity::notification::{
+    load_notification_locale, load_notification_sound_rules, OverlayLocale,
+};
 use vrcx_0_application_activity::ActivityDelivery;
 use vrcx_0_application_core::{ConfigStore, HostSessionRuntime};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::NotificationSoundRule;
 
 use crate::game_isolation::GameIsolationRuntime;
 use crate::privacy_lock::PrivacyLockRuntime;
@@ -19,6 +23,7 @@ const BUSY_STATUS_DO_NOT_DISTURB_CONFIG_KEY: &str = "busyStatusDoNotDisturb";
 pub(crate) struct NotificationSettings {
     pub(crate) preferences: NotificationDeliveryPreferences,
     pub(crate) locale: OverlayLocale,
+    sound_rules: BTreeMap<String, NotificationSoundRule>,
     busy_status_do_not_disturb: bool,
     is_game_no_vr: bool,
 }
@@ -28,6 +33,7 @@ impl NotificationSettings {
         Self {
             preferences: load_preferences(config),
             locale: load_notification_locale(config),
+            sound_rules: load_notification_sound_rules(config),
             busy_status_do_not_disturb: config
                 .get_bool(BUSY_STATUS_DO_NOT_DISTURB_CONFIG_KEY, true)
                 .unwrap_or(true),
@@ -93,6 +99,16 @@ impl LocalNotificationPolicy {
         self.do_not_disturb.is_active()
             || self.privacy_lock.is_locked()
             || (settings.busy_status_do_not_disturb && self.current_user_is_busy())
+    }
+
+    pub(super) fn sound_rule<'a>(
+        &self,
+        event: &str,
+        settings: &'a NotificationSettings,
+    ) -> Option<&'a NotificationSoundRule> {
+        let rule = settings.sound_rules.get(event)?;
+        (rule.volume != 0 && !self.paused(settings) && !self.game_isolation.is_enabled())
+            .then_some(rule)
     }
 
     pub(crate) fn plan(

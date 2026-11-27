@@ -23,6 +23,7 @@ pub mod local_moderation;
 mod media;
 pub mod memos;
 pub mod mutual_graph;
+mod notification_sound;
 pub mod notifications;
 mod persistence;
 pub mod player_list;
@@ -69,6 +70,10 @@ pub use llm::{
     LlmRequestOptions, ToolCall, ToolDefinition,
 };
 pub use media::UgcCategory;
+pub use notification_sound::{
+    is_notification_sound_event, parse_notification_sound_rules, GameLogSoundKind,
+    NotificationSoundRule, NotificationSoundSource, NOTIFICATION_SOUND_RULES_CONFIG_KEY,
+};
 pub use persistence::{ApplicationErrorPayload, ApplicationErrorSource, SqliteErrorCategory};
 pub use profile_backup::{
     ProfileBackupKind, ProfileRestoreAppVersionCheck, ProfileRestoreArchiveCheck,

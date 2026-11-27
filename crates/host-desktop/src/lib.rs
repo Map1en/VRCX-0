@@ -16,6 +16,7 @@ pub mod local_player_moderations;
 pub mod local_test_avatars;
 pub mod log_scanner;
 pub mod media_session;
+pub mod notification_sound;
 pub mod osc_udp;
 #[cfg(any(windows, target_os = "linux"))]
 pub mod overlay_notifications;

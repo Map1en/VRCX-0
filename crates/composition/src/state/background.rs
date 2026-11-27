@@ -110,7 +110,7 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
             })
             .collect::<HashMap<_, _>>();
         let favorite_groups = ActivityFavoriteGroups::from_map(memberships);
-        let group_ids = favorite_groups.group_instance_notification_group_ids(&runtime.filters());
+        let group_ids = runtime.group_instance_notification_group_ids(&favorite_groups);
         runtime.set_group_favorite_groups(favorite_groups);
         self.runtime_context
             .group_instance_monitor()

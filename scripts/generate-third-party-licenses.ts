@@ -50,6 +50,22 @@ const tauriResourceNoticePath = path.join(
 );
 const bundledFontPackages = Object.freeze(['@fontsource-variable/geist']);
 const crateLicenseFilePattern = /^(licen[cs]e|copying|notice|unlicense)/i;
+const audioLicenseFallbacks: Readonly<Record<string, string>> = {
+    'dasp_sample@0.11.0': 'dasp-sample-0.11.0.txt',
+    'objc2-audio-toolbox@0.3.2': 'objc2-audio-0.3.2.txt',
+    'objc2-core-audio@0.3.2': 'objc2-audio-0.3.2.txt',
+    'objc2-core-audio-types@0.3.2': 'objc2-audio-0.3.2.txt',
+    'symphonia@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-bundle-flac@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-bundle-mp3@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-codec-pcm@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-codec-vorbis@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-core@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-format-ogg@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-format-riff@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-metadata@0.5.5': 'symphonia-0.5.5.txt',
+    'symphonia-utils-xiph@0.5.5': 'symphonia-0.5.5.txt'
+};
 const defaultLoggerTarget = 'x86_64-unknown-linux-musl';
 const vendoredLicenseDir = path.join(
     rootDir,
@@ -342,8 +358,13 @@ function readCrateLicenseTexts(manifestPath: string): string[] {
         .filter(Boolean);
 }
 
-function readVendoredLicenseTexts(crateName: string): string[] {
-    const licensePath = path.join(vendoredLicenseDir, `${crateName}.txt`);
+function readVendoredLicenseTexts(
+    crateName: string,
+    version: string
+): string[] {
+    const filename =
+        audioLicenseFallbacks[`${crateName}@${version}`] ?? `${crateName}.txt`;
+    const licensePath = path.join(vendoredLicenseDir, filename);
     if (!fs.existsSync(licensePath)) {
         return [];
     }
@@ -405,7 +426,7 @@ function rustEntries(
             const crateTexts = readCrateLicenseTexts(pkg.manifestPath);
             const noticeTexts = crateTexts.length
                 ? crateTexts
-                : readVendoredLicenseTexts(pkg.name);
+                : readVendoredLicenseTexts(pkg.name, pkg.version);
 
             return {
                 id: `rust-${sanitizeId(`${pkg.name}-${pkg.version}`)}`,

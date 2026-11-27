@@ -1,8 +1,12 @@
+use std::collections::BTreeMap;
+use std::path::Path;
 use std::sync::Arc;
 
 use crate::notification::{NotificationDoNotDisturbMode, NotificationDoNotDisturbSnapshot};
 use serde_json::Value;
 use vrcx_0_composition::Result;
+use vrcx_0_contracts::{NotificationSoundRule, NotificationSoundSource};
+use vrcx_0_host_desktop::notification_sound::NotificationSoundPlayer;
 
 use super::DesktopRuntimeHostState;
 
@@ -59,6 +63,55 @@ impl DesktopRuntimeHostState {
             .services
             .activity_router()
             .deliver_test_notification(message);
+    }
+
+    pub fn notification_sound_rules(&self) -> Result<BTreeMap<String, NotificationSoundRule>> {
+        Ok(self.desktop.services.notification_sounds().rules()?)
+    }
+
+    pub fn set_notification_sound_rule(
+        &self,
+        event: String,
+        rule: Option<NotificationSoundRule>,
+    ) -> Result<()> {
+        if let Some(rule) = &rule {
+            self.ensure_notification_sound_source_allowed(&rule.source)?;
+        }
+        let services = &self.desktop.services;
+        services
+            .notification_sounds()
+            .set_rule(&services.activity_router(), event, rule)?;
+        Ok(())
+    }
+
+    pub fn notification_sound_preview_player(
+        &self,
+        rule: &NotificationSoundRule,
+    ) -> Result<Arc<NotificationSoundPlayer>> {
+        self.ensure_notification_sound_source_allowed(&rule.source)?;
+        Ok(self.desktop.services.notification_sounds().player())
+    }
+
+    fn ensure_notification_sound_source_allowed(
+        &self,
+        source: &NotificationSoundSource,
+    ) -> Result<()> {
+        if let NotificationSoundSource::Custom { path } = source {
+            if !Path::new(path).is_absolute() {
+                return Err(vrcx_0_application_core::Error::Custom(
+                    "Select a local audio file.".into(),
+                )
+                .into());
+            }
+            if !self
+                .notification_sound_rules()?
+                .values()
+                .any(|rule| &rule.source == source)
+            {
+                self.ensure_host_read_allowed(path)?;
+            }
+        }
+        Ok(())
     }
 
     pub fn notification_activity_filter_profiles(

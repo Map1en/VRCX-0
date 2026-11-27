@@ -316,6 +316,7 @@ fn hmd_toasts_follow_the_router_hmd_flag_and_the_hmd_switch() {
         hmd,
         webhook: false,
         tts: false,
+        sound: false,
         widget: false,
     };
     let queued = || runtime.hmd_toasts.lock().unwrap().len();

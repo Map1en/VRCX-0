@@ -307,6 +307,7 @@ fn delivery() -> ActivityDelivery {
         hmd: false,
         webhook: true,
         tts: false,
+        sound: false,
         widget: false,
     }
 }
@@ -384,6 +385,7 @@ fn every_activity_type_renders_text_and_both_webhook_payloads_in_every_locale() 
             hmd: true,
             webhook: true,
             tts: true,
+            sound: false,
             widget: false,
         };
 

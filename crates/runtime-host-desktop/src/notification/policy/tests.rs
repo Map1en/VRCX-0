@@ -76,6 +76,7 @@ fn desktop_delivery() -> ActivityDelivery {
         hmd: false,
         webhook: false,
         tts: false,
+        sound: false,
         widget: false,
     }
 }
@@ -138,4 +139,37 @@ fn do_not_disturb_pauses_every_local_surface() {
         .plan(&desktop_delivery(), &policy.settings())
         .has_local_transport());
     assert!(!policy.hmd_allowed());
+}
+
+#[test]
+fn sound_rules_are_independent_of_tts_and_respect_pause_and_isolation() {
+    let (_dir, config, policy, isolation) = policy_with_isolation("policy-sound");
+    let event = "PortalSpawn";
+    assert!(policy.sound_rule(event, &policy.settings()).is_none());
+
+    config
+        .set_json(
+            vrcx_0_contracts::NOTIFICATION_SOUND_RULES_CONFIG_KEY,
+            &serde_json::json!({
+                "PortalSpawn": {"source": {"kind": "builtin", "id": "notify_01_ding"}, "volume": 32},
+                "Location": {"source": {"kind": "builtin", "id": "join_01_chime"}, "volume": 0}
+            }),
+        )
+        .unwrap();
+    let settings = policy.settings();
+    assert_eq!(
+        settings.preferences.notification_tts,
+        crate::notification::NotificationDeliveryCondition::Never
+    );
+    assert_eq!(policy.sound_rule(event, &settings).unwrap().volume, 32);
+    assert!(policy.sound_rule("Location", &settings).is_none());
+
+    isolation.set_enabled(true).unwrap();
+    assert!(policy.sound_rule(event, &settings).is_none());
+    isolation.set_enabled(false).unwrap();
+    policy
+        .do_not_disturb
+        .set_mode(NotificationDoNotDisturbMode::UntilStopped)
+        .unwrap();
+    assert!(policy.sound_rule(event, &settings).is_none());
 }

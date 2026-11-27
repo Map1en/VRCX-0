@@ -3542,20 +3542,20 @@
                     "post_update_changelog_prompt_description": "アップデート後の初回起動時に更新内容を自動で開きます。",
                     "test_notification": {
                         "header": "テスト通知",
-                        "description": "すべての通知チャンネルにサンプルのイベントを送ります。通知フィルターは適用されませんが、各チャンネルのオン/オフ、表示タイミング、通知の一時停止はそのまま有効です。",
+                        "description": "デスクトップ、オーバーレイ、読み上げのテスト通知を送ります。各チャンネルのオン/オフ、表示タイミング、通知の一時停止が適用されます。ログの通知音は「ログの通知音」の試聴で確認できます。",
                         "send": "テスト通知を送る",
                         "button": "送信",
                         "message": "これはテスト通知です。"
                     },
                     "do_not_disturb": {
                         "header": "通知を一時停止",
-                        "description": "デスクトップ通知、TTS、XSOverlay、OVR Toolkit、VRCX-0 のヘッドセット通知を一時停止します。手首オーバーレイのフィードと通知履歴は引き続き動作します。Webhook は「Webhook 通知」で「通知の一時停止中は送信しない」をオンにした場合のみ止まります。",
+                        "description": "デスクトップ通知、ログの通知音、TTS、XSOverlay、OVR Toolkit、VRCX-0 のヘッドセット通知を一時停止します。手首オーバーレイのフィードと通知履歴は引き続き動作します。Webhook は「Webhook 通知」で「通知の一時停止中は送信しない」をオンにした場合のみ止まります。",
                         "end_on_game_start": "VRChat の起動時に一時停止を解除",
                         "end_on_game_start_description": "VRChat が停止中から起動中に変わったときだけ解除します。プレイ中にもう一度一時停止することもできます。",
                         "busy_status": "ステータスが「取り込み中」の間も一時停止",
                         "busy_status_description": "VRChat のステータスが「取り込み中」の間は、通知の一時停止と同じように通知を止めます。",
                         "hide_video_errors": "動画の再生エラーは通知しない",
-                        "hide_video_errors_description": "動画プレイヤーのエラー（YouTube が読み込めない場合など）では、デスクトップ通知、TTS、VR 通知、Webhook を送りません。"
+                        "hide_video_errors_description": "動画プレイヤーのエラー（YouTube が読み込めない場合など）では、ログの通知音、デスクトップ通知、読み上げ、VR 通知、Webhook を抑制します。"
                     },
                     "vr_notifications": {
                         "header": "VR オーバーレイ通知",
@@ -3654,6 +3654,37 @@
                         "field_option_world_name": "worldName",
                         "field_option_timestamp": "timestamp",
                         "field_option_local_time": "localTime"
+                    },
+                    "activity_sounds": {
+                        "header": "ログの通知音",
+                        "description": "ログの種類ごとに通知音と音量を設定できます。読み上げ設定とは独立して動作します。",
+                        "event": "ログの種類",
+                        "source": "通知音",
+                        "volume": "通知音の音量",
+                        "preview": "通知音の試聴",
+                        "play": "試聴する",
+                        "off": "オフ",
+                        "resource_load": "リソースの読み込み（共通）",
+                        "resource_load_hint": "文字列・画像の読み込みに個別の通知音が設定されていない場合に使います。個別に無音にするには、それぞれの音量を0%に設定してください。",
+                        "use_resource_default": "リソース読み込みの共通音を使う",
+                        "custom": "カスタムファイル",
+                        "custom_formats": "WAV・MP3・Ogg Vorbis・FLAC の16 MiB以下のファイルを選べます。再生は先頭から最大10秒です。",
+                        "choose_file": "ファイルを変更",
+                        "game_log": "ゲームログ",
+                        "loading": "通知音の設定を読み込んでいます…",
+                        "load_failed": "通知音の設定を読み込めませんでした。",
+                        "save_failed": "通知音の設定を保存できませんでした。",
+                        "file_failed": "選択したファイルを通知音に設定できませんでした。ファイルの場所と音声形式を確認してください。",
+                        "preview_failed": "通知音を再生できませんでした。音声ファイルと出力デバイスを確認してください。",
+                        "builtin": {
+                            "join_01_chime": "参加チャイム",
+                            "join_03_arp": "参加アルペジオ",
+                            "leave_01_chime": "退出チャイム",
+                            "leave_03_arp": "退出アルペジオ",
+                            "notify_01_ding": "ベル",
+                            "notify_02_double": "ダブルタップ",
+                            "notify_03_glass": "ガラスチャイム"
+                        }
                     },
                     "text_to_speech": {
                         "header": "テキスト読み上げ",
@@ -6537,6 +6568,7 @@
                 "TrustLevel": "トラストレベル変更",
                 "Bio": "自己紹介変更",
                 "groupChange": "グループ変更",
+                "group_instanceOpened": "グループインスタンスの開始",
                 "group_announcement": "グループのお知らせ",
                 "group_event_created": "グループイベントの作成",
                 "group_event_starting": "グループイベントの開始",

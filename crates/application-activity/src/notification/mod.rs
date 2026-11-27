@@ -19,8 +19,8 @@ mod webhook_sink;
 
 pub use activity_filters::save_notification_activity_filters;
 pub use activity_filters::{
-    load_overlay_activity_filters, reload_activity_router, ActivityFilterProfile,
-    NotificationActivityFilterProfiles, NotificationActivityFiltersSetInput,
+    load_notification_sound_rules, load_overlay_activity_filters, reload_activity_router,
+    ActivityFilterProfile, NotificationActivityFilterProfiles, NotificationActivityFiltersSetInput,
 };
 pub use auth_webhook::{
     auth_webhook_generic_payload, auth_webhook_is_enabled, auth_webhook_should_recover,

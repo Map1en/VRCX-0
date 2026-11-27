@@ -11,6 +11,7 @@ pub mod legacy_migration;
 pub mod linux_rendering;
 pub mod local_test_avatars;
 pub mod media;
+pub mod notification_sound;
 pub mod overlay_notifications;
 pub mod paths;
 pub mod registry;

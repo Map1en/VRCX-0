@@ -204,6 +204,7 @@ fn delivery() -> ActivityDelivery {
         hmd: false,
         webhook: true,
         tts: false,
+        sound: false,
         widget: false,
     }
 }

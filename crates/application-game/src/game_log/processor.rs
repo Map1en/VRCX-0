@@ -543,7 +543,7 @@ impl GameLogProcessor {
         }
 
         self.enrich_ingest_output_world_names(&mut output);
-        self.ingest_overlay_activity(&output);
+        self.ingest_overlay_activity(&mut output);
         if let Some(projection) = output.projection {
             self.deps.event_bus.emit_game_log_projection(projection);
         }
@@ -580,7 +580,7 @@ impl GameLogProcessor {
         }
         let side_effects = std::mem::take(&mut output.side_effects);
         if deliver_activity {
-            self.ingest_overlay_activity(&output);
+            self.ingest_overlay_activity(&mut output);
         }
         let has_write = !output.batch.is_empty();
         {
@@ -632,7 +632,10 @@ impl GameLogProcessor {
         Ok(())
     }
 
-    fn ingest_overlay_activity(&self, output: &GameLogIngestOutput) {
+    fn ingest_overlay_activity(&self, output: &mut GameLogIngestOutput) {
+        for (kind, created_at) in output.sound_events.drain(..) {
+            self.deps.activity.ingest_game_log_sound(kind, &created_at);
+        }
         let Ok(snapshot) = self.with_engine(|engine| engine.runtime_snapshot()) else {
             return;
         };
