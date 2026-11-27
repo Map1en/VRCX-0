@@ -14,6 +14,7 @@ import {
     EmptyTitle
 } from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Switch } from '@/ui/shadcn/switch';
 
 import { ChatboxAfkCard } from './components/ChatboxAfkCard';
 import { ChatboxComposer } from './components/ChatboxComposer';
@@ -47,10 +48,24 @@ export function ChatboxPage() {
             }
             actions={
                 config ? (
-                    <ChatboxConnectionMenu
-                        config={config}
-                        onUpdate={onUpdate}
-                    />
+                    <>
+                        <ChatboxConnectionMenu
+                            config={config}
+                            onUpdate={onUpdate}
+                        />
+                        <label className="flex items-center gap-2 pl-1 text-sm">
+                            {t('view.tools.chatbox.enabled')}
+                            <Switch
+                                checked={config.enabled}
+                                onCheckedChange={(enabled) =>
+                                    onUpdate((current) => ({
+                                        ...current,
+                                        enabled
+                                    }))
+                                }
+                            />
+                        </label>
+                    </>
                 ) : null
             }
         />

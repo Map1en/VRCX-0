@@ -118,6 +118,8 @@ export const commands = {
         __TAURI_INVOKE<ChatboxEditorState>('app__chatbox_editor_state_get'),
     appChatboxConfigSet: (config: ChatboxConfig) =>
         __TAURI_INVOKE<ChatboxConfig>('app__chatbox_config_set', { config }),
+    appChatboxEnabledSet: (enabled: boolean) =>
+        __TAURI_INVOKE<ChatboxConfig>('app__chatbox_enabled_set', { enabled }),
     appChatboxStatusEnabledSet: (enabled: boolean) =>
         __TAURI_INVOKE<ChatboxConfig>('app__chatbox_status_enabled_set', {
             enabled
@@ -3634,6 +3636,7 @@ export type ChatboxAfkConfig = {
 };
 
 export type ChatboxConfig = {
+    enabled: boolean;
     statusEnabled: boolean;
     pages: ChatboxPage[];
     afk: ChatboxAfkConfig;
@@ -3705,7 +3708,7 @@ export type ChatboxPageLine = {
     formats: ChatboxFormats;
 };
 
-export type ChatboxPauseReason = 'gameNotRunning' | 'isolated';
+export type ChatboxPauseReason = 'disabled' | 'gameNotRunning' | 'isolated';
 
 export type ChatboxProgressStyle = 'line' | 'blocks' | 'dots';
 

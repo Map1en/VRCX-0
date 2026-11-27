@@ -39,6 +39,7 @@ import { ChatboxToggle } from './ChatboxToggle';
 
 function chatboxConfig(patch: Partial<ChatboxConfig> = {}): ChatboxConfig {
     return {
+        enabled: false,
         statusEnabled: false,
         pages: [
             { id: 'clock', enabled: true, seconds: 8, lines: [] },
@@ -132,9 +133,9 @@ describe('status bar chatbox toggle', () => {
         expect(toggle()?.getAttribute('aria-pressed')).toBe('false');
     });
 
-    it('turns the status display on with one click', async () => {
-        vi.mocked(commands.appChatboxStatusEnabledSet).mockResolvedValue(
-            chatboxConfig({ statusEnabled: true })
+    it('turns the Chatbox on with one click', async () => {
+        vi.mocked(commands.appChatboxEnabledSet).mockResolvedValue(
+            chatboxConfig({ enabled: true })
         );
         renderToggle();
 
@@ -142,7 +143,8 @@ describe('status bar chatbox toggle', () => {
             fireEvent.click(await screen.findByRole('button'));
         });
 
-        expect(commands.appChatboxStatusEnabledSet).toHaveBeenCalledWith(true);
+        expect(commands.appChatboxEnabledSet).toHaveBeenCalledWith(true);
+        expect(commands.appChatboxStatusEnabledSet).not.toHaveBeenCalled();
         expect(toggle()?.getAttribute('aria-pressed')).toBe('true');
     });
 
@@ -171,7 +173,7 @@ describe('status bar chatbox toggle', () => {
 
     it('explains why the status is paused', () => {
         useChatboxStore.setState({
-            savedConfig: chatboxConfig({ statusEnabled: true }),
+            savedConfig: chatboxConfig({ enabled: true, statusEnabled: true }),
             status: chatboxStatus({ pauseReason: 'gameNotRunning' })
         });
 

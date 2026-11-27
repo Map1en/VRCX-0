@@ -15,7 +15,7 @@ pub struct ChatboxFactNeeds {
 
 impl ChatboxConfig {
     pub fn fact_needs(&self, previewing: bool) -> ChatboxFactNeeds {
-        if !self.status_enabled && !previewing {
+        if !(self.enabled && self.status_enabled) && !previewing {
             return ChatboxFactNeeds::default();
         }
         self.enabled_templates().flat_map(template_variables).fold(

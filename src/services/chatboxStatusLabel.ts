@@ -1,6 +1,9 @@
 import type { ChatboxStatus } from '@/platform/tauri/bindings';
 
 export function chatboxStatusLabelKey(status: ChatboxStatus): string {
+    if (status.pauseReason === 'disabled') {
+        return 'view.tools.chatbox.status.off';
+    }
     if (status.pauseReason === 'isolated') {
         return 'view.tools.chatbox.status.isolated';
     }

@@ -52,6 +52,7 @@ type Translation = {
 };
 
 const PAUSE_HINT_KEYS: Record<ChatboxPauseReason, string> = {
+    disabled: 'view.tools.chatbox.composer.disabled',
     gameNotRunning: 'view.tools.chatbox.composer.game_not_running',
     isolated: 'view.tools.chatbox.composer.isolated'
 };

@@ -50,6 +50,7 @@ function page(id: string, lines: ChatboxPageLine[] = []): ChatboxPage {
 
 function config(pages: ChatboxPage[]): ChatboxConfig {
     return {
+        enabled: true,
         statusEnabled: true,
         pages,
         afk: { text: '', showDuration: true, autoWhenHeadsetRemoved: true },

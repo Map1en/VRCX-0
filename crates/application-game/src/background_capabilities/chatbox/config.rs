@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_osc::{fit_chatbox_text, CHATBOX_MAX_CHARS};
 
+use super::scheduler::{ChatboxGate, ChatboxPauseReason};
 use super::template::ChatboxVariable;
 
 pub const CHATBOX_CONFIG_KEY: &str = "chatboxConfig";
@@ -46,6 +47,7 @@ pub struct ChatboxEditorState {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatboxConfig {
+    pub enabled: bool,
     pub status_enabled: bool,
     pub pages: Vec<ChatboxPage>,
     pub afk: ChatboxAfkConfig,
@@ -163,6 +165,7 @@ impl Default for ChatboxFormats {
 impl Default for ChatboxConfig {
     fn default() -> Self {
         Self {
+            enabled: false,
             status_enabled: false,
             pages: vec![ChatboxPage {
                 id: "default".into(),
@@ -184,7 +187,7 @@ impl Default for ChatboxConfig {
             afk: ChatboxAfkConfig {
                 text: String::new(),
                 show_duration: true,
-                auto_when_headset_removed: true,
+                auto_when_headset_removed: false,
             },
             messages: ChatboxMessageConfig {
                 typing_indicator: true,
@@ -198,6 +201,14 @@ impl Default for ChatboxConfig {
 }
 
 impl ChatboxConfig {
+    pub fn output_gate(&self, gate: ChatboxGate) -> ChatboxGate {
+        if self.enabled {
+            gate
+        } else {
+            ChatboxGate::Paused(ChatboxPauseReason::Disabled)
+        }
+    }
+
     pub fn from_stored(raw: &str) -> Self {
         if raw.trim().is_empty() {
             return Self::default();
@@ -209,6 +220,9 @@ impl ChatboxConfig {
     }
 
     pub fn from_partial_json(mut value: Value) -> serde_json::Result<Self> {
+        if let Value::Object(config) = &mut value {
+            config.entry("enabled").or_insert(Value::Bool(false));
+        }
         fill_missing_line_formats(&mut value)?;
         serde_json::from_value(value)
     }
@@ -216,6 +230,7 @@ impl ChatboxConfig {
     pub fn normalized(self) -> Self {
         let osc_host = self.osc_host.trim();
         Self {
+            enabled: self.enabled,
             status_enabled: self.status_enabled,
             pages: self
                 .pages

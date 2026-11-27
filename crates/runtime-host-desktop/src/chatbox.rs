@@ -102,6 +102,10 @@ impl ChatboxRuntime {
         self.update_config(|_| next)
     }
 
+    pub fn set_enabled(&self, enabled: bool) -> vrcx_0_application_core::Result<ChatboxConfig> {
+        self.update_config(|current| ChatboxConfig { enabled, ..current })
+    }
+
     pub fn set_status_enabled(
         &self,
         status_enabled: bool,
@@ -136,6 +140,7 @@ impl ChatboxRuntime {
             .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?;
         self.config.set_string(CHATBOX_CONFIG_KEY, &serialized)?;
         if next.rotation_order_changed(&previous)
+            || (next.enabled && !previous.enabled)
             || (next.status_enabled && !previous.status_enabled)
         {
             state.scheduler.restart_rotation();
@@ -155,13 +160,14 @@ impl ChatboxRuntime {
     }
 
     pub fn send_manual(&self, text: &str) -> vrcx_0_application_core::Result<ChatboxSendOutcome> {
-        let gate = self.gate(self.session.snapshot().is_game_running);
+        let is_game_running = self.session.snapshot().is_game_running;
+        let mut state = self.lock_state();
+        let config = self.settings(&mut state).config;
+        let gate = self.gate(&config, is_game_running);
         let text = match ChatboxScheduler::prepare_manual(gate, text) {
             Ok(text) => text,
             Err(error) => return Ok(error.into()),
         };
-        let mut state = self.lock_state();
-        let config = self.settings(&mut state).config;
         Self::transmit(
             &mut state,
             &config,
@@ -173,15 +179,12 @@ impl ChatboxRuntime {
     }
 
     pub fn set_typing(&self, typing: bool) {
-        if !matches!(
-            self.gate(self.session.snapshot().is_game_running),
-            ChatboxGate::Ready
-        ) {
-            return;
-        }
+        let is_game_running = self.session.snapshot().is_game_running;
         let mut state = self.lock_state();
         let config = self.settings(&mut state).config;
-        if !config.messages.typing_indicator {
+        if !config.messages.typing_indicator
+            || !matches!(self.gate(&config, is_game_running), ChatboxGate::Ready)
+        {
             return;
         }
         if let Err(error) = Self::transmit(&mut state, &config, &chatbox_typing_message(typing)) {
@@ -250,9 +253,9 @@ impl ChatboxRuntime {
 
     pub(crate) fn tick(&self) {
         let session = self.session.snapshot();
-        let gate = self.gate(session.is_game_running);
         let mut state = self.lock_state();
         let settings = self.settings(&mut state);
+        let gate = self.gate(&settings.config, session.is_game_running);
         let needs = settings
             .config
             .fact_needs(self.previewing.load(Ordering::Acquire));
@@ -295,8 +298,8 @@ impl ChatboxRuntime {
         }
     }
 
-    fn gate(&self, is_game_running: bool) -> ChatboxGate {
-        osc_output_gate(&self.game_isolation, is_game_running)
+    fn gate(&self, config: &ChatboxConfig, is_game_running: bool) -> ChatboxGate {
+        config.output_gate(osc_output_gate(&self.game_isolation, is_game_running))
     }
 
     fn transmit(

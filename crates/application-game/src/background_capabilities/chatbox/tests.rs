@@ -62,6 +62,7 @@ fn page(id: &str, seconds: u32, lines: Vec<ChatboxPageLine>) -> ChatboxPage {
 
 fn config(pages: Vec<ChatboxPage>) -> ChatboxConfig {
     ChatboxConfig {
+        enabled: true,
         status_enabled: true,
         pages,
         ..ChatboxConfig::default()
@@ -539,7 +540,12 @@ fn empty_manual_message_is_rejected() {
 fn headset_removal_switches_to_afk_only_in_vr_with_the_option_on() {
     let mut harness = Harness::new(config(vec![page("a", 300, vec![module(&["status"])])]));
     harness.hmd_user_absent = true;
+    harness.vr_mode = true;
     assert_eq!(harness.tick(0.0).status.activity, ChatboxActivity::Status);
+
+    harness.config.afk.auto_when_headset_removed = true;
+    harness.vr_mode = false;
+    assert_eq!(harness.tick(1.0).status.activity, ChatboxActivity::Status);
 
     harness.vr_mode = true;
     let afk = harness.tick(2.0);
@@ -553,6 +559,46 @@ fn headset_removal_switches_to_afk_only_in_vr_with_the_option_on() {
     harness.config.afk.auto_when_headset_removed = false;
     harness.hmd_user_absent = true;
     assert_eq!(harness.tick(126.0).status.activity, ChatboxActivity::Status);
+}
+
+#[test]
+fn headset_afk_does_not_need_the_status_pages() {
+    let mut harness = Harness::new(ChatboxConfig {
+        status_enabled: false,
+        ..config(vec![page("a", 300, vec![module(&["status"])])])
+    });
+    harness.config.afk.auto_when_headset_removed = true;
+    harness.vr_mode = true;
+    harness.hmd_user_absent = true;
+
+    let afk = harness.tick(0.0);
+    assert_eq!(afk.status.activity, ChatboxActivity::Afk);
+    assert_eq!(afk.outgoing.as_deref(), Some("AFK · 0:00"));
+}
+
+#[test]
+fn turned_off_chatbox_sends_nothing_and_clears_what_it_showed() {
+    let mut harness = Harness::new(config(vec![page("a", 300, vec![module(&["status"])])]));
+    harness.config.afk.auto_when_headset_removed = true;
+    harness.vr_mode = true;
+    harness.hmd_user_absent = true;
+    assert_eq!(harness.tick(0.0).outgoing.as_deref(), Some("AFK · 0:00"));
+
+    harness.config.enabled = false;
+    harness.gate = harness.config.output_gate(ChatboxGate::Ready);
+    let off = harness.tick(2.0);
+    assert_eq!(off.outgoing.as_deref(), Some(""));
+    assert_eq!(off.status.pause_reason, Some(ChatboxPauseReason::Disabled));
+    harness.scheduler.set_manual_afk(harness.at(3.0), true);
+    assert_eq!(harness.tick(30.0).outgoing, None);
+    assert_eq!(
+        harness.submit(31.0, "hello"),
+        Err(ChatboxSendError::Paused(ChatboxPauseReason::Disabled))
+    );
+
+    harness.config.enabled = true;
+    harness.gate = harness.config.output_gate(ChatboxGate::Ready);
+    assert_eq!(harness.tick(32.0).outgoing.as_deref(), Some("AFK · 0:00"));
 }
 
 #[test]
@@ -628,6 +674,8 @@ fn stored_config_is_normalized_and_bad_json_falls_back_to_defaults() {
 
     let config = ChatboxConfig::from_stored(stored);
 
+    assert!(!config.enabled);
+    assert!(config.status_enabled);
     let page = &config.pages[0];
     assert!(!page.enabled);
     assert_eq!(page.seconds, CHATBOX_LIMITS.min_page_seconds);
@@ -705,6 +753,10 @@ fn facts_are_only_read_for_variables_the_templates_use() {
     config.status_enabled = false;
     assert_eq!(config.fact_needs(false), ChatboxFactNeeds::default());
     assert!(config.fact_needs(true).system);
+
+    config.status_enabled = true;
+    config.enabled = false;
+    assert_eq!(config.fact_needs(false), ChatboxFactNeeds::default());
 }
 
 #[test]

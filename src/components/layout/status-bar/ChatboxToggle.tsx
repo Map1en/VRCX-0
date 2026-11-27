@@ -94,10 +94,10 @@ export function ChatboxToggle(): ReactElement | null {
         }
     }
 
-    const enabled = config.statusEnabled;
+    const enabled = config.enabled;
     const paused = status?.pauseReason != null;
     let Icon = MessageSquareIcon;
-    if (enabled || status?.manualAfk) {
+    if (enabled) {
         Icon = paused ? MessageSquareDashedIcon : MessageSquareTextIcon;
     }
     const stateLabel = status
@@ -139,9 +139,7 @@ export function ChatboxToggle(): ReactElement | null {
                                 )}
                                 onClick={() =>
                                     void update(() =>
-                                        commands.appChatboxStatusEnabledSet(
-                                            !enabled
-                                        )
+                                        commands.appChatboxEnabledSet(!enabled)
                                     )
                                 }
                             >
@@ -159,11 +157,13 @@ export function ChatboxToggle(): ReactElement | null {
             </StatusBarHoverCard>
             <ContextMenuContent className="w-64">
                 <ContextMenuCheckboxItem
-                    checked={enabled}
+                    checked={config.statusEnabled}
                     disabled={updating}
                     onClick={() =>
                         void update(() =>
-                            commands.appChatboxStatusEnabledSet(!enabled)
+                            commands.appChatboxStatusEnabledSet(
+                                !config.statusEnabled
+                            )
                         )
                     }
                 >
@@ -180,7 +180,7 @@ export function ChatboxToggle(): ReactElement | null {
                                 <ContextMenuCheckboxItem
                                     key={page.id}
                                     checked={page.enabled}
-                                    disabled={updating || !enabled}
+                                    disabled={updating || !config.statusEnabled}
                                     onClick={() =>
                                         void update(() =>
                                             commands.appChatboxPageEnabledSet(

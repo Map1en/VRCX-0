@@ -27,6 +27,16 @@ pub async fn app__chatbox_config_set(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn app__chatbox_enabled_set(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<ChatboxConfig, AppError> {
+    let chatbox = state.runtime_host().chatbox();
+    run_blocking("chatbox enabled", move || chatbox.set_enabled(enabled)).await
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn app__chatbox_status_enabled_set(
     state: State<'_, AppState>,
     enabled: bool,

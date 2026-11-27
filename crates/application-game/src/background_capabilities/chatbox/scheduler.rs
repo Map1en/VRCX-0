@@ -14,6 +14,7 @@ pub const CHATBOX_MANUAL_HOLD: Duration = Duration::from_secs(8);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum ChatboxPauseReason {
+    Disabled,
     GameNotRunning,
     Isolated,
 }
