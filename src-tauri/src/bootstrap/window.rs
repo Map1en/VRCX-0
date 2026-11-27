@@ -309,6 +309,8 @@ pub(super) fn create_main_window(
     }
     #[cfg(target_os = "windows")]
     attach_window_chrome_state_events(&main_window);
+    #[cfg(target_os = "windows")]
+    attach_minimized_state_sync(&main_window);
     #[cfg(not(target_os = "windows"))]
     let _ = main_window;
     Ok(())
@@ -326,6 +328,21 @@ fn attach_window_chrome_state_events(window: &tauri::WebviewWindow) {
             emit_window_chrome_state(&chrome_window, *focused);
         }
         _ => {}
+    });
+}
+
+#[cfg(target_os = "windows")]
+fn attach_minimized_state_sync(window: &tauri::WebviewWindow) {
+    let sync_window = window.clone();
+    window.on_window_event(move |event| {
+        if matches!(event, tauri::WindowEvent::Resized(_))
+            && sync_window.is_minimized().unwrap_or(false)
+        {
+            // tao only records minimize from WM_SYSCOMMAND; a window minimized by a plain
+            // ShowWindow loses WS_MINIMIZE on the next hide() and the window-state plugin
+            // then saves the minimized rect as the window size.
+            let _ = sync_window.minimize();
+        }
     });
 }
 
