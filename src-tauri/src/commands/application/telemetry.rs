@@ -8,11 +8,11 @@ use crate::state::AppState;
 
 #[tauri::command(async)]
 #[specta::specta]
-pub fn app__telemetry_record_event(
+pub fn app__telemetry_record_events(
     state: State<'_, AppState>,
-    event: TelemetryClientEvent,
+    events: Vec<TelemetryClientEvent>,
 ) -> Result<(), AppError> {
-    state.runtime_host().record_telemetry_event(event);
+    state.runtime_host().record_telemetry_events(events);
     Ok(())
 }
 

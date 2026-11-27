@@ -182,12 +182,16 @@ impl TelemetryRuntime {
             });
     }
 
-    pub fn record_event(&self, event: TelemetryClientEvent) {
+    pub fn record_events(&self, events: Vec<TelemetryClientEvent>) {
         if !self.usage_enabled() {
             return;
         }
         match self.inner.state.lock() {
-            Ok(mut state) => state.acc.record(event),
+            Ok(mut state) => {
+                for event in events {
+                    state.acc.record(event);
+                }
+            }
             Err(error) => tracing::debug!("failed to lock telemetry accumulator: {error}"),
         }
     }

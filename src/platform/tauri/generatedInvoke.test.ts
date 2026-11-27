@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
     invokeTauri: vi.fn(),
     normalizePlatformError: vi.fn(),
     notifySQLiteError: vi.fn(),
+    queueTelemetryEvent: vi.fn(),
     recordErrorLog: vi.fn()
 }));
 
@@ -21,6 +22,10 @@ vi.mock('./errors', () => ({
 
 vi.mock('./invoke', () => ({
     invokeTauri: mocks.invokeTauri
+}));
+
+vi.mock('./telemetryQueue', () => ({
+    queueTelemetryEvent: mocks.queueTelemetryEvent
 }));
 
 import { invoke } from './generatedInvoke';
@@ -75,32 +80,23 @@ describe('generatedInvoke', () => {
         await invoke('app__example');
         await Promise.resolve();
 
-        expect(mocks.invokeTauri).toHaveBeenLastCalledWith(
-            'app__telemetry_record_event',
-            {
-                event: {
-                    type: 'slowCommand',
-                    command: 'app__example',
-                    duration_ms: 350
-                }
-            }
-        );
+        expect(mocks.queueTelemetryEvent).toHaveBeenCalledWith({
+            type: 'slowCommand',
+            command: 'app__example',
+            duration_ms: 350
+        });
         now.mockRestore();
     });
 
-    it('does not report fast commands or its own telemetry command', async () => {
+    it('does not report fast commands', async () => {
         const now = vi.spyOn(performance, 'now');
-        now.mockReturnValueOnce(0)
-            .mockReturnValueOnce(150)
-            .mockReturnValueOnce(0)
-            .mockReturnValueOnce(900);
+        now.mockReturnValueOnce(0).mockReturnValueOnce(150);
         mocks.invokeTauri.mockResolvedValue(null);
 
         await invoke('app__example');
-        await invoke('app__telemetry_record_event', { event: {} });
         await Promise.resolve();
 
-        expect(mocks.invokeTauri).toHaveBeenCalledTimes(2);
+        expect(mocks.queueTelemetryEvent).not.toHaveBeenCalled();
         now.mockRestore();
     });
 });

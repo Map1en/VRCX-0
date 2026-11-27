@@ -7,20 +7,19 @@ afterEach(() => {
     vi.clearAllMocks();
 });
 
-function mockTelemetryCommand() {
-    const appTelemetryRecordEvent = vi.fn((event: TelemetryClientEvent) => {
+function mockTelemetryQueue() {
+    const queueTelemetryEvent = vi.fn((event: TelemetryClientEvent) => {
         void event;
-        return Promise.resolve(null);
     });
-    vi.doMock('@/platform/tauri/bindings', () => ({
-        commands: { appTelemetryRecordEvent }
+    vi.doMock('@/platform/tauri/telemetryQueue', () => ({
+        queueTelemetryEvent
     }));
-    return { appTelemetryRecordEvent };
+    return { queueTelemetryEvent };
 }
 
 describe('page reach telemetry', () => {
     it('normalizes dynamic and nested paths to canonical route slugs', async () => {
-        mockTelemetryCommand();
+        mockTelemetryQueue();
         const mod = await import('./telemetryPageReach');
         expect(mod.normalizeRouteKey('/feed')).toBe('feed');
         expect(mod.normalizeRouteKey('/login')).toBe('login');
@@ -31,22 +30,22 @@ describe('page reach telemetry', () => {
     });
 
     it('forwards recognized route visits to Rust telemetry', async () => {
-        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const { queueTelemetryEvent } = mockTelemetryQueue();
         const mod = await import('./telemetryPageReach');
 
         mod.recordRouteEnter('/game-log');
         mod.recordRouteEnter('/unknown-page');
 
-        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
+        expect(queueTelemetryEvent).toHaveBeenNthCalledWith(1, {
             type: 'pageVisit',
             route: 'game_log',
             landing: true
         });
-        expect(appTelemetryRecordEvent).toHaveBeenCalledTimes(1);
+        expect(queueTelemetryEvent).toHaveBeenCalledTimes(1);
     });
 
     it('marks the first page after startup or login as the landing page', async () => {
-        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const { queueTelemetryEvent } = mockTelemetryQueue();
         const mod = await import('./telemetryPageReach');
 
         mod.recordRouteEnter('/');
@@ -56,9 +55,7 @@ describe('page reach telemetry', () => {
         mod.recordRouteEnter('/activity');
         mod.recordRouteEnter('/feed');
 
-        expect(
-            appTelemetryRecordEvent.mock.calls.map(([event]) => event)
-        ).toEqual([
+        expect(queueTelemetryEvent.mock.calls.map(([event]) => event)).toEqual([
             { type: 'pageVisit', route: 'feed', landing: true },
             { type: 'pageVisit', route: 'game_log', landing: false },
             { type: 'pageVisit', route: 'login', landing: false },
@@ -67,7 +64,7 @@ describe('page reach telemetry', () => {
     });
 
     it('forwards route errors only after a recognized current route', async () => {
-        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const { queueTelemetryEvent } = mockTelemetryQueue();
         const mod = await import('./telemetryPageReach');
 
         mod.recordRouteError('render_crash', new Error('ignored'));
@@ -77,12 +74,12 @@ describe('page reach telemetry', () => {
             new TypeError('failed for usr_123 at https://example.com')
         );
 
-        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
+        expect(queueTelemetryEvent).toHaveBeenNthCalledWith(1, {
             type: 'pageVisit',
             route: 'game_log',
             landing: true
         });
-        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(2, {
+        expect(queueTelemetryEvent).toHaveBeenNthCalledWith(2, {
             type: 'routeError',
             error_class: 'render_crash',
             name: 'TypeError',

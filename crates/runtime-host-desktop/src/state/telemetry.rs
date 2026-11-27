@@ -3,11 +3,11 @@ use vrcx_0_composition::Result;
 use super::DesktopRuntimeHostState;
 
 impl DesktopRuntimeHostState {
-    pub fn record_telemetry_event(
+    pub fn record_telemetry_events(
         &self,
-        event: vrcx_0_application::telemetry::TelemetryClientEvent,
+        events: Vec<vrcx_0_application::telemetry::TelemetryClientEvent>,
     ) {
-        self.desktop.telemetry.record_event(event);
+        self.desktop.telemetry.record_events(events);
     }
 
     pub async fn submit_telemetry_feedback(&self, content: &str) -> Result<()> {

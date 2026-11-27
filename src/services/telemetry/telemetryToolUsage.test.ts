@@ -7,27 +7,26 @@ afterEach(() => {
     vi.clearAllMocks();
 });
 
-function mockTelemetryCommand() {
-    const appTelemetryRecordEvent = vi.fn((event: TelemetryClientEvent) => {
+function mockTelemetryQueue() {
+    const queueTelemetryEvent = vi.fn((event: TelemetryClientEvent) => {
         void event;
-        return Promise.resolve(null);
     });
-    vi.doMock('@/platform/tauri/bindings', () => ({
-        commands: { appTelemetryRecordEvent }
+    vi.doMock('@/platform/tauri/telemetryQueue', () => ({
+        queueTelemetryEvent
     }));
-    return { appTelemetryRecordEvent };
+    return { queueTelemetryEvent };
 }
 
 describe('tool usage telemetry', () => {
     it('records one canonical tool-open event per accepted activation', async () => {
-        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const { queueTelemetryEvent } = mockTelemetryQueue();
         const mod = await import('./telemetryToolUsage');
 
         mod.recordToolOpen('profile-backup');
         mod.recordToolOpen('unknown-tool');
 
-        expect(appTelemetryRecordEvent).toHaveBeenCalledOnce();
-        expect(appTelemetryRecordEvent).toHaveBeenCalledWith({
+        expect(queueTelemetryEvent).toHaveBeenCalledOnce();
+        expect(queueTelemetryEvent).toHaveBeenCalledWith({
             type: 'toolOpen',
             tool: 'profile-backup'
         });

@@ -255,7 +255,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::feed_logger::app__feed_logger_test_webhook,
             commands::application::feed_logger::app__feed_logger_unpair,
             commands::application::feed_logger::app__feed_logger_sync,
-            commands::application::telemetry::app__telemetry_record_event,
+            commands::application::telemetry::app__telemetry_record_events,
             commands::application::telemetry::app__telemetry_submit_feedback,
             commands::application::proxy::app__proxy_settings_test,
             commands::application::mcp_server::app__mcp_server_status,

@@ -405,8 +405,8 @@ export const commands = {
     appFeedLoggerUnpair: () => __TAURI_INVOKE<null>('app__feed_logger_unpair'),
     appFeedLoggerSync: () =>
         __TAURI_INVOKE<FeedLoggerSyncReport>('app__feed_logger_sync'),
-    appTelemetryRecordEvent: (event: TelemetryClientEvent) =>
-        __TAURI_INVOKE<null>('app__telemetry_record_event', { event }),
+    appTelemetryRecordEvents: (events: TelemetryClientEvent[]) =>
+        __TAURI_INVOKE<null>('app__telemetry_record_events', { events }),
     appTelemetrySubmitFeedback: (content: string) =>
         __TAURI_INVOKE<null>('app__telemetry_submit_feedback', { content }),
     appProxySettingsTest: (input: ProxySettingsTestInput) =>

@@ -7,20 +7,19 @@ afterEach(() => {
     vi.clearAllMocks();
 });
 
-function mockTelemetryCommand() {
-    const appTelemetryRecordEvent = vi.fn((event: TelemetryClientEvent) => {
+function mockTelemetryQueue() {
+    const queueTelemetryEvent = vi.fn((event: TelemetryClientEvent) => {
         void event;
-        return Promise.resolve(null);
     });
-    vi.doMock('@/platform/tauri/bindings', () => ({
-        commands: { appTelemetryRecordEvent }
+    vi.doMock('@/platform/tauri/telemetryQueue', () => ({
+        queueTelemetryEvent
     }));
-    return { appTelemetryRecordEvent };
+    return { queueTelemetryEvent };
 }
 
 describe('dialog tab telemetry', () => {
     it('records the landing tab and each newly reached tab once per open', async () => {
-        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const { queueTelemetryEvent } = mockTelemetryQueue();
         const mod = await import('./telemetryDialogTabs');
 
         mod.recordDialogTabSwitch('user', 'groups');
@@ -31,9 +30,7 @@ describe('dialog tab telemetry', () => {
         mod.recordDialogTabSwitch('user', 'unknown-tab');
         mod.recordDialogTabLanding('user', 'groups');
 
-        expect(
-            appTelemetryRecordEvent.mock.calls.map(([event]) => event)
-        ).toEqual([
+        expect(queueTelemetryEvent.mock.calls.map(([event]) => event)).toEqual([
             {
                 type: 'dialogTabView',
                 dialog: 'user',
@@ -56,19 +53,19 @@ describe('dialog tab telemetry', () => {
     });
 
     it('tracks each dialog kind independently', async () => {
-        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const { queueTelemetryEvent } = mockTelemetryQueue();
         const mod = await import('./telemetryDialogTabs');
 
         mod.recordDialogTabLanding('world', 'instances');
         mod.recordDialogTabLanding('avatar', 'info');
         mod.recordDialogTabSwitch('world', 'info');
 
-        expect(appTelemetryRecordEvent).toHaveBeenLastCalledWith({
+        expect(queueTelemetryEvent).toHaveBeenLastCalledWith({
             type: 'dialogTabView',
             dialog: 'world',
             tab: 'info',
             landing: false
         });
-        expect(appTelemetryRecordEvent).toHaveBeenCalledTimes(3);
+        expect(queueTelemetryEvent).toHaveBeenCalledTimes(3);
     });
 });

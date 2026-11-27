@@ -1,8 +1,8 @@
 import { recordErrorLog } from '../../services/errorLogService';
 import { notifySQLiteError } from '../../shared/sqliteErrorEvents';
-import type { TelemetryClientEvent } from './bindings';
 import { normalizePlatformError } from './errors';
 import { invokeTauri } from './invoke';
+import { queueTelemetryEvent } from './telemetryQueue';
 
 export interface CommandPromise<TResult> extends Promise<TResult> {
     catch<TResult2 = never>(
@@ -13,19 +13,17 @@ export interface CommandPromise<TResult> extends Promise<TResult> {
 }
 
 const SLOW_COMMAND_MS = 200;
-const TELEMETRY_RECORD_COMMAND = 'app__telemetry_record_event';
 
 function recordSlowCommand(command: string, startedAt: number): void {
     const duration = performance.now() - startedAt;
-    if (duration < SLOW_COMMAND_MS || command === TELEMETRY_RECORD_COMMAND) {
+    if (duration < SLOW_COMMAND_MS) {
         return;
     }
-    const event: TelemetryClientEvent = {
+    queueTelemetryEvent({
         type: 'slowCommand',
         command,
         duration_ms: Math.round(duration)
-    };
-    void invokeTauri(TELEMETRY_RECORD_COMMAND, { event }).catch(() => {});
+    });
 }
 
 export function invoke<TReturn = unknown>(
