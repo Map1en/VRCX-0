@@ -357,9 +357,9 @@ export function useUserActivityPanelController({
         } else {
             setExcludeEndHour(value);
         }
-        await Promise.all([
-            configRepository.setString(OVERLAP_EXCLUDE_START_KEY, nextStart),
-            configRepository.setString(OVERLAP_EXCLUDE_END_KEY, nextEnd)
+        await configRepository.setMany([
+            [OVERLAP_EXCLUDE_START_KEY, nextStart],
+            [OVERLAP_EXCLUDE_END_KEY, nextEnd]
         ]);
         await refreshOverlapOnly({
             excludeStart: nextStart,

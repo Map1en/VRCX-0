@@ -105,15 +105,9 @@ export function LaunchOptionsDialog({
 
         setLoading(true);
         try {
-            await Promise.all([
-                configRepository.setString(
-                    'launchArguments',
-                    normalizedArguments
-                ),
-                configRepository.setString(
-                    'vrcLaunchPathOverride',
-                    vrcLaunchPathOverride
-                )
+            await configRepository.setMany([
+                ['launchArguments', normalizedArguments],
+                ['vrcLaunchPathOverride', vrcLaunchPathOverride]
             ]);
             setLaunchArguments(normalizedArguments);
             toast.add({

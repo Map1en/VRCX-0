@@ -279,14 +279,10 @@ export async function markPostUpdateChangelogVersionSeen(
     if (!normalizedVersion) {
         return;
     }
-    await configRepository.setString(
-        SEEN_POST_UPDATE_CHANGELOG_VERSION_CONFIG_KEY,
-        normalizedVersion
-    );
-    await configRepository.setString(
-        LAST_STARTED_VERSION_CONFIG_KEY,
-        normalizedVersion
-    );
+    await configRepository.setMany([
+        [SEEN_POST_UPDATE_CHANGELOG_VERSION_CONFIG_KEY, normalizedVersion],
+        [LAST_STARTED_VERSION_CONFIG_KEY, normalizedVersion]
+    ]);
 }
 
 export async function loadPostUpdateChangelogToastState(

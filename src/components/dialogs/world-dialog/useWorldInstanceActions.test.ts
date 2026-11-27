@@ -19,9 +19,7 @@ vi.mock('@/services/toastService', () => ({
 
 vi.mock('@/repositories/configRepository', () => ({
     default: {
-        setString: vi.fn().mockResolvedValue(undefined),
-        setBool: vi.fn().mockResolvedValue(undefined),
-        setArray: vi.fn().mockResolvedValue(undefined),
+        setMany: vi.fn().mockResolvedValue(undefined),
         getString: vi.fn().mockResolvedValue(''),
         getBool: vi.fn().mockResolvedValue(false),
         getArray: vi.fn().mockResolvedValue([])
@@ -265,21 +263,14 @@ describe('useWorldInstanceActions createWorldInstance', () => {
             );
         });
 
-        expect(configRepository.setString).toHaveBeenCalledWith(
-            'instanceDialogDescription',
-            'Bring snacks'
-        );
-        expect(configRepository.setString).toHaveBeenCalledWith(
-            'instanceDialogCategoryId',
-            'icat_hangout'
-        );
-        expect(configRepository.setArray).toHaveBeenCalledWith(
-            'instanceDialogVibeIds',
-            ['ivib_chill']
-        );
-        expect(configRepository.setArray).toHaveBeenCalledWith(
-            'instanceDialogLanguages',
-            ['jpn']
+        expect(configRepository.setMany).toHaveBeenCalledOnce();
+        expect(configRepository.setMany).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                ['instanceDialogDescription', 'Bring snacks'],
+                ['instanceDialogCategoryId', 'icat_hangout'],
+                ['instanceDialogVibeIds', '["ivib_chill"]'],
+                ['instanceDialogLanguages', '["jpn"]']
+            ])
         );
     });
 
@@ -292,9 +283,10 @@ describe('useWorldInstanceActions createWorldInstance', () => {
             languages: ['jpn', 'eng']
         });
 
-        expect(configRepository.setArray).toHaveBeenCalledWith(
-            'instanceDialogVibeIds',
-            ['ivib_chill', 'ivib_gone']
+        expect(configRepository.setMany).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                ['instanceDialogVibeIds', '["ivib_chill","ivib_gone"]']
+            ])
         );
         expect(mocks.createInstance).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -344,9 +336,10 @@ describe('useWorldInstanceActions createWorldInstance', () => {
             minimumAvatarPerformance: 'Good'
         });
 
-        expect(configRepository.setString).toHaveBeenCalledWith(
-            'instanceDialogMinimumAvatarPerformance',
-            'Good'
+        expect(configRepository.setMany).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                ['instanceDialogMinimumAvatarPerformance', 'Good']
+            ])
         );
         expect(mocks.createInstance).toHaveBeenCalledWith(
             expect.objectContaining({ minimumAvatarPerformance: 'Good' })

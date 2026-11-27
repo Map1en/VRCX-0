@@ -243,65 +243,45 @@ export function useWorldInstanceActions({
     }
 
     function saveNewInstanceDraft(form: WorldNewInstanceForm) {
-        Promise.all([
-            configRepository.setString(
-                'instanceDialogAccessType',
-                form.accessType || 'public'
-            ),
-            configRepository.setString(
-                'instanceRegion',
-                form.region || 'US West'
-            ),
-            configRepository.setString(
-                'instanceDialogInstanceName',
-                form.instanceName || ''
-            ),
-            configRepository.setString(
-                'instanceDialogUserId',
-                form.legacyUserId === currentUserId
-                    ? ''
-                    : form.legacyUserId || ''
-            ),
-            configRepository.setString(
-                'instanceDialogGroupId',
-                form.groupId || ''
-            ),
-            configRepository.setString(
-                'instanceDialogGroupAccessType',
-                form.groupAccessType || 'plus'
-            ),
-            configRepository.setString(
-                'instanceDialogMinimumAvatarPerformance',
-                form.minimumAvatarPerformance
-            ),
-            configRepository.setBool(
-                'instanceDialogQueueEnabled',
-                Boolean(form.queueEnabled)
-            ),
-            configRepository.setBool(
-                'instanceDialogAgeGate',
-                Boolean(form.ageGate)
-            ),
-            configRepository.setString(
-                INSTANCE_DIALOG_DISPLAY_NAME_KEY,
-                form.displayName || ''
-            ),
-            ...saveInstanceDiscoveryDetails(form)
-        ]).catch(() => {});
+        configRepository
+            .setMany([
+                ['instanceDialogAccessType', form.accessType || 'public'],
+                ['instanceRegion', form.region || 'US West'],
+                ['instanceDialogInstanceName', form.instanceName || ''],
+                [
+                    'instanceDialogUserId',
+                    form.legacyUserId === currentUserId
+                        ? ''
+                        : form.legacyUserId || ''
+                ],
+                ['instanceDialogGroupId', form.groupId || ''],
+                [
+                    'instanceDialogGroupAccessType',
+                    form.groupAccessType || 'plus'
+                ],
+                [
+                    'instanceDialogMinimumAvatarPerformance',
+                    form.minimumAvatarPerformance
+                ],
+                [
+                    'instanceDialogQueueEnabled',
+                    form.queueEnabled ? 'true' : 'false'
+                ],
+                ['instanceDialogAgeGate', form.ageGate ? 'true' : 'false'],
+                [INSTANCE_DIALOG_DISPLAY_NAME_KEY, form.displayName || ''],
+                ...instanceDiscoveryDetailEntries(form)
+            ])
+            .catch(() => {});
     }
 
-    function saveInstanceDiscoveryDetails(form: WorldNewInstanceForm) {
+    function instanceDiscoveryDetailEntries(
+        form: WorldNewInstanceForm
+    ): Array<[string, string]> {
         return [
-            configRepository.setString(
-                'instanceDialogDescription',
-                form.description
-            ),
-            configRepository.setString(
-                'instanceDialogCategoryId',
-                form.categoryId
-            ),
-            configRepository.setArray('instanceDialogVibeIds', form.vibeIds),
-            configRepository.setArray('instanceDialogLanguages', form.languages)
+            ['instanceDialogDescription', form.description],
+            ['instanceDialogCategoryId', form.categoryId],
+            ['instanceDialogVibeIds', JSON.stringify(form.vibeIds)],
+            ['instanceDialogLanguages', JSON.stringify(form.languages)]
         ];
     }
 
@@ -318,15 +298,12 @@ export function useWorldInstanceActions({
                     current,
                     normalized
                 );
-                return Promise.all([
-                    configRepository.setString(
-                        INSTANCE_DIALOG_DISPLAY_NAME_KEY,
-                        normalized
-                    ),
-                    configRepository.setArray(
+                return configRepository.setMany([
+                    [INSTANCE_DIALOG_DISPLAY_NAME_KEY, normalized],
+                    [
                         INSTANCE_DIALOG_DISPLAY_NAME_PRESETS_KEY,
-                        next
-                    )
+                        JSON.stringify(next)
+                    ]
                 ]);
             })
             .catch(() => {});
@@ -359,40 +336,25 @@ export function useWorldInstanceActions({
         actionStatusRef.current = 'new-instance';
         setActionStatus('new-instance');
         try {
-            await Promise.all([
-                configRepository.setString(
-                    'instanceDialogAccessType',
-                    form.accessType || 'public'
-                ),
-                configRepository.setString(
-                    'instanceRegion',
-                    form.region || 'US West'
-                ),
-                configRepository.setString(
-                    'instanceDialogGroupId',
-                    form.groupId || ''
-                ),
-                configRepository.setString(
+            await configRepository.setMany([
+                ['instanceDialogAccessType', form.accessType || 'public'],
+                ['instanceRegion', form.region || 'US West'],
+                ['instanceDialogGroupId', form.groupId || ''],
+                [
                     'instanceDialogGroupAccessType',
                     form.groupAccessType || 'plus'
-                ),
-                configRepository.setString(
+                ],
+                [
                     'instanceDialogMinimumAvatarPerformance',
                     form.minimumAvatarPerformance
-                ),
-                configRepository.setBool(
-                    'instanceDialogAgeGate',
-                    Boolean(form.ageGate)
-                ),
-                configRepository.setBool(
+                ],
+                ['instanceDialogAgeGate', form.ageGate ? 'true' : 'false'],
+                [
                     'instanceDialogQueueEnabled',
-                    Boolean(form.queueEnabled)
-                ),
-                configRepository.setString(
-                    INSTANCE_DIALOG_DISPLAY_NAME_KEY,
-                    form.displayName || ''
-                ),
-                ...saveInstanceDiscoveryDetails(form)
+                    form.queueEnabled ? 'true' : 'false'
+                ],
+                [INSTANCE_DIALOG_DISPLAY_NAME_KEY, form.displayName || ''],
+                ...instanceDiscoveryDetailEntries(form)
             ]);
             const selectedGroup = findGroupOption(
                 newInstanceGroups,
