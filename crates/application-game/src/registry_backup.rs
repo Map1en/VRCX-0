@@ -1,6 +1,6 @@
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::{Error, Result};
 use vrcx_0_application_core::ConfigStore;
@@ -251,17 +251,21 @@ pub fn registry_backup_foreground_followup(
 }
 
 fn read_backups(config: &dyn ConfigStore) -> Result<Vec<StoredRegistryBackup>> {
-    let raw = config.get_json(CONFIG_BACKUPS, json!([]))?;
-    Ok(match raw {
-        Value::Array(items) => items
-            .into_iter()
-            .filter_map(|item| serde_json::from_value::<StoredRegistryBackup>(item).ok())
-            .collect(),
-        Value::String(raw) => {
-            serde_json::from_str::<Vec<StoredRegistryBackup>>(&raw).unwrap_or_default()
+    let raw = config.get_string(CONFIG_BACKUPS, "")?;
+    if raw.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    let value = match serde_json::from_str::<Value>(&raw).map_err(unreadable_backups)? {
+        Value::String(encoded) => {
+            serde_json::from_str::<Value>(&encoded).map_err(unreadable_backups)?
         }
-        _ => Vec::new(),
-    })
+        value => value,
+    };
+    serde_json::from_value(value).map_err(unreadable_backups)
+}
+
+fn unreadable_backups(error: serde_json::Error) -> Error {
+    Error::PersistenceInvalidData(format!("Registry backups are unreadable: {error}"))
 }
 
 fn write_backups(config: &dyn ConfigStore, backups: &[StoredRegistryBackup]) -> Result<()> {

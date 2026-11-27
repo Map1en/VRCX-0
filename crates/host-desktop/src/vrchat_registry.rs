@@ -122,10 +122,13 @@ pub fn delete_registry_folder() -> Result<(), Error> {
         use winreg::enums::*;
         use winreg::RegKey;
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        if let Ok(key) = hkcu.open_subkey("SOFTWARE\\VRChat") {
-            let _ = key.delete_subkey_all("VRChat");
+        match hkcu
+            .open_subkey("SOFTWARE\\VRChat")
+            .and_then(|key| key.delete_subkey_all("VRChat"))
+        {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error.into()),
+            _ => Ok(()),
         }
-        Ok(())
     }
     #[cfg(target_os = "linux")]
     {

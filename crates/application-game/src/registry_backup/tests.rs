@@ -1,4 +1,5 @@
 use super::*;
+use serde_json::json;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 
@@ -500,4 +501,50 @@ fn normalize_backup_falls_back_to_index_and_default_name_for_empty_fields() {
         assert_eq!(snapshot.name, expected_name);
         assert_eq!(snapshot.date, date);
     }
+}
+
+#[test]
+fn maintenance_run_refuses_to_overwrite_unreadable_backups() {
+    let db = MemoryConfigStore::default();
+    db.set_string(CONFIG_BACKUPS, "[{\"name\": \"Manual Backup\"")
+        .unwrap();
+    let host = StubHost::with_registry(json!({"a": 1}));
+
+    let result = registry_backup_maintenance_run(
+        &db,
+        &host,
+        RegistryBackupMaintenanceMode::Silent,
+        "startup",
+    );
+
+    assert!(result.is_err());
+    assert_eq!(
+        db.get_string(CONFIG_BACKUPS, "").unwrap(),
+        "[{\"name\": \"Manual Backup\""
+    );
+}
+
+#[test]
+fn manual_backup_keeps_existing_backups_when_one_entry_is_unreadable() {
+    let db = MemoryConfigStore::default();
+    let stored = r#"[{"name":"Manual Backup","date":"2026-01-01T00:00:00.000Z","data":{"k":1}},5]"#;
+    db.set_string(CONFIG_BACKUPS, stored).unwrap();
+    let host = StubHost::with_registry(json!({"a": 1}));
+
+    assert!(registry_backup_create(&db, &host, "New").is_err());
+    assert!(registry_backup_list(&db).is_err());
+    assert_eq!(db.get_string(CONFIG_BACKUPS, "").unwrap(), stored);
+}
+
+#[test]
+fn backups_stored_as_an_encoded_json_string_are_still_listed() {
+    let db = MemoryConfigStore::default();
+    let inner = r#"[{"name":"Manual Backup","date":"2026-01-01T00:00:00.000Z","data":{"k":1}}]"#;
+    db.set_json(CONFIG_BACKUPS, &Value::String(inner.into()))
+        .unwrap();
+
+    let backups = registry_backup_list(&db).unwrap();
+
+    assert_eq!(backups.len(), 1);
+    assert_eq!(backups[0].name, "Manual Backup");
 }
