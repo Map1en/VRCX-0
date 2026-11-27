@@ -37,33 +37,21 @@ export function UserStatusDot({
         );
     }
 
-    if (isActiveStatusDot) {
-        return (
-            <span
-                {...dotProps}
-                className={cn(
-                    'border-background bg-background rounded-full border-3',
-                    className
-                )}
-            >
-                <span
-                    className={cn(
-                        'absolute inset-0 rounded-full border-2',
-                        statusDotClassName
-                    )}
-                />
-            </span>
-        );
-    }
-
     return (
         <span
             {...dotProps}
             className={cn(
-                'border-background rounded-full border-3',
-                className,
-                statusDotClassName
+                'border-background bg-background rounded-full border-3',
+                className
             )}
-        />
+        >
+            <span
+                className={cn(
+                    'absolute inset-0 rounded-full',
+                    isActiveStatusDot && 'border-2',
+                    statusDotClassName
+                )}
+            />
+        </span>
     );
 }
