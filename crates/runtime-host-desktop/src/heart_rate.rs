@@ -57,6 +57,7 @@ struct OutputSettings {
     generation: u64,
     host: String,
     port: u16,
+    chatbox_enabled: bool,
     parameters: HeartRateParameters,
 }
 
@@ -126,7 +127,7 @@ impl HeartRateRuntime {
     ) -> vrcx_0_application_core::Result<HeartRateStatus> {
         let mut state = self.lock_state();
         let next = if connected {
-            HeartRateConfig::connect()
+            state.config.clone().connect()
         } else {
             state.config.clone().disconnected()
         };
@@ -136,6 +137,22 @@ impl HeartRateRuntime {
         Self::reset_link(&mut state);
         drop(state);
         self.wake.notify_one();
+        self.publish_status();
+        Ok(self.status())
+    }
+
+    pub fn set_send_parameters(
+        &self,
+        send_parameters: bool,
+    ) -> vrcx_0_application_core::Result<HeartRateStatus> {
+        let mut state = self.lock_state();
+        let next = HeartRateConfig {
+            send_parameters,
+            ..state.config.clone()
+        };
+        self.persist(&next)?;
+        state.config = next;
+        drop(state);
         self.publish_status();
         Ok(self.status())
     }
@@ -319,14 +336,16 @@ impl HeartRateRuntime {
         let mut owes_reset = false;
         while !stop.is_stop_requested() {
             let now = Instant::now();
-            let (enabled, reading) = {
+            let chatbox_enabled = self.output_settings().chatbox_enabled;
+            let (sending, reading) = {
                 let state = self.lock_state();
-                (state.config.enabled, Self::live_reading(&state, now))
+                let sending = state.config.sends_parameters(chatbox_enabled);
+                (sending, Self::live_reading(&state, now).filter(|_| sending))
             };
             self.publish_status();
             let ready = self.osc_output_ready();
             if now >= next_frame {
-                if ready && (enabled || owes_reset) {
+                if ready && (sending || owes_reset) {
                     let frame = heart_rate_parameters(reading, &self.output_settings().parameters);
                     self.send_frame(&mut sender, &frame);
                     owes_reset = reading.is_some();
@@ -406,6 +425,7 @@ impl HeartRateRuntime {
             generation,
             host: chatbox.osc_host,
             port: chatbox.osc_port,
+            chatbox_enabled: chatbox.enabled,
             parameters: HeartRateParameters::from_stored(&read(HEART_RATE_PARAMETERS_CONFIG_KEY)),
         };
         self.lock_state().output = Some(settings.clone());

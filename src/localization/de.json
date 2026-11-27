@@ -3081,14 +3081,17 @@
                     "off": "Nicht verbunden",
                     "unavailable": "Kein Bluetooth gefunden oder Bluetooth ist aus",
                     "waiting": "Warte auf {device} …",
-                    "connected": "Verbunden mit {device} · {bpm} bpm",
+                    "connected": "Verbunden mit {device}",
+                    "bpm_unit": "bpm",
                     "no_reading": "Verbunden mit {device} · kein Messwert",
                     "incompatible": "Dieses Gerät liefert keine Herzfrequenz. Verbinde erneut, um ein anderes zu wählen.",
                     "permission_denied": "Der Bluetooth-Zugriff ist blockiert. Erlaube ihn in den Systemeinstellungen und verbinde dann erneut.",
                     "device": "Herzfrequenzgerät",
-                    "hint": "Manche Geräte verbinden sich nur mit einem Gerät gleichzeitig, deine Handy-App kann sich dann trennen. Füge {variable} in eine Statuszeile ein, um die Herzfrequenz anzuzeigen. Standardmäßig werden die gängigen Namen HR und isHRBeat (Pulsoid und viele Booth-Prefabs) sowie VRCOSC/Heartrate von VRCOSC gesendet.",
-                    "save_failed": "Die Herzfrequenzverbindung konnte nicht geändert werden.",
-                    "devices": "Funktioniert mit Standard-Bluetooth-Herzfrequenzgeräten: Brustgurte und Armbänder, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 und mehr. Schalte am Gerät die Herzfrequenzübertragung ein.",
+                    "hint": "Füge {variable} in eine Statuszeile ein, um die Herzfrequenz in der Chatbox anzuzeigen.",
+                    "save_failed": "Herzfrequenz-Einstellungen konnten nicht gespeichert werden.",
+                    "send_parameters": "An Avatar-Parameter senden",
+                    "send_parameters_hint": "Standardmäßig werden HR und isHRBeat (Pulsoid und viele Booth-Prefabs) sowie VRCOSC/Heartrate von VRCOSC gesendet. Nur solange „An VRChat senden“ an ist.",
+                    "devices": "Funktioniert mit Standard-Bluetooth-Herzfrequenzgeräten: Brustgurte und Armbänder, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 und mehr. Schalte am Gerät die Herzfrequenzübertragung ein. Manche Geräte verbinden sich nur mit einem Gerät gleichzeitig, deine Handy-App kann sich dann trennen.",
                     "parameters": {
                         "title": "Avatar-Parameter",
                         "description": "Lege fest, an welche Avatar-Parameter die Herzfrequenz gesendet wird. Trenne mehrere Namen mit Kommas; leere Felder werden nicht gesendet.",
@@ -3105,6 +3108,7 @@
                         "open": "Parameternamen anpassen"
                     }
                 },
+                "module_on": "An",
                 "module_off": "Aus"
             }
         },

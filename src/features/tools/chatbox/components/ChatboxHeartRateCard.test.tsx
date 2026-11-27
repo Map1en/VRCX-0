@@ -10,10 +10,12 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { HeartRateStatus } from '@/platform/tauri/bindings';
+import { useChatboxStore } from '@/state/chatboxStore';
 
 const mocks = vi.hoisted(() => ({
     appHeartRateStatusGet: vi.fn(),
     appHeartRateConnectedSet: vi.fn(),
+    appHeartRateSendParametersSet: vi.fn(),
     appHeartRateParametersGet: vi.fn(),
     appHeartRateParametersSet: vi.fn()
 }));
@@ -22,6 +24,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appHeartRateStatusGet: mocks.appHeartRateStatusGet,
         appHeartRateConnectedSet: mocks.appHeartRateConnectedSet,
+        appHeartRateSendParametersSet: mocks.appHeartRateSendParametersSet,
         appHeartRateParametersGet: mocks.appHeartRateParametersGet,
         appHeartRateParametersSet: mocks.appHeartRateParametersSet
     }
@@ -36,6 +39,7 @@ function status(overrides: Partial<HeartRateStatus>): HeartRateStatus {
         deviceName: null,
         bpm: null,
         problem: null,
+        sendParameters: true,
         ...overrides
     };
 }
@@ -44,6 +48,7 @@ describe('ChatboxHeartRateCard', () => {
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
+        useChatboxStore.setState({ heartRate: null });
     });
 
     it('shows the live reading and disconnects on click', async () => {
@@ -61,6 +66,7 @@ describe('ChatboxHeartRateCard', () => {
         render(<ChatboxHeartRateCard />);
 
         await screen.findByText('view.tools.chatbox.heart_rate.connected');
+        expect(screen.getByText('72')).toBeTruthy();
         fireEvent.click(
             screen.getByRole('switch', {
                 name: 'view.tools.chatbox.heart_rate.connect'
@@ -120,6 +126,45 @@ describe('ChatboxHeartRateCard', () => {
         render(<ChatboxHeartRateCard />);
 
         await screen.findByText('view.tools.chatbox.heart_rate.incompatible');
+    });
+
+    it('stops avatar parameters without disconnecting the device', async () => {
+        mocks.appHeartRateStatusGet.mockResolvedValue(
+            status({ enabled: true, phase: 'connected', bpm: 72 })
+        );
+        mocks.appHeartRateSendParametersSet.mockResolvedValue(
+            status({
+                enabled: true,
+                phase: 'connected',
+                bpm: 72,
+                sendParameters: false
+            })
+        );
+        render(<ChatboxHeartRateCard />);
+
+        await screen.findByText('view.tools.chatbox.heart_rate.connected');
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: /view\.tools\.chatbox\.heart_rate\.send_parameters/
+            })
+        );
+
+        await waitFor(() =>
+            expect(mocks.appHeartRateSendParametersSet).toHaveBeenCalledWith(
+                false
+            )
+        );
+        expect(mocks.appHeartRateConnectedSet).not.toHaveBeenCalled();
+        await waitFor(() =>
+            expect(
+                screen
+                    .getByRole('button', {
+                        name: 'view.tools.chatbox.heart_rate.parameters.open',
+                        hidden: true
+                    })
+                    .hasAttribute('disabled')
+            ).toBe(true)
+        );
     });
 
     it('saves custom avatar parameter names from the gear dialog', async () => {

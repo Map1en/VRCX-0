@@ -147,6 +147,10 @@ export const commands = {
         __TAURI_INVOKE<HeartRateStatus>('app__heart_rate_connected_set', {
             connected
         }),
+    appHeartRateSendParametersSet: (sendParameters: boolean) =>
+        __TAURI_INVOKE<HeartRateStatus>('app__heart_rate_send_parameters_set', {
+            sendParameters
+        }),
     appHeartRateParametersGet: () =>
         __TAURI_INVOKE<HeartRateParametersEditor>(
             'app__heart_rate_parameters_get'
@@ -5707,6 +5711,7 @@ export type HeartRateStatus = {
     deviceName: string | null;
     bpm: number | null;
     problem: HeartRateProblem | null;
+    sendParameters: boolean;
 };
 
 export type HostArchitecture = 'x86_64' | 'aarch64' | 'unknown';

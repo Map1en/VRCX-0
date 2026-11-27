@@ -3085,14 +3085,17 @@
                     "off": "Not connected",
                     "unavailable": "No Bluetooth found on this computer, or it's turned off",
                     "waiting": "Waiting for {device}…",
-                    "connected": "Connected to {device} · {bpm} bpm",
+                    "connected": "Connected to {device}",
+                    "bpm_unit": "bpm",
                     "no_reading": "Connected to {device} · no reading",
                     "incompatible": "That device doesn't share heart rate. Connect again to pick another one.",
                     "permission_denied": "Bluetooth access is blocked. Allow it in your system settings, then connect again.",
                     "device": "heart rate device",
-                    "hint": "Some devices connect to only one thing at a time, so your phone app may disconnect. Insert {variable} into a status line to show it. Avatar parameters default to the common HR and isHRBeat (Pulsoid and many Booth prefabs) plus VRCOSC's VRCOSC/Heartrate names.",
-                    "save_failed": "Couldn't change the heart rate connection.",
-                    "devices": "Works with standard Bluetooth heart rate devices: chest straps and armbands, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 and more. Turn on heart rate broadcast on the device.",
+                    "hint": "To show it in the chatbox, insert {variable} into a status line.",
+                    "save_failed": "Couldn't save heart rate settings.",
+                    "send_parameters": "Send to avatar parameters",
+                    "send_parameters_hint": "By default sends HR and isHRBeat (Pulsoid and many Booth prefabs) plus VRCOSC's VRCOSC/Heartrate parameters. Only while Send to VRChat is on.",
+                    "devices": "Works with standard Bluetooth heart rate devices: chest straps and armbands, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 and more. Turn on heart rate broadcast on the device. Some devices connect to only one thing at a time, so your phone app may disconnect.",
                     "parameters": {
                         "title": "Avatar parameters",
                         "description": "Choose which avatar parameters receive your heart rate. Separate several names with commas; leave a field empty to stop sending it.",
@@ -3109,6 +3112,7 @@
                         "open": "Customize parameter names"
                     }
                 },
+                "module_on": "On",
                 "module_off": "Off"
             }
         },

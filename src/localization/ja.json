@@ -3070,14 +3070,17 @@
                     "off": "未接続",
                     "unavailable": "Bluetoothが見つからないか、オフになっています",
                     "waiting": "{device}を待っています…",
-                    "connected": "{device}に接続中 · {bpm} bpm",
+                    "connected": "{device}に接続中",
+                    "bpm_unit": "bpm",
                     "no_reading": "{device}に接続中 · 測定値なし",
                     "incompatible": "このデバイスは心拍数に対応していません。もう一度接続すると別のデバイスを選びます",
                     "permission_denied": "Bluetoothへのアクセスが許可されていません。システム設定で許可してから、もう一度接続してください",
                     "device": "心拍計",
-                    "hint": "同時に1台しかつながらないデバイスでは、スマホのアプリが切断されることがあります。ステータスの行に{variable}を入れると心拍数を表示できます。アバターパラメーターは、よく使われる HR・isHRBeat（Pulsoid や BOOTH の多くのプレハブ）と VRCOSC の VRCOSC/Heartrate 系を既定で送信します。",
-                    "save_failed": "心拍数の接続を変更できませんでした。",
-                    "devices": "標準のBluetooth心拍計に対応しています。胸ベルト・アームバンド、Garmin、COROS、Huawei、Amazfit、Xiaomi Smart Band 10 など。デバイス側で心拍数のブロードキャストをオンにしてください。",
+                    "hint": "Chatbox に表示するには、ステータスの行に{variable}を入れてください。",
+                    "save_failed": "心拍数の設定を保存できませんでした。",
+                    "send_parameters": "アバターパラメーターに送信",
+                    "send_parameters_hint": "既定では HR・isHRBeat（Pulsoid や BOOTH の多くのプレハブ）と VRCOSC の VRCOSC/Heartrate 系を送信します。「VRChat に送信」がオンのときだけ送ります。",
+                    "devices": "標準のBluetooth心拍計に対応しています。胸ベルト・アームバンド、Garmin、COROS、Huawei、Amazfit、Xiaomi Smart Band 10 など。デバイス側で心拍数のブロードキャストをオンにしてください。同時に1台しかつながらないデバイスでは、スマホのアプリが切断されることがあります。",
                     "parameters": {
                         "title": "アバターパラメーター",
                         "description": "心拍数を送るアバターパラメーターを設定します。複数の名前はカンマで区切り、空欄にすると送信しません。",
@@ -3094,6 +3097,7 @@
                         "open": "パラメーター名を変更"
                     }
                 },
+                "module_on": "オン",
                 "module_off": "オフ"
             }
         },

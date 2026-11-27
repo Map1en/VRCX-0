@@ -70,9 +70,11 @@ fn parameter_names_are_trimmed_deduplicated_and_invalid_ones_dropped() {
 
 #[test]
 fn connecting_again_forgets_the_previous_device_so_a_new_one_is_picked() {
-    let config = HeartRateConfig::connect().remembering("old".into(), Some("Band".into()));
+    let config = HeartRateConfig::default()
+        .connect()
+        .remembering("old".into(), Some("Band".into()));
 
-    let reconnected = HeartRateConfig::connect();
+    let reconnected = HeartRateConfig::default().connect();
 
     assert!(config.device_id.is_some());
     assert!(reconnected.enabled);
@@ -82,12 +84,37 @@ fn connecting_again_forgets_the_previous_device_so_a_new_one_is_picked() {
 
 #[test]
 fn disconnecting_keeps_the_remembered_device() {
-    let config = HeartRateConfig::connect()
+    let config = HeartRateConfig::default()
+        .connect()
         .remembering("band".into(), Some("Band".into()))
         .disconnected();
 
     assert!(!config.enabled);
     assert_eq!(config.device_id.as_deref(), Some("band"));
+}
+
+#[test]
+fn avatar_parameters_need_a_connection_their_own_switch_and_the_chatbox() {
+    let connected = HeartRateConfig::default().connect();
+    assert!(connected.sends_parameters(true));
+    assert!(!connected.sends_parameters(false));
+    assert!(!HeartRateConfig::default().sends_parameters(true));
+
+    let muted = HeartRateConfig {
+        send_parameters: false,
+        ..connected
+    };
+    assert!(!muted.sends_parameters(true));
+    assert!(!muted.clone().connect().send_parameters);
+    assert!(!muted.forget_device().send_parameters);
+}
+
+#[test]
+fn stored_config_from_before_the_parameter_switch_keeps_sending() {
+    let config = HeartRateConfig::from_stored(r#"{"enabled":true,"deviceId":"band"}"#);
+
+    assert!(config.send_parameters);
+    assert!(config.sends_parameters(true));
 }
 
 #[test]
@@ -270,7 +297,7 @@ fn status_greys_out_without_bluetooth_even_when_off() {
 
 #[test]
 fn status_keeps_reporting_enabled_when_bluetooth_drops_so_it_can_be_turned_off() {
-    let config = HeartRateConfig::connect();
+    let config = HeartRateConfig::default().connect();
 
     let status = heart_rate_status(HeartRateStatusInput {
         config: &config,
@@ -286,7 +313,9 @@ fn status_keeps_reporting_enabled_when_bluetooth_drops_so_it_can_be_turned_off()
 
 #[test]
 fn status_shows_bpm_only_while_connected() {
-    let config = HeartRateConfig::connect().remembering("band".into(), Some("Band".into()));
+    let config = HeartRateConfig::default()
+        .connect()
+        .remembering("band".into(), Some("Band".into()));
     let reading = Some(HeartRateReading {
         bpm: 72,
         average: 70,

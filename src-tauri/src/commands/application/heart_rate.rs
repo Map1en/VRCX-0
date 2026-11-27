@@ -28,6 +28,19 @@ pub async fn app__heart_rate_connected_set(
     .await
 }
 
+#[tauri::command]
+#[specta::specta]
+pub async fn app__heart_rate_send_parameters_set(
+    state: State<'_, AppState>,
+    send_parameters: bool,
+) -> Result<HeartRateStatus, AppError> {
+    let heart_rate = state.runtime_host().heart_rate();
+    run_blocking("heart rate send parameters", move || {
+        heart_rate.set_send_parameters(send_parameters)
+    })
+    .await
+}
+
 #[tauri::command(async)]
 #[specta::specta]
 pub fn app__heart_rate_parameters_get(state: State<'_, AppState>) -> HeartRateParametersEditor {

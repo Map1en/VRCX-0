@@ -89,6 +89,7 @@ pub struct HeartRateStatus {
     pub device_name: Option<String>,
     pub bpm: Option<u16>,
     pub problem: Option<HeartRateProblem>,
+    pub send_parameters: bool,
 }
 
 impl vrcx_0_contracts::RuntimeEventPayload for HeartRateStatus {
@@ -123,5 +124,6 @@ pub fn heart_rate_status(input: HeartRateStatusInput<'_>) -> HeartRateStatus {
             .filter(|_| phase == HeartRatePhase::Connected)
             .map(|reading| reading.bpm),
         problem: input.problem.filter(|_| !input.config.enabled),
+        send_parameters: input.config.send_parameters,
     }
 }

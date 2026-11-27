@@ -3109,14 +3109,17 @@
                     "off": "Nepřipojeno",
                     "unavailable": "Bluetooth nebyl nalezen nebo je vypnutý",
                     "waiting": "Čekání na {device}…",
-                    "connected": "Připojeno k {device} · {bpm} tep/min",
+                    "connected": "Připojeno k {device}",
+                    "bpm_unit": "tep/min",
                     "no_reading": "Připojeno k {device} · bez hodnoty",
                     "incompatible": "Toto zařízení neposkytuje tepovou frekvenci. Připoj se znovu a vybere se jiné.",
                     "permission_denied": "Přístup k Bluetooth je zablokovaný. Povol ho v nastavení systému a připoj se znovu.",
                     "device": "zařízení pro měření tepu",
-                    "hint": "Některá zařízení se připojí jen k jednomu přístroji, takže se aplikace v telefonu může odpojit. Vlož {variable} do řádku stavu a zobrazí se tep. Ve výchozím stavu se posílají běžné názvy HR a isHRBeat (Pulsoid a mnoho prefabů z Boothu) a VRCOSC/Heartrate z VRCOSC.",
-                    "save_failed": "Připojení tepové frekvence se nepodařilo změnit.",
-                    "devices": "Funguje se standardními Bluetooth snímači tepu: hrudní pásy a pásky na paži, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 a další. Na zařízení zapni vysílání tepové frekvence.",
+                    "hint": "Pro zobrazení v Chatboxu vlož {variable} do řádku stavu.",
+                    "save_failed": "Nastavení tepové frekvence se nepodařilo uložit.",
+                    "send_parameters": "Posílat do parametrů avatara",
+                    "send_parameters_hint": "Ve výchozím stavu se posílají HR a isHRBeat (Pulsoid a mnoho prefabů z Boothu) a VRCOSC/Heartrate z VRCOSC. Jen když je zapnuté „Posílat do VRChatu“.",
+                    "devices": "Funguje se standardními Bluetooth snímači tepu: hrudní pásy a pásky na paži, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 a další. Na zařízení zapni vysílání tepové frekvence. Některá zařízení se připojí jen k jednomu přístroji, takže se aplikace v telefonu může odpojit.",
                     "parameters": {
                         "title": "Parametry avatara",
                         "description": "Nastav, do kterých parametrů avatara se posílá tep. Více názvů odděl čárkou, prázdné pole se neposílá.",
@@ -3133,6 +3136,7 @@
                         "open": "Upravit názvy parametrů"
                     }
                 },
+                "module_on": "Zapnuto",
                 "module_off": "Vypnuto"
             }
         },

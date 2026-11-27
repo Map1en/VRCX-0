@@ -8,12 +8,24 @@ const MAX_NAMES_PER_SLOT: usize = 8;
 const MAX_NAME_CHARS: usize = 64;
 const FORBIDDEN_NAME_CHARS: &[char] = &['#', '*', ',', '?', '[', ']', '{', '}'];
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct HeartRateConfig {
     pub enabled: bool,
     pub device_id: Option<String>,
     pub device_name: Option<String>,
+    pub send_parameters: bool,
+}
+
+impl Default for HeartRateConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            device_id: None,
+            device_name: None,
+            send_parameters: true,
+        }
+    }
 }
 
 impl HeartRateConfig {
@@ -21,12 +33,17 @@ impl HeartRateConfig {
         serde_json::from_str(raw).unwrap_or_default()
     }
 
-    pub fn connect() -> Self {
+    pub fn connect(self) -> Self {
         Self {
             enabled: true,
             device_id: None,
             device_name: None,
+            ..self
         }
+    }
+
+    pub fn sends_parameters(&self, chatbox_enabled: bool) -> bool {
+        self.enabled && self.send_parameters && chatbox_enabled
     }
 
     pub fn disconnected(self) -> Self {
@@ -41,6 +58,7 @@ impl HeartRateConfig {
             enabled: false,
             device_id: None,
             device_name: None,
+            ..self
         }
     }
 

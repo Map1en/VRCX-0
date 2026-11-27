@@ -3074,14 +3074,17 @@
                     "off": "未連接",
                     "unavailable": "未偵測到藍牙，或藍牙已關閉",
                     "waiting": "正在等待 {device}…",
-                    "connected": "已連接 {device} · {bpm} bpm",
+                    "connected": "已連接 {device}",
+                    "bpm_unit": "bpm",
                     "no_reading": "已連接 {device} · 沒有讀數",
                     "incompatible": "此裝置不提供心率，重新連接即可換一台裝置",
                     "permission_denied": "藍牙權限遭拒，請在系統設定中允許後重新連接",
                     "device": "心率裝置",
-                    "hint": "部分裝置只能連接一台，手機 App 可能會中斷連線。在狀態行中插入 {variable} 即可顯示心率。模型參數預設傳送常見預製件使用的 HR、isHRBeat（Pulsoid 與 Booth 上的多數預製件）以及 VRCOSC 的 VRCOSC/Heartrate 系列。",
-                    "save_failed": "無法變更心率連線。",
-                    "devices": "支援標準藍牙心率裝置，如心率帶、臂帶、Garmin、COROS、華為、Amazfit、小米手環 10 等，需在裝置上開啟心率廣播。",
+                    "hint": "要在 Chatbox 中顯示心率，請在狀態行中插入 {variable}。",
+                    "save_failed": "無法儲存心率設定。",
+                    "send_parameters": "傳送到模型參數",
+                    "send_parameters_hint": "預設傳送 HR、isHRBeat（Pulsoid 與 Booth 上的多數預製件）以及 VRCOSC 的 VRCOSC/Heartrate 系列。僅在「送到 VRChat」開啟時傳送。",
+                    "devices": "支援標準藍牙心率裝置，如心率帶、臂帶、Garmin、COROS、華為、Amazfit、小米手環 10 等，需在裝置上開啟心率廣播。部分裝置只能連接一台，手機 App 可能會中斷連線。",
                     "parameters": {
                         "title": "模型參數",
                         "description": "設定心率要傳送到哪些模型參數。多個名稱以逗號分隔，留空則不傳送。",
@@ -3098,6 +3101,7 @@
                         "open": "自訂參數名稱"
                     }
                 },
+                "module_on": "已開啟",
                 "module_off": "已關閉"
             }
         },

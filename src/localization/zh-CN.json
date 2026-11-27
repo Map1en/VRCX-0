@@ -3074,14 +3074,17 @@
                     "off": "未连接",
                     "unavailable": "未检测到蓝牙，或蓝牙已关闭",
                     "waiting": "正在等待 {device}…",
-                    "connected": "已连接 {device} · {bpm} bpm",
+                    "connected": "已连接 {device}",
+                    "bpm_unit": "bpm",
                     "no_reading": "已连接 {device} · 没有读数",
                     "incompatible": "该设备不提供心率，重新连接即可换一台设备",
                     "permission_denied": "蓝牙权限被拒绝，请在系统设置中允许后重新连接",
                     "device": "心率设备",
-                    "hint": "部分设备只能连接一台，手机 App 可能会断开。在状态行中插入 {variable} 即可显示心率。模型参数默认发送常见预制件使用的 HR、isHRBeat（Pulsoid、Booth 上的多数预制件）和 VRCOSC 的 VRCOSC/Heartrate 系列。",
-                    "save_failed": "无法更改心率连接。",
-                    "devices": "支持标准蓝牙心率设备，如心率带、臂带、Garmin、COROS、华为、Amazfit、小米手环 10 等，需在设备上开启心率广播。",
+                    "hint": "要在 Chatbox 中显示心率，请在状态行中插入 {variable}。",
+                    "save_failed": "无法保存心率设置。",
+                    "send_parameters": "发送到模型参数",
+                    "send_parameters_hint": "默认发送 HR、isHRBeat（Pulsoid、Booth 上的多数预制件）和 VRCOSC 的 VRCOSC/Heartrate 系列。仅在“发送到 VRChat”打开时发送。",
+                    "devices": "支持标准蓝牙心率设备，如心率带、臂带、Garmin、COROS、华为、Amazfit、小米手环 10 等，需在设备上开启心率广播。部分设备只能连接一台，手机 App 可能会断开。",
                     "parameters": {
                         "title": "模型参数",
                         "description": "设置心率发送到哪些模型参数。多个名称用逗号分隔，留空则不发送。",
@@ -3098,6 +3101,7 @@
                         "open": "自定义参数名"
                     }
                 },
+                "module_on": "已开启",
                 "module_off": "已关闭"
             }
         },

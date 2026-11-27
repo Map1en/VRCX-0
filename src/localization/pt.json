@@ -3081,14 +3081,17 @@
                     "off": "Não conectado",
                     "unavailable": "Bluetooth não encontrado ou desligado",
                     "waiting": "Aguardando {device}…",
-                    "connected": "Conectado a {device} · {bpm} bpm",
+                    "connected": "Conectado a {device}",
+                    "bpm_unit": "bpm",
                     "no_reading": "Conectado a {device} · sem leitura",
                     "incompatible": "Esse dispositivo não fornece frequência cardíaca. Conecte de novo para escolher outro.",
                     "permission_denied": "O acesso ao Bluetooth está bloqueado. Permita nas configurações do sistema e conecte de novo.",
                     "device": "dispositivo de frequência cardíaca",
-                    "hint": "Alguns dispositivos só se conectam a um aparelho por vez, então o app do celular pode desconectar. Insira {variable} em uma linha de status para mostrá-la. Por padrão são enviados os nomes comuns HR e isHRBeat (Pulsoid e muitos prefabs do Booth) e VRCOSC/Heartrate do VRCOSC.",
-                    "save_failed": "Não foi possível alterar a conexão de frequência cardíaca.",
-                    "devices": "Funciona com dispositivos Bluetooth padrão de frequência cardíaca: cintas de peito e braçadeiras, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 e outros. Ative a transmissão de frequência cardíaca no dispositivo.",
+                    "hint": "Para mostrá-la no Chatbox, insira {variable} em uma linha de status.",
+                    "save_failed": "Não foi possível salvar as configurações de frequência cardíaca.",
+                    "send_parameters": "Enviar para parâmetros do avatar",
+                    "send_parameters_hint": "Por padrão são enviados HR e isHRBeat (Pulsoid e muitos prefabs do Booth) e VRCOSC/Heartrate do VRCOSC. Só enquanto “Enviar ao VRChat” estiver ligado.",
+                    "devices": "Funciona com dispositivos Bluetooth padrão de frequência cardíaca: cintas de peito e braçadeiras, Garmin, COROS, Huawei, Amazfit, Xiaomi Smart Band 10 e outros. Ative a transmissão de frequência cardíaca no dispositivo. Alguns dispositivos só se conectam a um aparelho por vez, então o app do celular pode desconectar.",
                     "parameters": {
                         "title": "Parâmetros do avatar",
                         "description": "Escolha para quais parâmetros do avatar a frequência cardíaca é enviada. Separe vários nomes com vírgulas; campos vazios não são enviados.",
@@ -3105,6 +3108,7 @@
                         "open": "Personalizar nomes dos parâmetros"
                     }
                 },
+                "module_on": "Ligado",
                 "module_off": "Desativado"
             }
         },

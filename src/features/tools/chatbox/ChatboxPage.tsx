@@ -5,6 +5,7 @@ import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { commands } from '@/platform/tauri/bindings';
 import { chatboxStatusLabelKey } from '@/services/chatboxStatusLabel';
 import { useChatboxStore } from '@/state/chatboxStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -40,22 +41,11 @@ export function ChatboxPage() {
         <ToolPageHeader
             toolKey="chatbox"
             status={
-                status ? (
-                    <Badge variant="secondary">
-                        {t(chatboxStatusLabelKey(status))}
-                    </Badge>
-                ) : null
-            }
-            actions={
                 config ? (
                     <>
-                        <ChatboxConnectionMenu
-                            config={config}
-                            onUpdate={onUpdate}
-                        />
-                        <label className="flex items-center gap-2 pl-1 text-sm">
-                            {t('view.tools.chatbox.enabled')}
+                        <HintTooltip label={t('view.tools.chatbox.enabled')}>
                             <Switch
+                                size="sm"
                                 checked={config.enabled}
                                 onCheckedChange={(enabled) =>
                                     onUpdate((current) => ({
@@ -64,8 +54,21 @@ export function ChatboxPage() {
                                     }))
                                 }
                             />
-                        </label>
+                        </HintTooltip>
+                        {status ? (
+                            <Badge variant="secondary">
+                                {t(chatboxStatusLabelKey(status))}
+                            </Badge>
+                        ) : null}
                     </>
+                ) : null
+            }
+            actions={
+                config ? (
+                    <ChatboxConnectionMenu
+                        config={config}
+                        onUpdate={onUpdate}
+                    />
                 ) : null
             }
         />
