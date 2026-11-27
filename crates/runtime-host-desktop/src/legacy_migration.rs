@@ -3,6 +3,7 @@ use std::sync::Arc;
 pub use vrcx_0_contracts::{
     LegacyMigrationPaths, LegacyVrcxDiscovery, LegacyVrcxMigrationStatus, LegacyVrcxSource,
 };
+pub(crate) use vrcx_0_persistence::legacy_migration::cleanup_legacy_updater_files;
 
 use crate::{DesktopDatabaseUpgradeRuntime, Result};
 

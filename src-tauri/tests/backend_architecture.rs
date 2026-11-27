@@ -1093,7 +1093,7 @@ fn ipc_commands_that_take_paths_declare_where_the_path_is_checked() {
         ),
         (
             "app__start_game_from_path",
-            "crates/runtime-host-desktop/src/state.rs",
+            "crates/runtime-host-desktop/src/state/game.rs",
             "start_game_from_path",
             "ensure_vrchat_launch_path_allowed",
         ),
@@ -1245,7 +1245,6 @@ fn desktop_runtime_host_reaches_infrastructure_only_through_listed_modules() {
         "mcp_adapters.rs",
         "notification/dispatcher.rs",
         "notification/indicator.rs",
-        "state.rs",
     ];
     const VRCHAT_CLIENT_MODULES: &[&str] = &["privacy_lock.rs"];
 
