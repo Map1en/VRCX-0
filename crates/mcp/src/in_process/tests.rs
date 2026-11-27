@@ -394,6 +394,20 @@ async fn in_process_bridge_tolerates_reported_assistant_argument_shapes() {
         .unwrap();
     assert!(!copresence.is_error, "{}", copresence.text);
 
+    let capitalized_bool = tools
+        .call_tool(
+            "get_copresence_summary",
+            Some(Map::from_iter([
+                ("friendsOnly".into(), json!("True")),
+                ("groupBy".into(), json!("friend")),
+                ("limit".into(), json!(10)),
+                ("utcOffsetMinutes".into(), json!(540)),
+            ])),
+        )
+        .await
+        .unwrap();
+    assert!(!capitalized_bool.is_error, "{}", capitalized_bool.text);
+
     let activity = tools
         .call_tool(
             "get_friend_activity_pattern",

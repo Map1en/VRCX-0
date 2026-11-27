@@ -104,6 +104,11 @@ describe('assistant health telemetry', () => {
             summary:
                 'search_friend_feed exceeded 25 seconds; narrow target, eventTypes, or timeWindow'
         });
+        mod.recordAssistantToolError({
+            source: 'get_copresence_summary',
+            summary:
+                'failed to deserialize parameters: provided string was not `true` or `false`'
+        });
 
         expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
             type: 'assistantToolError',
@@ -144,6 +149,11 @@ describe('assistant health telemetry', () => {
             type: 'assistantToolError',
             source: 'search_friend_feed',
             summary: 'result=timeout'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(9, {
+            type: 'assistantToolError',
+            source: 'get_copresence_summary',
+            summary: 'result=invalid_args'
         });
     });
 

@@ -187,6 +187,7 @@ function classifyToolResult(summary?: string): string | undefined {
             normalized
         ) ||
         /\b(missing field|invalid type|unknown variant)\b/.test(normalized) ||
+        /\bfailed to deserialize parameters\b/.test(normalized) ||
         /\b(unrecognized timewindow|timewindow(?:\.[a-z]+| calendar year)? must be)\b/.test(
             normalized
         )

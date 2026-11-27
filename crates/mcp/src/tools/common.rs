@@ -17,11 +17,13 @@ where
     match Value::deserialize(deserializer)? {
         Value::Null => Ok(None),
         Value::Bool(value) => Ok(Some(value)),
-        Value::String(value) => value
-            .trim()
-            .parse::<bool>()
-            .map(Some)
-            .map_err(serde::de::Error::custom),
+        Value::String(value) => match value.trim() {
+            text if text.eq_ignore_ascii_case("true") => Ok(Some(true)),
+            text if text.eq_ignore_ascii_case("false") => Ok(Some(false)),
+            _ => Err(serde::de::Error::custom(
+                "expected a boolean or a true/false string",
+            )),
+        },
         _ => Err(serde::de::Error::custom(
             "expected a boolean or a true/false string",
         )),
