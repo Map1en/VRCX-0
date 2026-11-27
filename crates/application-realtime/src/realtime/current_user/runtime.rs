@@ -64,6 +64,7 @@ impl RealtimeCurrentUserRuntime {
         state.avatar_wear_checkpoint_ms = 0;
         if !preserves_remote_interval {
             state.remote_game_log_interval = None;
+            state.remote_location_from_local_game = false;
         }
     }
 
@@ -74,6 +75,7 @@ impl RealtimeCurrentUserRuntime {
         state.snapshot = RealtimeCurrentUserStateSnapshot::default();
         state.remote_snapshot = RealtimeCurrentUserStateSnapshot::default();
         state.pending_offline = None;
+        state.remote_location_from_local_game = false;
         state.remote_game_log_interval = None;
         state.presence = None;
         state.avatar_wear_checkpoint_ms = 0;

@@ -716,6 +716,56 @@ fn stopping_local_game_does_not_start_remote_gamelog_from_stale_snapshot() {
 }
 
 #[test]
+fn offline_after_the_local_game_stops_applies_at_once_but_later_remote_offline_waits() {
+    let runtime = RealtimeCurrentUserRuntime::new();
+    runtime.set_snapshot("usr_self".into(), 7, json!({ "id": "usr_self" }));
+    let local_game = game_running_at("wrld_local:1", "Local");
+    runtime
+        .apply_game_running_state(7, local_game.clone())
+        .expect("game start output");
+    runtime
+        .apply_ws_message(
+            7,
+            &current_user_location_message("wrld_local:1", "", "2026-05-15T00:00:00Z"),
+            local_game,
+        )
+        .expect("local session location output");
+    runtime
+        .apply_game_running_state(7, game_not_running(true))
+        .expect("game stop output");
+
+    let offline = runtime
+        .apply_ws_message(
+            7,
+            &current_user_location_message("offline:offline", "", "2026-05-15T00:00:10Z"),
+            game_not_running(true),
+        )
+        .expect("offline output");
+    assert_eq!(offline.wake_at_ms, None);
+    assert_eq!(offline.snapshot["$presence"]["kind"], json!("active"));
+
+    runtime
+        .apply_ws_message(
+            7,
+            &current_user_location_message("wrld_remote:2", "", "2026-05-15T00:01:00Z"),
+            game_not_running(true),
+        )
+        .expect("remote location output");
+    let remote_offline = runtime
+        .apply_ws_message(
+            7,
+            &current_user_location_message("offline:offline", "", "2026-05-15T00:01:10Z"),
+            game_not_running(true),
+        )
+        .expect("remote offline output");
+    assert!(remote_offline.wake_at_ms.is_some());
+    assert_eq!(
+        remote_offline.snapshot["$presence"]["kind"],
+        json!("online")
+    );
+}
+
+#[test]
 fn reconnect_preserves_remote_interval_and_invalidates_old_pending_timer() {
     let runtime = RealtimeCurrentUserRuntime::new();
     runtime.set_snapshot("usr_self".into(), 7, json!({ "id": "usr_self" }));

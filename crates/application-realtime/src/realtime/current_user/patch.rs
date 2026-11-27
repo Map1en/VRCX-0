@@ -73,6 +73,7 @@ pub(super) fn apply_user_location(
     }
     if is_offline_location_proof(&patch.text_field("location"))
         && has_remote_current_user_presence(&state.remote_snapshot)
+        && !state.remote_location_from_local_game
     {
         if state.pending_offline.is_some() {
             return None;
@@ -91,6 +92,7 @@ pub(super) fn apply_user_location(
         );
     }
     state.pending_offline = None;
+    state.remote_location_from_local_game = false;
     apply_current_user_patch(
         state,
         patch,
@@ -160,6 +162,7 @@ pub(super) fn apply_current_user_patch(
     }
 
     if game.is_game_running() {
+        state.remote_location_from_local_game = true;
         close_remote_game_log_interval(state, now, &mut persistence);
     } else if options.records_remote_game_log {
         reconcile_remote_game_log_interval(
