@@ -43,6 +43,7 @@ const FriendLogVirtualListRow = memo(function FriendLogVirtualListRow({
     return (
         <div
             data-friend-history-row=""
+            data-vrcx-0-list-row=""
             {...getLogFilterRowAttributes({
                 userId: row.userId || '',
                 userName: displayName,

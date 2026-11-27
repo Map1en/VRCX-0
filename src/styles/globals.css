@@ -1193,24 +1193,29 @@
         mask: url('../assets/masks/busy.svg') center / contain no-repeat;
     }
 
-    .is-striped-table .app-data-table [data-slot='table-body'] {
+    .is-striped-table .app-data-table tbody,
+    .is-striped-table .vrcx-0-data-table [data-vrcx-0-list-row] {
         --vrcx-0-table-divider: var(--vrcx-0-table-striped-divider);
     }
 
     .is-striped-table
         .app-data-table
-        [data-slot='table-body']
+        tbody
         > :is([data-slot='table-row'], [data-vrcx-0-table-row]):nth-child(
             even
         ):not(:hover):not([data-state='selected']):not(
             [data-state='expanded']
-        ):not(:has([aria-expanded='true'])) {
+        ):not(:has([aria-expanded='true'])),
+    .is-striped-table
+        .vrcx-0-data-table
+        [data-vrcx-0-virtual-row-even]
+        [data-vrcx-0-list-row]:not(:hover):not([data-state='expanded']) {
         background: var(--vrcx-0-table-row-striped-surface);
     }
 
     .is-striped-table
         .app-data-table
-        [data-slot='table-body']
+        tbody
         > :is([data-slot='table-row'], [data-vrcx-0-table-row]):nth-child(
             even
         ):not(:hover):not([data-state='selected']):not(

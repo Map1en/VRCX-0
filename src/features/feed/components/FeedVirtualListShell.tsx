@@ -139,6 +139,8 @@ const FeedVirtualListRow = memo(function FeedVirtualListRow({
             <div
                 role="presentation"
                 data-feed-list-summary=""
+                data-vrcx-0-list-row=""
+                data-state={expanded ? 'expanded' : undefined}
                 {...getLogFilterRowAttributes(
                     getFeedRowFilterTarget(
                         row,

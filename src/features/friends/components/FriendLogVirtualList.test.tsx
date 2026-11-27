@@ -97,6 +97,19 @@ describe('Friend History virtual rows', () => {
         expect(rows.every((row) => !('resolvedDisplayName' in row))).toBe(true);
     });
 
+    it('marks every second history row for the striped table preference', () => {
+        const view = render(<Harness />);
+        const striped = Array.from(
+            view.container.querySelectorAll('[data-friend-history-row]')
+        ).map(
+            (row) =>
+                row.closest('[data-vrcx-0-virtual-row-even]') !== null &&
+                row.hasAttribute('data-vrcx-0-list-row')
+        );
+
+        expect(striped.slice(0, 4)).toEqual([false, true, false, true]);
+    });
+
     it('offers every data column in the column visibility menu', () => {
         const { result } = renderHook(() => {
             const columns = useFriendLogColumns({

@@ -106,6 +106,7 @@ export function ModerationVirtualList({
             }
             renderRow={({ row }) => (
                 <div
+                    data-vrcx-0-list-row=""
                     className="grid min-h-[var(--vrcx-0-table-row-height)] items-center border-b border-[var(--vrcx-0-table-divider)] hover:bg-[var(--vrcx-0-table-row-hover-surface)]"
                     style={layout}
                 >

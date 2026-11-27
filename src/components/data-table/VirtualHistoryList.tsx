@@ -175,11 +175,14 @@ export function VirtualHistoryList<TRow extends { key: string }>({
                             className="relative"
                             style={{ height: totalSize, minWidth }}
                         >
-                            {virtualItems.map(({ key, row, start }) => (
+                            {virtualItems.map(({ index, key, row, start }) => (
                                 <div
                                     key={key}
                                     ref={getRowRef(key)}
                                     data-virtual-row-key={key}
+                                    data-vrcx-0-virtual-row-even={
+                                        index % 2 === 1 ? '' : undefined
+                                    }
                                     className={`absolute right-0 left-0 ${rowClassName?.(row) ?? ''}`}
                                     style={{
                                         transform: `translateY(${start}px)`
