@@ -25,6 +25,7 @@ import {
     sameLocationTag,
     type WorldDialogInstanceRow
 } from './WorldDialogViewParts';
+import type { WorldInstanceRecord } from './worldInstances';
 
 type CurrentInstanceDetails = {
     location?: string;
@@ -80,6 +81,58 @@ export function worldDialogInstanceViewer(
 
 function recordOrNull(value: unknown): EntityRecord | null {
     return isRecord(value) ? value : null;
+}
+
+function onlineFriendLocations(friendsById: Record<string, unknown>) {
+    return Object.values(friendsById || {})
+        .filter((friend) => !isOfflineOrLeavingFriend(friend))
+        .map((friend) => ({
+            friend,
+            location: resolveFriendPresenceLocation(friend, {
+                preferTraveling: true,
+                requireInstance: true
+            })
+        }));
+}
+
+export function friendOnlyWorldInstanceRows({
+    friendsById,
+    instanceRows,
+    world
+}: {
+    friendsById: Record<string, unknown>;
+    instanceRows: readonly WorldInstanceRecord[];
+    world: Pick<WorldProfileRecord, 'id'>;
+}): WorldDialogInstanceRow[] {
+    const rows: WorldDialogInstanceRow[] = [];
+    for (const { location } of onlineFriendLocations(friendsById)) {
+        const parsedLocation = parseLocation(location);
+        if (
+            !parsedLocation.instanceId ||
+            parsedLocation.worldId !== world.id ||
+            [...instanceRows, ...rows].some((instance) =>
+                sameInstanceLocation(world, instance, location)
+            )
+        ) {
+            continue;
+        }
+        const creatorGroupId = firstText(parsedLocation.groupId);
+        const creatorUserId = creatorGroupId
+            ? ''
+            : firstText(parsedLocation.userId);
+        rows.push({
+            id: parsedLocation.instanceId,
+            location: firstText(parsedLocation.tag, location),
+            users: [],
+            creatorUserId,
+            creatorUser: null,
+            creatorGroupId,
+            creatorGroup: creatorGroupId
+                ? normalizeInstanceGroup(creatorGroupId)
+                : null
+        });
+    }
+    return rows;
 }
 
 export function buildWorldDialogDisplayInstanceRows({
@@ -301,43 +354,15 @@ export function buildWorldDialogDisplayInstanceRows({
                   )
                 : [currentInstanceRow, ...normalizedInstanceRows]
             : normalizedInstanceRows;
-    const friendLocations = Object.values(friendsById || {})
-        .filter((friend) => !isOfflineOrLeavingFriend(friend))
-        .map((friend) => ({
-            friend,
-            location: resolveFriendPresenceLocation(friend, {
-                preferTraveling: true,
-                requireInstance: true
-            })
-        }));
-    const candidateInstanceRows = [...baseDisplayInstanceRows];
-    for (const { location } of friendLocations) {
-        const parsedLocation = parseLocation(location);
-        if (
-            !parsedLocation.instanceId ||
-            parsedLocation.worldId !== world.id ||
-            candidateInstanceRows.some((instance) =>
-                sameInstanceLocation(world, instance, location)
-            )
-        ) {
-            continue;
-        }
-        const creatorGroupId = firstText(parsedLocation.groupId);
-        const creatorUserId = creatorGroupId
-            ? ''
-            : firstText(parsedLocation.userId);
-        candidateInstanceRows.push({
-            id: parsedLocation.instanceId,
-            location: firstText(parsedLocation.tag, location),
-            users: [],
-            creatorUserId,
-            creatorUser: null,
-            creatorGroupId,
-            creatorGroup: creatorGroupId
-                ? normalizeInstanceGroup(creatorGroupId)
-                : null
-        });
-    }
+    const friendLocations = onlineFriendLocations(friendsById);
+    const candidateInstanceRows = [
+        ...baseDisplayInstanceRows,
+        ...friendOnlyWorldInstanceRows({
+            friendsById,
+            instanceRows: baseDisplayInstanceRows,
+            world
+        })
+    ];
     const creatorGroupKey = Array.from(
         new Set(
             candidateInstanceRows

@@ -4,12 +4,57 @@ import { offlinePresence, onlinePresence } from '@/test/presenceFixtures';
 
 import {
     buildWorldDialogDisplayInstanceRows,
+    friendOnlyWorldInstanceRows,
     worldDialogInstanceViewer
 } from './worldDialogInstanceRows';
 
 const anonymousViewer = { ageVerified: false, languages: [] };
 
 describe('worldDialogInstanceRows', () => {
+    it('lists each unlisted friend instance of the world once so its details can be fetched', () => {
+        const rows = friendOnlyWorldInstanceRows({
+            friendsById: {
+                usr_a: {
+                    id: 'usr_a',
+                    $presence: onlinePresence(
+                        'wrld_test:12345~group(grp_owner)~groupAccessType(public)'
+                    )
+                },
+                usr_b: {
+                    id: 'usr_b',
+                    $presence: onlinePresence(
+                        'wrld_test:12345~group(grp_owner)~groupAccessType(public)'
+                    )
+                },
+                usr_listed: {
+                    id: 'usr_listed',
+                    $presence: onlinePresence('wrld_test:public')
+                },
+                usr_elsewhere: {
+                    id: 'usr_elsewhere',
+                    $presence: onlinePresence('wrld_other:12345')
+                },
+                usr_offline: {
+                    id: 'usr_offline',
+                    $presence: offlinePresence
+                }
+            },
+            instanceRows: [{ id: 'public', location: 'wrld_test:public' }],
+            world: { id: 'wrld_test' }
+        });
+
+        expect(rows).toEqual([
+            expect.objectContaining({
+                id: '12345~group(grp_owner)~groupAccessType(public)',
+                location:
+                    'wrld_test:12345~group(grp_owner)~groupAccessType(public)',
+                users: [],
+                creatorGroupId: 'grp_owner',
+                creatorUserId: ''
+            })
+        ]);
+    });
+
     it('adds a friend instance that is absent from the searched world profile', () => {
         const result = buildWorldDialogDisplayInstanceRows({
             creatorGroupsById: {},

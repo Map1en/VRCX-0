@@ -51,6 +51,7 @@ import {
 import { WorldDialogOverviewSection } from './WorldDialogHeaderSection';
 import {
     buildWorldDialogDisplayInstanceRows,
+    friendOnlyWorldInstanceRows,
     worldDialogInstanceViewer
 } from './worldDialogInstanceRows';
 import { WorldDialogTabPanels } from './WorldDialogTabPanels';
@@ -261,7 +262,21 @@ export function WorldDialogTabbedView({
     const [creatorGroupsById, setCreatorGroupsById] = useState<
         Record<string, GroupProfileRecord>
     >({});
-    const instanceRows = useMemo(() => resolveInstanceRows(world), [world]);
+    const listedInstanceRows = useMemo(
+        () => resolveInstanceRows(world),
+        [world]
+    );
+    const instanceRows = useMemo(
+        () => [
+            ...listedInstanceRows,
+            ...friendOnlyWorldInstanceRows({
+                friendsById,
+                instanceRows: listedInstanceRows,
+                world
+            })
+        ],
+        [friendsById, listedInstanceRows, world]
+    );
     const instanceDetailTargets = useMemo(() => {
         const targetsByLocation = new Map<
             string,
