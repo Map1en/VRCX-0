@@ -355,17 +355,9 @@ export function buildWorldDialogDisplayInstanceRows({
                 : [currentInstanceRow, ...normalizedInstanceRows]
             : normalizedInstanceRows;
     const friendLocations = onlineFriendLocations(friendsById);
-    const candidateInstanceRows = [
-        ...baseDisplayInstanceRows,
-        ...friendOnlyWorldInstanceRows({
-            friendsById,
-            instanceRows: baseDisplayInstanceRows,
-            world
-        })
-    ];
     const creatorGroupKey = Array.from(
         new Set(
-            candidateInstanceRows
+            baseDisplayInstanceRows
                 .map((instance) =>
                     firstText(
                         instance.creatorGroupId,
@@ -379,7 +371,7 @@ export function buildWorldDialogDisplayInstanceRows({
     )
         .sort()
         .join('|');
-    const unsortedInstanceRows = candidateInstanceRows.map((instance) => {
+    const unsortedInstanceRows = baseDisplayInstanceRows.map((instance) => {
         const location = resolveLaunchLocation(world, instance);
         const friendsInInstance = location
             ? friendLocations

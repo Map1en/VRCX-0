@@ -55,48 +55,55 @@ describe('worldDialogInstanceRows', () => {
         ]);
     });
 
-    it('adds a friend instance that is absent from the searched world profile', () => {
+    it('shows the friends inside a friend instance that is absent from the searched world profile', () => {
+        const friendsById = {
+            usr_friend: {
+                id: 'usr_friend',
+                displayName: 'Friend',
+                $presence: onlinePresence(
+                    'wrld_test:friends-room~friends(usr_owner)~region(jp)'
+                )
+            },
+            usr_roommate: {
+                id: 'usr_roommate',
+                displayName: 'Roommate',
+                $presence: onlinePresence(
+                    'wrld_test:friends-room~friends(usr_owner)~region(jp)'
+                )
+            },
+            usr_other_world: {
+                id: 'usr_other_world',
+                displayName: 'Elsewhere',
+                $presence: onlinePresence(
+                    'wrld_other:friends-room~friends(usr_owner)'
+                )
+            }
+        };
+        const world = { id: 'wrld_test', capacity: 40 };
+        const listedInstanceRows = [
+            {
+                id: 'public',
+                location: 'wrld_test:public',
+                occupants: 1,
+                users: []
+            }
+        ];
         const result = buildWorldDialogDisplayInstanceRows({
             creatorGroupsById: {},
             currentInstanceDetails: {},
-            friendsById: {
-                usr_friend: {
-                    id: 'usr_friend',
-                    displayName: 'Friend',
-                    $presence: onlinePresence(
-                        'wrld_test:friends-room~friends(usr_owner)~region(jp)'
-                    )
-                },
-                usr_roommate: {
-                    id: 'usr_roommate',
-                    displayName: 'Roommate',
-                    $presence: onlinePresence(
-                        'wrld_test:friends-room~friends(usr_owner)~region(jp)'
-                    )
-                },
-                usr_other_world: {
-                    id: 'usr_other_world',
-                    displayName: 'Elsewhere',
-                    $presence: onlinePresence(
-                        'wrld_other:friends-room~friends(usr_owner)'
-                    )
-                }
-            },
+            friendsById,
             instanceRows: [
-                {
-                    id: 'public',
-                    location: 'wrld_test:public',
-                    occupants: 1,
-                    users: []
-                }
+                ...listedInstanceRows,
+                ...friendOnlyWorldInstanceRows({
+                    friendsById,
+                    instanceRows: listedInstanceRows,
+                    world
+                })
             ],
             viewer: anonymousViewer,
             isInstanceLocation: false,
             normalizedWorldId: 'wrld_test',
-            world: {
-                id: 'wrld_test',
-                capacity: 40
-            }
+            world
         });
 
         expect(result.displayInstanceRows).toHaveLength(2);
