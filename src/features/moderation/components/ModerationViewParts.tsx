@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/layout/PageScaffold';
 import { ToolbarFilterMenu } from '@/components/layout/ToolbarControls';
 import { cn } from '@/lib/utils';
 import { moderationTypes } from '@/shared/constants/moderation';
+import { IntentTooltip } from '@/ui/hint-tooltip';
 import {
     DropdownMenuCheckboxItem,
     DropdownMenuGroup
@@ -50,17 +51,19 @@ export function ModerationTypeIndicator({
 }) {
     const meta = MODERATION_TYPE_META[type];
     return (
-        <span className="inline-flex min-w-0 items-center gap-1.5">
-            {meta ? (
-                <meta.Icon
-                    aria-hidden="true"
-                    className={cn('size-3.5 shrink-0', meta.iconClassName)}
-                />
-            ) : null}
-            <span className="text-foreground/80 min-w-0 truncate text-sm font-normal">
-                {label}
+        <IntentTooltip content={label}>
+            <span className="flex w-full min-w-0 items-center gap-1.5">
+                {meta ? (
+                    <meta.Icon
+                        aria-hidden="true"
+                        className={cn('size-3.5 shrink-0', meta.iconClassName)}
+                    />
+                ) : null}
+                <span className="text-foreground/80 min-w-0 truncate text-sm font-normal">
+                    {label}
+                </span>
             </span>
-        </span>
+        </IntentTooltip>
     );
 }
 
