@@ -73,6 +73,9 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
     const downloadProgress = useRuntimeStore(
         (state) => state.updateLoop.downloadProgress
     );
+    const setSystemHostOpen = useRuntimeStore(
+        (state) => state.setSystemHostOpen
+    );
     const hasMatchingDownload =
         latestRelease?.canonicalVersion === downloadedVersion;
     const progress = hasMatchingDownload ? downloadProgress : 0;
@@ -339,6 +342,33 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                             <FieldDescription>
                                 {t('dialog.vrcx_updater.channel.description')}
                             </FieldDescription>
+                            {currentChannel === 'beta' &&
+                            selectedChannel === 'stable' ? (
+                                <div className="flex flex-col items-start gap-1">
+                                    <p className="text-muted-foreground text-xs leading-relaxed text-pretty">
+                                        {t(
+                                            'dialog.vrcx_updater.channel.stable_backup_hint'
+                                        )}
+                                    </p>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-muted-foreground -ml-2 text-xs"
+                                        onClick={() => {
+                                            onOpenChange(false);
+                                            setSystemHostOpen(
+                                                'profileBackupOpen',
+                                                true
+                                            );
+                                        }}
+                                    >
+                                        {t(
+                                            'dialog.vrcx_updater.channel.open_backup_tool'
+                                        )}
+                                    </Button>
+                                </div>
+                            ) : null}
                         </Field>
                     ) : null}
                     <div className="border-input bg-background flex w-full flex-col gap-1 rounded-md border px-3 py-2 text-sm">

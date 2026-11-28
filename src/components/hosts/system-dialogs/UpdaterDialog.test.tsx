@@ -431,6 +431,37 @@ describe('UpdaterDialog', () => {
         }
     );
 
+    it('suggests a backup only when switching from beta to stable', async () => {
+        vi.stubGlobal('VERSION', '2.7.0-beta.1');
+        mocks.appAppUpdateReleaseGet.mockResolvedValue(null);
+        mocks.toNormalizedReleaseFromSnapshot.mockReturnValue(null);
+        const onOpenChange = vi.fn();
+        render(<UpdaterDialog open onOpenChange={onOpenChange} />);
+
+        expect(
+            screen.queryByText('dialog.vrcx_updater.channel.stable_backup_hint')
+        ).toBeNull();
+
+        await act(async () =>
+            screen.getByRole('button', { name: 'select:beta' }).click()
+        );
+        expect(
+            screen.getByText('dialog.vrcx_updater.channel.stable_backup_hint')
+        ).toBeTruthy();
+
+        await act(async () =>
+            screen
+                .getByRole('button', {
+                    name: 'dialog.vrcx_updater.channel.open_backup_tool'
+                })
+                .click()
+        );
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+        expect(useRuntimeStore.getState().systemHosts.profileBackupOpen).toBe(
+            true
+        );
+    });
+
     it('keeps the release page action for a channel without in-app installation', async () => {
         const betaRelease = {
             canonicalVersion: '2.7.0-beta.1',

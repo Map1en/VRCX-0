@@ -6900,7 +6900,9 @@
                 "switch_description": "To switch to {channel}, download and install its latest release.",
                 "download_stable": "Download latest Stable",
                 "download_beta": "Download latest Beta",
-                "no_release": "No release is available in this channel."
+                "no_release": "No release is available in this channel.",
+                "stable_backup_hint": "Beta builds may update the database and other data ahead of stable releases. Back up your data before switching to stable.",
+                "open_backup_tool": "Open backup tool"
             }
         },
         "change_log": {

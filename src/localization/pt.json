@@ -6842,7 +6842,9 @@
                 "switch_description": "Para mudar para {channel}, baixe e instale a versão mais recente desse canal.",
                 "download_stable": "Baixar a versão estável mais recente",
                 "download_beta": "Baixar a versão Beta mais recente",
-                "no_release": "Não há nenhuma versão disponível neste canal."
+                "no_release": "Não há nenhuma versão disponível neste canal.",
+                "stable_backup_hint": "As versões beta podem atualizar o banco de dados e outros dados antes das versões estáveis. Faça backup dos seus dados antes de mudar para a versão estável.",
+                "open_backup_tool": "Abrir ferramenta de backup"
             }
         },
         "change_log": {

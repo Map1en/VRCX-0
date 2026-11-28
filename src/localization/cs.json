@@ -6877,7 +6877,9 @@
                 "switch_description": "Chcete-li přejít na kanál {channel}, stáhněte a nainstalujte jeho nejnovější verzi.",
                 "download_stable": "Stáhnout nejnovější stabilní verzi",
                 "download_beta": "Stáhnout nejnovější beta verzi",
-                "no_release": "V tomto kanálu není k dispozici žádná verze."
+                "no_release": "V tomto kanálu není k dispozici žádná verze.",
+                "stable_backup_hint": "Beta verze mohou databázi a další data aktualizovat dříve než stabilní verze. Před přechodem na stabilní verzi si data zálohujte.",
+                "open_backup_tool": "Otevřít nástroj pro zálohování"
             }
         },
         "change_log": {

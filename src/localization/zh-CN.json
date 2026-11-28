@@ -6884,7 +6884,9 @@
                 "switch_description": "切换到{channel}需要下载并安装该通道的最新版本。",
                 "download_stable": "下载最新正式版",
                 "download_beta": "下载最新测试版",
-                "no_release": "此通道暂无可用版本。"
+                "no_release": "此通道暂无可用版本。",
+                "stable_backup_hint": "测试版可能会提前升级数据库等内容。切换到正式版前，建议先备份数据。",
+                "open_backup_tool": "打开备份工具"
             }
         },
         "change_log": {
