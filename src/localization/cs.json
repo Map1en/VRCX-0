@@ -7265,6 +7265,11 @@
             "preserved_work_database": "Zachovaná pracovní databáze aktualizace",
             "database_upload_warning": "Tato databáze může obsahovat soukromé údaje o účtu a aktivitě. Nenahrávejte ji na GitHub.",
             "use_new_database": "Použít novou databázi",
+            "newer_schema_title": "Tato databáze pochází z novější verze VRCX-0",
+            "update_to_latest": "Aktualizovat na nejnovější verzi",
+            "updating_to_latest": "Aktualizace…",
+            "contact_discord": "Kontaktujte nás na Discordu",
+            "update_opened_download_page": "Aktualizace v aplikaci se nezdařila. Stránka ke stažení byla otevřena v prohlížeči.",
             "fresh_start_confirm_title": "Použít novou databázi?",
             "fresh_start_confirm_description": "VRCX-0 zachová současnou databázi a soubory neúspěšné aktualizace ve složce pro obnovení a poté se restartuje s novou prázdnou databází. Nastavení, místní historie a uložené údaje účtů se do nové databáze nepřenesou.",
             "fresh_start_restarting": "Současná databáze se archivuje a VRCX-0 se restartuje",
@@ -7903,7 +7908,7 @@
                 "failed_upgrade_description": "Předchozí aktualizace databáze se nezdařila. Tuto databázi nelze použít, dokud nebude ručně opravena.",
                 "apply_upgrade_failed": "Aplikaci VRCX-0 se nepodařilo provést místní aktualizaci databáze",
                 "legacy_migration_restart_failed": "Aplikaci VRCX-0 se nepodařilo restartovat kvůli migraci stávajících dat VRCX. Můžete to zkusit znovu, nebo migraci přeskočit a pokračovat se stávající databází.",
-                "newer_schema_requires_newer_app": "Tato databáze používá verzi schématu {value}, ale tato verze VRCX-0 podporuje pouze verze do {value2}. Chcete-li ji otevřít, nainstalujte nejnovější verzi VRCX-0."
+                "newer_schema_requires_newer_app": "Tuto databázi už otevřela novější verze VRCX-0 (verze schématu {value}) a tato verze podporuje pouze verze do {value2}. Aktualizujte na nejnovější verzi a otevřete ji znovu. Pokud se ani po aktualizaci neotevře, kontaktujte nás na Discordu."
             },
             "success": {
                 "database_update_complete": "Aktualizace databáze dokončena"

@@ -630,6 +630,36 @@ async fn install_waits_for_another_download_before_switching() {
 }
 
 #[tokio::test]
+async fn install_resolves_a_same_channel_version_before_any_update_check() {
+    let mut context = app_update_test_context([]);
+    let inner = Arc::get_mut(&mut context.runtime.inner).unwrap();
+    inner.release_catalog = Arc::new(TestAppUpdateReleaseCatalog {
+        releases: vec![release(
+            "v2.15.1",
+            false,
+            vec![asset(
+                "latest_windows.json",
+                "uploaded",
+                "https://example.test/latest_windows.json",
+            )],
+        )],
+    });
+    *context.runtime.inner.status.lock().unwrap() = AppUpdateStatusSnapshot::idle();
+
+    let metadata = context
+        .runtime
+        .install("2.15.1")
+        .await
+        .expect("same-channel install resolves the release from the catalog");
+
+    assert_eq!(metadata.version, "2.15.1");
+    let requests = context.port.download_requests.lock().unwrap();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].expected_version, "2.15.1");
+    assert!(!requests[0].allow_downgrades);
+}
+
+#[tokio::test]
 async fn install_rejects_a_cross_channel_version_missing_from_the_catalog() {
     let context = app_update_test_context([]);
     assert!(context.runtime.install("2.16.0-beta.1").await.is_err());

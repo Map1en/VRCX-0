@@ -7225,6 +7225,11 @@
             "preserved_work_database": "Gesicherte Arbeitsdatenbank des Upgrades",
             "database_upload_warning": "Diese Datenbank kann private Konto- und Aktivitätsdaten enthalten. Lade sie nicht auf GitHub hoch.",
             "use_new_database": "Neue Datenbank verwenden",
+            "newer_schema_title": "Diese Datenbank stammt von einer neueren VRCX-0-Version",
+            "update_to_latest": "Auf neueste Version aktualisieren",
+            "updating_to_latest": "Wird aktualisiert…",
+            "contact_discord": "Kontaktiere uns auf Discord",
+            "update_opened_download_page": "Die Aktualisierung in der App ist fehlgeschlagen. Die Download-Seite wurde im Browser geöffnet.",
             "fresh_start_confirm_title": "Eine neue Datenbank verwenden?",
             "fresh_start_confirm_description": "VRCX-0 bewahrt die aktuelle Datenbank und die Dateien des fehlgeschlagenen Upgrades in einem Wiederherstellungsordner auf und startet dann mit einer neuen, leeren Datenbank neu. Einstellungen, lokaler Verlauf und gespeicherte Kontodaten werden nicht in die neue Datenbank übernommen.",
             "fresh_start_restarting": "Die aktuelle Datenbank wird archiviert und VRCX-0 neu gestartet",
@@ -7863,7 +7868,7 @@
                 "failed_upgrade_description": "Das vorherige Datenbank-Upgrade ist fehlgeschlagen. Diese Datenbank kann erst wieder verwendet werden, nachdem sie manuell repariert wurde.",
                 "apply_upgrade_failed": "VRCX-0 konnte ein lokales Datenbank-Upgrade nicht anwenden",
                 "legacy_migration_restart_failed": "VRCX-0 konnte nicht neu starten, um deine vorhandenen VRCX-Daten zu migrieren. Du kannst es erneut versuchen oder überspringen, um mit der aktuellen Datenbank fortzufahren.",
-                "newer_schema_requires_newer_app": "Diese Datenbank verwendet Schemaversion {value}, aber diese VRCX-0-Version unterstützt nur bis Version {value2}. Installiere die neueste VRCX-0-Version, um sie zu öffnen."
+                "newer_schema_requires_newer_app": "Diese Datenbank wurde bereits von einer neueren VRCX-0-Version geöffnet (Schemaversion {value}), diese Version unterstützt nur bis Version {value2}. Aktualisiere auf die neueste Version, um sie zu öffnen. Falls sie sich danach immer noch nicht öffnen lässt, kontaktiere uns auf Discord."
             },
             "success": {
                 "database_update_complete": "Datenbank-Update abgeschlossen"

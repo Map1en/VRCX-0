@@ -13,10 +13,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     confirmLegacyDatabaseMigration: vi.fn(),
     createDatabaseUpgradeGitHubIssue: vi.fn(),
+    openDatabaseUpgradeDiscord: vi.fn(),
     openDatabaseUpgradeFailureLogFolder: vi.fn(),
     retryDatabaseUpgrade: vi.fn(),
     startFreshDatabaseAfterUpgradeFailure: vi.fn(),
     skipLegacyDatabaseMigration: vi.fn(),
+    updateAppForNewerDatabase: vi.fn(),
     restartApplication: vi.fn()
 }));
 
@@ -135,6 +137,44 @@ describe('DatabaseUpgradeDialog', () => {
         expect(
             screen.getByText('dialog.system.action.migrate_and_restart')
         ).not.toBeNull();
+    });
+
+    it('leads a newer-database block with updating and keeps a fresh start secondary', async () => {
+        mocks.updateAppForNewerDatabase.mockResolvedValue(
+            'opened-download-page'
+        );
+        useRuntimeStore.getState().setDatabaseUpgradeState({
+            open: true,
+            phase: 'newer-schema',
+            freshStartAvailable: true
+        });
+
+        render(<DatabaseUpgradeDialog open />);
+
+        expect(
+            screen.getByText('message.database.newer_schema_title')
+        ).not.toBeNull();
+        expect(
+            screen.queryByText('message.database.create_github_issue')
+        ).toBeNull();
+
+        await act(async () => {
+            fireEvent.click(
+                screen.getByText('message.database.update_to_latest')
+            );
+        });
+        expect(mocks.updateAppForNewerDatabase).toHaveBeenCalledTimes(1);
+        expect(
+            screen.getByText('message.database.update_opened_download_page')
+        ).not.toBeNull();
+
+        fireEvent.click(screen.getByText('message.database.contact_discord'));
+        expect(mocks.openDatabaseUpgradeDiscord).toHaveBeenCalledTimes(1);
+
+        fireEvent.click(screen.getByText('message.database.use_new_database'));
+        expect(
+            mocks.startFreshDatabaseAfterUpgradeFailure
+        ).toHaveBeenCalledTimes(1);
     });
 
     it('opens the log folder and GitHub new-issue actions from a failure', () => {

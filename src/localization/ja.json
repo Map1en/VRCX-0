@@ -7245,6 +7245,11 @@
             "preserved_work_database": "アップグレードに失敗したデータベースのコピー",
             "database_upload_warning": "このデータベースには、アカウントやアクティビティに関する個人情報が含まれる場合があります。GitHub にはアップロードしないでください。",
             "use_new_database": "新しいデータベースを使用",
+            "newer_schema_title": "新しいバージョンで使われたデータベースです",
+            "update_to_latest": "最新版にアップデート",
+            "updating_to_latest": "アップデート中…",
+            "contact_discord": "Discord で問い合わせる",
+            "update_opened_download_page": "アプリ内でアップデートできなかったため、ブラウザでダウンロードページを開きました。",
             "fresh_start_confirm_title": "新しいデータベースを使用しますか？",
             "fresh_start_confirm_description": "VRCX-0 は現在のデータベースとアップグレード失敗時のファイルを復旧フォルダに保存し、新しい空のデータベースで再起動します。新しいデータベースには設定、ローカル履歴、保存済みアカウント情報は引き継がれません。",
             "fresh_start_restarting": "現在のデータベースを保存して VRCX-0 を再起動しています",
@@ -7912,7 +7917,7 @@
                 "failed_upgrade_description": "前回のデータベースアップグレードに失敗しました。手動で修復するまで、このデータベースは使用できません。",
                 "apply_upgrade_failed": "VRCX-0 はローカルデータベースのアップグレードを適用できませんでした",
                 "legacy_migration_restart_failed": "既存の VRCX データを移行するための VRCX-0 の再起動に失敗しました。もう一度お試しいただくか、スキップして現在のデータベースのまま続行できます。",
-                "newer_schema_requires_newer_app": "このデータベースのスキーマはバージョン {value} ですが、現在の VRCX-0 が対応しているのは {value2} までです。最新版の VRCX-0 をインストールしてから開いてください。"
+                "newer_schema_requires_newer_app": "このデータベースは新しいバージョンの VRCX-0 で開かれています（スキーマバージョン {value}）。現在のバージョンが対応しているのは {value2} までです。最新版にアップデートしてから開いてください。アップデート後も開けない場合は、Discord でお問い合わせください。"
             },
             "success": {
                 "database_update_complete": "データベース更新が完了しました"

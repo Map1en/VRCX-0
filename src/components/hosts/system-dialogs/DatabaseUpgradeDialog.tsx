@@ -9,10 +9,12 @@ import type { DatabaseUpgradeStage } from '@/platform/tauri/bindings';
 import {
     confirmLegacyDatabaseMigration,
     createDatabaseUpgradeGitHubIssue,
+    openDatabaseUpgradeDiscord,
     openDatabaseUpgradeFailureLogFolder,
     retryDatabaseUpgrade,
     startFreshDatabaseAfterUpgradeFailure,
-    skipLegacyDatabaseMigration
+    skipLegacyDatabaseMigration,
+    updateAppForNewerDatabase
 } from '@/services/databaseUpgradeService';
 import { restartApplication } from '@/services/shellIntegrationService';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -61,6 +63,8 @@ function getDatabaseUpgradeTitleKey(phase: string): string {
             return 'message.database.migration_restarting_title';
         case 'error':
             return 'message.database.upgrade_failed_title';
+        case 'newer-schema':
+            return 'message.database.newer_schema_title';
         default:
             return 'message.database.upgrade_in_progress_title';
     }
@@ -179,6 +183,8 @@ function DatabaseUpgradeFailureView({
 export function DatabaseUpgradeDialog({ open }: { open: boolean }) {
     const { t } = useTranslation();
     const [legacyChoicePending, setLegacyChoicePending] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [updateNotice, setUpdateNotice] = useState('');
 
     const databaseUpgrade = useRuntimeStore((state) => state.databaseUpgrade);
     const setDatabaseUpgradeState = useRuntimeStore(
@@ -188,9 +194,12 @@ export function DatabaseUpgradeDialog({ open }: { open: boolean }) {
         databaseUpgrade.phase === 'running' ||
         databaseUpgrade.phase === 'restarting';
     const isError = databaseUpgrade.phase === 'error';
+    const isNewerSchema = databaseUpgrade.phase === 'newer-schema';
+    const isAlert = isError || isNewerSchema;
     const isBlockingFailure =
-        isError &&
-        (databaseUpgrade.retryable || databaseUpgrade.freshStartAvailable);
+        isNewerSchema ||
+        (isError &&
+            (databaseUpgrade.retryable || databaseUpgrade.freshStartAvailable));
     const showStageDetail = useDelayedFlag(
         open && isBusy,
         STAGE_DETAIL_REVEAL_MS
@@ -209,24 +218,29 @@ export function DatabaseUpgradeDialog({ open }: { open: boolean }) {
         >
             <DialogContent
                 showCloseButton={!isBusy && !isBlockingFailure}
-                className={isError ? 'sm:max-w-lg' : undefined}
+                className={isAlert ? 'sm:max-w-lg' : undefined}
             >
                 <DialogHeader>
                     <DialogTitle
-                        className={isError ? 'flex items-start gap-2' : ''}
+                        className={isAlert ? 'flex items-start gap-2' : ''}
                     >
-                        {isError ? (
+                        {isAlert ? (
                             <TriangleAlertIcon className="text-destructive mt-px size-[18px] shrink-0" />
                         ) : null}
                         {t(getDatabaseUpgradeTitleKey(databaseUpgrade.phase))}
                     </DialogTitle>
                     <DialogDescription
-                        className={isError ? 'text-foreground' : undefined}
+                        className={isAlert ? 'text-foreground' : undefined}
                     >
                         {isBusy
                             ? t('message.database.upgrade_keep_open')
                             : databaseUpgrade.detail}
                     </DialogDescription>
+                    {isNewerSchema && updateNotice ? (
+                        <p className="text-muted-foreground text-sm">
+                            {updateNotice}
+                        </p>
+                    ) : null}
                 </DialogHeader>
                 {isBusy ? (
                     <DatabaseUpgradeProgressView
@@ -269,6 +283,58 @@ export function DatabaseUpgradeDialog({ open }: { open: boolean }) {
                                 }}
                             >
                                 {t('dialog.system.action.migrate_and_restart')}
+                            </Button>
+                        </>
+                    ) : isNewerSchema ? (
+                        <>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:text-foreground text-xs sm:mr-auto"
+                                disabled={updating}
+                                onClick={() => {
+                                    void startFreshDatabaseAfterUpgradeFailure();
+                                }}
+                            >
+                                {t('message.database.use_new_database')}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    void openDatabaseUpgradeDiscord();
+                                }}
+                            >
+                                {t('message.database.contact_discord')}
+                            </Button>
+                            <Button
+                                type="button"
+                                disabled={updating}
+                                onClick={() => {
+                                    setUpdating(true);
+                                    setUpdateNotice('');
+                                    void updateAppForNewerDatabase()
+                                        .then((outcome) => {
+                                            if (
+                                                outcome ===
+                                                'opened-download-page'
+                                            ) {
+                                                setUpdateNotice(
+                                                    t(
+                                                        'message.database.update_opened_download_page'
+                                                    )
+                                                );
+                                            }
+                                        })
+                                        .finally(() => {
+                                            setUpdating(false);
+                                        });
+                                }}
+                            >
+                                {updating
+                                    ? t('message.database.updating_to_latest')
+                                    : t('message.database.update_to_latest')}
                             </Button>
                         </>
                     ) : isError ? (

@@ -7272,6 +7272,11 @@
             "preserved_work_database": "升级失败时保留的数据库副本",
             "database_upload_warning": "此数据库可能包含账号及活动等隐私数据，请勿上传到 GitHub。",
             "use_new_database": "改用新数据库",
+            "newer_schema_title": "这个数据库来自更新的版本",
+            "update_to_latest": "更新到最新版",
+            "updating_to_latest": "正在更新…",
+            "contact_discord": "到 Discord 联系我们",
+            "update_opened_download_page": "无法在应用内更新，已在浏览器中打开下载页面。",
             "fresh_start_confirm_title": "要改用新的数据库吗？",
             "fresh_start_confirm_description": "VRCX-0 会将当前数据库和升级失败文件保留在恢复文件夹中，然后使用新的空数据库重启。新数据库中不会保留设置、本地历史和已保存的账号数据。",
             "fresh_start_restarting": "正在归档当前数据库并重启 VRCX-0",
@@ -7939,7 +7944,7 @@
                 "failed_upgrade_description": "上一次数据库升级失败，在手动修复前，此数据库将无法使用。",
                 "apply_upgrade_failed": "VRCX-0 应用本地数据库升级失败",
                 "legacy_migration_restart_failed": "VRCX-0 未能重启以迁移已有的 VRCX 数据。你可以重试，或跳过并继续使用当前数据库。",
-                "newer_schema_requires_newer_app": "此数据库使用结构版本 {value}，但当前 VRCX-0 最高仅支持 {value2}。请安装最新版 VRCX-0 后再打开。"
+                "newer_schema_requires_newer_app": "这个数据库已被更新版本的 VRCX-0 打开过（结构版本 {value}），当前版本最高只支持 {value2}。请更新到最新版后再打开；如果更新后仍然打不开，请到 Discord 联系我们。"
             },
             "success": {
                 "database_update_complete": "数据库更新完成"

@@ -7263,6 +7263,11 @@
             "preserved_work_database": "升級失敗時保留的資料庫副本",
             "database_upload_warning": "此資料庫可能包含帳號及活動等私人資料，請勿上傳至 GitHub。",
             "use_new_database": "改用新資料庫",
+            "newer_schema_title": "這個資料庫來自較新的版本",
+            "update_to_latest": "更新到最新版",
+            "updating_to_latest": "正在更新…",
+            "contact_discord": "到 Discord 聯絡我們",
+            "update_opened_download_page": "無法在應用程式內更新，已在瀏覽器中開啟下載頁面。",
             "fresh_start_confirm_title": "要改用新的資料庫嗎？",
             "fresh_start_confirm_description": "VRCX-0 會將目前的資料庫與升級失敗檔案保留在復原資料夾中，然後使用新的空白資料庫重新啟動。新的資料庫不會保留設定、本機歷史紀錄與已儲存的帳號資料。",
             "fresh_start_restarting": "正在封存目前的資料庫並重新啟動 VRCX-0",
@@ -7930,7 +7935,7 @@
                 "failed_upgrade_description": "上一次資料庫升級失敗。手動修復前，此資料庫無法使用。",
                 "apply_upgrade_failed": "VRCX-0 套用本機資料庫升級失敗",
                 "legacy_migration_restart_failed": "VRCX-0 無法重新啟動以遷移你現有的 VRCX 資料。你可以再試一次，或略過此步驟，繼續使用目前的資料庫。",
-                "newer_schema_requires_newer_app": "此資料庫使用架構版本 {value}，但此 VRCX-0 版本最高只支援到 {value2}。請安裝最新版本的 VRCX-0 才能開啟。"
+                "newer_schema_requires_newer_app": "這個資料庫已被較新版本的 VRCX-0 開啟過（架構版本 {value}），目前版本最高只支援到 {value2}。請更新到最新版後再開啟；如果更新後仍然無法開啟，請到 Discord 聯絡我們。"
             },
             "success": {
                 "database_update_complete": "資料庫更新完成"

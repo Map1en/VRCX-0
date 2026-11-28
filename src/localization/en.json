@@ -7288,6 +7288,11 @@
             "preserved_work_database": "Database copy from the failed upgrade",
             "database_upload_warning": "This database may contain private account and activity data. Do not upload it to GitHub.",
             "use_new_database": "Start with new database",
+            "newer_schema_title": "This database is from a newer VRCX-0",
+            "update_to_latest": "Update to latest version",
+            "updating_to_latest": "Updating…",
+            "contact_discord": "Contact us on Discord",
+            "update_opened_download_page": "Couldn't update in the app. The download page has been opened in your browser.",
             "fresh_start_confirm_title": "Start with a new database?",
             "fresh_start_confirm_description": "VRCX-0 will keep the current database and failed upgrade files in a recovery folder, then restart with a new empty database. Settings, local history, and saved account data will not appear in the new database.",
             "fresh_start_restarting": "Archiving the current database and restarting VRCX-0",
@@ -7955,7 +7960,7 @@
                 "failed_upgrade_description": "The previous database upgrade failed. This database cannot be used until it is repaired manually.",
                 "apply_upgrade_failed": "VRCX-0 failed to apply a local database upgrade",
                 "legacy_migration_restart_failed": "VRCX-0 couldn't restart to migrate your existing VRCX data. You can try again, or skip to continue with the current database.",
-                "newer_schema_requires_newer_app": "This database uses schema version {value}, but this VRCX-0 version only supports up to {value2}. Install the latest VRCX-0 version to open it."
+                "newer_schema_requires_newer_app": "This database has already been opened by a newer version of VRCX-0 (schema version {value}), and this version only supports up to {value2}. Update to the latest version to open it. If it still won't open after updating, contact us on Discord."
             },
             "success": {
                 "database_update_complete": "Database update complete"

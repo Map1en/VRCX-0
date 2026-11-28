@@ -10,6 +10,11 @@ const mocks = vi.hoisted(() => ({
     appDatabaseUpgradeStartFresh: vi.fn(),
     appGetLegacyVrcxMigrationStatus: vi.fn(),
     appRequestLegacyMigration: vi.fn(),
+    appAppUpdateReleaseGet: vi.fn(),
+    appAppUpdateInstallConfirm: vi.fn(),
+    openExternalLink: vi.fn(),
+    restartApplication: vi.fn(),
+    isUpdateCheckDisabledBuild: vi.fn(),
     configReload: vi.fn(),
     confirmLegacyVrcxProcessState: vi.fn(),
     confirm: vi.fn(),
@@ -27,12 +32,19 @@ vi.mock('@/platform/tauri/bindings', () => ({
             mocks.appDatabaseUpgradeFailureLogPath,
         appDatabaseUpgradeStartFresh: mocks.appDatabaseUpgradeStartFresh,
         appGetLegacyVrcxMigrationStatus: mocks.appGetLegacyVrcxMigrationStatus,
-        appRequestLegacyMigration: mocks.appRequestLegacyMigration
+        appRequestLegacyMigration: mocks.appRequestLegacyMigration,
+        appAppUpdateReleaseGet: mocks.appAppUpdateReleaseGet,
+        appAppUpdateInstallConfirm: mocks.appAppUpdateInstallConfirm
     }
 }));
 
 vi.mock('@/services/shellIntegrationService', () => ({
-    openExternalLink: vi.fn()
+    openExternalLink: mocks.openExternalLink,
+    restartApplication: mocks.restartApplication
+}));
+
+vi.mock('@/shared/buildLabel', () => ({
+    isUpdateCheckDisabledBuild: mocks.isUpdateCheckDisabledBuild
 }));
 
 vi.mock('@/services/legacyVrcxMigrationService', () => ({
@@ -72,7 +84,8 @@ import {
     initializeDatabaseUpgradeFlow,
     retryDatabaseUpgrade,
     startFreshDatabaseAfterUpgradeFailure,
-    skipLegacyDatabaseMigration
+    skipLegacyDatabaseMigration,
+    updateAppForNewerDatabase
 } from './databaseUpgradeService';
 
 function unavailableLegacyStatus() {
@@ -479,13 +492,84 @@ describe('databaseUpgradeService', () => {
         expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
         expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
             open: true,
-            phase: 'error',
+            phase: 'newer-schema',
             fromVersion: 19,
             toVersion: 18,
             retryable: false,
             freshStartAvailable: true,
             detail: 'service.database_upgrade_service.error.newer_schema_requires_newer_app:{"value":19,"value2":18}'
         });
+    });
+
+    it('installs the newest release across channels for a newer database', async () => {
+        vi.stubGlobal('VERSION', '2.33.0-beta.6');
+        mocks.isUpdateCheckDisabledBuild.mockReturnValue(false);
+        mocks.appAppUpdateReleaseGet.mockImplementation(
+            async (channel: string) =>
+                channel === 'stable'
+                    ? { canonicalVersion: '2.35.0', updaterType: 'tauri' }
+                    : {
+                          canonicalVersion: '2.36.0-beta.5',
+                          updaterType: 'tauri'
+                      }
+        );
+        mocks.appAppUpdateInstallConfirm.mockResolvedValue({});
+
+        await expect(updateAppForNewerDatabase()).resolves.toBe('installing');
+
+        expect(mocks.appAppUpdateInstallConfirm).toHaveBeenCalledWith(
+            '2.36.0-beta.5'
+        );
+        expect(mocks.restartApplication).toHaveBeenCalledTimes(1);
+        expect(mocks.openExternalLink).not.toHaveBeenCalled();
+        vi.unstubAllGlobals();
+    });
+
+    it('opens the download page when no newer release can be installed in the app', async () => {
+        vi.stubGlobal('VERSION', '2.36.0-beta.5');
+        mocks.isUpdateCheckDisabledBuild.mockReturnValue(false);
+        mocks.appAppUpdateReleaseGet.mockImplementation(
+            async (channel: string) =>
+                channel === 'stable'
+                    ? { canonicalVersion: '2.35.0', updaterType: 'tauri' }
+                    : {
+                          canonicalVersion: '2.36.0-beta.6',
+                          updaterType: 'manual'
+                      }
+        );
+
+        await expect(updateAppForNewerDatabase()).resolves.toBe(
+            'opened-download-page'
+        );
+
+        expect(mocks.appAppUpdateInstallConfirm).not.toHaveBeenCalled();
+        expect(mocks.openExternalLink).toHaveBeenCalledWith(
+            'https://github.com/Map1en/VRCX-0/releases'
+        );
+        vi.unstubAllGlobals();
+    });
+
+    it('opens the download page when the in-app install fails', async () => {
+        vi.stubGlobal('VERSION', '2.33.0-beta.6');
+        mocks.isUpdateCheckDisabledBuild.mockReturnValue(false);
+        mocks.appAppUpdateReleaseGet.mockResolvedValue({
+            canonicalVersion: '2.36.0-beta.5',
+            updaterType: 'tauri'
+        });
+        mocks.appAppUpdateInstallConfirm.mockRejectedValue(
+            new Error('network down')
+        );
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        await expect(updateAppForNewerDatabase()).resolves.toBe(
+            'opened-download-page'
+        );
+
+        expect(mocks.restartApplication).not.toHaveBeenCalled();
+        expect(mocks.openExternalLink).toHaveBeenCalledWith(
+            'https://github.com/Map1en/VRCX-0/releases'
+        );
+        vi.unstubAllGlobals();
     });
 
     it('archives a failed database and requests a fresh-start restart after confirmation', async () => {

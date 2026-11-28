@@ -7278,6 +7278,11 @@
             "preserved_work_database": "Copia de la base de datos de la actualización fallida",
             "database_upload_warning": "Esta base de datos puede contener datos privados de la cuenta y la actividad. No la subas a GitHub.",
             "use_new_database": "Usar una base de datos nueva",
+            "newer_schema_title": "Esta base de datos es de una versión más reciente de VRCX-0",
+            "update_to_latest": "Actualizar a la última versión",
+            "updating_to_latest": "Actualizando…",
+            "contact_discord": "Contáctanos en Discord",
+            "update_opened_download_page": "No se pudo actualizar desde la aplicación. Se abrió la página de descarga en el navegador.",
             "fresh_start_confirm_title": "¿Usar una nueva base de datos?",
             "fresh_start_confirm_description": "VRCX-0 conservará la base de datos actual y los archivos del fallo en una carpeta de recuperación y después se reiniciará con una base de datos nueva y vacía. La configuración, el historial local y los datos de cuentas guardados no se transferirán a la nueva base de datos.",
             "fresh_start_restarting": "Archivando la base de datos actual y reiniciando VRCX-0",
@@ -7924,7 +7929,7 @@
                 "failed_upgrade_description": "La actualización anterior de la base de datos falló. Esta base de datos no puede usarse hasta que se repare manualmente.",
                 "apply_upgrade_failed": "VRCX-0 no pudo aplicar una actualización de la base de datos local",
                 "legacy_migration_restart_failed": "VRCX-0 no pudo reiniciarse para migrar tus datos existentes de VRCX. Puedes volver a intentarlo u omitir para continuar con la base de datos actual.",
-                "newer_schema_requires_newer_app": "Esta base de datos usa la versión de esquema {value}, pero esta versión de VRCX-0 solo admite hasta la {value2}. Instala la última versión de VRCX-0 para abrirla."
+                "newer_schema_requires_newer_app": "Una versión más reciente de VRCX-0 ya abrió esta base de datos (versión de esquema {value}) y esta versión solo admite hasta la {value2}. Actualiza a la última versión para abrirla. Si sigue sin abrirse después de actualizar, contáctanos en Discord."
             },
             "success": {
                 "database_update_complete": "Actualización de la base de datos completada"

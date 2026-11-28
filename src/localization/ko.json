@@ -7187,6 +7187,11 @@
             "preserved_work_database": "실패한 업그레이드의 데이터베이스 사본",
             "database_upload_warning": "이 데이터베이스에는 계정 및 활동 관련 개인정보가 포함될 수 있습니다. GitHub에 업로드하지 마세요.",
             "use_new_database": "새 데이터베이스 사용",
+            "newer_schema_title": "최신 버전에서 사용한 데이터베이스입니다",
+            "update_to_latest": "최신 버전으로 업데이트",
+            "updating_to_latest": "업데이트 중…",
+            "contact_discord": "Discord로 문의하기",
+            "update_opened_download_page": "앱에서 업데이트하지 못해 브라우저에서 다운로드 페이지를 열었습니다.",
             "fresh_start_confirm_title": "새 데이터베이스를 사용하시겠습니까?",
             "fresh_start_confirm_description": "VRCX-0은 현재 데이터베이스와 업그레이드 실패 파일을 복구 폴더에 보관한 뒤 비어 있는 새 데이터베이스로 다시 시작합니다. 설정, 로컬 기록 및 저장된 계정 데이터는 새 데이터베이스로 이전되지 않습니다.",
             "fresh_start_restarting": "현재 데이터베이스를 보관하고 VRCX-0을 다시 시작하는 중",
@@ -7854,7 +7859,7 @@
                 "failed_upgrade_description": "이전 데이터베이스 업그레이드가 실패했습니다. 이 데이터베이스는 수동으로 복구할 때까지 사용할 수 없습니다.",
                 "apply_upgrade_failed": "VRCX-0이 로컬 데이터베이스 업그레이드를 적용하지 못했습니다.",
                 "legacy_migration_restart_failed": "기존 VRCX 데이터를 마이그레이션하기 위한 VRCX-0 재시작에 실패했습니다. 다시 시도하거나 건너뛰고 현재 데이터베이스로 계속할 수 있습니다.",
-                "newer_schema_requires_newer_app": "이 데이터베이스의 스키마 버전은 {value}이지만 현재 VRCX-0은 {value2}까지만 지원합니다. 최신 버전의 VRCX-0을 설치한 후 다시 여세요."
+                "newer_schema_requires_newer_app": "이 데이터베이스는 더 새로운 버전의 VRCX-0에서 이미 열렸습니다(스키마 버전 {value}). 현재 버전은 {value2}까지만 지원합니다. 최신 버전으로 업데이트한 후 다시 여세요. 업데이트 후에도 열리지 않으면 Discord로 문의해 주세요."
             },
             "success": {
                 "database_update_complete": "데이터베이스 업데이트 완료"

@@ -576,10 +576,12 @@ impl AppUpdateRuntime {
     async fn release_for_version(&self, version: &str) -> Result<AppUpdateReleaseSnapshot> {
         let channel = release_channel_for_version(version)
             .ok_or_else(|| Error::Custom("no-pending-update".into()))?;
-        let release = if channel != self.inner.channel {
-            self.latest_release_for_channel(channel).await?
-        } else {
-            self.snapshot().release
+        let checked = self.snapshot().release.filter(|release| {
+            channel == self.inner.channel && release.canonical_version == version
+        });
+        let release = match checked {
+            Some(release) => Some(release),
+            None => self.latest_release_for_channel(channel).await?,
         };
         match release {
             Some(release)

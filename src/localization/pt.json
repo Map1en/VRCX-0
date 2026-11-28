@@ -7230,6 +7230,11 @@
             "preserved_work_database": "Banco de trabalho da atualização preservado",
             "database_upload_warning": "Este banco de dados pode conter dados privados da conta e de atividades. Não o envie ao GitHub.",
             "use_new_database": "Usar novo banco de dados",
+            "newer_schema_title": "Este banco de dados é de uma versão mais recente do VRCX-0",
+            "update_to_latest": "Atualizar para a versão mais recente",
+            "updating_to_latest": "Atualizando…",
+            "contact_discord": "Fale conosco no Discord",
+            "update_opened_download_page": "Não foi possível atualizar pelo aplicativo. A página de download foi aberta no navegador.",
             "fresh_start_confirm_title": "Usar um novo banco de dados?",
             "fresh_start_confirm_description": "O VRCX-0 manterá o banco atual e os arquivos da falha em uma pasta de recuperação e reiniciará com um novo banco vazio. As configurações, o histórico local e os dados de contas salvas não serão transferidos para o novo banco.",
             "fresh_start_restarting": "Arquivando o banco atual e reiniciando o VRCX-0",
@@ -7868,7 +7873,7 @@
                 "failed_upgrade_description": "A atualização anterior do banco de dados falhou. Este banco de dados não pode ser usado até ser reparado manualmente.",
                 "apply_upgrade_failed": "O VRCX-0 não conseguiu aplicar uma atualização do banco de dados local",
                 "legacy_migration_restart_failed": "O VRCX-0 não conseguiu reiniciar para migrar seus dados existentes do VRCX. Você pode tentar novamente ou pular para continuar com o banco de dados atual.",
-                "newer_schema_requires_newer_app": "Este banco de dados usa a versão de esquema {value}, mas esta versão do VRCX-0 só oferece suporte até {value2}. Instale a versão mais recente do VRCX-0 para abri-lo."
+                "newer_schema_requires_newer_app": "Uma versão mais recente do VRCX-0 já abriu este banco de dados (versão de esquema {value}), e esta versão só oferece suporte até {value2}. Atualize para a versão mais recente para abri-lo. Se ainda assim não abrir, fale conosco no Discord."
             },
             "success": {
                 "database_update_complete": "Atualização do banco de dados concluída"

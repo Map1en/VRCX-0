@@ -1,5 +1,6 @@
 import {
     commands,
+    type AppUpdateReleaseSnapshot,
     type DatabaseUpgradePreflight,
     type DatabaseUpgradeProgress,
     type DatabaseUpgradeRunResult,
@@ -8,8 +9,13 @@ import {
 import configRepository from '@/repositories/configRepository';
 import i18n from '@/services/i18nService';
 import { confirmLegacyVrcxProcessState } from '@/services/legacyVrcxMigrationService';
-import { openExternalLink } from '@/services/shellIntegrationService';
+import {
+    openExternalLink,
+    restartApplication
+} from '@/services/shellIntegrationService';
+import { isUpdateCheckDisabledBuild } from '@/shared/buildLabel';
 import { links } from '@/shared/constants/link';
+import { compareReleaseVersions } from '@/shared/utils/releaseVersion';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -172,6 +178,36 @@ async function blockOnFailedUpgrade(
     return false;
 }
 
+function blockOnNewerSchema(versions: {
+    fromVersion: number;
+    toVersion: number;
+}): boolean {
+    openDialogNow();
+    setUpgradeState({
+        phase: 'newer-schema',
+        fromVersion: versions.fromVersion,
+        toVersion: versions.toVersion,
+        stage: '',
+        progressCompleted: 0,
+        progressTotal: 0,
+        detail: i18n.t(
+            'service.database_upgrade_service.error.newer_schema_requires_newer_app',
+            {
+                value: versions.fromVersion,
+                value2: versions.toVersion
+            }
+        ),
+        failureReason: '',
+        legacyMigrationAvailable: false,
+        retryable: false,
+        freshStartAvailable: true,
+        failureLogPath: '',
+        failedWorkDbPath: ''
+    });
+    useSessionStore.getState().setSessionState({ databaseReady: false });
+    return false;
+}
+
 function setRunningState(
     preflight?: DatabaseUpgradePreflight,
     forceOpen = false
@@ -274,6 +310,10 @@ async function handleDatabaseUpgradeResult(
         return completeDatabaseUpgrade(result);
     }
 
+    if (result.status === 'newerSchema') {
+        return blockOnNewerSchema(result);
+    }
+
     if (result.status === 'failed') {
         const error = new Error(
             result.error ||
@@ -292,10 +332,7 @@ async function handleDatabaseUpgradeResult(
                 'service.database_upgrade_service.error.apply_upgrade_failed'
             ),
         result,
-        {
-            retryable: result.status !== 'newerSchema',
-            freshStartAvailable: true
-        }
+        { freshStartAvailable: true }
     );
 }
 
@@ -360,6 +397,52 @@ export async function createDatabaseUpgradeGitHubIssue(): Promise<void> {
     await openExternalLink(DATABASE_UPGRADE_ISSUE_URL);
 }
 
+export async function openDatabaseUpgradeDiscord(): Promise<void> {
+    await openExternalLink(links.discord);
+}
+
+async function latestInstallableRelease(): Promise<AppUpdateReleaseSnapshot | null> {
+    const releases = await Promise.all([
+        commands.appAppUpdateReleaseGet('stable'),
+        commands.appAppUpdateReleaseGet('beta')
+    ]);
+    let latest: AppUpdateReleaseSnapshot | null = null;
+    for (const release of releases) {
+        if (
+            release?.updaterType === 'tauri' &&
+            compareReleaseVersions(release.canonicalVersion, VERSION) > 0 &&
+            compareReleaseVersions(
+                release.canonicalVersion,
+                latest?.canonicalVersion ?? null
+            ) > 0
+        ) {
+            latest = release;
+        }
+    }
+    return latest;
+}
+
+export async function updateAppForNewerDatabase(): Promise<
+    'installing' | 'opened-download-page'
+> {
+    if (!isUpdateCheckDisabledBuild()) {
+        try {
+            const release = await latestInstallableRelease();
+            if (release) {
+                await commands.appAppUpdateInstallConfirm(
+                    release.canonicalVersion
+                );
+                await restartApplication();
+                return 'installing';
+            }
+        } catch (error) {
+            console.error('In-app update for a newer database failed:', error);
+        }
+    }
+    await openExternalLink(links.releases);
+    return 'opened-download-page';
+}
+
 export async function startFreshDatabaseAfterUpgradeFailure(): Promise<boolean> {
     const before = useRuntimeStore.getState().databaseUpgrade;
     if (!before.freshStartAvailable) {
@@ -392,7 +475,6 @@ export async function startFreshDatabaseAfterUpgradeFailure(): Promise<boolean> 
         setUpgradeState({
             ...before,
             open: true,
-            phase: 'error',
             detail: `${i18n.t(
                 'message.database.fresh_start_failed'
             )} ${errorMessage(error)}`
@@ -426,21 +508,7 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
         return blockOnFailedUpgrade(preflight.failedUpgrade);
     }
     if (preflight.status === 'newerSchema') {
-        return blockOnFailedUpgrade(
-            null,
-            i18n.t(
-                'service.database_upgrade_service.error.newer_schema_requires_newer_app',
-                {
-                    value: preflight.fromVersion,
-                    value2: preflight.toVersion
-                }
-            ),
-            preflight,
-            {
-                retryable: false,
-                freshStartAvailable: true
-            }
-        );
+        return blockOnNewerSchema(preflight);
     }
 
     const legacyMigrationStatus =
